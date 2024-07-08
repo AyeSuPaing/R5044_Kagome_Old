@@ -1,0 +1,42 @@
+﻿@*
+=========================================================================================================
+  Module      :LPビルダー(Main.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2020 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.LandingPage.LandingPageListViewModel
+@{
+	ViewBag.Title = "LPビルダー";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+@Html.Hidden("controller", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_LANDING_PAGE)
+
+<h1 class="page-title">LPビルダー</h1>
+<div class="main-content-frame" id="list-content">
+</div>
+
+@* モーダルウィンドウ: 拡大画像 *@
+@Html.Partial("_EnlargedImageModal")
+@section JavaScript
+{
+	<script type="text/javascript">
+	list_redraw();
+
+	// リストを取得
+	function list_redraw() {
+	loading_animation.start();
+	$.ajax({
+	type: "POST",
+	url: "@Url.Action("List", Constants.CONTROLLER_W2CMS_MANAGER_LANDING_PAGE)",
+				traditional: true
+			}).done(function (viewHtml) {
+				$("#list-content").html(viewHtml);
+			}).done(function () {
+				loading_animation.end();
+			}).fail(function () {
+			});
+		}
+	</script>
+}

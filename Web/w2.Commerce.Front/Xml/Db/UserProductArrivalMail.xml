@@ -1,0 +1,312 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 入荷通知メール情報系SQLステートメントXML(UserProductArrivalMail.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<UserProductArrivalMail>
+
+  <!-- 入荷通知メール情報一覧を取得する -->
+  <GetUserProductArrivalmailList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_UserProductArrivalMail.mail_no), 0)
+          FROM  w2_UserProductArrivalMail
+                INNER JOIN w2_Product ON
+                (
+                  w2_UserProductArrivalMail.shop_id = w2_Product.shop_id
+                  AND
+                  w2_UserProductArrivalMail.product_id = w2_Product.product_id
+                )
+                INNER JOIN w2_ProductVariationView ON
+                (
+                  w2_UserProductArrivalMail.shop_id = w2_ProductVariationView.shop_id
+                  AND
+                  w2_UserProductArrivalMail.product_id = w2_ProductVariationView.product_id
+                  AND
+                  w2_UserProductArrivalMail.variation_id = w2_ProductVariationView.variation_id
+                )
+                [[ USERPRODUCTARRIVALMAIL_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_UserProductArrivalMail.*,
+                w2_Product.*,
+                w2_ProductVariationView.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_UserProductArrivalMail.user_id,
+                          w2_UserProductArrivalMail.mail_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ USERPRODUCTARRIVALMAIL_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_UserProductArrivalMail
+                          INNER JOIN w2_Product ON
+                          (
+                            w2_UserProductArrivalMail.shop_id = w2_Product.shop_id
+                            AND
+                            w2_UserProductArrivalMail.product_id = w2_Product.product_id
+                          )                    
+                          INNER JOIN w2_ProductVariationView ON
+                          (
+                            w2_UserProductArrivalMail.shop_id = w2_ProductVariationView.shop_id
+                            AND
+                            w2_UserProductArrivalMail.product_id = w2_ProductVariationView.product_id
+                            AND
+                            w2_UserProductArrivalMail.variation_id = w2_ProductVariationView.variation_id
+                          )
+                          [[ USERPRODUCTARRIVALMAIL_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_UserProductArrivalMail ON
+                (
+                  RowIndex.user_id = w2_UserProductArrivalMail.user_id
+                  AND                
+                  RowIndex.mail_no = w2_UserProductArrivalMail.mail_no
+                )
+                INNER JOIN w2_Product ON
+                (
+                  w2_UserProductArrivalMail.shop_id = w2_Product.shop_id
+                  AND
+                  w2_UserProductArrivalMail.product_id = w2_Product.product_id
+                )                
+                INNER JOIN w2_ProductVariationView ON
+                (
+                  w2_UserProductArrivalMail.shop_id = w2_ProductVariationView.shop_id
+                  AND
+                  w2_UserProductArrivalMail.product_id = w2_ProductVariationView.product_id
+                  AND
+                  w2_UserProductArrivalMail.variation_id = w2_ProductVariationView.variation_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetUserProductArrivalmailList>
+
+  <!-- 商品入荷通知メール情報取得 -->
+  <GetUserProductArrivalMailInfo>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserProductArrivalMail.*
+          FROM  w2_UserProductArrivalMail
+                INNER JOIN w2_Product ON
+                (
+                  w2_UserProductArrivalMail.shop_id = w2_Product.shop_id
+                  AND
+                  w2_UserProductArrivalMail.product_id = w2_Product.product_id
+                )
+                [[ USERPRODUCTARRIVALMAIL_SEARCH_WHERE ]]
+           AND  w2_UserProductArrivalMail.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserProductArrivalMailInfo>
+
+  <!-- 商品バリエーション入荷通知メール情報取得 -->
+  <GetUserProductVariationArrivalMailInfo>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserProductArrivalMail.*
+          FROM  w2_UserProductArrivalMail
+                INNER JOIN w2_Product ON
+                (
+                  w2_UserProductArrivalMail.shop_id = w2_Product.shop_id
+                  AND
+                  w2_UserProductArrivalMail.product_id = w2_Product.product_id
+                )
+                [[ USERPRODUCTARRIVALMAIL_SEARCH_WHERE ]]
+           AND  w2_UserProductArrivalMail.product_id = @product_id
+           AND  w2_UserProductArrivalMail.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetUserProductVariationArrivalMailInfo>
+
+  <!-- 入荷通知メール登録済み商品取得（レコメンドリクエスト用、登録日降順） -->
+  <GetArrivalMailRegistedProductsForRecommend>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserProductArrivalMail.*
+          FROM  w2_UserProductArrivalMail
+         WHERE  w2_UserProductArrivalMail.user_id = @user_id
+      ORDER BY  w2_UserProductArrivalMail.date_created DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_no" Type="int" />
+    </Parameter>
+  </GetArrivalMailRegistedProductsForRecommend>
+
+  <!-- 入荷通知メール情報登録処理 -->
+  <RegistUserProductArrivalmail>
+    <Statement>
+      <![CDATA[
+        -- 商品マスタの存在チェック
+        DECLARE @product_cnt int
+        SELECT  @product_cnt = COUNT(variation_id)
+          FROM  w2_ProductVariationView
+         WHERE  w2_ProductVariationView.shop_id = @shop_id
+           AND  w2_ProductVariationView.product_id = @product_id
+           AND  w2_ProductVariationView.variation_id = @variation_id
+        
+        -- 商品マスタが存在する場合
+        IF @product_cnt = 1
+        BEGIN
+          -- 入荷通知メール情報登録済みチェック
+          DECLARE @mail_cnt int
+          SELECT  @mail_cnt = COUNT(mail_no)
+            FROM  w2_UserProductArrivalMail
+           WHERE  w2_UserProductArrivalMail.user_id = @user_id
+             AND  w2_UserProductArrivalMail.shop_id = @shop_id
+             AND  w2_UserProductArrivalMail.product_id = @product_id
+             AND  w2_UserProductArrivalMail.variation_id = @variation_id
+             AND  w2_UserProductArrivalMail.pcmobile_kbn = @pcmobile_kbn
+             AND  w2_UserProductArrivalMail.arrival_mail_kbn = @arrival_mail_kbn
+             AND  w2_UserProductArrivalMail.mail_send_status = '0'
+             AND  w2_UserProductArrivalMail.guest_mail_addr = @guest_mail_addr
+        
+          -- 未登録データだったら登録する
+          IF @mail_cnt = 0
+          BEGIN
+            -- 次の枝番取得
+            DECLARE  @mail_no int
+             SELECT  @mail_no = ISNULL(MAX(mail_no),0) + 1
+               FROM  w2_UserProductArrivalMail
+              WHERE  user_id = @user_id
+
+            -- Insert処理
+            INSERT  w2_UserProductArrivalMail
+                    (
+                      user_id,
+                      mail_no,
+                      shop_id,
+                      product_id,
+                      variation_id,
+                      pcmobile_kbn,
+                      arrival_mail_kbn,
+                      mail_send_status,
+                      date_expired,
+                      guest_mail_addr,
+                      date_created,
+                      date_changed,
+                      last_changed
+                    )
+            VALUES
+                    (
+                      @user_id,
+                      @mail_no,
+                      @shop_id,
+                      @product_id,
+                      @variation_id,
+                      @pcmobile_kbn,
+                      @arrival_mail_kbn,
+                      '0',
+                      @date_expired,
+                      @guest_mail_addr,
+                      getdate(),
+                      getdate(),
+                      'user'
+                    )
+          END
+          ELSE
+          BEGIN
+              -- 商品が見つからないときは投入更新失敗としたいため、
+              -- 存在した場合は更新(=成功)しておく
+              UPDATE  w2_UserProductArrivalMail
+                 SET  w2_UserProductArrivalMail.date_changed = getdate(),
+                      w2_UserProductArrivalMail.date_expired = CASE WHEN (w2_UserProductArrivalMail.date_expired > @date_expired) THEN w2_UserProductArrivalMail.date_expired ELSE @date_expired END
+               WHERE  w2_UserProductArrivalMail.user_id = @user_id
+                 AND  w2_UserProductArrivalMail.shop_id = @shop_id
+                 AND  w2_UserProductArrivalMail.product_id = @product_id
+                 AND  w2_UserProductArrivalMail.variation_id = @variation_id
+                 AND  w2_UserProductArrivalMail.pcmobile_kbn = @pcmobile_kbn
+                 AND  w2_UserProductArrivalMail.arrival_mail_kbn = @arrival_mail_kbn
+                 AND  w2_UserProductArrivalMail.mail_send_status = '0'
+                 AND  w2_UserProductArrivalMail.guest_mail_addr = @guest_mail_addr
+          END
+        END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="pcmobile_kbn" Type="nvarchar" Size="10" />
+      <Input Name="arrival_mail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="date_expired" Type="datetime" />
+      <Input Name="guest_mail_addr" Type="nvarchar" Size="256" />
+    </Parameter>
+  </RegistUserProductArrivalmail>
+
+  <!-- 入荷通知メール配信期限更新処理 -->
+  <UpdateUserProductArrivalMail>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserProductArrivalmail
+           SET  w2_UserProductArrivalmail.date_expired = @date_expired,
+                w2_UserProductArrivalmail.date_changed = getdate()
+         WHERE  w2_UserProductArrivalmail.user_id = @user_id
+           AND  w2_UserProductArrivalmail.mail_no = @mail_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_no" Type="int" />
+      <Input Name="date_expired" Type="datetime" />
+    </Parameter>
+  </UpdateUserProductArrivalMail>
+    
+  <!-- 入荷通知メール情報削除処理 -->
+  <DeleteUserProductArrivalMail>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserProductArrivalmail
+         WHERE  w2_UserProductArrivalmail.user_id = @user_id
+           AND  w2_UserProductArrivalmail.mail_no = @mail_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_no" Type="int" />
+    </Parameter>
+  </DeleteUserProductArrivalMail>
+
+  <!-- 入荷通知メール情報削除処理（ユーザーID）-->
+  <DeleteUserProductArrivalMailFromUserId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserProductArrivalmail
+         WHERE  w2_UserProductArrivalmail.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteUserProductArrivalMailFromUserId>
+
+</UserProductArrivalMail>
+
+
+
+
+

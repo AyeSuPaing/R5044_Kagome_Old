@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザーポイント出力設定XML(UserPoint.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<UserPoint>
+  <EXPORT_FIELDS>
+    <![CDATA[
+        RTRIM(LTRIM(targetUserIds.user_id)) user_id,
+        ISNULL(UserPoint_CTE.point, 0) point,
+        ISNULL(UserPoint_CTE.point_temp, 0)  point_temp,
+        CASE
+          WHEN CONVERT(DATETIME, UserPoint_CTE.point_exp) < CONVERT(DATETIME, GETDATE())
+            THEN ''
+          ELSE
+            ISNULL(
+              CONVERT(NVARCHAR, FORMAT(UserPoint_CTE.point_exp, 'yyyy-MM-dd HH:mm:ss')),
+              CONVERT(NVARCHAR, FORMAT(GETDATE(), 'yyyy-MM-dd') + ' 23:59:59'))
+        END AS point_exp
+    ]]>
+  </EXPORT_FIELDS>
+</UserPoint>

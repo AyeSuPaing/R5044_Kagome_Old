@@ -1,0 +1,437 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 特集エリアSQLステートメントXML (FeatureArea.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<FeatureArea>
+
+  <!-- 特集エリア取得 -->
+  <GetFeatureArea>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FeatureArea.*, w2_FeatureAreaBanner.*, w2_FeatureAreaType.action_type
+          FROM  w2_FeatureArea
+                INNER JOIN w2_FeatureAreaType ON
+                (
+                  w2_FeatureArea.area_type_id = w2_FeatureAreaType.area_type_id
+                )
+                INNER JOIN w2_FeatureAreaBanner ON
+                (
+                  w2_FeatureArea.area_id = w2_FeatureAreaBanner.area_id
+                )
+         WHERE  w2_FeatureArea.area_id = @area_id
+         ORDER BY w2_FeatureAreaBanner.banner_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="area_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetFeatureArea>
+
+  <!-- 特集エリア全件取得 -->
+  <GetFeatureAreaAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FeatureArea.*, w2_FeatureAreaBanner.*, w2_FeatureAreaType.action_type
+          FROM  w2_FeatureArea
+                INNER JOIN w2_FeatureAreaType ON
+                (
+                  w2_FeatureArea.area_type_id = w2_FeatureAreaType.area_type_id
+                )
+                INNER JOIN w2_FeatureAreaBanner ON
+                (
+                  w2_FeatureArea.area_id = w2_FeatureAreaBanner.area_id
+                )
+         ORDER BY w2_FeatureArea.area_id, w2_FeatureAreaBanner.banner_no
+      ]]>
+    </Statement>
+  </GetFeatureAreaAll>
+
+  <!-- 特集エリア検索すべて取得 -->
+  <GetFeatureAreaSearchAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FeatureArea.*
+                ,w2_FeatureAreaType.action_type
+          FROM  w2_FeatureArea
+                INNER JOIN w2_FeatureAreaType ON
+                (
+                  w2_FeatureArea.area_type_id = w2_FeatureAreaType.area_type_id
+                )
+         ORDER BY w2_FeatureArea.date_changed
+      ]]>
+    </Statement>
+  </GetFeatureAreaSearchAll>
+
+  <!-- 特集エリアバナー取得 -->
+  <GetFeatureAreaBanner>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeatureAreaBanner
+         WHERE  area_id = @area_id
+         ORDER BY area_id, banner_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="area_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetFeatureAreaBanner>
+
+  <!-- 特集エリアバナー全取得 -->
+  <GetAllFeatureAreaBanner>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeatureAreaBanner
+         ORDER BY area_id, banner_no
+      ]]>
+    </Statement>
+  </GetAllFeatureAreaBanner>
+
+  <!-- 特集エリア登録 -->
+  <InsertFeatureArea>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FeatureArea
+                (
+                  area_id
+                  ,area_name
+                  ,area_type_id
+                  ,internal_memo
+                  ,side_max_count
+                  ,side_turn
+                  ,slider_count
+                  ,slider_scroll_count
+                  ,slider_scroll_auto
+                  ,slider_scroll_interval
+                  ,slider_arrow
+                  ,slider_dot
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES
+                (
+                  @area_id
+                  ,@area_name
+                  ,@area_type_id
+                  ,@internal_memo
+                  ,@side_max_count
+                  ,@side_turn
+                  ,@slider_count
+                  ,@slider_scroll_count
+                  ,@slider_scroll_auto
+                  ,@slider_scroll_interval
+                  ,@slider_arrow
+                  ,@slider_dot
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="area_id" Type="nvarchar" Size="30" />
+      <Input Name="area_name" Type="nvarchar" Size="100" />
+      <Input Name="area_type_id" Type="nvarchar" Size="30" />
+      <Input Name="internal_memo" Type="nvarchar" Size="100" />
+      <Input Name="side_max_count" Type="nvarchar" Size="1" />
+      <Input Name="side_turn" Type="nvarchar" Size="1" />
+      <Input Name="slider_count" Type="nvarchar" Size="1" />
+      <Input Name="slider_scroll_count" Type="nvarchar" Size="1" />
+      <Input Name="slider_scroll_auto" Type="nvarchar" Size="1" />
+      <Input Name="slider_scroll_interval" Type="nvarchar" Size="1" />
+      <Input Name="slider_arrow" Type="nvarchar" Size="1" />
+      <Input Name="slider_dot" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertFeatureArea>
+
+  <!-- 特集エリアバナー登録 -->
+  <InsertFeatureAreaBanner>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FeatureAreaBanner
+                (
+                  area_id
+                  ,banner_no
+                  ,file_name
+                  ,file_dir_path
+                  ,alt_text
+                  ,text
+                  ,link_url
+                  ,window_type
+                  ,publish
+                  ,condition_publish_date_from
+                  ,condition_publish_date_to
+                  ,condition_member_only_type
+                  ,condition_member_rank_id
+                  ,condition_target_list_type
+                  ,condition_target_list_ids
+                  ,date_created
+                )
+        VALUES
+                (
+                  @area_id
+                  ,@banner_no
+                  ,@file_name
+                  ,@file_dir_path
+                  ,@alt_text
+                  ,@text
+                  ,@link_url
+                  ,@window_type
+                  ,@publish
+                  ,@condition_publish_date_from
+                  ,@condition_publish_date_to
+                  ,@condition_member_only_type
+                  ,@condition_member_rank_id
+                  ,@condition_target_list_type
+                  ,@condition_target_list_ids
+                  ,GETDATE()
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="area_id" Type="nvarchar" Size="30" />
+      <Input Name="banner_no" Type="int" />
+      <Input Name="file_name" Type="nvarchar" Size="60" />
+      <Input Name="file_dir_path" Type="nvarchar" Size="300" />
+      <Input Name="alt_text" Type="nvarchar" Size="100" />
+      <Input Name="text" Type="nvarchar" Size="100" />
+      <Input Name="link_url" Type="nvarchar" Size="256" />
+      <Input Name="window_type" Type="nvarchar" Size="20" />
+      <Input Name="publish" Type="nvarchar" Size="20" />
+      <Input Name="condition_publish_date_from" Type="datetime" />
+      <Input Name="condition_publish_date_to" Type="datetime" />
+      <Input Name="condition_member_only_type" Type="nvarchar" Size="20" />
+      <Input Name="condition_member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="condition_target_list_type" Type="nvarchar" Size="20" />
+      <Input Name="condition_target_list_ids" Type="nvarchar" Size="max" />
+    </Parameter>
+  </InsertFeatureAreaBanner>
+
+  <!-- 特集エリア削除 -->
+  <DeleteFeatureArea>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FeatureArea
+         WHERE  area_id = @area_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="area_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteFeatureArea>
+
+  <!-- 特集エリアバナー削除 -->
+  <DeleteFeatureAreaBanner>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FeatureAreaBanner
+         WHERE  area_id = @area_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="area_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteFeatureAreaBanner>
+
+  <!-- 特集エリアタイプ登録 -->
+  <InsertFeatureAreaType>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FeatureAreaType
+                (
+                  area_type_id
+                  ,area_type_name
+                  ,action_type
+                  ,internal_memo
+                  ,pc_start_tag
+                  ,pc_repeat_tag
+                  ,pc_end_tag
+                  ,pc_script_tag
+                  ,sp_start_tag
+                  ,sp_repeat_tag
+                  ,sp_end_tag
+                  ,sp_script_tag
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES
+                (
+                  @area_type_id
+                  ,@area_type_name
+                  ,@action_type
+                  ,@internal_memo
+                  ,@pc_start_tag
+                  ,@pc_repeat_tag
+                  ,@pc_end_tag
+                  ,@pc_script_tag
+                  ,@sp_start_tag
+                  ,@sp_repeat_tag
+                  ,@sp_end_tag
+                  ,@sp_script_tag
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="area_type_id" Type="nvarchar" Size="30" />
+      <Input Name="area_type_name" Type="nvarchar" Size="30" />
+      <Input Name="action_type" Type="nvarchar" Size="10" />
+      <Input Name="internal_memo" Type="nvarchar" Size="100" />
+      <Input Name="pc_start_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="pc_repeat_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="pc_end_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="pc_script_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="sp_start_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="sp_repeat_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="sp_end_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="sp_script_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertFeatureAreaType>
+
+  <!-- 特集エリア更新 -->
+  <UpdateFeatureArea>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FeatureArea
+           SET  area_name = @area_name
+                ,area_type_id = @area_type_id
+                ,internal_memo = @internal_memo
+                ,side_max_count = @side_max_count
+                ,side_turn = @side_turn
+                ,slider_count = @slider_count
+                ,slider_scroll_count = @slider_scroll_count
+                ,slider_scroll_auto = @slider_scroll_auto
+                ,slider_scroll_interval = @slider_scroll_interval
+                ,slider_arrow = @slider_arrow
+                ,slider_dot = @slider_dot
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE area_id = @area_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="area_id" Type="nvarchar" Size="30" />
+      <Input Name="area_name" Type="nvarchar" Size="100" />
+      <Input Name="area_type_id" Type="nvarchar" Size="30" />
+      <Input Name="internal_memo" Type="nvarchar" Size="100" />
+      <Input Name="side_max_count" Type="nvarchar" Size="1" />
+      <Input Name="side_turn" Type="nvarchar" Size="1" />
+      <Input Name="slider_count" Type="nvarchar" Size="1" />
+      <Input Name="slider_scroll_count" Type="nvarchar" Size="1" />
+      <Input Name="slider_scroll_auto" Type="nvarchar" Size="1" />
+      <Input Name="slider_scroll_interval" Type="nvarchar" Size="1" />
+      <Input Name="slider_arrow" Type="nvarchar" Size="1" />
+      <Input Name="slider_dot" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateFeatureArea>
+
+  <!-- 特集エリアタイプ更新 -->
+  <UpdateFeatureAreaType>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FeatureAreaType
+           SET  area_type_name = @area_type_name
+                ,action_type = @action_type
+                ,internal_memo = @internal_memo
+                ,pc_start_tag = @pc_start_tag
+                ,pc_repeat_tag = @pc_repeat_tag
+                ,pc_end_tag = @pc_end_tag
+                ,pc_script_tag = @pc_script_tag
+                ,sp_start_tag = @sp_start_tag
+                ,sp_repeat_tag = @sp_repeat_tag
+                ,sp_end_tag = @sp_end_tag
+                ,sp_script_tag = @sp_script_tag
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  area_type_id = @area_type_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="area_type_id" Type="nvarchar" Size="30" />
+      <Input Name="area_type_name" Type="nvarchar" Size="30" />
+      <Input Name="action_type" Type="nvarchar" Size="10" />
+      <Input Name="internal_memo" Type="nvarchar" Size="100" />
+      <Input Name="pc_start_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="pc_repeat_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="pc_end_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="pc_script_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="sp_start_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="sp_repeat_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="sp_end_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="sp_script_tag" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateFeatureAreaType>
+
+  <!-- 特集エリアタイプ取得 -->
+  <DeleteFeatureAreaType>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FeatureAreaType
+         WHERE  area_type_id = @area_type_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="area_type_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteFeatureAreaType>
+
+  <!-- 特集エリアタイプ取得 -->
+  <GetFeatureAreaType>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeatureAreaType
+         WHERE  area_type_id = @area_type_id
+         ORDER BY date_created
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="area_type_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetFeatureAreaType>
+
+  <!-- 特集エリアタイプ取得 -->
+  <GetFeatureAreaTypeList>
+    <Statement>
+      <![CDATA[
+        SELECT  area_type_id,
+                area_type_name,
+                action_type,
+                internal_memo,
+                date_changed
+          FROM  w2_FeatureAreaType
+         ORDER BY date_created
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetFeatureAreaTypeList>
+
+  <!-- 特集エリアタイプ参照数取得 -->
+  <GetFeatureAreaTypeCount>
+    <Statement>
+      <![CDATA[
+        SELECT  area_type_id,
+                COUNT(*) AS count
+          FROM  w2_FeatureArea
+         GROUP BY area_type_id
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetFeatureAreaTypeCount>
+
+</FeatureArea>

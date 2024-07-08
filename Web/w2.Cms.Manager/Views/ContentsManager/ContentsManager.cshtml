@@ -1,0 +1,679 @@
+﻿@*
+=========================================================================================================
+  Module      : コンテンツマネージャページ(ContentsManager.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.View
+
+@model w2.Cms.Manager.ViewModels.ContentsManager.ContentsViewModel
+@{
+	ViewBag.Title = "コンテンツマネージャー";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+@section Style
+{
+	<style>
+		#tree_view {
+			height: 50vh;
+			width: 67vw;
+		}
+		.contents_manager_scrollbar {
+			height: 50vh;
+			width: 65vw;
+		}
+
+		.dropArea {
+			border-radius: 20px;
+			margin: 5vmin;
+			padding: 25vmin 10%;
+			text-align: center;
+			position: relative;
+			border: 7px #4CA750 dashed;
+		}
+		
+		.under-button {
+			margin: 3px 6px;
+			max-height: 29px;
+		}
+	</style>
+}
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr><td><h1 class="page-title">コンテンツマネージャー</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	<!--▽ コンテンツマネージャ ▽-->
+	<tr><td><h2 class="cmn-hed-h2">コンテンツツリー</h2></td></tr>
+	<tr>
+	<td>
+		<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+		<tr>
+		<td>
+		<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+		<tr>
+		<td align="center">
+			<table cellspacing="0" cellpadding="0" border="0">
+				@LayoutHelper.PaddingTr(6)
+				<tr>
+					<td>
+						<table class="info_table" width="758" border="0" cellspacing="1" cellpadding="3">
+							<tr>
+								<td class="info_item_bg">
+									<table class="list_title_bg" width="95%">
+										<tr>
+											<td class="search_item_bg" align="left">
+												@using (Ajax.BeginForm("Click", Constants.CONTROLLER_W2CMS_MANAGER_Contents_Manager, new DefaultAjaxOptions
+												{
+													UpdateTargetId = "tree_view",
+													OnSuccess = "scroll_position();"
+												}, new
+												{
+													Name = "treeView",
+													@class = "tree_table contents_manager_scrollbar"
+												}))
+												{
+													<div id="tree_view">
+														@Html.Partial("TreeView", Model.Root)
+													</div>
+													@Html.Hidden("openDirPathList")
+													@Html.Hidden("clickPath")
+													@Html.Hidden("clickDir", "false")
+													@Html.Hidden("comeFromShortCut", "false")
+													<input type="submit" value="" style="display: none;"/>
+												}
+											</td>
+										</tr>
+									</table>
+									<table class="search_table" cellspacing="1" cellpadding="2" width="100%" border="0">
+										<tr>
+											<td class="list_title_bg" width="120" style="white-space: nowrap">
+												ショートカット</td>
+											<td class="list_item_bg1" style="display: flex;flex-wrap: wrap;">
+												@foreach (var sc in Model.ShortCut)
+												{
+													<div id="@sc.Value" class="tree_view_short_cut">
+														<a href="#">@sc.Key</a>
+														&nbsp;&nbsp;
+													</div>
+												}
+											</td>
+										</tr>
+									</table>
+									<div style="display: flex; justify-content: center; padding: 10px 0px 2px 0px">
+										<input type="button" class="btn btn-sub under-button" value="  ダウンロード  " onclick="location.href='Download'" id="downloadButton" />
+										<input type="button" class="btn btn-sub under-button" value="  フォルダ作成  " onclick="make_directory();" />
+										<p style="font-size: 24px; margin-right: 3px;">│</p>
+										@using (Ajax.BeginForm("Rename", Constants.CONTROLLER_W2CMS_MANAGER_Contents_Manager, new DefaultAjaxOptions
+										{
+											UpdateTargetId = "error_message",
+											OnSuccess = "rename_click();",
+										}, new
+										{
+											Name = "Rename",
+										}))
+										{
+											@Html.TextBox("rename")
+											<input type="button" class="btn btn-sub under-button" value="  削除  " onclick="delete_directory_message()" id="deleteButton" />
+											<input type="button" class="btn btn-sub under-button" value="  リネーム  " onclick="if (confirm('選択ファイル/ディレクトリをリネームします。よろしいですか？')) $('form[name=\'Rename\']').submit();" id="renameButton" />
+											<input type="submit" value="" style="display: none;"/>
+										}
+										<p style="font-size: 24px; margin-right: 3px;">│</p>
+										@using (Ajax.BeginForm("DeleteProductImages", Constants.CONTROLLER_W2CMS_MANAGER_Contents_Manager, new AjaxOptions
+										{
+											HttpMethod = "POST",
+											OnSuccess = "delete_product_images_click(data);",
+										}, new
+										{
+											Name = "DeleteProductImages",
+										}))
+										{
+											@Html.TextBox("fileNameWithoutSize", "", new { disabled = "disabled"})
+											<input type="button" class="btn btn-sub under-button" value="  商品画像一括削除  " onclick="delete_product_images_message()" id="deleteProductImagesButton" disabled="disabled"/>
+											<input type="submit" value="" style="display: none;"/>
+										}
+									</div>
+									<div align="center" id="error_message" class="notice" style="font-weight: bold;"></div>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+		</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+	</td>
+	</tr>
+	<!--△ コンテンツマネージャ △-->
+	<tr>
+		<td><h2 class="cmn-hed-h2">ファイルアップロード<input type="button" value="  ファイルアップロード  " class="btn btn-main btn-size-m" style="float:right" onclick="submit_contentsupload_form()"/><br/></h2></td>
+	</tr>
+	<tr>
+		<td>
+		@using (Ajax.BeginForm("Upload", Constants.CONTROLLER_W2CMS_MANAGER_Contents_Manager, new DefaultAjaxOptions
+		{
+			UpdateTargetId = "upload_error_message",
+			OnSuccess = "upload()",
+		}, new
+		{
+			name = "contentsUpload",
+			enctype = "multipart/form-data",
+		}))
+		{
+			<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+				<tr>
+					<td align="center">
+						<table class="list_box_bg" cellspacing="0" cellpadding="0" border="0" width="100%">
+							@LayoutHelper.PaddingTr(6)
+							<tr>
+								<td align="center" class="image-upload-content-drag">
+									<div>
+										<a href="javascript:void(0)" class="btn btn-main btn-modal-open" data-modal-selector="#contents-modal" data-modal-classname="modal-size-l" style="display:none" id="contents-modal-btn"></a>
+									</div>
+									<div class="modal-content-hide">
+										<div id="contents-modal">
+											<div class="dropArea" style="font-size: 16px; line-height: 2.5em;">
+												この範囲内にファイルをドロップ<br/>※複数ファイル可
+												<div class="upPath"></div>
+												<div class="upOption"></div>
+												<img class="loading" src="~/Images/Common/loading.gif" style="width: 30px;"/>
+											</div>
+										</div>
+									</div>
+									<p class="image-upload-content-drag-text">ファイルをドラッグ&ドロップするか下記から選択してください</p>
+									<label class="btn btn-main btn-size-m" id="file-select" for="Input_UploadContents">  ファイル選択  </label>
+									<input type="file" name="Input.UploadContents" style="display: none;" id="Input_UploadContents"/><br/>
+									@Html.CheckBoxFor(m => m.Input.ZipDecompress)@Html.LabelFor(m => m.Input.ZipDecompress, "ZIP自動解凍")
+									&nbsp;&nbsp;
+									@Html.CheckBoxFor(m => m.Input.AutoResize, new
+									{
+										disabled = "disabled"
+									})@Html.LabelFor(m => m.Input.AutoResize, "PCサイト商品画像自動リサイズ")
+									<div align="center" id="upload_error_message" class="notice" style="font-weight: bold;"></div>
+								</td>
+							</tr>
+							@LayoutHelper.PaddingTr(10)
+						</table>
+					</td>
+				</tr>
+			</table>
+			@LayoutHelper.Padding(10)
+			<table id="tableImageResizeSetting" class="box_border" cellspacing="1" cellpadding="0" width="784" border="0" style="display: none;">
+				<tr>
+					<td align="center">
+						<table class="list_box_bg" cellspacing="0" cellpadding="0" border="0" width="100%">
+							@LayoutHelper.PaddingTr(6)
+							<tr>
+								<td align="center">
+									<table class="detail_table" id="ReSizeForm">
+										@Html.Partial("ReSize", Model.Input)
+									</table>
+								</td>
+							</tr>
+							@LayoutHelper.PaddingTr(10)
+							<tr>
+								<td align="center">
+									<table class="info_table" cellspacing="1" cellpadding="3" width="758" border="0">
+										<tr class="info_item_bg">
+											<td align="left">
+												備考（PCサイト商品画像自動リサイズ）<br />
+												・縦と横を両方指定した場合、縦横比に関係なく指定したサイズに拡大/縮小します。<br />
+												・縦と横のどちらか一方を指定した場合、縦横比を維持して指定したサイズに拡大/縮小します。<br />
+												・縦と横をどちらも指定しない場合、画像は変換されません。
+											</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+							@LayoutHelper.PaddingTr(10)
+						</table>
+					</td>
+				</tr>
+			</table>
+		}
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<table class="info_table" cellspacing="1" cellpadding="3" width="758" border="0">
+				<tr class="info_item_bg">
+					<td align="left">備考<br />
+						<p>・画面にファイルをドラッグ＆ドロップすることでもアップロードが可能です。</p>
+						<p>（確認なしにそのままファイルがアップロードされます）</p>
+						<p>・商品画像を一括で削除したい場合は入力欄に画像ヘッダ（サイズの前まで）を入力して</p>
+						<p>　商品画像一括削除ボタンを押してください。</p>
+						<p>　例:「image」を入力して実行した場合、「image_S.jpg」「image_M.jpg」・・・が削除されます。</p>
+					</td>
+				</tr>
+			</table>
+			@LayoutHelper.Padding(10)
+		</td>
+	</tr>
+</table>
+<script type="text/javascript">
+
+	// 初期表示はROOTが選択状態なのでダウンロードと削除とリネームをdisabledに
+	window.onload = function () {
+		set_disabled_attribute(true);
+	}
+
+	// フォルダ作成
+	function make_directory() {
+		$.ajax({
+				url: 'MakeDirectory',
+				type: 'POST',
+				data: {
+				}
+			})
+			.done(function (data) {
+				if (data.data[0] !== "") {
+					notification.show(data.data[0], 'warning', 'fixed');
+				} else {
+					// 作成後ディレクトリがクリックされたときと同じような状況にするために値セット
+					$('input[name="clickPath"]').val(data.data[1]);
+
+					var regexp = /([^\\]+?)?\\$/;
+					var name = regexp.exec(data.data[1]);
+
+					$('#rename').val(name[1]);
+
+					// TreeView更新
+					$('form[name="treeView"]').submit();
+
+					set_disabled_attribute(false);
+				}
+			});
+	}
+
+	// 削除
+	function delete_click() {
+		$.ajax({
+				url: 'Delete',
+				type: 'POST',
+				data: {
+				}
+			})
+			.done(function (data) {
+				if (data.data[0] !== "") {
+					notification.show(data.data[0], 'warning', 'fixed');
+				} else {
+					// 親ディレクトリがクリックされたときと同じような状況にするために値セット
+					$('input[name="clickPath"]').val(data.data[1]);
+
+					var regexp = /([^\\]+?)?\\$/;
+					var name = regexp.exec(data.data[1]);
+
+					if (name != null) {
+						$('#rename').val(name[1]);
+					} else {
+						$('#rename').val("");
+						set_disabled_attribute(true);
+					}
+
+					// TreeView更新
+					$('form[name="treeView"]').submit();
+
+					$('#upload_error_message.notice').html("");
+				}
+			});
+	}
+
+	// ディレクトリ削除確認メッセージ
+	function delete_directory_message() {
+		var path = $('input[name="clickPath"]').val().replace(/\\/g, '/');
+
+		var msg = "以下のファイル/ディレクトリを削除します。よろしいですか？\r\n" +
+			"・ROOT/" + path ;
+
+		if (confirm(msg)) delete_click();
+	}
+
+	// 商品画像一括削除確認メッセージ
+	function delete_product_images_message() {
+		// ファイル選択中でもその上の親フォルダのパスにする
+		var regexp = /([^/]+?)?$/;
+		var current = $('input[name="clickPath"]').val().replace(/\\/g, '/').replace(regexp, "");
+
+		var imagePath;
+		var subImagePath;
+		if (current.match(/Contents\/ProductImages\//)) {
+			imagePath = current;
+			subImagePath = current.replace(/Contents\/ProductImages\//, 'Contents/ProductSubImages/');
+		} else {
+			imagePath = current.replace(/Contents\/ProductSubImages\//, 'Contents/ProductImages/');
+			subImagePath = current;
+		}
+
+		var imageHeader = $('input[name="fileNameWithoutSize"]').val();
+
+		var msg = "フォルダ\r\n" +
+			"・ROOT/" + imagePath + "\r\n" +
+			"・ROOT/" + subImagePath + "\r\n" +
+			"直下の\r\n" +
+			"「" + imageHeader + "」 から始まるファイル名の画像を削除します。\r\n" +
+			"よろしいですか？";
+
+		if (confirm(msg)) $('form[name=\'DeleteProductImages\']').submit();
+	}
+
+	// 商品画像一括削除
+	function delete_product_images_click(data) {
+		if (data.data[0] !== "") {
+			notification.show(data.data[0], 'warning', 'fixed');
+		} else {
+			$('input[name="clickPath"]').val(data.data[1]);
+			var regexp = /([^\\]+?)?\\$/;
+			var name = regexp.exec(data.data[1]);
+			$('#rename').val(name[1]);
+
+			$('#fileNameWithoutSize').val("");
+			$('#upload_error_message.notice').html("");
+			$('form[name=\"treeView\"]').submit();
+		}
+	}
+
+	// リネームした後のファイル・ディレクトリを選択状態にするために値をセット
+	function rename_click() {
+		var current = $('input[name="clickPath"]').val();
+		var rename = $('input[name="rename"]').val();
+
+		var regexp = /([^\\]+?)?\\$/;
+		var name = regexp.exec(current);
+
+		if (name == null) {
+			regexp = /([^\\]+?)?$/;
+			name = current.replace(regexp, rename);
+			$('input[name="clickPath"]').val(name);
+		} else {
+			name = current.replace(regexp, rename + "\\");
+			$('input[name="clickPath"]').val(name);
+		}
+
+		// TreeView更新
+		$('form[name="treeView"]').submit();
+	}
+
+	// ダウンロード、削除、リネームのボタンのdisabled属性を設定
+	function set_disabled_attribute(value) {
+		$('#downloadButton').prop("disabled", value);
+		$('#deleteButton').prop("disabled", value);
+		$('#renameButton').prop("disabled", value);
+	}
+
+	// PCサイト商品画像自動リサイズと商品画像一括削除とそのフォームのdisabled属性を設定
+	function set_disabled_attribute_product_form(value) {
+		$('#Input_AutoResize').prop("disabled", value);
+		$('#fileNameWithoutSize').prop("disabled", value);
+		$('#deleteProductImagesButton').prop("disabled", value);
+	}
+
+	var shortCutFlg = false;
+	// ショートカットをクリックしたときのスクロール
+	function scroll_position() {
+		if (shortCutFlg) {
+			$('#tree_view').scrollTop($('.selected_link').position().top + $('#tree_view').scrollTop());
+			shortCutFlg = false;
+		}
+
+		setTimeout(function () {
+				loading_animation.end();
+			},
+			300);
+	}
+
+	// 画面にドラッグ
+	$('.main-contents-inner').on("dragenter", function (e) {
+		e.stopPropagation();
+		e.preventDefault();
+
+		$('.loading').hide();
+
+		var optionMessage = "";
+		var zipDecompressFlg = $('#Input_ZipDecompress').prop("checked");
+		var autoResizeFlg = $('#Input_AutoResize').prop("checked");
+
+		if (zipDecompressFlg && autoResizeFlg) {
+			optionMessage = "※ZIPファイルは自動解凍、画像は自動リサイズします。";
+		} else {
+			if (zipDecompressFlg) {
+				optionMessage = "※ZIPファイルは自動解凍します。";
+			}
+			if (autoResizeFlg) {
+				optionMessage = "※画像は自動リサイズします。";
+			}
+		}
+
+		$('.upOption').html(optionMessage);
+
+		var regexp = /([^/]+?)?$/;
+		var upPath = $('input[name="clickPath"]').val().replace(/\\/g, '/').replace(regexp, "");
+		$('.upPath').html("ファイルは ROOT/" + upPath + " にアップロードされます。");
+
+		$('#contents-modal-btn').click();
+	});
+
+	function upload() {
+		$('form[name=\"treeView\"]').submit();
+		$('#file-select').text("  ファイル選択  ");
+		$('input[type=file]').val('');
+	}
+
+	$(function () {
+		// リサイズの入力フォーム表示・非表示
+		$('#Input_AutoResize').click(function() {
+			if (this.checked) {
+				$('#tableImageResizeSetting').show();
+			} else {
+				$('#tableImageResizeSetting').hide();
+			}
+		});
+
+		// ショートカットクリック
+		$(".tree_view_short_cut").click(function () {
+			loading_animation.start();
+			shortCutFlg = true;
+
+			var id = $(this).attr("id");
+			if (id.match(/Contents\/ProductImages\//) || id.match(/Contents\/ProductSubImages\//)) {
+
+				// PCサイト商品画像自動リサイズを有効化
+				set_disabled_attribute_product_form(false);
+
+				var imageType;
+				if (id.match(/Contents\/ProductImages\//)) {
+					imageType = "productImage";
+				} else {
+					imageType = "productSubImage";
+				}
+				$.ajax({
+						url: 'ReSize',
+						type: 'POST',
+						data: {
+							'imageType': imageType
+						}
+					})
+					.done(function (data) {
+						$('#ReSizeForm').html(data);
+					});
+
+			} else {
+				if ($('#Input_AutoResize').prop("checked")) {
+					$('#Input_AutoResize').click();
+					$('#tableImageResizeSetting').hide();
+				}
+				set_disabled_attribute_product_form(true);
+			}
+
+			set_disabled_attribute(false);
+
+			// リネームの横のテキストボックスに値セット
+			var regexp = /([^\/]+?)?\/$/;
+			var name = regexp.exec(id);
+			$('#rename').val(name[1]);
+
+			$('input[name="clickPath"]').val(id);
+			$('input[name="clickDir"]').val("True");
+			$('input[name="comeFromShortCut"]').val("True");
+			$('form[name="treeView"]').submit();
+
+			// ショートカットを元に戻す
+			$('input[name="comeFromShortCut"]').val("False");
+		});
+
+		$(document).on("dragover", '.modal-content-wrapper', function (e) {
+			e.stopPropagation();
+			e.preventDefault();
+		});
+
+		var $message = $('#upload_error_message.notice');
+
+		// モーダルにファイルをドロップ
+		$(document).on("drop", ".modal-content-wrapper",
+			function (_e) {
+				if (_e.originalEvent) {
+					var e = _e.originalEvent;
+					e.stopPropagation();
+					e.preventDefault();
+
+					var dt = e.dataTransfer;
+					var files = dt.files;
+
+					var userAgent = window.navigator.userAgent.toLowerCase();
+					var isIe = ((userAgent.indexOf('msie') != -1) ||
+						(userAgent.indexOf('trident') != -1));
+
+					if (files.length === 0) {
+						$('.modal-header-close-btn').click();
+
+						if (isIe) $message.html("フォルダはアップロードできません。");
+						return;
+					}
+
+					var fileNames = "";
+					for (var i = 0; i < files.length; i++) {
+						if (files[i].type == "") {
+							// ディレクトリが含まれている
+							$('.modal-header-close-btn').click();
+							$message.html("フォルダはアップロードできません。");
+							return;
+						}
+						if (files[i].size >= 20971520) {
+							$('.modal-header-close-btn').click();
+							$message.html("20メガバイト以上のファイルをアップロードすることは出来ません。");
+							return;
+						}
+
+						if (i < 10) {
+							if (i === files.length - 1) {
+								fileNames = fileNames + files[i].name;
+							} else {
+								if (i === 9 && files.length > 9) {
+									fileNames = fileNames + files[i].name + "など";
+								} else {
+									fileNames = fileNames + files[i].name + ", ";
+								}
+							}
+						}
+					}
+
+					var regexp = /([^/]+?)?$/;
+					var upPath = $('input[name="clickPath"]').val().replace(/\\/g, '/').replace(regexp, "");
+					var result = window.confirm(fileNames + "を" + "\r\n" +
+						"ROOT/" + upPath + "\r\n" +
+						"にアップロードしますか？");
+
+					if (result) {
+						$('input[name="clickDir"]').val("false");
+						$('.loading').show();
+
+						//async falseするとページの更新が効かないのでひとつずつAjax通信をして、そのコールバックで次のAjax通信を行なっている
+						syncUpload(files, 0, isIe);
+					} else {
+						$('.modal-header-close-btn').click();
+					}
+				}
+			});
+
+		//背景にドロップ時に画像を表示させなくする
+		$(document).on("dragover", ".modal-bg",
+			function (_e) {
+				_e.stopPropagation();
+				_e.preventDefault();
+				return;
+			});
+
+		$(document).on("drop", ".modal-bg",
+			function (_e) {
+				_e.stopPropagation();
+				_e.preventDefault();
+				$('.modal-header-close-btn').click();
+				return;
+			});
+
+		// ajaxだけど同期でアップロード
+		function syncUpload(files, i, isIe) {
+			if (i >= files.length) {
+				// ドラッグファイル数を超えたとき終了
+				$('.modal-header-close-btn').click();
+				$('form[name="treeView"]').submit();
+				notification.show('アップロート完了しました。', 'info', 'fadeout');
+				return;
+			}
+
+			var formData;
+
+			if (isIe) {
+				// IEだとsetメソッドが無いので全部appendする
+				formData = new FormData();
+				formData.append("Input.UploadContents", files[i]);
+				formData.append("Input.ZipDecompress", $('#Input_ZipDecompress').prop("checked"));
+				formData.append("Input.AutoResize", $('#Input_AutoResize').prop("checked"));
+				formData.append("Input.ImageSizeWidthS", $('#Input_ImageSizeWidthS').val());
+				formData.append("Input.ImageSizeWidthM", $('#Input_ImageSizeWidthM').val());
+				formData.append("Input.ImageSizeWidthL", $('#Input_ImageSizeWidthL').val());
+				formData.append("Input.ImageSizeWidthLL", $('#Input_ImageSizeWidthLL').val());
+				formData.append("Input.ImageSizeHeightS", $('#Input_ImageSizeHeightS').val());
+				formData.append("Input.ImageSizeHeightM", $('#Input_ImageSizeHeightM').val());
+				formData.append("Input.ImageSizeHeightL", $('#Input_ImageSizeHeightL').val());
+				formData.append("Input.ImageSizeHeightLL", $('#Input_ImageSizeHeightLL').val());
+			} else {
+				var form = $('form[name="contentsUpload"]').get(0);
+				formData = new FormData(form);
+				formData.set("Input.UploadContents", files[i], files[i].filename);
+			}
+
+			$.ajax({
+				url: "Upload",
+				type: "POST",
+				dataType: 'json',
+				data: formData,
+				processData: false,
+				contentType: false,
+			}).done(function (data) {
+				$message.html(data);
+				i++;
+				syncUpload(files, i, isIe);
+			});
+		}
+
+		$('input[type=file]').on('change', function () {
+			//ファイル名表示
+			$('#file-select').text($(this).prop('files')[0].name);
+		});
+	});
+
+	function submit_contentsupload_form() {
+		var files = $('#Input_UploadContents').prop('files');
+		for (var i = 0; i < files.length; i++) {
+			if (files[i].size >= 20971520) {
+				$('#upload_error_message.notice').html("20メガバイト以上のファイルをアップロードすることは出来ません。");
+				return;
+			}
+		}
+		$('form[name="contentsUpload"]').submit();
+	}
+</script>

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品バリエーション系SQLステートメントXML(Product.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductVariation>
+
+  <!-- 削除する商品バリエーション取得 -->
+  <GetDeleteProductVariationList>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductVariation
+         WHERE  w2_ProductVariation.shop_id = @shop_id 
+           AND  w2_ProductVariation.product_id = @product_id
+           AND  w2_ProductVariation.variation_id NOT IN ( @@ update_variation_ids @@ )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetDeleteProductVariationList>
+  
+  <!-- 商品バリエーション情報削除 -->
+  <DeleteProductVariation>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductVariation
+         WHERE  w2_ProductVariation.shop_id = @shop_id 
+           AND  w2_ProductVariation.product_id = @product_id
+           AND  w2_ProductVariation.variation_id NOT IN ( @@ update_variation_ids @@ )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductVariation>
+
+  <!-- 商品バリエーション情報削除 -->
+  <DeleteProductVariationAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductVariation
+         WHERE  w2_ProductVariation.shop_id = @shop_id 
+           AND  w2_ProductVariation.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductVariationAll>
+
+  <!-- 商品バリエーション情報登録/更新 -->
+  <InsertUpdateProductVariation>
+    <Statement>
+      <![CDATA[
+        -- なければ登録、あれば更新
+        IF (
+            SELECT  COUNT(variation_id)
+              FROM  w2_ProductVariation
+             WHERE  shop_id = @shop_id
+               AND  product_id = @product_id
+               AND  variation_id = @variation_id) = 0
+        BEGIN
+          -- 登録
+          INSERT  w2_ProductVariation
+                  (
+                    w2_ProductVariation.shop_id, 
+                    w2_ProductVariation.product_id, 
+                    w2_ProductVariation.variation_id, 
+                    w2_ProductVariation.variation_cooperation_id1, 
+                    w2_ProductVariation.variation_cooperation_id2, 
+                    w2_ProductVariation.variation_cooperation_id3, 
+                    w2_ProductVariation.variation_cooperation_id4, 
+                    w2_ProductVariation.variation_cooperation_id5, 
+                    w2_ProductVariation.variation_download_url,
+                    w2_ProductVariation.mall_variation_id1, 
+                    w2_ProductVariation.mall_variation_id2, 
+                    w2_ProductVariation.mall_variation_type, 
+                    w2_ProductVariation.variation_name1, 
+                    w2_ProductVariation.variation_name2, 
+                    w2_ProductVariation.variation_name3,
+                    w2_ProductVariation.variation_color_id,
+                    w2_ProductVariation.price, 
+                    w2_ProductVariation.special_price, 
+                    w2_ProductVariation.variation_image_head, 
+                    w2_ProductVariation.display_order, 
+                    w2_ProductVariation.date_created, 
+                    w2_ProductVariation.date_changed, 
+                    w2_ProductVariation.last_changed,
+                    w2_ProductVariation.variation_fixed_purchase_firsttime_price,
+                    w2_ProductVariation.variation_fixed_purchase_price,
+                    w2_ProductVariation.variation_cooperation_id6,
+                    w2_ProductVariation.variation_cooperation_id7,
+                    w2_ProductVariation.variation_cooperation_id8,
+                    w2_ProductVariation.variation_cooperation_id9,
+                    w2_ProductVariation.variation_cooperation_id10,
+                    w2_ProductVariation.variation_andmall_reservation_flg,
+                    w2_ProductVariation.variation_weight_gram,
+                    w2_ProductVariation.variation_add_cart_url_limit_flg
+                  ) 
+            VALUES
+                 (
+                    @shop_id, 
+                    @product_id, 
+                    @variation_id,
+                    @variation_cooperation_id1,
+                    @variation_cooperation_id2,
+                    @variation_cooperation_id3,
+                    @variation_cooperation_id4,
+                    @variation_cooperation_id5,
+                    @variation_download_url,
+                    @mall_variation_id1, 
+                    @mall_variation_id2, 
+                    @mall_variation_type, 
+                    @variation_name1, 
+                    @variation_name2, 
+                    @variation_name3,
+                    @variation_color_id,
+                    @price, 
+                    @special_price, 
+                    @variation_image_head, 
+                    @display_order, 
+                    getdate(),
+                    getdate(), 
+                    @last_changed,
+                    @variation_fixed_purchase_firsttime_price,
+                    @variation_fixed_purchase_price,
+                    @variation_cooperation_id6,
+                    @variation_cooperation_id7,
+                    @variation_cooperation_id8,
+                    @variation_cooperation_id9,
+                    @variation_cooperation_id10,
+                    @variation_andmall_reservation_flg,
+                    @variation_weight_gram,
+                    @variation_add_cart_url_limit_flg
+                  )
+        END
+        ELSE
+        BEGIN
+          UPDATE  w2_ProductVariation
+             SET  variation_id = @variation_id,
+                  variation_cooperation_id1 = @variation_cooperation_id1,
+                  variation_cooperation_id2 = @variation_cooperation_id2,
+                  variation_cooperation_id3 = @variation_cooperation_id3,
+                  variation_cooperation_id4 = @variation_cooperation_id4,
+                  variation_cooperation_id5 = @variation_cooperation_id5,
+                  variation_download_url = @variation_download_url,
+                  mall_variation_id1 = @mall_variation_id1,
+                  mall_variation_id2 = @mall_variation_id2,
+                  mall_variation_type = @mall_variation_type,
+                  variation_name1 = @variation_name1,
+                  variation_name2 = @variation_name2,
+                  variation_name3 = @variation_name3,
+                  variation_color_id = @variation_color_id,
+                  price = @price,
+                  special_price = @special_price,
+                  variation_image_head = @variation_image_head,
+                  display_order = @display_order,
+                  date_changed = GETDATE(),
+                  last_changed = @last_changed,
+                  variation_fixed_purchase_firsttime_price = @variation_fixed_purchase_firsttime_price,
+                  variation_fixed_purchase_price = @variation_fixed_purchase_price,
+                  variation_cooperation_id6 = @variation_cooperation_id6,
+                  variation_cooperation_id7 = @variation_cooperation_id7,
+                  variation_cooperation_id8 = @variation_cooperation_id8,
+                  variation_cooperation_id9 = @variation_cooperation_id9,
+                  variation_cooperation_id10 = @variation_cooperation_id10,
+                  variation_andmall_reservation_flg = @variation_andmall_reservation_flg,
+                  variation_weight_gram = @variation_weight_gram,
+                  variation_add_cart_url_limit_flg = @variation_add_cart_url_limit_flg
+           WHERE  shop_id = @shop_id
+             AND  product_id = @product_id
+             AND  variation_id = @variation_id
+        END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="variation_cooperation_id1" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id2" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id3" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id4" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id5" Type="nvarchar" Size="30" />
+      <Input Name="mall_variation_id1" Type="nvarchar" Size="30" />
+      <Input Name="mall_variation_id2" Type="nvarchar" Size="30" />
+      <Input Name="mall_variation_type" Type="nvarchar" Size="10" />
+      <Input Name="variation_name1" Type="nvarchar" Size="30" />
+      <Input Name="variation_name2" Type="nvarchar" Size="30" />
+      <Input Name="variation_name3" Type="nvarchar" Size="30" />
+      <Input Name="variation_color_id" Type="nvarchar" Size="30" />
+      <Input Name="price" Type="decimal" Size="18,3" />
+      <Input Name="special_price" Type="decimal" Size="18,3" />
+      <Input Name="variation_image_head" Type="nvarchar" Size="50" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="variation_download_url" Type="nvarchar" Size="max" />
+      <Input Name="variation_fixed_purchase_firsttime_price" Type="decimal" Size="18,3" />
+      <Input Name="variation_fixed_purchase_price" Type="decimal" Size="18,3" />
+      <Input Name="variation_cooperation_id6" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id7" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id8" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id9" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id10" Type="nvarchar" Size="50" />
+      <Input Name="variation_andmall_reservation_flg" Type="nvarchar" Size="3" />
+      <Input Name="variation_weight_gram" Type="int" />
+      <Input Name="variation_add_cart_url_limit_flg" Type="nvarchar" Size="1" />
+
+    </Parameter>
+  </InsertUpdateProductVariation>
+
+</ProductVariation>

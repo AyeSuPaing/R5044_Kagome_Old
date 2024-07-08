@@ -1,0 +1,615 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メールテンプレートマスタ系SQLステートメントXML (MailTemplate.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<MailTemplate>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_MailTemplate
+                [[ MAILTEMPLATE_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+
+  <!-- 検索ヒット件数取得 -->
+	<GetSearchHitCountExcludeCategory>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_MailTemplate
+                [[ MAILTEMPLATE_SEARCH_WHERE ]]
+           AND  w2_MailTemplate.mail_category NOT IN (@@ mail_categorys @@)
+      ]]>
+    </Statement>
+  </GetSearchHitCountExcludeCategory>
+  
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MailTemplate.*
+          FROM  (
+                  SELECT  w2_MailTemplate.shop_id,
+                          w2_MailTemplate.mail_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MAILTEMPLATE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MailTemplate
+                          [[ MAILTEMPLATE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_MailTemplate ON
+                (
+                  RowIndex.shop_id = w2_MailTemplate.shop_id
+                  AND
+                  RowIndex.mail_id = w2_MailTemplate.mail_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 検索(特定のカテゴリーを除く) -->
+	<SearchExcludeCategory>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MailTemplate.*
+          FROM  (
+                  SELECT  w2_MailTemplate.shop_id,
+                          w2_MailTemplate.mail_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MAILTEMPLATE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MailTemplate
+                          [[ MAILTEMPLATE_SEARCH_WHERE ]]
+                     AND  w2_MailTemplate.mail_category NOT IN (@@ mail_categorys @@)
+                ) AS RowIndex
+                INNER JOIN w2_MailTemplate ON
+                (
+                  RowIndex.shop_id = w2_MailTemplate.shop_id
+                  AND
+                  RowIndex.mail_id = w2_MailTemplate.mail_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchExcludeCategory>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailTemplate
+         WHERE  shop_id = @shop_id
+           AND  mail_id = @mail_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Get>
+
+  <!-- 取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailTemplate
+         WHERE  shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAll>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_MailTemplate
+                (
+                  shop_id
+                  ,mail_id
+                  ,mail_name
+                  ,mail_from
+                  ,mail_to
+                  ,mail_cc
+                  ,mail_bcc
+                  ,mail_subject
+                  ,mail_body
+                  ,mail_subject_mobile
+                  ,mail_body_mobile
+                  ,mail_attachmentfile_path
+                  ,del_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,mail_from_name
+                  ,mail_category
+                  ,auto_send_flg
+                  ,language_code
+                  ,language_locale_id
+                  ,sms_use_flg
+                  ,line_use_flg
+                  ,mailtext_html
+                  ,sendhtml_flg
+                )
+        VALUES  (
+                  @shop_id
+                  ,@mail_id
+                  ,@mail_name
+                  ,@mail_from
+                  ,@mail_to
+                  ,@mail_cc
+                  ,@mail_bcc
+                  ,@mail_subject
+                  ,@mail_body
+                  ,@mail_subject_mobile
+                  ,@mail_body_mobile
+                  ,@mail_attachmentfile_path
+                  ,@del_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@mail_from_name
+                  ,@mail_category
+                  ,@auto_send_flg
+                  ,@language_code
+                  ,@language_locale_id
+                  ,@sms_use_flg
+                  ,@line_use_flg
+                  ,@mailtext_html
+                  ,@sendhtml_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_from" Type="nvarchar" Size="256" />
+      <Input Name="mail_to" Type="nvarchar" Size="1000" />
+      <Input Name="mail_cc" Type="nvarchar" Size="1000" />
+      <Input Name="mail_bcc" Type="nvarchar" Size="1000" />
+      <Input Name="mail_subject" Type="nvarchar" Size="500" />
+      <Input Name="mail_body" Type="ntext" />
+      <Input Name="mail_subject_mobile" Type="nvarchar" Size="500" />
+      <Input Name="mail_body_mobile" Type="ntext" />
+      <Input Name="mail_attachmentfile_path" Type="nvarchar" Size="256" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="mail_from_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_category" Type="nvarchar" Size="20" />
+      <Input Name="auto_send_flg" Type="nvarchar" Size="1" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="sms_use_flg" Type="nvarchar" Size="1" />
+      <Input Name="line_use_flg" Type="nvarchar" Size="1" />
+      <Input Name="mailtext_html" Type="nvarchar" Size="MAX" />
+      <Input Name="sendhtml_flg" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Insert>
+  
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MailTemplate
+           SET  mail_name = @mail_name
+                ,mail_from = @mail_from
+                ,mail_to = @mail_to
+                ,mail_cc = @mail_cc
+                ,mail_bcc = @mail_bcc
+                ,mail_subject = @mail_subject
+                ,mail_body = @mail_body
+                ,mail_subject_mobile = @mail_subject_mobile
+                ,mail_body_mobile = @mail_body_mobile
+                ,mail_attachmentfile_path = @mail_attachmentfile_path
+                ,del_flg = @del_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,mail_from_name = @mail_from_name
+                ,mail_category = @mail_category
+                ,auto_send_flg = @auto_send_flg
+                ,language_code = @language_code
+                ,language_locale_id = @language_locale_id
+                ,sms_use_flg = @sms_use_flg
+                ,line_use_flg = @line_use_flg
+                ,mailtext_html = @mailtext_html
+                ,sendhtml_flg = @sendhtml_flg
+         WHERE  shop_id = @shop_id
+           AND  mail_id = @mail_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_from" Type="nvarchar" Size="256" />
+      <Input Name="mail_to" Type="nvarchar" Size="1000" />
+      <Input Name="mail_cc" Type="nvarchar" Size="1000" />
+      <Input Name="mail_bcc" Type="nvarchar" Size="1000" />
+      <Input Name="mail_subject" Type="nvarchar" Size="500" />
+      <Input Name="mail_body" Type="ntext" />
+      <Input Name="mail_subject_mobile" Type="nvarchar" Size="500" />
+      <Input Name="mail_body_mobile" Type="ntext" />
+      <Input Name="mail_attachmentfile_path" Type="nvarchar" Size="256" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="mail_from_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_category" Type="nvarchar" Size="20" />
+      <Input Name="auto_send_flg" Type="nvarchar" Size="1" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="sms_use_flg" Type="nvarchar" Size="1" />
+      <Input Name="line_use_flg" Type="nvarchar" Size="1" />
+      <Input Name="mailtext_html" Type="nvarchar" Size="MAX" />
+      <Input Name="sendhtml_flg" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MailTemplate
+         WHERE  shop_id = @shop_id
+           AND  mail_id = @mail_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+
+  <!-- カテゴリからのメールテンプレート情報取得-->
+  <GetMailTemplateByCategory>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailTemplate
+         WHERE  w2_MailTemplate.shop_id = @shop_id
+           AND  w2_MailTemplate.mail_category IN (@@ mail_categorys @@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMailTemplateByCategory>
+
+  <!-- カテゴリからのメールテンプレート情報取得(グローバル設定含む)-->
+  <GetMailTemplateContainsGlobalSettingByCategory>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MailTemplate.*
+          FROM  w2_MailTemplate
+         WHERE  w2_MailTemplate.shop_id = @shop_id
+           AND  w2_MailTemplate.mail_category IN (@@ mail_categorys @@)
+        UNION ALL
+        SELECT  w2_MailTemplateGlobal.shop_id,
+                w2_MailTemplateGlobal.mail_id,
+                w2_MailTemplateGlobal.mail_name,
+                w2_MailTemplateGlobal.mail_from,
+                w2_MailTemplateGlobal.mail_to,
+                w2_MailTemplateGlobal.mail_cc,
+                w2_MailTemplateGlobal.mail_bcc,
+                w2_MailTemplateGlobal.mail_subject,
+                w2_MailTemplateGlobal.mail_body,
+                '' AS mail_subject_mobile,
+                '' AS mail_body_mobile,
+                '' AS del_flg,
+                w2_MailTemplateGlobal.mail_attachmentfile_path,
+                w2_MailTemplateGlobal.date_created,
+                w2_MailTemplateGlobal.date_changed,
+                w2_MailTemplateGlobal.last_changed,
+                w2_MailTemplateGlobal.mail_from_name,
+                w2_MailTemplateGlobal.mail_category,
+                w2_MailTemplateGlobal.auto_send_flg,
+                w2_MailTemplateGlobal.language_code,
+                w2_MailTemplateGlobal.language_locale_id
+          FROM  w2_MailTemplateGlobal
+         WHERE  w2_MailTemplateGlobal.shop_id = @shop_id
+           AND  w2_MailTemplateGlobal.mail_category IN (@@ mail_categorys @@)
+        ORDER BY mail_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMailTemplateContainsGlobalSettingByCategory>
+
+  <!-- 言語コードで取得 -->
+  <GetByLanguageCode>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailTemplate
+         WHERE  shop_id = @shop_id
+           AND  mail_id = @mail_id
+           AND  language_code = @language_code
+           AND  language_locale_id = @language_locale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetByLanguageCode>
+
+  <!-- グローバル設定登録 -->
+  <InsertGlobalSetting>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_MailTemplateGlobal
+                (
+                  shop_id
+                  ,mail_id
+                  ,language_code
+                  ,language_locale_id
+                  ,mail_name
+                  ,mail_from
+                  ,mail_to
+                  ,mail_cc
+                  ,mail_bcc
+                  ,mail_subject
+                  ,mail_body
+                  ,mail_attachmentfile_path
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,mail_from_name
+                  ,mail_category
+                  ,auto_send_flg
+                  ,sms_use_flg
+                  ,mailtext_html
+                  ,sendhtml_flg
+                )
+        VALUES  (
+                  @shop_id
+                  ,@mail_id
+                  ,@language_code
+                  ,@language_locale_id
+                  ,@mail_name
+                  ,@mail_from
+                  ,@mail_to
+                  ,@mail_cc
+                  ,@mail_bcc
+                  ,@mail_subject
+                  ,@mail_body
+                  ,@mail_attachmentfile_path
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@mail_from_name
+                  ,@mail_category
+                  ,@auto_send_flg
+                  ,@sms_use_flg
+                  ,@mailtext_html
+                  ,@sendhtml_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="mail_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_from" Type="nvarchar" Size="256" />
+      <Input Name="mail_to" Type="nvarchar" Size="1000" />
+      <Input Name="mail_cc" Type="nvarchar" Size="1000" />
+      <Input Name="mail_bcc" Type="nvarchar" Size="1000" />
+      <Input Name="mail_subject" Type="nvarchar" Size="500" />
+      <Input Name="mail_body" Type="ntext" />
+      <Input Name="mail_attachmentfile_path" Type="nvarchar" Size="256" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="mail_from_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_category" Type="nvarchar" Size="20" />
+      <Input Name="auto_send_flg" Type="nvarchar" Size="1" />
+      <Input Name="sms_use_flg" Type="nvarchar" Size="1" />
+      <Input Name="mailtext_html" Type="nvarchar" Size="MAX" />
+      <Input Name="sendhtml_flg" Type="nvarchar" Size="10" />
+    </Parameter>
+  </InsertGlobalSetting>
+
+  <!-- グローバル設定更新 -->
+  <UpdateGlobalSetting>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MailTemplateGlobal
+           SET  mail_name = @mail_name
+                ,mail_from = @mail_from
+                ,mail_to = @mail_to
+                ,mail_cc = @mail_cc
+                ,mail_bcc = @mail_bcc
+                ,mail_subject = @mail_subject
+                ,mail_body = @mail_body
+                ,mail_attachmentfile_path = @mail_attachmentfile_path
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,mail_from_name = @mail_from_name
+                ,mail_category = @mail_category
+                ,auto_send_flg = @auto_send_flg
+                ,sms_use_flg = @sms_use_flg
+                ,mailtext_html = @mailtext_html
+                ,sendhtml_flg = @sendhtml_flg
+         WHERE  shop_id = @shop_id
+           AND  mail_id = @mail_id
+           AND  language_code = @language_code
+           AND  language_locale_id = @language_locale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="mail_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_from" Type="nvarchar" Size="256" />
+      <Input Name="mail_to" Type="nvarchar" Size="1000" />
+      <Input Name="mail_cc" Type="nvarchar" Size="1000" />
+      <Input Name="mail_bcc" Type="nvarchar" Size="1000" />
+      <Input Name="mail_subject" Type="nvarchar" Size="500" />
+      <Input Name="mail_body" Type="ntext" />
+      <Input Name="mail_attachmentfile_path" Type="nvarchar" Size="256" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="mail_from_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_category" Type="nvarchar" Size="20" />
+      <Input Name="auto_send_flg" Type="nvarchar" Size="1" />
+      <Input Name="sms_use_flg" Type="nvarchar" Size="1" />
+      <Input Name="mailtext_html" Type="nvarchar" Size="MAX" />
+      <Input Name="sendhtml_flg" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateGlobalSetting>
+
+  <!-- グローバル設定取得 -->
+  <GetGlobalSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MailTemplateGlobal.shop_id,
+                w2_MailTemplateGlobal.mail_id,
+                w2_MailTemplateGlobal.language_code,
+                w2_MailTemplateGlobal.language_locale_id,
+                w2_MailTemplate.mail_name,
+                w2_MailTemplateGlobal.mail_from,
+                w2_MailTemplateGlobal.mail_to,
+                w2_MailTemplateGlobal.mail_cc,
+                w2_MailTemplateGlobal.mail_bcc,
+                w2_MailTemplateGlobal.mail_subject,
+                w2_MailTemplateGlobal.mail_body,
+                w2_MailTemplateGlobal.mail_attachmentfile_path,
+                w2_MailTemplateGlobal.date_created,
+                w2_MailTemplateGlobal.date_changed,
+                w2_MailTemplateGlobal.last_changed,
+                w2_MailTemplateGlobal.mail_from_name,
+                w2_MailTemplateGlobal.mail_category,
+                w2_MailTemplateGlobal.auto_send_flg,
+                w2_MailTemplateGlobal.sms_use_flg,
+                w2_MailTemplateGlobal.mailtext_html,
+                w2_MailTemplateGlobal.sendhtml_flg
+          FROM  w2_MailTemplateGlobal
+                INNER JOIN w2_MailTemplate ON
+                (
+                  w2_MailTemplate.shop_id = w2_MailTemplateGlobal.shop_id
+                  AND
+                  w2_MailTemplate.mail_id = w2_MailTemplateGlobal.mail_id
+                )
+         WHERE  w2_MailTemplateGlobal.shop_id = @shop_id
+           AND  w2_MailTemplateGlobal.mail_id = @mail_id
+           AND  w2_MailTemplateGlobal.language_code = @language_code
+           AND  w2_MailTemplateGlobal.language_locale_id = @language_locale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetGlobalSetting>
+
+  <!-- グローバル設定削除 -->
+  <DeleteGlobalSetting>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MailTemplateGlobal
+         WHERE  shop_id = @shop_id
+           AND  mail_id = @mail_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteGlobalSetting>
+
+  <!-- 指定された言語設定を削除 -->
+  <DeleteSpecifiedLanguageSetting>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MailTemplateGlobal
+         WHERE  w2_MailTemplateGlobal.shop_id = @shop_id
+           AND  w2_MailTemplateGlobal.mail_id = @mail_id
+           AND  w2_MailTemplateGlobal.language_code = @language_code
+           AND  w2_MailTemplateGlobal.language_locale_id = @language_locale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </DeleteSpecifiedLanguageSetting>
+
+  <!-- グローバル設定を含めてメールテンプレート情報取得 -->
+  <GetMailTemplateContainGlobalSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MailTemplateGlobal.shop_id,
+                w2_MailTemplateGlobal.mail_id,
+                w2_MailTemplateGlobal.language_code,
+                w2_MailTemplateGlobal.language_locale_id
+          FROM  w2_MailTemplateGlobal
+         WHERE  shop_id = @shop_id
+           AND  mail_id = @mail_id
+                <@@hasval:language_code@@>
+           AND  language_code = @language_code
+                </@@hasval:language_code@@>
+                <@@hasval:language_locale_id@@>
+           AND  language_locale_id = @language_locale_id
+                </@@hasval:language_locale_id@@>
+        UNION ALL
+        SELECT  w2_MailTemplate.shop_id,
+                w2_MailTemplate.mail_id,
+                w2_MailTemplate.language_code,
+                w2_MailTemplate.language_locale_id
+          FROM  w2_MailTemplate
+         WHERE  shop_id = @shop_id
+           AND  mail_id = @mail_id
+                <@@hasval:language_code@@>
+           AND  language_code = @language_code
+                </@@hasval:language_code@@>
+                <@@hasval:language_locale_id@@>
+           AND  language_locale_id = @language_locale_id
+                </@@hasval:language_locale_id@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetMailTemplateContainGlobalSetting>
+
+</MailTemplate>

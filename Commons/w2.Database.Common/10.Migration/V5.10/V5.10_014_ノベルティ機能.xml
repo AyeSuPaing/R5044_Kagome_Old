@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+ALTER TABLE [w2_Cart] ADD [novelty_id] [nvarchar] (30) NOT NULL DEFAULT (N'');
+ALTER TABLE [w2_OrderItem] ADD [novelty_id] [nvarchar] (30) NOT NULL DEFAULT (N'');
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_Novelty]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_Novelty]
+GO
+/*
+=========================================================================================================
+  Module      : ノベルティ設定(w2_Novelty.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_Novelty] (
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[novelty_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[novelty_disp_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[novelty_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[discription] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[date_begin] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_end] [datetime],
+	[valid_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_Novelty] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_Novelty] PRIMARY KEY  CLUSTERED
+	(
+		[shop_id],
+		[novelty_id]
+	) ON [PRIMARY]
+GO
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_NoveltyGrantConditions]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_NoveltyGrantConditions]
+GO
+/*
+=========================================================================================================
+  Module      : ノベルティ付与条件(w2_NoveltyGrantConditions.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_NoveltyGrantConditions] (
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[novelty_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[condition_no] [int] NOT NULL DEFAULT (1),
+	[user_rank_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[amount_begin] [decimal] NOT NULL DEFAULT (0),
+	[amount_end] [decimal],
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_NoveltyGrantConditions] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_NoveltyGrantConditions] PRIMARY KEY  CLUSTERED
+	(
+		[shop_id],
+		[novelty_id],
+		[condition_no]
+	) ON [PRIMARY]
+GO
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_NoveltyGrantItem]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_NoveltyGrantItem]
+GO
+/*
+=========================================================================================================
+  Module      : ノベルティ付与アイテム(w2_NoveltyGrantItem.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_NoveltyGrantItem] (
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[novelty_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[condition_no] [int] NOT NULL DEFAULT (1),
+	[product_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[sort_no] [int] NOT NULL DEFAULT (1),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_NoveltyGrantItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_NoveltyGrantItem] PRIMARY KEY  CLUSTERED
+	(
+		[shop_id],
+		[novelty_id],
+		[condition_no],
+		[product_id]
+	) ON [PRIMARY]
+GO
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_NoveltyTargetItem]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_NoveltyTargetItem]
+GO
+/*
+=========================================================================================================
+  Module      : ノベルティ対象アイテム(w2_NoveltyTargetItem.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_NoveltyTargetItem] (
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[novelty_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[novelty_target_item_no] [int] NOT NULL DEFAULT (1),
+	[novelty_target_item_type] [nvarchar] (30) NOT NULL DEFAULT (N'ALL'),
+	[novelty_target_item_value] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[novelty_target_item_type_sort_no] [int] NOT NULL DEFAULT (1),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_NoveltyTargetItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_NoveltyTargetItem] PRIMARY KEY  CLUSTERED
+	(
+		[shop_id],
+		[novelty_id],
+		[novelty_target_item_no],
+		[novelty_target_item_type],
+		[novelty_target_item_value]
+	) ON [PRIMARY]
+GO
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

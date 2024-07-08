@@ -1,0 +1,686 @@
+﻿@*
+=========================================================================================================
+  Module      : ショートURL設定ページ(List.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.ShortUrl
+@using w2.Common.Web
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.ViewModels.ShortUrl
+@model w2.Cms.Manager.ViewModels.ShortUrl.ShortUrlListViewModel
+@{
+	ViewBag.Title = "ショートURL設定";
+	Layout = Model.PageLayout;
+}
+
+@helper ButtonArea(bool isShowResultMessage) {
+	if (Model.IsShowEditButton()) {
+		<td class="action_list_sp">
+			<input name="ToEdit" type="submit" value="  編集する  " formmethod="post" class="btn btn-main"/>
+		</td>
+	}
+	if (Model.DisplayMode == ShortUrlListViewModel.Mode.Edit) {
+		<td class="action_list_sp">
+			<input name="ToList" type="submit" value="  一覧へ戻る  " formmethod="post" class="btn btn-main"/>
+			@if (Model.SearchResult.Count != 0) {
+				<input type="button" value="  このページの一括更新  " class="btn btn-main" onclick="return validate_short_url('update');">
+				<input type="submit" name="BulkUpdate" id="update" style="display: none;" onclick="return CheckUpdateShortAddress();" formmethod="post">
+			}
+		</td>
+	}
+	if (Model.DisplayMode == ShortUrlListViewModel.Mode.Result) {
+		if(isShowResultMessage)
+		{
+			<td width="675">以下のショートURL情報を更新いたしました｡</td>
+		}
+		<td width="83" class="action_list_sp">
+			<input name="ToContinue" type="submit" value="  続けて処理をする  " formmethod="post" class="btn btn-main"/>
+		</td>
+	}
+}
+
+@using (Html.BeginForm("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_SHORT_URL, FormMethod.Get,new{ Id ="input_form"})) {
+	<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<!--▽ タイトル ▽-->
+	<tr><td><h1 class="page-title">ショートURL設定</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	<tr><td><h2 class="cmn-hed-h2">ショートURL一覧</h2></td></tr>
+	<!--△ タイトル △-->
+	<!--▽ 検索 ▽-->
+	<tr>
+		<td style="width: 792px">
+			<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+				<tr>
+					<td class="search_box_bg">
+						<table cellspacing="0" cellpadding="0" width="100%" border="0">
+							<tr>
+								<td align="center">
+									<table cellspacing="0" cellpadding="0" border="0">
+										<tr>
+											<td class="search_table">
+												<table cellspacing="1" cellpadding="2" width="758" border="0">
+													<tr>
+														<td class="search_title_bg" width="100">ショートURL</td>
+														<td class="search_item_bg" width="348">
+															<input type="text" name="ShortUrl" value="@Model.ParamModel.ShortUrl" style="width: 90%"/>
+														</td>
+														<td class="search_title_bg" width="100">並び順</td>
+														<td class="search_item_bg" width="130">
+															@Html.DropDownListFor(model => model.ParamModel.SortKbn, new SelectList(Model.SortKbnItems, "Value", "Text"), "", new {
+																Name = "SortKbn"
+															})
+														</td>
+														<td class="search_btn_bg" width="80" rowspan="4">
+															<div class="search_btn_main">
+																<input type="submit" name="search" value="  検索  " formmethod="post" class="btn btn-main"/>
+															</div>
+															<div class="search_btn_sub">
+																@Html.ActionLink("クリア", "List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_SHORT_URL)
+															</div>
+														</td>
+													</tr>
+													<tr>
+														<td class="search_title_bg" width="100">ロングURL</td>
+														<td class="search_item_bg" width="348" colspan="3">
+															<input type="text" name="LongUrl" value="@Model.ParamModel.LongUrl" style="width: 90%"/>
+															<input type="hidden" name="ProtocolAndDomain" value="@w2.App.Common.ShortUrl.ShortUrl.URL_TOP_S" />
+														</td>
+													</tr>
+												</table>
+											</td>
+										</tr>
+										<tr>
+											@LayoutHelper.PaddingTr(10)
+											<td class="search_table">
+												<table cellspacing="1" cellpadding="2" width="758" border="0">
+													<tr>
+														<td class="search_title_bg" width="115">データ出力</td>
+														<td class="search_item_bg">
+															@Html.DropDownListFor(model => model.ParamModel.DataExportType, new SelectList(Model.ExportFiles, "Value", "Text"), "", new {
+																Name = "DataExportType",
+																style = "width: 600px;"
+															})
+															<input type="button" value="  出力  " class="btn btn-main" onclick="return validate_short_url('export');">
+															<input type="submit" name="Export" id="export" style="display: none;" formmethod="post">
+														</td>
+													</tr>
+												</table>
+											</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+							<tr>
+								<td>@LayoutHelper.PaddingTr(10)</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<!--△ 検索 △-->
+	@LayoutHelper.PaddingTr(10)
+	<!--▽ 一覧 ▽-->
+	<tr>
+		<td>
+			<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+				<tr>
+					<td>
+						<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+							<tr>
+								<td align="center">
+									<table cellspacing="0" cellpadding="0" border="0">
+										@LayoutHelper.PaddingTr(6)
+										<tr>
+											<td>
+												<div class="action_part_top">
+													<!--▽ ページング ▽-->
+													<input type="hidden" name="PagerNo" value="@Model.ParamModel.PagerNo"/>
+													<table class="list_pager" cellspacing="0" cellpadding="0" width="758" border="0">
+														<tr>
+															@if (Model.DisplayMode != ShortUrlListViewModel.Mode.Result) {
+																<td width="675" style="height: 22px">
+																	@Html.Raw(Model.PagerHtml)
+																</td>
+															}
+															@ButtonArea(true)
+														</tr>
+													</table>
+													<!--△ ページング △-->
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>
+												<table class="list_table" cellspacing="1" cellpadding="3" width="758" border="0">
+													<tr class="list_title_bg">
+														@if (Model.DisplayMode == ShortUrlListViewModel.Mode.Display) {
+															<td align="center" width="38">No</td>
+															<td align="center" width="637">ショートURL/ロングURL</td>
+															<td align="center" width="25">登録日</td>
+														}
+														@if (Model.DisplayMode == ShortUrlListViewModel.Mode.Edit) {
+															<td align="center" width="38">No</td>
+															<td align="center" width="637">ショートURL/ロングURL</td>
+															<td align="center" width="25">登録日</td>
+															<td align="center" width="58" alin="center">削除</td>
+														}
+														@if (Model.DisplayMode == ShortUrlListViewModel.Mode.Result) {
+															<td align="center" width="38">No</td>
+															<td align="center" width="662">ショートURL/ロングURL</td>
+															<td align="center" width="58">結果</td>
+														}
+													</tr>
+													@{ var lineNo = 1; }
+													@if (Model.DisplayMode == ShortUrlListViewModel.Mode.Display) {
+														for (var index = 0; index < Model.SearchResult.Count; index++) {
+															lineNo = (lineNo + 1) % 2;
+															var listItemBgClass = "list_item_bg" + (lineNo + 1).ToString();
+															<tr id="trItem" class="@listItemBgClass">
+																<td align="right">@Model.SearchResult[index].SurlNo</td>
+																<td>
+																	<table cellspacing="2">
+																		<tr>
+																			<td width="65">ショートURL</td>
+																			<td class="url_link_border" width="595">
+																				<a href="@(Model.SearchResult[index].ShortUrlWithProtocolAndDomain)" target="_blank">@Model.SearchResult[index].ShortUrlWithProtocolAndDomain</a>
+																			</td>
+																		</tr>
+																		<tr>
+																			<td width="65">ロングURL</td>
+																			<td class="url_link_border" width="595">
+																				<a href="@(Model.SearchResult[index].LongUrlWithProtocolAndDomain)" target="_blank">@Model.SearchResult[index].LongUrlWithProtocolAndDomain</a>
+																			</td>
+																		</tr>
+																	</table>
+																	<br>
+																</td>
+																<td align="center">@Model.SearchResult[index].DateCreated</td>
+															</tr>
+														}
+													}
+													@if (Model.DisplayMode == ShortUrlListViewModel.Mode.Edit) {
+														for (var index = 0; index < Model.ParamModel.BulkTargetInput.Length; index++) {
+															lineNo = (lineNo + 1) % 2;
+															var listItemBgClass = "list_item_bg" + (lineNo + 1).ToString();
+															<tr id="trItem" class="@listItemBgClass">
+																<td align="right">
+																	@Model.ParamModel.BulkTargetInput[index].SurlNo
+																	@Html.HiddenFor(m => m.ParamModel.BulkTargetInput[index].SurlNo, new {
+																		Name = "bt[" + index.ToString() + "].SurlNo"
+																	})
+																</td>
+																<td>
+																	<table cellspacing="2">
+																		<tr>
+																			<td>
+
+																			</td>
+																			<td>
+																				ショートURL&nbsp;
+																				@Html.TextBoxFor(m => m.ParamModel.BulkTargetInput[index].ShortUrl, new {
+																					style = "width: 80%",
+																					Name = "bt[" + index.ToString() + "].ShortUrl"
+																				})
+																				@Html.HiddenFor(m => m.ParamModel.BulkTargetInput[index].OriginalShortUrl, new {
+																					Name = "bt[" + index.ToString() + "].OriginalShortUrl"
+																				})
+																				<br/>
+																				ロングURL&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+																				@Html.TextBoxFor(m => m.ParamModel.BulkTargetInput[index].LongUrl, new {
+																					style = "width: 80%",
+																					Name = "bt[" + index.ToString() + "].LongUrl"
+																				})
+																				@Html.HiddenFor(m => m.ParamModel.BulkTargetInput[index].OriginalLongUrl, new {
+																					Name = "bt[" + index.ToString() + "].OriginalLongUrl"
+																				})
+																			</td>
+																		</tr>
+																	</table>
+																	<br>
+																</td>
+																<td align="center">@Model.SearchResult[index].DateCreated</td>
+																<td align="center">
+																	@{ var setsno = "return setsno('" + @Model.ParamModel.BulkTargetInput[index].SurlNo + "');"; }
+																	<input type="submit" onclick='@setsno' name="Delete" value="  削除  " formmethod="post" class="btn btn-main"/>
+																</td>
+															</tr>
+														}
+														<input type="hidden" name="DelSurlNo" id="DelSurlNo"/>
+													}
+													@if (Model.DisplayMode == ShortUrlListViewModel.Mode.Result) {
+														for (var index = 0; index < Model.SearchResult.Count; index++) {
+															lineNo = (lineNo + 1) % 2;
+															var listItemBgClass = "list_item_bg" + (lineNo + 1).ToString();
+															<tr class="@listItemBgClass">
+																<td align="right">@Model.SearchResult[index].SurlNo</td>
+																<td>
+																	<table cellspacing="2">
+																		<tr>
+																			<td width="65">ショートURL</td>
+																			<td class="url_link_border" width="595">
+																				<a href="@HtmlSanitizer.UrlAttrHtmlEncode(Model.SearchResult[index].ShortUrlWithProtocolAndDomain)" target="_blank">@Model.SearchResult[index].ShortUrlWithProtocolAndDomain</a>
+																			</td>
+																		</tr>
+																		<tr>
+																			<td width="65">ロングURL</td>
+																			<td class="url_link_border" width="595">
+																				<a href="@HtmlSanitizer.UrlAttrHtmlEncode(Model.SearchResult[index].LongUrlWithProtocolAndDomain)" target="_blank">@Model.SearchResult[index].LongUrlWithProtocolAndDomain</a>
+																			</td>
+																		</tr>
+																	</table>
+																</td>
+																<td align="center">@HtmlSanitizer.HtmlEncode("○")</td>
+															</tr>
+														}
+													}
+													@if (string.IsNullOrEmpty(Model.ErrorMessage) == false) {
+														<tr class="list_alert">
+															<td colspan="6">@Model.ErrorMessage</td>
+														</tr>
+													}
+												</table>
+											</td>
+										</tr>
+										@LayoutHelper.PaddingTr(10)
+										@if (Model.DisplayMode == ShortUrlListViewModel.Mode.Edit) {
+											<tr>
+												<td style="padding: 0pt 2pt 8pt 2pt">※「@ShortUrl.URL_TOP」は省略して表示しています。</td>
+											</tr>
+										}
+										@LayoutHelper.PaddingTr(10)
+										<tr>
+											<td>
+												<div class="action_part_top">
+													<!--▽ ページング ▽-->
+													<table class="list_pager" cellspacing="0" cellpadding="0" width="758" border="0">
+														<tr>
+															@ButtonArea(false)
+														</tr>
+													</table>
+													<!--△ ページング △-->
+												</div>
+											</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+						</table>
+						<!--△ 一覧 △-->
+					</td>
+				</tr>
+			</table>
+			@LayoutHelper.PaddingTr(10)
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<!--▽ 追加 ▽-->
+			<table id="tbdyAddShortUrl" runat="server">
+				<tr>
+					<td>
+						<h2 class="cmn-hed-h2">ショートURL設定追加</h2>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+							<tr>
+								<td>
+									<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+										<tr>
+											<td align="center">
+												<div id="divAddNew" runat="server">
+													<table cellspacing="0" cellpadding="0" border="0">
+														<tr>
+															<td>@LayoutHelper.PaddingTr(6)</td>
+														</tr>
+														<tr>
+															<td>
+																<table class="list_table" cellspacing="1" cellpadding="3" width="758" border="0">
+																	<tr class="list_title_bg">
+																		<td align="center" width="250">ショートURL</td>
+																		<td align="center" width="450">ロングURL</td>
+																		<td align="center" width="58">追加</td>
+																	</tr>
+																	<tr>
+																		<td align="left" class="list_item_bg1">
+																			@Html.TextBoxFor(m => m.ParamModel.RegisterInput.ShortUrl, new {
+																				style = "width: 90%",
+																				Name = "ri.ShortUrl"
+																			})
+																		</td>
+																		<td align="left" class="list_item_bg1">
+																			@Html.TextBoxFor(m => m.ParamModel.RegisterInput.LongUrl, new {
+																				style = "width: 90%",
+																				Name = "ri.LongUrl"
+																			})
+																		</td>
+																		<td align="center" class="list_item_bg1">
+																			<input type="text" name="PageLayout" value="@Model.ParamModel.PageLayout" style="display: none;"/>
+																			<input type="button" value="  登録  " class="btn btn-main" onclick="return validate_short_url('register');">
+																			<input type="submit" name="Register" id="register" style="display: none;" onclick="return CheckNewShortUrlDomain();" formmethod="post">
+																		</td>
+																	</tr>
+																</table>
+															</td>
+														</tr>
+														<tr>
+															<td>@LayoutHelper.PaddingTr(10)</td>
+														</tr>
+													</table>
+												</div>
+											</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<table class="info_table" cellspacing="1" cellpadding="3" width="758" border="0">
+							<tr class="info_item_bg">
+								<td align="left">備考<br/>
+									・本機能を利用することでショートURLに遷移したユーザーをロングURLに遷移させることができます。<br/>
+									・ショートURLの"http://"と"https://"は同じURLとして認識されます。（"https://"のみ登録してください。）<br/>
+									・ショートURLに
+									@foreach (string strExt in Constants.SHORTURL_DENY_EXTENSIONS) {
+										<text>「.@strExt」</text>
+									}
+									のファイルを含めないでください。<br/>
+									・ショートURLアクセス時に付与されたパラメータ（"?"から始まるURL）はロングURLに自動的に付与されます。<br/>
+									・実在するファイルに対してショートURLを設定すると、本機能が動作しませんので存在しないURLに対して設定を行ってください。<br/>
+									・ショートURLは先頭が「@ShortUrl.URL_TOP_S」でない場合は動作しません。<br/>
+									・入力するショート・ロングURLの先頭が「@ShortUrl.URL_TOP_S」の場合は、URLに「@ShortUrl.URL_TOP_S」を含めなくても構いません。
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	</table>
+}
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		var DOMAIN = "@Constants.SITE_DOMAIN";
+		var ERROR_MSG_SHORT_URL_EMPTY = "ショートURLは空では登録できません。";
+		var ERROR_MSG_LONG_URL_EMPTY = "ロングURLは空では登録できません。";
+		var ERROR_MSG_SAME_URL = "ショートURLとロングURLが同一では登録できません。";
+		var ERROR_MSG_URL_HAS_PARAM = "ショートURLはパラメータ指定のURLでは登録できません。";
+		var WARN_MSG_SHORT_URL_DOMAIN = "ショートURLの先頭が「http://" + DOMAIN + "/」でない場合は動作しませんが、よろしいですか？";
+		var WARN_MSG_URL_DOMAIN_DIFFERENT = "ショートURLとロングURLのドメインが異なっています。\n本当によろしいですか？";
+
+		function setsno(sval) {
+			$('#DelSurlNo').val(sval);
+			return true;
+		}
+
+		function AddProtocolAndDomain(url) {
+			var re = new RegExp("^https?://", "i");
+
+			if (re.test(url)) {
+				return url;
+			}
+
+			return "http://" + DOMAIN + "/" + url;
+		}
+
+		function CheckShortUrlDomain(shortUrl, longUrl) {
+			var result = true;
+
+			if ((shortUrl + longUrl).Length === 0) {
+				// 値が無い場合はfalse
+				result = false;
+			} else {
+				var domainA = GetDomain(shortUrl);
+				var domainB = GetDomain(longUrl);
+
+				if (domainA !== domainB) {
+					// ドメインが異なる場合
+					result = false;
+				}
+			}
+
+			return result;
+		}
+
+		function GetDomain(url) {
+			var re = new RegExp(":\/\/([^/ ]*)\/?", "i");
+
+			if (url.match(re) !== -1) {
+				return RegExp.$1;
+			}
+
+			// ドメイン部分が見つからなかった場合は空文字を返す(ドメインだけ入力されても認識できない)
+			return "";
+		}
+
+		function CheckUpdateShortAddress() {
+			//------------------------------------------------------
+			// ループさせて、ﾘﾋﾟｰﾀｰの中身をチェックする - 未入力チェック用
+			//------------------------------------------------------
+			@{ var len = (Model.ParamModel.BulkTargetInput != null) ? Model.ParamModel.BulkTargetInput.Length : 0; }
+			var len = @len;
+
+			var shortUrl;
+			var longUrl;
+			var i;
+			for (i = 0; i < len; i++) {
+
+				if ($('*[name="bt[' + i + '].ShortUrl"]').val().length === 0) {
+					window.alert(ERROR_MSG_SHORT_URL_EMPTY);
+					return false;
+				} else if ($('*[name="bt[' + i + '].LongUrl"]').val().length === 0) {
+					window.alert(ERROR_MSG_SHORT_URL_EMPTY);
+					return false;
+				}
+
+				shortUrl = AddProtocolAndDomain($('*[name="bt[' + i + '].ShortUrl"]').val());
+				longUrl = AddProtocolAndDomain($('*[name="bt[' + i + '].LongUrl"]').val());
+
+				// 共通入力チェック（エラーがあれば表示）
+				var inputErrorMsg = CheckShortAndLongUrl(shortUrl, longUrl);
+				if (inputErrorMsg.length !== 0) {
+					window.alert(inputErrorMsg);
+					return false;
+				}
+			}
+
+			//------------------------------------------------------
+			// ループさせて、ﾘﾋﾟｰﾀｰの中身をチェックする ドメイン警告用
+			// ドメイン部分の食い違いがあった場合、ダイアログを表示する
+			//------------------------------------------------------
+			for (i = 0; i < len; i++) {
+				shortUrl = document.getElementsByName('bt[' + i + '].ShortUrl').value;
+				longUrl = document.getElementsByName('bt[' + i + '].LongUrl').value;
+
+				var shortUrlBefore = document.getElementsByName('bt[' + i + '].OriginalShortUrl').value;
+				var longUrlBefore = document.getElementsByName('bt[' + i + '].OriginalLongUrl').value;
+
+				// ドメイン同一チェック・警告表示
+				if ((shortUrl !== shortUrlBefore) || (longUrl !== longUrlBefore)) {
+					if (CheckShortUrlDomain(AddProtocolAndDomain(shortUrl), AddProtocolAndDomain(longUrl)) === false) {
+						return window.confirm(WARN_MSG_URL_DOMAIN_DIFFERENT);
+					}
+				}
+
+			}
+
+			return true;
+		}
+
+		function CheckNewShortUrlDomain() {
+			alert($('*[name="ri.ShortUrl"]').val());
+			//------------------------------------------------------
+			// 未入力チェック
+			//------------------------------------------------------
+			if ($('*[name="ri.ShortUrl"]').val().length === 0) {
+				window.alert(ERROR_MSG_SHORT_URL_EMPTY);
+				return false;
+			} else if ($('*[name="ri.LongUrl"]').val().length === 0) {
+				window.alert(ERROR_MSG_SHORT_URL_EMPTY);
+				return false;
+			}
+
+			var shortUrl = AddProtocolAndDomain($('*[name="ri.ShortUrl"]').val());
+			var longUrl = AddProtocolAndDomain($('*[name="ri.LongUrl"]').val());
+
+			//------------------------------------------------------
+			// 共通入力チェック（エラーがあれば表示）
+			//------------------------------------------------------
+			var inputErrorMsg = CheckShortAndLongUrl(shortUrl, longUrl);
+			if (inputErrorMsg.length !== 0) {
+				window.alert(inputErrorMsg);
+				return false;
+			}
+
+			//------------------------------------------------------
+			// ドメイン同一チェック・警告表示
+			//------------------------------------------------------
+			var result = false;
+			if (CheckShortUrlDomain(shortUrl, longUrl)) {
+				result = true;
+			} else {
+				result = window.confirm(WARN_MSG_URL_DOMAIN_DIFFERENT);
+			}
+
+			//------------------------------------------------------
+			// ドメインチェック
+			//------------------------------------------------------
+			var domainReg = new RegExp("@ShortUrl.SITE_DOMAIN_REGEX_PATTERN", "i");
+
+			if (shortUrl.search(domainReg) === -1) {
+				result = window.confirm(WARN_MSG_SHORT_URL_DOMAIN);
+			}
+
+			return result;
+		}
+
+		function CheckShortAndLongUrl(shortUrl, longUrl) {
+			var inputErrorMsg = "";
+
+			//------------------------------------------------------
+			// 同一URLチェック
+			//------------------------------------------------------
+			// ロングURL・ショートURLを（httpとhttps、最後のスラッシュありなしを統一して)作成
+			shortUrl = new String(shortUrl).replace("https://", "http://").replace(/[/]+$/g, "");
+			longUrl = new String(longUrl).replace("https://", "http://").replace(/[/]+$/g, "");
+
+			if (shortUrl === longUrl) {
+				if (inputErrorMsg.length !== 0) {
+					inputErrorMsg += "\n";
+				}
+				inputErrorMsg += ERROR_MSG_SAME_URL;
+			}
+
+			//------------------------------------------------------
+			// ショートURLパラメータチェック
+			//------------------------------------------------------
+			if (shortUrl.lastIndexOf("?") !== -1) {
+				if (inputErrorMsg.length !== 0) {
+					inputErrorMsg += "\n";
+				}
+				inputErrorMsg += ERROR_MSG_URL_HAS_PARAM;
+			}
+			return inputErrorMsg;
+		}
+
+		function CheckNewShortUrlDomain() {
+			var shortUrl = AddProtocolAndDomain($('*[name="ri.ShortUrl"]').val());
+			var longUrl = AddProtocolAndDomain($('*[name="ri.LongUrl"]').val());
+
+			//------------------------------------------------------
+			// 共通入力チェック（エラーがあれば表示）
+			//------------------------------------------------------
+			var inputErrorMsg = CheckShortAndLongUrl(shortUrl, longUrl);
+			if (inputErrorMsg.length !== 0) {
+				window.alert(inputErrorMsg);
+				return false;
+			}
+
+			//------------------------------------------------------
+			// ドメイン同一チェック・警告表示
+			//------------------------------------------------------
+			var result = false;
+			if (CheckShortUrlDomain(shortUrl, longUrl)) {
+				result = true;
+			} else {
+				result = window.confirm(WARN_MSG_URL_DOMAIN_DIFFERENT);
+			}
+
+			//------------------------------------------------------
+			// ドメインチェック
+			//------------------------------------------------------
+			var domainReg = new RegExp("@ShortUrl.SITE_DOMAIN_REGEX_PATTERN", "i");
+
+			if (shortUrl.search(domainReg) === -1) {
+				result = window.confirm(WARN_MSG_SHORT_URL_DOMAIN);
+			}
+
+			return result;
+		}
+
+		// 入力確認
+		function validate_short_url(name) {
+			loading_animation.start();
+			var formData = get_input_date();
+			console.log(formData);
+			var url;
+			switch(name) {
+ 			case "update":
+				url = '@Url.Action("ValidateUpdate",new{ this.Model.ParamModel})';
+				break;
+
+			case "register":
+				url = '@Url.Action("ValidateInsert",new{ this.Model.ParamModel})';
+				break;
+
+			case "export":
+				url = '@Url.Action("ValidateExport",new{ this.Model.ParamModel})';
+				break;
+
+			default:
+				url = "";
+			}
+
+			$.ajax({
+				type: "POST",
+				url: url,
+				data: formData
+			}).done(function(errorMessage) {
+				setTimeout(function() { loading_animation.end(); }, 200);
+				// 警告表示を削除
+				$('.notification-message-warning').remove();
+				if (errorMessage !== "") {
+					notification.show(errorMessage, 'warning', 'fixed');
+				} else {
+					$('#' + name).click();
+				}
+				return false;
+			});
+		}
+
+		function set_long_url_by_landing_page () {
+			if ('@Model.ParamModel.PageLayout' == '@Constants.POPUP_LAYOUT_PATH_DEFAULT') {
+				 $("#ParamModel_RegisterInput_LongUrl").val('@Model.ParamModel.LongUrl');
+			}
+		}
+
+		set_long_url_by_landing_page();
+
+		// 例外項目定義
+		var exceptions = ["ShortUrl", "LongUrl"];
+
+		// エンターキーによるsubmit禁止
+		prohibit_submission_with_exceptions(exceptions);
+	</script>
+}

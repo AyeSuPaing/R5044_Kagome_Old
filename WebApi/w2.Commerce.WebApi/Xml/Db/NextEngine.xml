@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+=========================================================================================================
+  Module      : ネクストエンジン系SQLステートメントXML(NextEngine.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2020 All Rights Reserved.
+=========================================================================================================
+-->
+<NextEngine>
+
+  <!-- Codeパラメータに紐づく商品情報の取得 -->
+  <GetProduct>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Product.product_id AS product_id
+                ,w2_Product.product_id AS variation_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.product_id = @variation_id
+         UNION
+            (
+             SELECT  w2_ProductVariation.product_id AS product_id
+                    ,w2_ProductVariation.variation_id AS variation_id
+               FROM  w2_ProductVariation
+              WHERE  w2_ProductVariation.shop_id = @shop_id
+                AND  w2_ProductVariation.variation_id = @variation_id
+            )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetProduct>
+
+</NextEngine>

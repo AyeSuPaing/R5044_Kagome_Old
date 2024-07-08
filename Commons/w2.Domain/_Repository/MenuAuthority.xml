@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メニュー権限管理マスタ系SQLステートメントXML (MenuAuthority.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<MenuAuthority>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MenuAuthority
+         WHERE  shop_id = @shop_id
+           AND  pkg_kbn = @pkg_kbn
+           AND  menu_authority_level = @menu_authority_level
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="pkg_kbn" Type="nvarchar" Size="10" />
+      <Input Name="menu_authority_level" Type="int" />
+      <Input Name="menu_path" Type="nvarchar" Size="100" />
+    </Parameter>
+  </Get>
+
+  <!-- PKG区分からメニュー権限をすべて取得 -->
+  <GetAllByPkgKbn>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(menu_authority_level) AS menu_counts,
+                menu_authority_level,
+                menu_authority_name
+          FROM  w2_MenuAuthority
+         WHERE  shop_id = @shop_id
+           AND  pkg_kbn = @pkg_kbn
+        GROUP BY menu_authority_level, menu_authority_name
+        ORDER BY menu_authority_level
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="pkg_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAllByPkgKbn>
+
+  <GetNameByLevel>
+    <Statement>
+      <![CDATA[
+        SELECT  DISTINCT menu_authority_name
+          FROM  dbo.w2_MenuAuthority
+         WHERE  menu_authority_level = @menu_authority_level
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="menu_authority_level" Type="int" />
+    </Parameter>
+  </GetNameByLevel>
+
+  <!-- メニュー権限情報削除前使用チェック -->
+  <CheckMenuAuthorityUsed>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ShopOperator
+         WHERE  shop_id = @shop_id
+           AND  @@ access_level @@ = @menu_authority_level
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="menu_authority_level" Type="int" />
+    </Parameter>
+  </CheckMenuAuthorityUsed>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_MenuAuthority
+                (
+                  shop_id
+                  ,pkg_kbn
+                  ,menu_authority_level
+                  ,menu_authority_name
+                  ,menu_path
+                  ,function_level
+                  ,default_disp_flg
+                  ,del_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @shop_id
+                  ,@pkg_kbn
+                  ,@menu_authority_level
+                  ,@menu_authority_name
+                  ,@menu_path
+                  ,@function_level
+                  ,@default_disp_flg
+                  ,@del_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="pkg_kbn" Type="nvarchar" Size="10" />
+      <Input Name="menu_authority_level" Type="int" />
+      <Input Name="menu_authority_name" Type="nvarchar" Size="20" />
+      <Input Name="menu_path" Type="nvarchar" Size="100" />
+      <Input Name="function_level" Type="int" />
+      <Input Name="default_disp_flg" Type="nvarchar" Size="10" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MenuAuthority
+         WHERE  shop_id = @shop_id
+           AND  pkg_kbn = @pkg_kbn
+           AND  menu_authority_level = @menu_authority_level
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="pkg_kbn" Type="nvarchar" Size="10" />
+      <Input Name="menu_authority_level" Type="int" />
+    </Parameter>
+  </Delete>
+
+</MenuAuthority>

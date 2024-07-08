@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ノベルティ設定系SQLサブステートメントXML (Novelty_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<Novelty_Sub>
+
+  <!-- 検索用WHERE文 -->
+  <NOVELTY_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  w2_Novelty.shop_id = @shop_id
+                  AND
+                  (@novelty_id_like_escaped = '' OR w2_Novelty.novelty_id LIKE @novelty_id_like_escaped + '%'  ESCAPE '#')
+                  AND
+                  (@novelty_disp_name_like_escaped = '' OR w2_Novelty.novelty_disp_name LIKE '%' + @novelty_disp_name_like_escaped + '%' ESCAPE '#')
+                  AND
+                  (@novelty_name_like_escaped = '' OR w2_Novelty.novelty_name LIKE '%' + @novelty_name_like_escaped + '%' ESCAPE '#')
+                  AND
+                  (
+                    @status = ''
+                    OR
+                    (
+                      @status = 'Preparing'
+                      AND
+                      w2_Novelty.date_begin > GETDATE()
+                    )
+                    OR
+                    (
+                      @status = 'OnGoing'
+                      AND
+                      w2_Novelty.valid_flg = '1'
+                      AND
+                      w2_Novelty.date_begin <= GETDATE()
+                      AND
+                      (
+                        w2_Novelty.date_end >= GETDATE()
+                        OR
+                        w2_Novelty.date_end IS NULL
+                      )
+                    )
+                    OR
+                    (
+                      @status = 'Suspended'
+                      AND
+                      w2_Novelty.valid_flg = '0'
+                      AND
+                      w2_Novelty.date_begin <= GETDATE()
+                      AND
+                      (
+                        w2_Novelty.date_end >= GETDATE()
+                        OR
+                        w2_Novelty.date_end IS NULL
+                      )
+                    )
+                    OR
+                    (
+                      @status = 'Finished'
+                      AND
+                      w2_Novelty.date_end < GETDATE()
+                    )
+                  )
+                )
+      ]]>
+    </Statement>
+  </NOVELTY_SEARCH_WHERE>
+
+  <!-- 検索用ORDER BY -->
+  <NOVELTY_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN '0' THEN
+              CASE
+                WHEN  (
+                        w2_Novelty.date_begin > GETDATE()
+                      ) THEN '0'
+                WHEN  (
+                        w2_Novelty.valid_flg = '1'
+                        AND
+                        w2_Novelty.date_begin <= GETDATE()
+                        AND
+                        (
+                          w2_Novelty.date_end >= GETDATE()
+                          OR
+                          w2_Novelty.date_end IS NULL
+                        )
+                      ) THEN '1'
+                WHEN  (
+                        w2_Novelty.valid_flg = '0'
+                        AND
+                        w2_Novelty.date_begin <= GETDATE()
+                        AND
+                        (
+                          w2_Novelty.date_end >= GETDATE()
+                          OR
+                          w2_Novelty.date_end IS NULL
+                        )
+                      ) THEN '2'
+                WHEN  (
+                        w2_Novelty.date_end < GETDATE()
+                      ) THEN '3'
+              END
+            WHEN 1 THEN w2_Novelty.novelty_id
+            WHEN 3 THEN w2_Novelty.novelty_disp_name
+            WHEN 5 THEN w2_Novelty.novelty_name
+            ELSE '1'
+            END ASC,
+
+          CASE @sort_kbn
+            WHEN 2 THEN w2_Novelty.novelty_id
+            WHEN 4 THEN w2_Novelty.novelty_disp_name
+            WHEN 6 THEN w2_Novelty.novelty_name
+            ELSE '1'
+            END DESC,
+
+          CASE @sort_kbn
+            WHEN '7' THEN w2_Novelty.date_begin
+            WHEN '9' THEN ISNULL(w2_Novelty.date_end, '9999/12/31')
+            ELSE NULL
+            END ASC,
+
+          CASE @sort_kbn
+            WHEN '8' THEN w2_Novelty.date_begin
+            WHEN '10' THEN ISNULL(w2_Novelty.date_end, '9999/12/31')
+            ELSE NULL
+            END DESC,
+          w2_Novelty.novelty_id ASC
+      ]]>
+    </Statement>
+  </NOVELTY_SEARCH_ORDER_BY>
+
+</Novelty_Sub>

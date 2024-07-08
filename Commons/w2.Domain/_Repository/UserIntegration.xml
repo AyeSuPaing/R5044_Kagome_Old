@@ -1,0 +1,562 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザー統合情報系SQLステートメントXML (UserIntegration.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<UserIntegration>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_UserIntegration
+                [[ USERINTEGRATION_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserIntegration.*
+                ,w2_UserIntegrationUser.user_id
+                ,w2_UserIntegrationUser.representative_flg
+                ,w2_UserIntegrationUser.date_created AS date_created_w2_UserIntegrationUser
+                ,w2_UserIntegrationUser.date_changed AS date_changed_w2_UserIntegrationUser
+                ,w2_UserIntegrationUser.last_changed AS last_changed_w2_UserIntegrationUser
+                ,w2_UserIntegrationHistory.branch_no
+                ,w2_UserIntegrationHistory.table_name
+                ,w2_UserIntegrationHistory.primary_key1
+                ,w2_UserIntegrationHistory.primary_key2
+                ,w2_UserIntegrationHistory.primary_key3
+                ,w2_UserIntegrationHistory.primary_key4
+                ,w2_UserIntegrationHistory.primary_key5
+                ,w2_UserIntegrationHistory.date_created AS date_created_w2_UserIntegrationHistory
+                ,w2_UserIntegrationHistory.date_changed AS date_changed_w2_UserIntegrationHistory
+                ,w2_UserIntegrationHistory.last_changed AS last_changed_w2_UserIntegrationHistory
+                ,w2_MallCooperationSetting.mall_name
+                ,w2_User.user_kbn
+                ,w2_User.mall_id
+                ,w2_User.name
+                ,w2_User.name_kana
+                ,w2_User.mail_addr
+                ,w2_User.mail_addr2
+                ,w2_User.zip
+                ,w2_User.addr
+                ,w2_User.addr1
+                ,w2_User.addr2
+                ,w2_User.addr3
+                ,w2_User.addr4
+                ,w2_User.addr5
+                ,w2_User.addr_country_name
+                ,w2_User.addr_country_iso_code
+                ,w2_User.tel1
+                ,w2_User.tel2
+                ,w2_User.sex
+                ,w2_User.birth
+                ,w2_User.date_created AS date_created_w2_User
+                ,w2_User.date_changed AS date_changed_w2_User
+                ,ISNULL(UserCreditCard.credit_card_count, 0) AS credit_card_count
+          FROM  (
+                  SELECT  w2_UserIntegration.user_integration_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ USERINTEGRATION_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_UserIntegration
+                          [[ USERINTEGRATION_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_UserIntegration ON
+                (
+                  RowIndex.user_integration_no = w2_UserIntegration.user_integration_no
+                )
+                INNER JOIN w2_UserIntegrationUser ON
+                (
+                  RowIndex.user_integration_no = w2_UserIntegrationUser.user_integration_no
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_UserIntegrationUser.user_id = w2_User.user_id
+                )
+                LEFT JOIN (SELECT user_id, COUNT(w2_UserCreditCard.user_id) AS credit_card_count FROM w2_UserCreditCard GROUP BY w2_UserCreditCard.user_id) AS UserCreditCard ON
+                (
+                  w2_User.user_id = UserCreditCard.user_id
+                )
+                LEFT JOIN w2_MallCooperationSetting WITH (NOLOCK) ON
+                (
+                  w2_User.mall_id = w2_MallCooperationSetting.mall_id
+                )                
+                LEFT JOIN w2_UserIntegrationHistory ON
+                (
+                  RowIndex.user_integration_no = w2_UserIntegrationHistory.user_integration_no
+                  AND
+                  w2_UserIntegrationUser.user_id = w2_UserIntegrationHistory.user_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserIntegration
+         WHERE  user_integration_no = @user_integration_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+    </Parameter>
+  </Get>
+
+  <!-- 取得（詳細表示用） -->
+  <GetContainer>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserIntegration.*
+                ,w2_UserIntegrationUser.user_id
+                ,w2_UserIntegrationUser.representative_flg
+                ,w2_UserIntegrationUser.date_created AS date_created_w2_UserIntegrationUser
+                ,w2_UserIntegrationUser.date_changed AS date_changed_w2_UserIntegrationUser
+                ,w2_UserIntegrationUser.last_changed AS last_changed_w2_UserIntegrationUser
+                ,w2_UserIntegrationHistory.branch_no
+                ,w2_UserIntegrationHistory.table_name
+                ,w2_UserIntegrationHistory.primary_key1
+                ,w2_UserIntegrationHistory.primary_key2
+                ,w2_UserIntegrationHistory.primary_key3
+                ,w2_UserIntegrationHistory.primary_key4
+                ,w2_UserIntegrationHistory.primary_key5
+                ,w2_UserIntegrationHistory.date_created AS date_created_w2_UserIntegrationHistory
+                ,w2_UserIntegrationHistory.date_changed AS date_changed_w2_UserIntegrationHistory
+                ,w2_UserIntegrationHistory.last_changed AS last_changed_w2_UserIntegrationHistory
+                ,w2_MallCooperationSetting.mall_name
+                ,w2_User.user_kbn
+                ,w2_User.mall_id
+                ,w2_User.name
+                ,w2_User.name1
+                ,w2_User.name2
+                ,w2_User.name_kana
+                ,w2_User.name_kana1
+                ,w2_User.name_kana2
+                ,w2_User.mail_addr
+                ,w2_User.mail_addr2
+                ,w2_User.zip
+                ,w2_User.addr
+                ,w2_User.addr1
+                ,w2_User.addr2
+                ,w2_User.addr3
+                ,w2_User.addr4
+                ,w2_User.addr5
+                ,w2_User.addr_country_name
+                ,w2_User.addr_country_iso_code
+                ,w2_User.tel1
+                ,w2_User.tel2
+                ,w2_User.sex
+                ,w2_User.birth
+                ,w2_User.date_created AS date_created_w2_User
+                ,w2_User.date_changed AS date_changed_w2_User
+                ,w2_User.date_last_loggedin
+                ,ISNULL(UserCreditCard.credit_card_count, 0) AS credit_card_count
+          FROM  w2_UserIntegration
+                INNER JOIN w2_UserIntegrationUser ON
+                (
+                  w2_UserIntegration.user_integration_no = w2_UserIntegrationUser.user_integration_no
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_UserIntegrationUser.user_id = w2_User.user_id
+                )
+                LEFT JOIN (SELECT user_id, COUNT(w2_UserCreditCard.user_id) AS credit_card_count FROM w2_UserCreditCard GROUP BY w2_UserCreditCard.user_id) AS UserCreditCard ON
+                (
+                  w2_User.user_id = UserCreditCard.user_id
+                )
+                LEFT JOIN w2_MallCooperationSetting WITH (NOLOCK) ON
+                (
+                  w2_User.mall_id = w2_MallCooperationSetting.mall_id
+                )                
+                LEFT JOIN w2_UserIntegrationHistory ON
+                (
+                  w2_UserIntegrationUser.user_integration_no = w2_UserIntegrationHistory.user_integration_no
+                  AND
+                  w2_UserIntegrationUser.user_id = w2_UserIntegrationHistory.user_id
+                )
+         WHERE  w2_UserIntegration.user_integration_no = @user_integration_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+    </Parameter>
+  </GetContainer>
+
+  <!-- 全件取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserIntegration.*
+                ,w2_UserIntegrationUser.user_id
+                ,w2_UserIntegrationUser.representative_flg
+                ,w2_UserIntegrationUser.date_created AS date_created_w2_UserIntegrationUser
+                ,w2_UserIntegrationUser.date_changed AS date_changed_w2_UserIntegrationUser
+                ,w2_UserIntegrationUser.last_changed AS last_changed_w2_UserIntegrationUser
+                ,w2_UserIntegrationHistory.branch_no
+                ,w2_UserIntegrationHistory.table_name
+                ,w2_UserIntegrationHistory.primary_key1
+                ,w2_UserIntegrationHistory.primary_key2
+                ,w2_UserIntegrationHistory.primary_key3
+                ,w2_UserIntegrationHistory.primary_key4
+                ,w2_UserIntegrationHistory.primary_key5
+                ,w2_UserIntegrationHistory.date_created AS date_created_w2_UserIntegrationHistory
+                ,w2_UserIntegrationHistory.date_changed AS date_changed_w2_UserIntegrationHistory
+                ,w2_UserIntegrationHistory.last_changed AS last_changed_w2_UserIntegrationHistory
+          FROM  w2_UserIntegration
+                INNER JOIN w2_UserIntegrationUser ON
+                (
+                  w2_UserIntegration.user_integration_no = w2_UserIntegrationUser.user_integration_no
+                )
+                LEFT JOIN w2_UserIntegrationHistory ON
+                (
+                  w2_UserIntegrationUser.user_integration_no = w2_UserIntegrationHistory.user_integration_no
+                  AND
+                  w2_UserIntegrationUser.user_id = w2_UserIntegrationHistory.user_id
+                )
+      ]]>
+    </Statement>
+  </GetAll>
+
+  <!-- ユーザー統合解除情報取得 -->
+  <GetUnintegratedUsers>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserIntegration.user_integration_no
+                ,w2_UserIntegration.status
+                ,w2_UserIntegration.date_changed
+                ,w2_UserIntegrationUser.user_id
+                ,w2_UserIntegrationUser.date_created AS date_created_w2_UserIntegrationUser
+                ,w2_UserIntegrationUser.date_changed AS date_changed_w2_UserIntegrationUser
+                ,w2_UserIntegrationUser.last_changed AS last_changed_w2_UserIntegrationUser
+          FROM  w2_UserIntegration
+                INNER JOIN w2_UserIntegrationUser ON
+                (
+                  w2_UserIntegration.user_integration_no = w2_UserIntegrationUser.user_integration_no
+                )
+         WHERE  w2_UserIntegration.user_integration_no <> @user_integration_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+    </Parameter>
+  </GetUnintegratedUsers>
+
+  <!-- ユーザーIDからユーザー統合情報取得 -->
+  <GetUserIntegrationByUserId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserIntegration.*
+                ,w2_UserIntegrationUser.user_id
+                ,w2_UserIntegrationUser.representative_flg
+                ,w2_UserIntegrationUser.date_created AS date_created_w2_UserIntegrationUser
+                ,w2_UserIntegrationUser.date_changed AS date_changed_w2_UserIntegrationUser
+                ,w2_UserIntegrationUser.last_changed AS last_changed_w2_UserIntegrationUser
+                ,w2_UserIntegrationHistory.branch_no
+                ,w2_UserIntegrationHistory.table_name
+                ,w2_UserIntegrationHistory.primary_key1
+                ,w2_UserIntegrationHistory.primary_key2
+                ,w2_UserIntegrationHistory.primary_key3
+                ,w2_UserIntegrationHistory.primary_key4
+                ,w2_UserIntegrationHistory.primary_key5
+                ,w2_UserIntegrationHistory.date_created AS date_created_w2_UserIntegrationHistory
+                ,w2_UserIntegrationHistory.date_changed AS date_changed_w2_UserIntegrationHistory
+                ,w2_UserIntegrationHistory.last_changed AS last_changed_w2_UserIntegrationHistory
+          FROM  w2_UserIntegration
+                INNER JOIN (SELECT user_integration_no FROM w2_UserIntegrationUser WHERE user_id = @user_id) AS UserIntegrationUser ON
+                (
+                  w2_UserIntegration.user_integration_no = UserIntegrationUser.user_integration_no
+                )
+                INNER JOIN w2_UserIntegrationUser ON
+                (
+                  w2_UserIntegration.user_integration_no = w2_UserIntegrationUser.user_integration_no
+                )
+                LEFT JOIN w2_UserIntegrationHistory ON
+                (
+                  w2_UserIntegrationUser.user_integration_no = w2_UserIntegrationHistory.user_integration_no
+                  AND
+                  w2_UserIntegrationUser.user_id = w2_UserIntegrationHistory.user_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserIntegrationByUserId>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_UserIntegration
+                (
+                  status
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @status
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+
+        SELECT SCOPE_IDENTITY() AS user_integration_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserIntegration
+           SET  status = @status
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  user_integration_no = @user_integration_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserIntegration
+         WHERE  user_integration_no = @user_integration_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+    </Parameter>
+  </Delete>
+
+  <!-- 取得（ユーザ） -->
+  <GetUserAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserIntegrationUser
+         WHERE  user_integration_no = @user_integration_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+    </Parameter>
+  </GetUserAll>
+
+  <!-- 登録（ユーザ） -->
+  <InsertUser>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_UserIntegrationUser
+                (
+                  user_integration_no
+                  ,user_id
+                  ,representative_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @user_integration_no
+                  ,@user_id
+                  ,@representative_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="representative_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertUser>
+
+  <!-- 削除（ユーザ） -->
+  <DeleteUser>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserIntegrationUser
+         WHERE  user_integration_no = @user_integration_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+    </Parameter>
+  </DeleteUser>
+
+  <!-- 取得（履歴） -->
+  <GetHistoryAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserIntegrationHistory
+         WHERE  user_integration_no = @user_integration_no
+           AND  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetHistoryAll>
+
+  <!-- 登録（履歴） -->
+  <InsertHistory>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_UserIntegrationHistory
+                (
+                  user_integration_no
+                  ,user_id
+                  ,branch_no
+                  ,table_name
+                  ,primary_key1
+                  ,primary_key2
+                  ,primary_key3
+                  ,primary_key4
+                  ,primary_key5
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @user_integration_no
+                  ,@user_id
+                  ,@branch_no
+                  ,@table_name
+                  ,@primary_key1
+                  ,@primary_key2
+                  ,@primary_key3
+                  ,@primary_key4
+                  ,@primary_key5
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="table_name" Type="nvarchar" Size="50" />
+      <Input Name="primary_key1" Type="nvarchar" Size="100" />
+      <Input Name="primary_key2" Type="nvarchar" Size="100" />
+      <Input Name="primary_key3" Type="nvarchar" Size="100" />
+      <Input Name="primary_key4" Type="nvarchar" Size="100" />
+      <Input Name="primary_key5" Type="nvarchar" Size="100" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertHistory>
+
+  <!-- 削除（ユーザ） -->
+  <DeleteHistory>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserIntegrationHistory
+         WHERE  user_integration_no = @user_integration_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+    </Parameter>
+  </DeleteHistory>
+
+  <!-- ユーザー統合ステータス件数取得 -->
+  <GetStatusCount>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserIntegration.status
+                ,COUNT(w2_UserIntegration.status) AS count
+          FROM  w2_UserIntegration
+         WHERE  w2_UserIntegration.user_integration_no IN
+                (
+                  SELECT  DISTINCT(w2_UserIntegrationUser.user_integration_no) --存在するユーザーの統合IDのみ取得する
+                    FROM  w2_UserIntegrationUser
+                          INNER JOIN w2_User ON
+                          (
+                            w2_UserIntegrationUser.user_id = w2_User.user_id
+                          )
+                )
+      GROUP BY  w2_UserIntegration.status
+      ]]>
+    </Statement>
+  </GetStatusCount>
+
+  <!-- 注文IDより統合前のユーザ情報を取得 -->
+  <GetBeforeIntegrationUserByOrderId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_User
+         WHERE  user_id =
+                (
+                  SELECT  TOP 1 user_id
+                    FROM  w2_UserIntegrationHistory
+                   WHERE  table_name = 'w2_Order'
+                     AND  primary_key1 = @primary_key1
+                  ORDER BY date_created
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="primary_key1" Type="nvarchar" Size="100" />
+    </Parameter>
+  </GetBeforeIntegrationUserByOrderId>
+
+  <!-- 統合先ユーザーID取得 -->
+  <GetIntegratedUserId>
+    <Statement>
+      <![CDATA[
+        SELECT  user_id
+          FROM  w2_UserIntegrationUser
+         WHERE  user_integration_no =
+                (
+                  SELECT  MAX(user_integration_no)
+                    FROM  w2_UserIntegrationUser
+                   WHERE  user_id = @user_id
+                )
+           AND  representative_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetIntegratedUserId>
+
+</UserIntegration>

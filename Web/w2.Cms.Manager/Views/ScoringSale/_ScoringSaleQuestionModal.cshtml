@@ -1,0 +1,217 @@
+﻿@*
+=========================================================================================================
+  Module      : Scoring Sale Question Modal (_ScoringSaleQuestionModal.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Web.Page
+@using w2.Cms.Manager.Codes
+
+<style>
+	.modal-header-close-btn {
+		width: 4% !important;
+	}
+	.break-word {
+		word-break: break-all;
+	}
+	.item-search-result-head-question-item-id,
+	.item-search-result-list-question-item-id {
+		width: 7%;
+		display: block;
+		word-wrap: break-word;
+		text-align: center;
+		z-index: 1000 !important;
+		text-align: center;
+	}
+	.item-search-result-head-question-item-title {
+		margin-left: 25px;
+		width: 33%;
+		display: block;
+		word-wrap: break-word;
+		text-align: left !important;
+	}
+	.item-search-result-list-question-item-title {
+		width: 33%;
+		display: block;
+		word-wrap: break-word;
+		text-align: left !important;
+	}
+	.item-search-result-head-question-item-name {
+		width: 40%;
+		display: block;
+		word-wrap: break-word;
+		text-align: left !important;
+	}
+	.item-search-result-list-question-item-name {
+		width: 40%;
+		display: block;
+		word-wrap: break-word;
+		text-align: left !important;
+	}
+	.item-search-result-head-question-item-category {
+		width: 15%;
+		display: block;
+		word-wrap: break-word;
+		text-align: left !important;
+	}
+	.item-search-result-list-question-item-category {
+		width: 15%;
+		display: block;
+		word-wrap: break-word;
+		text-align: left !important;
+	}
+	.item-search-result-head-question-item-date {
+		width: 10%;
+		display: block;
+		word-wrap: break-word;
+		text-align: center !important;
+	}
+	.item-search-result-list-question-item-date {
+		width: 10%;
+		display: block;
+		word-wrap: break-word;
+		text-align: center !important;
+	}
+</style>
+
+<div class="modal-content-hide">
+	<input type="hidden" id="scoringSaleQuestionPageId" />
+	<input type="hidden" id="scoreAxisId" />
+	<div id="modal-content-scoring-sale-question">
+		<p class="modal-inner-ttl under-text">@CommonPage.ReplaceTag("@@ScoringSaleQuestion.set_a_question.name@@")</p>
+		<div style="padding-bottom: 20px;">
+			<div class="tab-content">
+				<div class="item-search">
+					<div style="padding-top: 0px;">
+						<div class="pager-content">
+							<p class="pager-content-info hide-list-detail" data-bind="text: $data.ScoringSaleQuestionCountHtml"></p>
+							<span id="previous" class="pager-content-previous icon-arrow-left" onclick="before_question_page();"></span>
+							<span id="next" class="pager-content-next icon-arrow-right" onclick="next_question_page();"></span>
+						</div>
+						<div class="item-search-result-head">
+							<div class="item-search-result-head-question-item-id"></div>
+							<div class="item-search-result-head-question-item-title">@CommonPage.ReplaceTag("@@ScoringSale.question_name.name@@")<br />@CommonPage.ReplaceTag("@@ScoringSale.question_id.name@@")</div>
+							<div class="item-search-result-head-question-item-name">@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.setting_question.question_statement_label.name@@")</div>
+							<div class="item-search-result-head-question-item-category">@CommonPage.ReplaceTag("@@ScoringSale.question_type.name@@")</div>
+							<div class="item-search-result-head-question-item-date">@CommonPage.ReplaceTag("@@ScoreAxis.modal_list_head.date_changed.name@@")</div>
+						</div>
+						<div class="item-search-result-contents" style="overflow: hidden; max-height:none;" data-bind="foreach: ScoringSaleQuestions">
+							<div class="item-search-result-content">
+								<div class="item-search-result-list-question-item-id">
+									<input type="checkbox" data-bind="attr: { id: $data.QuestionId }" name="scoring-sale-question" onclick="scoring_sale_question_click(this)" />
+								</div>
+								<div class="item-search-result-list-question-item-title break-word">
+									<div style="display: table-row;">
+										<span style="display: table-cell;" data-bind="text: $data.Name"></span>
+									</div>
+									<div style="display: table-row; margin-bottom: 5px;">
+										<span style="display: table-cell;" data-bind="text: $data.QuestionId"></span>
+									</div>
+								</div>
+								<div class="item-search-result-list-question-item-name break-word" data-bind="text: $data.Statement"></div>
+								<div class="item-search-result-list-question-item-category break-word" data-bind="text: $data.TypeText"></div>
+								<div class="item-search-result-list-question-item-date" data-bind="text: $data.UpdateDate"></div>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer-action">
+						<input id="btnAddQuestions" type="button" class="btn btn-main btn-size-m" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.set.name@@")" onclick="add_scoring_sale_questions()" />
+					</div>
+					<input type="button" style="float: right;" class="btn btn-main btn-size-m" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.close.name@@")" onclick="modal.close();" />
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	var question_pager_no = 1;
+
+	// Get scoring sale question list
+	function get_scoring_sale_question_list() {
+		loading_animation.start();
+		var score_axis_id = $('#scoreAxisId').val();
+
+		$.ajax({
+			type: "POST",
+			url: '@Url.Action("SearchScoringSaleQuestion", Constants.CONTROLLER_W2CMS_MANAGER_SCORING_SALE_QUESTION)',
+			data: {
+				'pageNo' : question_pager_no,
+				'scoreAxisId' : score_axis_id
+			}
+		}).done(function (result) {
+			set_scoring_sale_question_list(result);
+
+			check_for_selected_question();
+		});
+
+		loading_animation.end();
+	}
+
+	// Scoring sale question click
+	function scoring_sale_question_click(event) {
+		if (event.checked)
+		{
+			var selected_question = view_model.ScoringSaleQuestions().filter(function (item) { return (item.QuestionId === event.id); });
+			if (selected_question.length > 0) selected_questions.push(selected_question[0]);
+		}
+		else
+		{
+			selected_questions = selected_questions.filter(function (item) { return (item.QuestionId !== event.id); });
+		}
+
+		// Set disabled button
+		disabled_button_by_max_number_limit(
+			"btnAddQuestions",
+			selected_questions.length,
+			@Constants.FLG_SCORINGSALE_QUESTION_PAGE_ITEM_MAX_NUMBER_QUESTIONS_DISPLAY + 1);
+
+		question_sortable();
+	}
+
+	// Check for selected question
+	function check_for_selected_question()
+	{
+		var question_elements = $("[name='scoring-sale-question']");
+		if ((selected_questions.length === 0)
+			|| (question_elements.length === 0))
+		{
+			return;
+		}
+
+		for (var index = 0; index < question_elements.length; index++) {
+			var element = question_elements[index];
+
+			// Set checked
+			if (selected_questions.find(function(item) { return (item.QuestionId == element.id); })) element.checked = true;
+		}
+	}
+
+	// Next page
+	function next_question_page() {
+		var score_axis_id = $('#scoreAxisId').val();
+
+		$.ajax({
+			type: "POST",
+			url: '@Url.Action("GetSearchHitCount", Constants.CONTROLLER_W2CMS_MANAGER_SCORING_SALE_QUESTION)',
+			data: {
+				'pageNo' : question_pager_no,
+				'scoreAxisId' : score_axis_id
+			}
+		}).done(function (count) {
+			if (count > (question_pager_no * @Constants.CONST_DISP_CONTENTS_DEFAULT_LIST)) {
+				question_pager_no++;
+				get_scoring_sale_question_list();
+			}
+		});
+	}
+
+	// Previous page
+	function before_question_page() {
+		if (question_pager_no > 1) {
+			question_pager_no--;
+			get_scoring_sale_question_list();
+		}
+	}
+
+</script>

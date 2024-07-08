@@ -1,0 +1,446 @@
+﻿@*
+=========================================================================================================
+  Module      : ログインページ(Index.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Manager
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.Settings
+@model w2.Cms.Manager.ViewModels.Login.IndexViewModel
+@{
+	ViewBag.Title = "ログインページ";
+	Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+	<title>
+		@if (DesignSetting.IsW2Cms)
+		{
+			@:W2Unified
+		}
+		else if (DesignSetting.IsRepeatPlus)
+		{
+			@:W2Repeat
+		}
+		else if (DesignSetting.IsRepeatFood)
+		{
+			@:W2Repeat Food
+		}
+		else
+		{
+			@:Constants.MANAGER_DESIGN_SETTING
+		}
+		@ViewBag.Title
+	</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link rel="stylesheet" href="~/Css/w2style.css?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="~/Images/Icon/icomoon/style.css" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="~/Lib/simplebar/simplebar.css" media="screen,print" type="text/css" />
+	<style>
+		html,body {
+			overflow: hidden;
+		}
+		@@media screen and (max-width: 1023px) and (min-width: 331px) {
+			.container .form-group {
+				font-size: 25px;
+			}
+
+			.container .form-group input {
+				height: 60px !important;
+			}
+		}
+
+		.modal.modal-size-s .modal-content-wrapper {
+			width: 600px;
+		}
+
+		.modal-option {
+			padding: 20px;
+		}
+
+		.container .form-group {
+			margin-top: 10px;
+		}
+
+		.modal.modal-size-s .modal-content-wrapper {
+			width: 500px;
+		}
+
+		.modal {
+			overflow-y: hidden;
+		}
+
+		label {
+			cursor: default;
+		}
+
+		#btnConfirmCode {
+			background: #045cee;
+			color: #fff;
+			border-radius: 5px;
+			padding: 6px 20px;
+			line-height: 1.1;
+			border: 1px solid #3a6ba6;
+			outline: none;
+			cursor: pointer;
+			font-size: 14px;
+			vertical-align: middle;
+			width: 100% !important;
+		}
+
+		#authenticationCode {
+			border: 1px solid #999;
+			padding: 5px 3px;
+			height: 32px;
+			line-height: 32px;
+			border-radius: 5px;
+			margin: 0px;
+			cursor: pointer;
+			font-size: 14px;
+			vertical-align: middle;
+			box-sizing: border-box;
+		}
+
+		#btnConfirmCode:hover {
+			opacity: 0.8;
+		}
+
+		#btnExit {
+			background: #989494;
+			border-color: #989494;
+			border-radius: 5px;
+			font-size: 14px;
+			margin-left: auto;
+			display: block;
+			height: 29.39px;
+			width: 126px !important;
+			color: white;
+			border: 1px solid #989494;
+		}
+
+		#btnExit:hover {
+			opacity: 0.8;
+		}
+
+		#loader {
+			width: 2%;
+			display: block;
+			left: 49%;
+			top: 49%;
+		}
+
+		#background {
+			width: 100%;
+			height: 100%;
+			z-index: 1;
+			opacity:0;
+			display: none;
+		}
+	
+	</style>
+</head>
+<body onload="window.document.LoginForm.@(Constants.REQUEST_KEY_MANAGER_LOGIN_ID).focus()" class="login @DesignSetting.SiteCssClassName">
+	<img class="login_cms"src="~/Images/Login/login_CMS.svg" alt="logo" />
+	<div id="background" style="position: absolute"></div>
+	<div id="loader" style="position: relative">
+		<img src="~/Images/Common/loading.gif" />
+	</div>
+	<div class="login-box">
+		<div class="login-package-title">
+			<h1 class="package-logo">
+				@if (DesignSetting.IsW2Cms)
+				{
+					<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_Unified_logo.svg" alt="logo" />
+				}
+				else if (DesignSetting.IsRepeatPlus)
+				{
+					<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_Repeat_logo.svg" alt="logo" />
+				}
+				else if (DesignSetting.IsRepeatFood)
+				{
+					<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_RepeatFood_logo.svg" alt="logo" />
+				}
+				else
+				{
+					<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/logo_login.png" alt="logo" />
+				}
+				<div class="login-site-label">
+					@if (string.IsNullOrEmpty(Constants.MANAGER_DESIGN_DECORATE_ICON_FILENAME) == false)
+					{
+						<span class="icon"><img src='~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/@Constants.MANAGER_DESIGN_DECORATE_ICON_FILENAME' alt="" /></span>
+					}
+					@if (string.IsNullOrEmpty(Constants.MANAGER_DESIGN_DECORATE_MESSAGE) == false)
+					{
+						<span class="label">@Constants.MANAGER_DESIGN_DECORATE_MESSAGE</span>
+					}
+				</div>
+			</h1>
+		</div>
+		<div class="login-input-box">
+			<img class="login_foam" src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_login_left_01.svg" alt="logo" />
+			<img class="login_foam" style="float:right;" src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_login_left_02.svg" alt="logo" />
+			<h2 class="login-hed">管理画面ログイン</h2>
+			@using (Html.BeginForm(string.Empty, Constants.CONTROLLER_W2CMS_MANAGER_LOGIN, null, FormMethod.Post, new { name = "LoginForm", id = "loginForm" }))
+			{
+				if (string.IsNullOrEmpty(this.Model.ErrorMessage) == false)
+				{
+					<div class="notice">
+						<p>@Html.Raw(this.Model.ErrorMessage)</p>
+					</div>
+				}
+				<div class="notice">
+					<span id="spErrorMessage"></span>
+				</div>
+				<div class="login-form-input">
+					<label>
+						<img class="login_icon" src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_login_id.svg" alt="logo" />
+						@Html.TextBox(
+							Constants.REQUEST_KEY_MANAGER_LOGIN_ID,
+							this.Model.Input.LoginId,
+							new { @placeholder = "ログインID", })
+					</label>
+					<label>
+						<img class="login_icon" src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_login_password.svg" alt="logo" />
+						@Html.Password(
+							Constants.REQUEST_KEY_MANAGER_PASSWORD,
+							"",
+							new { @placeholder = "パスワード", })
+					</label>
+				</div>
+				<div class="login-form-btn">
+					<input type="button" id="btnSubmit" value="ログイン" class="@(w2.Cms.Manager.Codes.Settings.DesignSetting.IsW2Cms ? "Unified" : "Repeat")"/>
+				</div>
+				@Html.Hidden(
+					"nextUrl",
+					Request[Constants.REQUEST_KEY_MANAGER_NEXTURL])
+				@Html.Hidden(
+					Constants.REQUEST_KEY_MANAGER_LOGIN_EXPIRED_FLG,
+					Request[Constants.REQUEST_KEY_MANAGER_LOGIN_EXPIRED_FLG])
+			}
+			<img class="login_foam" src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_login_right_01.svg" alt="logo" />
+			<img class="login_foam" style="float:right;" src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_login_right_02.svg" alt="logo" />
+		</div>
+		@if (DesignSetting.IsW2Product) {
+		<p class="copyright">&copy; W2 Co.,Ltd.</p>
+		}
+	</div>
+	<!-- 2-step authentication modal -->
+	<div class="modal-content hide">
+		<div id="2fa-modal">
+			<div class="modal-option">
+				<div class="modal-option-inner modal-option-form-added">
+					<div class="container">
+						<div class="form-group">
+							<label class="col-form-label-lg">オペレータ情報に登録されたメールアドレスに送信しました</label>
+						</div>
+						<div class="form-group">
+							<label>認証メールに表示されている認証コードを入力してください</label>
+						</div>
+						<div class="form-group">
+							<label class="form-check-label">
+								認証コード
+							</label>
+						</div>
+						<div class="form-group">
+							<label>
+								<input id="authenticationCode" type="text" maxlength="8" style="width: 100% !important;" />
+							</label>
+						</div>
+						<div class="form-group">
+							<span id="spModalErrorMessage" class="notice" style="color: red"></span>
+						</div>
+						<div class="form-group">
+							<input id="btnConfirmCode" type="button" value="ログイン" />
+						</div>
+						<div class="form-group">
+							<a id="btnResendCode" href="#" class="pull-left item">認証メールを再送信</a>
+						</div>
+						<div class="form-group">
+							<input id="btnExit" type="button" onclick="$('.modal').hide()" value="サイトに戻る" />
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- 2-step authentication modal -->
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/jquery-3.3.1.min.js"></script>
+	<script type="text/javascript" charset="UTF-8" src="~/Js/common.js?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED"></script>
+	<script type="text/javascript" charset="UTF-8" src="~/Lib/simplebar/simplebar.min.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Lib/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/cookie-utils.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/Manager.js?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/fixed_midashi.js"></script>
+	<script type="text/javascript" src="~/Js/Manager.js?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED"></script>
+	<script type="text/javascript">
+		var disptext_select_all = "";
+		var disptext_deselect_all = "";
+		var isSubmitting = false;
+		var isAuthenticating = false;
+		var isResendingCode = false;
+
+		$("#@Constants.REQUEST_KEY_MANAGER_LOGIN_ID").keypress(function (e) {
+			var key = e.which;
+			if (key == "@Constants.CONST_ENTER_KEYCODE") {
+				login();
+				return false;
+			}
+		});
+
+		$("#@Constants.REQUEST_KEY_MANAGER_PASSWORD").keypress(function (e) {
+			var key = e.which;
+			if (key == "@Constants.CONST_ENTER_KEYCODE") {
+				login();
+				return false;
+			}
+		});
+
+		$("#authenticationCode").keypress(function (e) {
+			var key = e.which;
+			if (key == "@Constants.CONST_ENTER_KEYCODE") {
+				$("#btnConfirmCode").click();
+				return false;
+			}
+		});
+
+		$("#btnSubmit").click(function (e) {
+			if (isSubmitting) return;
+
+			$.ajax({
+				url: "@Url.Action("Login")",
+				data: JSON.stringify({
+					loginId: $("#@Constants.REQUEST_KEY_MANAGER_LOGIN_ID").val(),
+					password: $("#@Constants.REQUEST_KEY_MANAGER_PASSWORD").val()
+				}),
+				type: "POST",
+				contentType: "application/json;charset=utf-8",
+				dataType: "json",
+				beforeSend: function () {
+					isSubmitting = true;
+					showLoader();
+				},
+				success: function (result) {
+					hideLoader();
+
+					switch (result.login) {
+						case "@ShopOperatorLoginManager.GetLoginResult(ShopOperatorLoginManager.LoginStage.Failed)":
+						case "@ShopOperatorLoginManager.GetLoginResult(ShopOperatorLoginManager.LoginStage.Normal)":
+							submitForm();
+							break;
+
+						case "@ShopOperatorLoginManager.GetLoginResult(ShopOperatorLoginManager.LoginStage.With2StepAuthentication)":
+							$("#spModalErrorMessage").load(" #spModalErrorMessage");
+							$("#authenticationCode").val('');
+							var size = innerWidth > 980 ? "modal-size-s" : "modal-size-m";
+							modal.open("#2fa-modal", size);
+							break;
+
+						default:
+							$("#spErrorMessage").html(result.login);
+							break;
+					}
+				},
+				error: pageReload,
+				complete: function () {
+					isSubmitting = false;
+				}
+			});
+		});
+
+		$("#btnConfirmCode").click(function (e) {
+			if (isAuthenticating) return;
+
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("Authentication")",
+				contentType: "application/json; charset=utf-8",
+				data: JSON.stringify({
+					loginId: $("#@Constants.REQUEST_KEY_MANAGER_LOGIN_ID").val(),
+					authenticationCode: $("#authenticationCode").val()
+				}),
+				dataType: "json",
+				beforeSend: function () {
+					isAuthenticating = true;
+				},
+				success: function (result) {
+					switch (result.checkAuthCode) {
+						case "@ShopOperatorLoginManager.GetLoginResult(ShopOperatorLoginManager.LoginStage.With2StepAuthentication)":
+							submitForm();
+							break;
+
+						default:
+							$("#spModalErrorMessage").html(result.checkAuthCode);
+							break;
+					}
+				},
+				error: pageReload,
+				complete: function () {
+					isAuthenticating = false;
+				}
+			});
+		});
+
+		$("#btnResendCode").click(function () {
+			if (isResendingCode) return;
+
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("ResendCode")",
+				contentType: "application/json; charset=utf-8",
+				data: JSON.stringify({
+					loginId: $("#@Constants.REQUEST_KEY_MANAGER_LOGIN_ID").val()
+				}),
+				dataType: "json",
+				beforeSend: function () {
+					isResendingCode = true;
+				},
+				success: function (result) {
+					if (result.resendAuthCode) {
+						$("#spModalErrorMessage").html(result.resendAuthCode);
+					} else {
+						$("#spModalErrorMessage").html("@w2.App.Common.CommerceMessages.GetMessages(w2.App.Common.CommerceMessages.ERRMSG_RESEND_AUTHENTICATION_CODE_SUCCESS)");
+					}
+				},
+				error: pageReload,
+				complete: function () {
+					isResendingCode = false;
+				}
+			});
+		});
+
+		function submitForm() {
+			$("#loginForm").submit();
+		}
+
+		function login() {
+			$("#btnSubmit").click();
+		}
+
+		function hideLoader() {
+			$("#loader").hide();
+			$(".login-box").css("opacity", "1");
+			$("#background").css("display", "none");
+		}
+
+		function showLoader() {
+			$("#loader").show();
+			$(".login-box").css("opacity", "0.4");
+			$("#background").css("display", "block");
+		}
+
+		$(window).ready(hideLoader);
+
+		// Page reload
+		function pageReload(xmlHttpRequest, status, error) {
+			if (xmlHttpRequest.status == 401) {
+				window.location.reload();
+			}
+		}
+	</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : オペレータ系SQLステートメントXML(CsOperator.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsOperator>
+  
+  <!-- オペレータを取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsOperator.*,
+                w2_ShopOperator.name,
+                w2_ShopOperator.valid_flg
+          FROM  w2_CsOperator
+                INNER JOIN w2_ShopOperator ON
+                (
+                  w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                )
+         WHERE  w2_CsOperator.dept_id = @dept_id
+           AND  w2_CsOperator.operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Get>
+  
+  <!-- オペレータをすべて取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsOperator.*,
+                w2_ShopOperator.name,
+                w2_ShopOperator.valid_flg,
+                w2_CsOperatorAuthority.*
+          FROM  w2_CsOperator
+                INNER JOIN w2_ShopOperator ON
+                (
+                  w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT JOIN w2_CsOperatorAuthority ON
+                (
+                  w2_CsOperator.dept_id = w2_CsOperatorAuthority.dept_id
+                  AND
+                  w2_CsOperator.operator_authority_id = w2_CsOperatorAuthority.operator_authority_id
+                )
+         WHERE  w2_CsOperator.dept_id = @dept_id
+      ORDER BY  w2_CsOperator.display_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAll>
+
+</CsOperator>

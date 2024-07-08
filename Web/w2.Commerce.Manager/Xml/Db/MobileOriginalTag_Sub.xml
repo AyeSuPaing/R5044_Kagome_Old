@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モバイルオリジナルタグ系SQLサブステートメントXML(MobileOriginalTag_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MobileOriginalTag_Sub>
+
+  <!-- モバイルオリジナルタグ情報一覧取得用WHERE文 -->
+  <MOBILEORIGINALTAG_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_MobileOriginalTag.dept_id = @dept_id 
+           AND  (
+                  (@orgtag_id_like_escaped = '' OR w2_MobileOriginalTag.orgtag_id LIKE @orgtag_id_like_escaped + '%' ESCAPE '#')      -- オリジナルタグID
+                  AND 
+                  (@orgtag_name_like_escaped = '' OR w2_MobileOriginalTag.orgtag_name LIKE '%' + @orgtag_name_like_escaped + '%' ESCAPE '#')          -- 表示名
+                )
+      ]]>
+    </Statement>
+  </MOBILEORIGINALTAG_SEARCH_WHERE>
+
+  <!-- モバイルオリジナルタグ情報一覧取得用ORDER_BY -->
+  <MOBILEORIGINALTAG_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_MobileOriginalTag.orgtag_id
+            WHEN  2 THEN w2_MobileOriginalTag.orgtag_name
+            ELSE '1'
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_MobileOriginalTag.orgtag_id
+            WHEN  3 THEN w2_MobileOriginalTag.orgtag_name
+            ELSE '1'
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_MobileOriginalTag.dept_id ASC, w2_MobileOriginalTag.orgtag_id ASC
+      ]]>
+    </Statement>
+  </MOBILEORIGINALTAG_SEARCH_ORDER_BY>
+
+</MobileOriginalTag_Sub>

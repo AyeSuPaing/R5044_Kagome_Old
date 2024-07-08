@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文ワークフロー設定系SQLサブステートメントXML(OrderWorkflowSetting_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderWorkflowSetting_Sub>
+
+  <!-- 注文ワークフロー設定情報一覧取得用WHERE文 -->
+  <ORDERWORKFLOWSETTING_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE (
+                  (@workflow_kbn = '' OR w2_OrderWorkflowSetting.workflow_kbn = @workflow_kbn)    -- ワークフロー区分
+                  AND
+                  (@workflow_detail_kbn = '' OR w2_OrderWorkflowSetting.workflow_detail_kbn = @workflow_detail_kbn)    -- ワークフロー詳細区分
+                  AND
+                  (@valid_flg = '' OR w2_OrderWorkflowSetting.valid_flg = @valid_flg)    -- 有効フラグ
+                  AND
+                  (@additional_search_flg = '' OR w2_OrderWorkflowSetting.additional_search_flg = @additional_search_flg)    -- 追加検索可否FLG
+                  AND
+                  (@workflow_name_like_escaped = '' OR w2_OrderWorkflowSetting.workflow_name LIKE '%' + @workflow_name_like_escaped + '%' ESCAPE '#')    -- ワークフロー名
+               )
+      ]]>
+    </Statement>
+  </ORDERWORKFLOWSETTING_SEARCH_WHERE>
+
+  <!-- 注文ワークフロー設定情報一覧取得用WHERE文 -->
+  <FIXEDPURCHASEWORKFLOWSETTING_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE  (
+                 (@workflow_kbn = '' OR w2_FixedPurchaseWorkflowSetting.workflow_kbn = @workflow_kbn)    -- ワークフロー区分
+                 AND
+                 (@workflow_detail_kbn = '' OR w2_FixedPurchaseWorkflowSetting.workflow_detail_kbn = @workflow_detail_kbn)    -- ワークフロー詳細区分
+                 AND
+                 (@valid_flg = '' OR w2_FixedPurchaseWorkflowSetting.valid_flg = @valid_flg)    -- 有効フラグ
+                 AND
+                 (@additional_search_flg = '' OR w2_FixedPurchaseWorkflowSetting.additional_search_flg =
+                   CASE @additional_search_flg
+                     WHEN '1' THEN '2'
+                     ELSE @additional_search_flg
+                   END
+                 )    -- 追加検索可否FLG
+                 AND
+                 (@workflow_name_like_escaped = '' OR w2_FixedPurchaseWorkflowSetting.workflow_name LIKE '%' + @workflow_name_like_escaped + '%' ESCAPE '#')    -- ワークフロー名
+               )
+      ]]>
+    </Statement>
+  </FIXEDPURCHASEWORKFLOWSETTING_SEARCH_WHERE>
+
+  <!-- 注文ワークフロー設定情報一覧取得用ORDER_BY -->
+  <ORDERWORKFLOWSETTING_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+         ORDER BY
+          CASE @sort_kbn
+            WHEN  1 THEN Workflow.display_order
+            ELSE '1'
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  3 THEN Workflow.date_created
+            WHEN  5 THEN Workflow.date_changed
+            ELSE NULL
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  2 THEN Workflow.display_order
+            ELSE '1'
+          END 
+          DESC,
+          CASE @sort_kbn
+            WHEN  4 THEN Workflow.date_created
+            WHEN  6 THEN Workflow.date_changed
+            ELSE NULL
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          Workflow.shop_id ASC, Workflow.workflow_kbn ASC, Workflow.display_order ASC,Workflow.workflow_no ASC
+      ]]>
+    </Statement>
+  </ORDERWORKFLOWSETTING_SEARCH_ORDER_BY>
+
+</OrderWorkflowSetting_Sub>

@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : リアル店舗系SQLサブステートメントXML(RealShop_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<RealShop_Sub>
+  <!-- リアル店舗情報一覧取得用WHERE文 -->
+  <REALSHOP_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (@real_shop_id_like_escaped = '' OR w2_RealShop.real_shop_id LIKE @real_shop_id_like_escaped + '%'  ESCAPE '#')      -- リアル店舗情ID
+                  AND
+                  (@name_like_escaped = '' OR w2_RealShop.name LIKE '%' + @name_like_escaped + '%' ESCAPE '#')        -- 氏名
+                  AND
+                  (@name_kana_like_escaped = '' OR w2_RealShop.name_kana LIKE '%' +@name_kana_like_escaped + '%' ESCAPE '#')  -- 氏名(かな)
+                  AND
+                  (
+                    w2_RealShop.tel LIKE @tel_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_RealShop.tel_1 + w2_RealShop.tel_2 + w2_RealShop.tel_3 LIKE @tel_like_escaped + '%' ESCAPE '#' -- 電話番号
+                  )
+                  AND
+                  (@mail_addr_like_escaped = '' OR w2_RealShop.mail_addr LIKE '%' + @mail_addr_like_escaped + '%' ESCAPE '#')    -- モバイルメールアドレス
+                  AND
+                  (
+                    w2_RealShop.zip LIKE @zip_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_RealShop.zip1 + w2_RealShop.zip2 LIKE @zip_like_escaped + '%' ESCAPE '#' -- 郵便番号
+                  )
+                  AND
+                  (@addr_like_escaped = '' OR w2_RealShop.addr  LIKE '%' + @addr_like_escaped + '%' ESCAPE '#')        -- 住所
+                  AND
+                  (
+                    w2_RealShop.fax LIKE @fax_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_RealShop.fax_1 + w2_RealShop.fax_2 + w2_RealShop.fax_3 LIKE @fax_like_escaped + '%' ESCAPE '#' -- FAX
+                  )
+                  AND  
+                  (@valid_flg = '' OR w2_RealShop.valid_flg = @valid_flg)  -- 有効フラグ
+                )
+      ]]>
+    </Statement>
+  </REALSHOP_SEARCH_WHERE>
+
+  <!-- リアル店舗情報一覧取得用ORDER_BY -->
+  <REALSHOP_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  3 THEN w2_RealShop.name
+            WHEN  5 THEN w2_RealShop.name_kana
+            WHEN  1 THEN w2_RealShop.real_shop_id
+            ELSE '1'
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  4 THEN w2_RealShop.name
+            WHEN  6 THEN w2_RealShop.name_kana
+            WHEN  2 THEN w2_RealShop.real_shop_id
+            ELSE '1'
+          END 
+          DESC,
+          CASE @sort_kbn
+            WHEN  7 THEN w2_RealShop.display_order
+            ELSE NULL
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  8 THEN w2_RealShop.display_order
+            ELSE NULL
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、リアル店舗ID（昇順）ソート
+          w2_RealShop.real_shop_id ASC
+      ]]>
+    </Statement>
+  </REALSHOP_SEARCH_ORDER_BY>
+</RealShop_Sub>

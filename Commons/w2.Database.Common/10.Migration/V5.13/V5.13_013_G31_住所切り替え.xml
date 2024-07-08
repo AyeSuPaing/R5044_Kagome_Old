@@ -1,0 +1,247 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_GlobalShippingSetting]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_GlobalShippingSetting]
+GO
+/*
+=========================================================================================================
+  Module      : 海外配送先設定テーブル (w2_GlobalShippingSetting.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_GlobalShippingSetting] (
+	[country_iso_code] [nvarchar] (3) NOT NULL,
+	[shipping_availavle_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate())
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_GlobalShippingSetting] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_GlobalShippingSetting] PRIMARY KEY  CLUSTERED
+	(
+		[country_iso_code]
+	) ON [PRIMARY]
+GO
+
+-- 初期データ登録(初期登録時はJPのみ配送可能フラグON、他は全て配送可能フラグOFF)
+INSERT INTO w2_GlobalShippingSetting(country_iso_code, shipping_availavle_flg) VALUES ('JP', '1');
+INSERT INTO w2_GlobalShippingSetting(country_iso_code, shipping_availavle_flg) VALUES ('US', '0');
+INSERT INTO w2_GlobalShippingSetting(country_iso_code, shipping_availavle_flg) VALUES ('GB', '0');
+INSERT INTO w2_GlobalShippingSetting(country_iso_code, shipping_availavle_flg) VALUES ('FR', '0');
+INSERT INTO w2_GlobalShippingSetting(country_iso_code, shipping_availavle_flg) VALUES ('CN', '0');
+INSERT INTO w2_GlobalShippingSetting(country_iso_code, shipping_availavle_flg) VALUES ('SG', '0');
+
+/*
+  w2_FixedPurchaseShippingのマイグレーション
+*/
+-- カラム追加
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseShipping' AND column_name = 'shipping_country_iso_code')
+	ALTER TABLE [w2_FixedPurchaseShipping] ADD [shipping_country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseShipping' AND column_name = 'shipping_country_name')
+	ALTER TABLE [w2_FixedPurchaseShipping] ADD [shipping_country_name] [nvarchar] (100) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseShipping' AND column_name = 'shipping_addr5')
+	ALTER TABLE [w2_FixedPurchaseShipping] ADD [shipping_addr5] [nvarchar] (50) NOT NULL DEFAULT (N'');
+GO
+
+-- 既存項目定義変更
+ALTER TABLE [w2_FixedPurchaseShipping] ALTER COLUMN [shipping_zip] [nvarchar] (30) NOT NULL;
+
+
+
+/*
+  w2_OrderOwnerのマイグレーション
+*/
+-- カラム追加
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderOwner' AND column_name = 'owner_country_iso_code')
+	ALTER TABLE [w2_OrderOwner] ADD [owner_country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderOwner' AND column_name = 'owner_country_name')
+	ALTER TABLE [w2_OrderOwner] ADD [owner_country_name] [nvarchar] (100) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderOwner' AND column_name = 'owner_addr5')
+	ALTER TABLE [w2_OrderOwner] ADD [owner_addr5] [nvarchar] (50) NOT NULL DEFAULT (N'');
+GO
+
+-- 既存項目定義変更
+ALTER TABLE [w2_OrderOwner] ALTER COLUMN [owner_zip] [nvarchar] (30) NOT NULL;
+
+
+/*
+  w2_OrderShippingのマイグレーション
+*/
+-- カラム追加
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderShipping' AND column_name = 'shipping_country_iso_code')
+	ALTER TABLE [w2_OrderShipping] ADD [shipping_country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderShipping' AND column_name = 'shipping_country_name')
+	ALTER TABLE [w2_OrderShipping] ADD [shipping_country_name] [nvarchar] (100) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderShipping' AND column_name = 'shipping_addr5')
+	ALTER TABLE [w2_OrderShipping] ADD [shipping_addr5] [nvarchar] (50) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderShipping' AND column_name = 'sender_country_iso_code')
+	ALTER TABLE [w2_OrderShipping] ADD [sender_country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderShipping' AND column_name = 'sender_country_name')
+	ALTER TABLE [w2_OrderShipping] ADD [sender_country_name] [nvarchar] (100) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderShipping' AND column_name = 'sender_addr5')
+	ALTER TABLE [w2_OrderShipping] ADD [sender_addr5] [nvarchar] (50) NOT NULL DEFAULT (N'');
+GO
+
+
+-- 既存項目定義変更
+ALTER TABLE [w2_OrderShipping] ALTER COLUMN [shipping_zip] [nvarchar] (30) NOT NULL;
+ALTER TABLE [w2_OrderShipping] ALTER COLUMN [sender_zip] [nvarchar] (30) NOT NULL;
+
+
+/*
+  w2_Userのマイグレーション
+*/
+-- カラム追加
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_User' AND column_name = 'addr_country_iso_code')
+	ALTER TABLE [w2_User] ADD [addr_country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_User' AND column_name = 'country_name')
+	ALTER TABLE [w2_User] ADD [country_name] [nvarchar] (100) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_User' AND column_name = 'addr5')
+	ALTER TABLE [w2_User] ADD [addr5] [nvarchar] (50) NOT NULL DEFAULT (N'');
+GO
+
+-- 既存項目定義変更
+ALTER TABLE [w2_User] ALTER COLUMN [zip] [nvarchar] (30) NOT NULL;
+ALTER TABLE [w2_User] ALTER COLUMN [addr] [nvarchar] (300) NOT NULL;
+
+
+/*
+  w2_WorkUserのマイグレーション
+*/
+-- カラム追加
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_WorkUser' AND column_name = 'addr_country_iso_code')
+	ALTER TABLE [w2_WorkUser] ADD [addr_country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_WorkUser' AND column_name = 'country_name')
+	ALTER TABLE [w2_WorkUser] ADD [country_name] [nvarchar] (100) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_WorkUser' AND column_name = 'addr5')
+	ALTER TABLE [w2_WorkUser] ADD [addr5] [nvarchar] (50) NOT NULL DEFAULT (N'');
+GO
+
+-- 既存項目定義変更
+ALTER TABLE [w2_WorkUser] ALTER COLUMN [zip] [nvarchar] (30) NOT NULL;
+ALTER TABLE [w2_WorkUser] ALTER COLUMN [addr] [nvarchar] (300) NOT NULL;
+
+
+/*
+  w2_UserShippingのマイグレーション
+*/
+-- カラム追加
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_UserShipping' AND column_name = 'shipping_country_iso_code')
+	ALTER TABLE [w2_UserShipping] ADD [shipping_country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_UserShipping' AND column_name = 'shipping_country_name')
+	ALTER TABLE [w2_UserShipping] ADD [shipping_country_name] [nvarchar] (100) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_UserShipping' AND column_name = 'shipping_addr5')
+	ALTER TABLE [w2_UserShipping] ADD [shipping_addr5] [nvarchar] (50) NOT NULL DEFAULT (N'');
+GO
+
+-- 既存項目定義変更
+ALTER TABLE [w2_UserShipping] ALTER COLUMN [shipping_zip] [nvarchar] (30) NOT NULL;
+
+
+/*
+  w2_WorkUserShippingのマイグレーション
+*/
+-- カラム追加
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_WorkUserShipping' AND column_name = 'shipping_country_iso_code')
+	ALTER TABLE [w2_WorkUserShipping] ADD [shipping_country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_WorkUserShipping' AND column_name = 'shipping_country_name')
+	ALTER TABLE [w2_WorkUserShipping] ADD [shipping_country_name] [nvarchar] (100) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_WorkUserShipping' AND column_name = 'shipping_addr5')
+	ALTER TABLE [w2_WorkUserShipping] ADD [shipping_addr5] [nvarchar] (50) NOT NULL DEFAULT (N'');
+GO
+
+-- 既存項目定義変更
+ALTER TABLE [w2_WorkUserShipping] ALTER COLUMN [shipping_zip] [nvarchar] (30) NOT NULL;
+
+
+/*
+  w2_RealShopのマイグレーション
+*/
+-- カラム追加
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_RealShop' AND column_name = 'country_iso_code')
+	ALTER TABLE [w2_RealShop] ADD [country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_RealShop' AND column_name = 'country_name')
+	ALTER TABLE [w2_RealShop] ADD [country_name] [nvarchar] (100) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_RealShop' AND column_name = 'addr5')
+	ALTER TABLE [w2_RealShop] ADD [addr5] [nvarchar] (50) NOT NULL DEFAULT (N'');
+GO
+
+-- 既存項目定義変更
+ALTER TABLE [w2_RealShop] ALTER COLUMN [zip] [nvarchar] (30) NOT NULL;
+ALTER TABLE [w2_RealShop] ALTER COLUMN [addr] [nvarchar] (600) NOT NULL;
+
+
+/*
+  w2_WorkRealShopのマイグレーション
+*/
+-- カラム追加
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_WorkRealShop' AND column_name = 'country_iso_code')
+	ALTER TABLE [w2_WorkRealShop] ADD [country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_WorkRealShop' AND column_name = 'country_name')
+	ALTER TABLE [w2_WorkRealShop] ADD [country_name] [nvarchar] (100) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_WorkRealShop' AND column_name = 'addr5')
+	ALTER TABLE [w2_WorkRealShop] ADD [addr5] [nvarchar] (50) NOT NULL DEFAULT (N'');
+GO
+
+-- 既存項目定義変更
+ALTER TABLE [w2_WorkRealShop] ALTER COLUMN [zip] [nvarchar] (30) NOT NULL;
+ALTER TABLE [w2_WorkRealShop] ALTER COLUMN [addr] [nvarchar] (600) NOT NULL;
+
+
+/*
+  w2_UserEasyRegisterSettingのマイグレーション
+*/
+-- データ追加
+IF NOT EXISTS (SELECT item_id FROM w2_UserEasyRegisterSetting WHERE item_id = 'UserCountry' )
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserCountry');
+GO
+]]>
+    </Statement>
+  </Up>
+</Migration>

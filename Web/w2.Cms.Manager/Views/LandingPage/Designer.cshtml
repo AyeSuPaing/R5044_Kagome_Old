@@ -1,0 +1,1970 @@
+﻿@*
+	=========================================================================================================
+	  Module      : LPビルダー デザイナ画面(Designer.cshtml)
+	 ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+	  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+	=========================================================================================================
+*@
+@using System.Runtime.CompilerServices
+@using w2.App.Common.Extensions.Currency
+@using w2.App.Common.ShortUrl
+@using w2.Common.Web
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Input
+@using w2.Cms.Manager.ViewModels.LandingPage
+@using w2.Domain.LandingPage
+@model w2.Cms.Manager.ViewModels.LandingPage.LandingPageDesignerViewModel
+@{
+	ViewBag.Title = "LPビルダー デザイナ画面";
+	Layout = Constants.DESIGNER_LAYOUT_PATH_DEFAULT;
+}
+<style>
+	.formlp-image-upload-content-drag-btns-text {
+		display: none;
+	}
+</style>
+@helper Blocks(w2.App.Common.LandingPage.LandingPageDesignData.BlockDesignInput setting)
+{
+	@* ブロック：フリーHTML *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--sfree")
+	{
+		<div class="formlp-front-section formlp-front-section--sfree">
+			<div class="formlp-front-section--sfree-inner" data-edit-prop-placeholder="HTML" data-edit-prop="html-src"></div>
+			<input type="hidden" value="@Html.Raw(setting.GetAttributeValue("HTML", "html-src"))" />
+		</div>
+	}
+
+	@* ブロック：ヘッダー *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--header")
+	{
+		<div class="formlp-front-section formlp-front-section--header">
+			<div class="formlp-front-section--header-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--header-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<div class="formlp-front-section--header-logo">
+						<a href="@setting.GetAttributeValue("ロゴリンク", "href")" target="@setting.GetAttributeValue("ロゴリンク", "target")" data-edit-prop="href" data-edit-prop-placeholder="ロゴリンク">
+							<img class="formlp-front-section--header-logo-img" src='@setting.GetAttributeValue("ロゴ", "src")' alt="" data-edit-prop="src" data-edit-prop-placeholder="ロゴ">
+						</a>
+					</div>
+					<div class="formlp-front-section--header-telnum">
+						<a class='@setting.GetAttributeValue("電話番号", "font")' href='@setting.GetAttributeValue("電話番号", "href")' target='@setting.GetAttributeValue("電話番号", "target")' data-edit-prop="text,href" style='@setting.GetAttributeValueStyleFormat("電話番号", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="電話番号">@Html.Raw(setting.GetAttributeValue("電話番号", "text"))</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：ファーストビューa1 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0001a1")
+	{
+		<div class="formlp-front-section formlp-front-section--s0001a1">
+			<div class="formlp-front-section--s0001a1-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0001a1-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<p class="formlp-front-section--s0001a1-txt1">
+						<span class="formlp-front-section--s0001a1-txt1-label @setting.GetAttributeValue("テキスト１", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("テキスト１", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト１">@Html.Raw(setting.GetAttributeValue("テキスト１", "text"))</span>
+					</p>
+					<p class="formlp-front-section--s0001a1-txt2 @setting.GetAttributeValue("テキスト２", "font")" data-edit-prop="text,background" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト２", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト２">@Html.Raw(setting.GetAttributeValue("テキスト２", "text"))</p>
+					<div class="formlp-front-section--s0001a1-block1">
+						<div class="formlp-front-section--s0001a1-item">
+							<img src='@setting.GetAttributeValue("商品画像", "src")' alt="" data-edit-prop="src" data-edit-prop-placeholder="商品画像">
+						</div>
+						<ul class="formlp-front-section--s0001a1-points">
+							@for (var index = 0; index < setting.GetListElementsByPlaceHolder("ポイント背景").Length; index++)
+							{
+								<li class="formlp-front-section--s0001a1-point" data-edit-group="1" data-edit-group-placeholder="ポイント" data-edit-group-max="4">
+									<span class="formlp-front-section--s0001a1-point-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ポイント背景", new[] { "background-color", "background-image" }, index)' data-edit-prop-placeholder="ポイント背景">
+										<span class="txt1 @setting.GetAttributeValue("ポイントテキスト１", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト１", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト１">@Html.Raw(setting.GetAttributeValue("ポイントテキスト１", "text", index))</span>
+										<span class="txt2 @setting.GetAttributeValue("ポイントテキスト２", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト２", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト２">@Html.Raw(setting.GetAttributeValue("ポイントテキスト２", "text", index))</span>
+										<span class="txt3 @setting.GetAttributeValue("ポイントテキスト３", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト３", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト３">@Html.Raw(setting.GetAttributeValue("ポイントテキスト３", "text", index))</span>
+									</span>
+								</li>
+							}
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：ファーストビューa2 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0001a2")
+	{
+		<div class="formlp-front-section formlp-front-section--s0001a2">
+			<div class="formlp-front-section--s0001a2-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0001a2-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<p class="formlp-front-section--s0001a2-txt1">
+						<span class="formlp-front-section--s0001a2-txt1-label @setting.GetAttributeValue("テキスト１", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("テキスト１", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト１">@Html.Raw(setting.GetAttributeValue("テキスト１", "text"))</span>
+					</p>
+					<p class="formlp-front-section--s0001a2-txt2 @setting.GetAttributeValue("テキスト２", "font")" data-edit-prop="text,background" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト２", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト２">@Html.Raw(setting.GetAttributeValue("テキスト２", "text"))</p>
+					<div class="formlp-front-section--s0001a2-block1">
+						<div class="formlp-front-section--s0001a2-item">
+							<img src='@setting.GetAttributeValue("商品画像", "src")' alt="" data-edit-prop="src" data-edit-prop-placeholder="商品画像">
+						</div>
+						<ul class="formlp-front-section--s0001a2-points">
+							@for (var index = 0; index < setting.GetListElementsByPlaceHolder("ポイント背景").Length; index++)
+							{
+								<li class="formlp-front-section--s0001a2-point" data-edit-group="1" data-edit-group-placeholder="ポイント" data-edit-group-max="4">
+									<span class="formlp-front-section--s0001a2-point-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ポイント背景", new[] { "background-color", "background-image" }, index)' data-edit-prop-placeholder="ポイント背景">
+										<span class="txt1 @setting.GetAttributeValue("ポイントテキスト１", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト１", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト１">@Html.Raw(setting.GetAttributeValue("ポイントテキスト１", "text", index))</span>
+										<span class="txt2 @setting.GetAttributeValue("ポイントテキスト２", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト２", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト２">@Html.Raw(setting.GetAttributeValue("ポイントテキスト２", "text", index))</span>
+										<span class="txt3 @setting.GetAttributeValue("ポイントテキスト３", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト３", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト３">@Html.Raw(setting.GetAttributeValue("ポイントテキスト３", "text", index))</span>
+									</span>
+								</li>
+							}
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：ファーストビューa3 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0001a3")
+	{
+		<div class="formlp-front-section formlp-front-section--s0001a3">
+			<div class="formlp-front-section--s0001a3-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0001a3-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<p class="formlp-front-section--s0001a3-txt1">
+						<span class="formlp-front-section--s0001a3-txt1-label @setting.GetAttributeValue("テキスト１", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("テキスト１", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト１">@Html.Raw(setting.GetAttributeValue("テキスト１", "text"))</span>
+					</p>
+					<p class="formlp-front-section--s0001a3-txt2 @setting.GetAttributeValue("テキスト２", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("テキスト２", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト２">@Html.Raw(setting.GetAttributeValue("テキスト２", "text"))</p>
+					<div class="formlp-front-section--s0001a3-block1">
+						<div class="formlp-front-section--s0001a3-item">
+							<img src='@setting.GetAttributeValue("商品画像", "src")' alt="" data-edit-prop="src" data-edit-prop-placeholder="商品画像">
+						</div>
+						<ul class="formlp-front-section--s0001a3-points">
+							@for (var index = 0; index < setting.GetListElementsByPlaceHolder("ポイント背景").Length; index++)
+							{
+								<li class="formlp-front-section--s0001a3-point" data-edit-group="1" data-edit-group-placeholder="ポイント" data-edit-group-max="4">
+									<span class="formlp-front-section--s0001a3-point-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ポイント背景", new[] { "background-color", "background-image" }, index)' data-edit-prop-placeholder="ポイント背景">
+										<span class="txt1 @setting.GetAttributeValue("ポイントテキスト１", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト１", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト１">@Html.Raw(setting.GetAttributeValue("ポイントテキスト１", "text", index))</span>
+										<span class="txt2 @setting.GetAttributeValue("ポイントテキスト２", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト２", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト２">@Html.Raw(setting.GetAttributeValue("ポイントテキスト２", "text", index))</span>
+										<span class="txt3 @setting.GetAttributeValue("ポイントテキスト３", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト３", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト３">@Html.Raw(setting.GetAttributeValue("ポイントテキスト３", "text", index))</span>
+									</span>
+								</li>
+							}
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：ファーストビューb1 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0001b1")
+	{
+		<div class="formlp-front-section formlp-front-section--s0001b1">
+			<div class="formlp-front-section--s0001b1-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0001b1-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<div class="formlp-front-section--s0001b1-txt1" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("斜めブロック背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="斜めブロック背景">
+						<span class="formlp-front-section--s0001b1-txt1-sub @setting.GetAttributeValue("斜めブロックテキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("斜めブロックテキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="斜めブロックテキスト1">@Html.Raw(setting.GetAttributeValue("斜めブロックテキスト1", "text"))</span>
+						<span class="formlp-front-section--s0001b1-txt1-title @setting.GetAttributeValue("斜めブロックテキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("斜めブロックテキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="斜めブロックテキスト2">@Html.Raw(setting.GetAttributeValue("斜めブロックテキスト2", "text"))</span>
+					</div>
+					<div class="formlp-front-section--s0001b1-item">
+						<img src="@setting.GetAttributeValue("商品画像", "src")" alt="" data-edit-prop="src" data-edit-prop-placeholder="商品画像">
+					</div>
+					<div class="formlp-front-section--s0001b1-txt2">
+						<p class="formlp-front-section--s0001b1-txt2-title @setting.GetAttributeValue("テキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト1">@Html.Raw(setting.GetAttributeValue("テキスト1", "text"))</p>
+						<p class="formlp-front-section--s0001b1-txt2-text @setting.GetAttributeValue("テキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト2">@Html.Raw(setting.GetAttributeValue("テキスト2", "text"))</p>
+					</div>
+					<div class="formlp-front-section--s0001b1-label" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("上部ポイント", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="上部ポイント">
+						<div class="formlp-front-section--s0001b1-label-inner">
+							<span class="txt1 @setting.GetAttributeValue("上部ポイント テキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部ポイント テキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="上部ポイント テキスト1">@Html.Raw(setting.GetAttributeValue("上部ポイント テキスト1", "text"))</span>
+							<span class="txt2 @setting.GetAttributeValue("上部ポイント テキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部ポイント テキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="上部ポイント テキスト2">@Html.Raw(setting.GetAttributeValue("上部ポイント テキスト2", "text"))</span>
+							<span class="txt3 @setting.GetAttributeValue("上部ポイント テキスト3", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部ポイント テキスト3", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="上部ポイント テキスト3">@Html.Raw(setting.GetAttributeValue("上部ポイント テキスト3", "text"))</span>
+						</div>
+					</div>
+					<ul class="formlp-front-section--s0001b1-points">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("ポイント背景").Length; index++)
+						{
+							<li class="formlp-front-section--s0001b1-point" data-edit-group="1" data-edit-group-placeholder="ポイント" data-edit-group-max="4">
+								<span class="formlp-front-section--s0001b1-point-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ポイント背景", new[] { "background-color", "background-image" }, index)' data-edit-prop-placeholder="ポイント背景">
+									<span class="txt1 @setting.GetAttributeValue("ポイントテキスト1", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト1", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト1">@Html.Raw(setting.GetAttributeValue("ポイントテキスト1", "text", index))</span>
+									<span class="txt2 @setting.GetAttributeValue("ポイントテキスト2", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト2", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト2">@Html.Raw(setting.GetAttributeValue("ポイントテキスト2", "text", index))</span>
+									<span class="txt3 @setting.GetAttributeValue("ポイントテキスト3", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト3", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト3">@Html.Raw(setting.GetAttributeValue("ポイントテキスト3", "text", index))</span>
+								</span>
+							</li>
+						}
+					</ul>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：ファーストビューb2 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0001b2")
+	{
+		<div class="formlp-front-section formlp-front-section--s0001b2">
+			<div class="formlp-front-section--s0001b2-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0001b2-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<div class="formlp-front-section--s0001b2-txt1" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("斜めブロック背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="斜めブロック背景">
+						<span class="formlp-front-section--s0001b2-txt1-sub @setting.GetAttributeValue("斜めブロックテキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("斜めブロックテキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="斜めブロックテキスト1">@Html.Raw(setting.GetAttributeValue("斜めブロックテキスト1", "text"))</span>
+						<span class="formlp-front-section--s0001b2-txt1-title @setting.GetAttributeValue("斜めブロックテキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("斜めブロックテキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="斜めブロックテキスト2">@Html.Raw(setting.GetAttributeValue("斜めブロックテキスト2", "text"))</span>
+					</div>
+					<div class="formlp-front-section--s0001b2-item">
+						<img src="@setting.GetAttributeValue("商品画像", "src")" alt="" data-edit-prop="src" data-edit-prop-placeholder="商品画像">
+					</div>
+					<div class="formlp-front-section--s0001b2-txt2">
+						<p class="formlp-front-section--s0001b2-txt2-title @setting.GetAttributeValue("テキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト1">@Html.Raw(setting.GetAttributeValue("テキスト1", "text"))</p>
+						<p class="formlp-front-section--s0001b2-txt2-text @setting.GetAttributeValue("テキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト2">@Html.Raw(setting.GetAttributeValue("テキスト2", "text"))</p>
+					</div>
+					<div class="formlp-front-section--s0001b2-label" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("上部ポイント", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="上部ポイント">
+						<div class="formlp-front-section--s0001b2-label-inner">
+							<span class="txt1 @setting.GetAttributeValue("上部ポイント テキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部ポイント テキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="上部ポイント テキスト1">@Html.Raw(setting.GetAttributeValue("上部ポイント テキスト1", "text"))</span>
+							<span class="txt2 @setting.GetAttributeValue("上部ポイント テキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部ポイント テキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="上部ポイント テキスト2">@Html.Raw(setting.GetAttributeValue("上部ポイント テキスト2", "text"))</span>
+							<span class="txt3 @setting.GetAttributeValue("上部ポイント テキスト3", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部ポイント テキスト3", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="上部ポイント テキスト3">@Html.Raw(setting.GetAttributeValue("上部ポイント テキスト3", "text"))</span>
+						</div>
+					</div>
+					<ul class="formlp-front-section--s0001b2-points">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("ポイント背景").Length; index++)
+						{
+							<li class="formlp-front-section--s0001b2-point" data-edit-group="1" data-edit-group-placeholder="ポイント" data-edit-group-max="4">
+								<span class="formlp-front-section--s0001b2-point-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ポイント背景", new[] { "background-color", "background-image" }, index)' data-edit-prop-placeholder="ポイント背景">
+									<span class="txt1 @setting.GetAttributeValue("ポイントテキスト1", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト1", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト1">@Html.Raw(setting.GetAttributeValue("ポイントテキスト1", "text", index))</span>
+									<span class="txt2 @setting.GetAttributeValue("ポイントテキスト2", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト2", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト2">@Html.Raw(setting.GetAttributeValue("ポイントテキスト2", "text", index))</span>
+									<span class="txt3 @setting.GetAttributeValue("ポイントテキスト3", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト3", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト3">@Html.Raw(setting.GetAttributeValue("ポイントテキスト3", "text", index))</span>
+								</span>
+							</li>
+						}
+					</ul>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：ファーストビューb3 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0001b3")
+	{
+		<div class="formlp-front-section formlp-front-section--s0001b3">
+			<div class="formlp-front-section--s0001b3-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0001b3-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<div class="formlp-front-section--s0001b3-txt1" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("斜めブロック背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="斜めブロック背景">
+						<span class="formlp-front-section--s0001b3-txt1-sub @setting.GetAttributeValue("斜めブロックテキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("斜めブロックテキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="斜めブロックテキスト1">@Html.Raw(setting.GetAttributeValue("斜めブロックテキスト1", "text"))</span>
+						<span class="formlp-front-section--s0001b3-txt1-title @setting.GetAttributeValue("斜めブロックテキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("斜めブロックテキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="斜めブロックテキスト2">@Html.Raw(setting.GetAttributeValue("斜めブロックテキスト2", "text"))</span>
+					</div>
+					<div class="formlp-front-section--s0001b3-item">
+						<img src="@setting.GetAttributeValue("商品画像", "src")" alt="" data-edit-prop="src" data-edit-prop-placeholder="商品画像">
+					</div>
+					<div class="formlp-front-section--s0001b3-txt2">
+						<p class="formlp-front-section--s0001b3-txt2-title @setting.GetAttributeValue("テキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト1">@Html.Raw(setting.GetAttributeValue("テキスト1", "text"))</p>
+						<p class="formlp-front-section--s0001b3-txt2-text @setting.GetAttributeValue("テキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト2">@Html.Raw(setting.GetAttributeValue("テキスト2", "text"))</p>
+					</div>
+					<div class="formlp-front-section--s0001b3-label" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("上部ポイント", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="上部ポイント">
+						<div class="formlp-front-section--s0001b3-label-inner">
+							<span class="txt1 @setting.GetAttributeValue("上部ポイント テキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部ポイント テキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="上部ポイント テキスト1">@Html.Raw(setting.GetAttributeValue("上部ポイント テキスト1", "text"))</span>
+							<span class="txt2 @setting.GetAttributeValue("上部ポイント テキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部ポイント テキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="上部ポイント テキスト2">@Html.Raw(setting.GetAttributeValue("上部ポイント テキスト2", "text"))</span>
+							<span class="txt3 @setting.GetAttributeValue("上部ポイント テキスト3", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部ポイント テキスト3", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="上部ポイント テキスト3">@Html.Raw(setting.GetAttributeValue("上部ポイント テキスト3", "text"))</span>
+						</div>
+					</div>
+					<ul class="formlp-front-section--s0001b3-points">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("ポイント背景").Length; index++)
+						{
+							<li class="formlp-front-section--s0001b3-point" data-edit-group="1" data-edit-group-placeholder="ポイント" data-edit-group-max="4">
+								<span class="formlp-front-section--s0001b3-point-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ポイント背景", new[] { "background-color", "background-image" }, index)' data-edit-prop-placeholder="ポイント背景">
+									<span class="txt1 @setting.GetAttributeValue("ポイントテキスト1", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト1", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト1">@Html.Raw(setting.GetAttributeValue("ポイントテキスト1", "text", index))</span>
+									<span class="txt2 @setting.GetAttributeValue("ポイントテキスト2", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト2", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト2">@Html.Raw(setting.GetAttributeValue("ポイントテキスト2", "text", index))</span>
+									<span class="txt3 @setting.GetAttributeValue("ポイントテキスト3", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ポイントテキスト3", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ポイントテキスト3">@Html.Raw(setting.GetAttributeValue("ポイントテキスト3", "text", index))</span>
+								</span>
+							</li>
+						}
+					</ul>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：ファーストビューc1 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0001c1")
+	{
+		<div class="formlp-front-section formlp-front-section--s0001c1">
+			<div class="formlp-front-section--s0001c1-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0001c1-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<div class="formlp-front-section--s0001c1-block1">
+						<p class="formlp-front-section--s0001c1-txt1 @setting.GetAttributeValue("上部テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="上部テキスト">@Html.Raw(setting.GetAttributeValue("上部テキスト", "text"))</p>
+						<h1 class="formlp-front-section--s0001c1-txt2">
+							<span class="formlp-front-section--s0001c1-txt2-txt1 @setting.GetAttributeValue("メインテキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("メインテキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="メインテキスト1">@Html.Raw(setting.GetAttributeValue("メインテキスト1", "text"))</span>
+							<span class="formlp-front-section--s0001c1-txt2-txt2 @setting.GetAttributeValue("メインテキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("メインテキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="メインテキスト2">@Html.Raw(setting.GetAttributeValue("メインテキスト2", "text"))</span>
+							<span class="formlp-front-section--s0001c1-txt2-txt3 @setting.GetAttributeValue("メインテキスト3", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("メインテキスト3", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="メインテキスト3">@Html.Raw(setting.GetAttributeValue("メインテキスト3", "text"))</span>
+						</h1>
+						<p class="formlp-front-section--s0001c1-txt3 @setting.GetAttributeValue("サブテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("サブテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="サブテキスト">@Html.Raw(setting.GetAttributeValue("サブテキスト", "text"))</p>
+					</div>
+					<div class="formlp-front-section--s0001c1-points">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("ポイント上部テキスト").Length; index++)
+						{
+							<div class="formlp-front-section--s0001c1-point" data-edit-group="1" data-edit-group-placeholder="ポイント" data-edit-group-max="3">
+								<p class="formlp-front-section--s0001c1-point-txt1" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ポイント上部テキスト", new[] { "background-color", "background-image" }, index)' data-edit-prop-placeholder="ポイント上部テキスト">
+									<span class="formlp-front-section--s0001c1-point-txt1-txt1 @setting.GetAttributeValue("上部テキスト1", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部テキスト1", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="上部テキスト1">@Html.Raw(setting.GetAttributeValue("上部テキスト1", "text", index))</span>
+									<span class="formlp-front-section--s0001c1-point-txt1-txt2 @setting.GetAttributeValue("上部テキスト2", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部テキスト2", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="上部テキスト2">@Html.Raw(setting.GetAttributeValue("上部テキスト2", "text", index))</span>
+									<span class="formlp-front-section--s0001c1-point-txt1-txt3 @setting.GetAttributeValue("上部テキスト3", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部テキスト3", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="上部テキスト3">@Html.Raw(setting.GetAttributeValue("上部テキスト3", "text", index))</span>
+								</p>
+								<h2 class="formlp-front-section--s0001c1-point-txt2 @setting.GetAttributeValue("見出し", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("見出し", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="見出し">@Html.Raw(setting.GetAttributeValue("見出し", "text", index))</h2>
+								<p class="formlp-front-section--s0001c1-point-txt3 @setting.GetAttributeValue("説明テキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("説明テキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="説明テキスト">@Html.Raw(setting.GetAttributeValue("説明テキスト", "text", index))</p>
+							</div>
+						}
+					</div>
+				</div>
+				<div class="formlp-front-section--s0001c1-block2">
+					<p class="formlp-front-section--s0001c1-txt4">
+						<span class="formlp-front-section--s0001c1-txt4-txt1 @setting.GetAttributeValue("下部テキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("下部テキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="下部テキスト1">@Html.Raw(setting.GetAttributeValue("下部テキスト1", "text"))</span>
+						<span class="formlp-front-section--s0001c1-txt4-txt2 @setting.GetAttributeValue("下部テキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("下部テキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="下部テキスト2">@Html.Raw(setting.GetAttributeValue("下部テキスト2", "text"))</span>
+					</p>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：ファーストビューc2 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0001c2")
+	{
+		<div class="formlp-front-section formlp-front-section--s0001c2">
+			<div class="formlp-front-section--s0001c2-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0001c2-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<div class="formlp-front-section--s0001c2-block1">
+						<p class="formlp-front-section--s0001c2-txt1 @setting.GetAttributeValue("上部テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="上部テキスト">@Html.Raw(setting.GetAttributeValue("上部テキスト", "text"))</p>
+						<h1 class="formlp-front-section--s0001c2-txt2">
+							<span class="formlp-front-section--s0001c2-txt2-txt1 @setting.GetAttributeValue("メインテキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("メインテキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="メインテキスト1">@Html.Raw(setting.GetAttributeValue("メインテキスト1", "text"))</span>
+							<span class="formlp-front-section--s0001c2-txt2-txt2 @setting.GetAttributeValue("メインテキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("メインテキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="メインテキスト2">@Html.Raw(setting.GetAttributeValue("メインテキスト2", "text"))</span>
+							<span class="formlp-front-section--s0001c2-txt2-txt3 @setting.GetAttributeValue("メインテキスト3", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("メインテキスト3", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="メインテキスト3">@Html.Raw(setting.GetAttributeValue("メインテキスト3", "text"))</span>
+						</h1>
+						<p class="formlp-front-section--s0001c2-txt3 @setting.GetAttributeValue("サブテキスト", "font")" data-edit-prop="text" data-edit-prop-placeholder="サブテキスト">@Html.Raw(setting.GetAttributeValue("サブテキスト", "text"))</p>
+					</div>
+					<div class="formlp-front-section--s0001c2-points">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("ポイント上部背景").Length; index++)
+						{
+							<div class="formlp-front-section--s0001c2-point" data-edit-group="1" data-edit-group-placeholder="ポイント" data-edit-group-max="3">
+								<div class="formlp-front-section--s0001c2-point-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ポイント上部背景", new[] { "background-color", "background-image" }, index)' data-edit-prop-placeholder="ポイント上部背景">
+									<div class="formlp-front-section--s0001c2-point-inner2">
+										<p class="formlp-front-section--s0001c2-point-txt1" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ポイント上部テキスト", new[] { "background-color", "background-image" }, index)' data-edit-prop-placeholder="ポイント上部テキスト">
+											<span class="formlp-front-section--s0001c2-point-txt1-txt1 @setting.GetAttributeValue("上部テキスト1", "font", index)" style='@setting.GetAttributeValueStyleFormat("上部テキスト1", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop="text" data-edit-prop-placeholder="上部テキスト1">@Html.Raw(setting.GetAttributeValue("上部テキスト1", "text", index))</span>
+											<span class="formlp-front-section--s0001c2-point-txt1-txt2 @setting.GetAttributeValue("上部テキスト2", "font", index)" style='@setting.GetAttributeValueStyleFormat("上部テキスト2", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop="text" data-edit-prop-placeholder="上部テキスト2">@Html.Raw(setting.GetAttributeValue("上部テキスト2", "text", index))</span>
+											<span class="formlp-front-section--s0001c2-point-txt1-txt3 @setting.GetAttributeValue("上部テキスト3", "font", index)" style='@setting.GetAttributeValueStyleFormat("上部テキスト3", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop="text" data-edit-prop-placeholder="上部テキスト3">@Html.Raw(setting.GetAttributeValue("上部テキスト3", "text", index))</span>
+										</p>
+										<h2 class="formlp-front-section--s0001c2-point-txt2 @setting.GetAttributeValue("見出し", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("見出し", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="見出し">@Html.Raw(setting.GetAttributeValue("見出し", "text", index))</h2>
+										<p class="formlp-front-section--s0001c2-point-txt3 @setting.GetAttributeValue("説明テキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("説明テキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="説明テキスト">@Html.Raw(setting.GetAttributeValue("説明テキスト", "text", index))</p>
+									</div>
+								</div>
+							</div>
+						}
+					</div>
+					<div class="formlp-front-section--s0001c2-block2">
+						<p class="formlp-front-section--s0001c2-txt4">
+							<span class="formlp-front-section--s0001c2-txt4-txt1 @setting.GetAttributeValue("下部テキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("下部テキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="下部テキスト1">@Html.Raw(setting.GetAttributeValue("下部テキスト1", "text"))</span>
+							<span class="formlp-front-section--s0001c2-txt4-txt2 @setting.GetAttributeValue("下部テキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("下部テキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="下部テキスト2">@Html.Raw(setting.GetAttributeValue("下部テキスト2", "text"))</span>
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：ファーストビューc3 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0001c3")
+	{
+		<div class="formlp-front-section formlp-front-section--s0001c3">
+			<div class="formlp-front-section--s0001c3-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0001c3-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<div class="formlp-front-section--s0001c3-block1">
+						<p class="formlp-front-section--s0001c3-txt1 @setting.GetAttributeValue("上部テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="上部テキスト">@Html.Raw(setting.GetAttributeValue("上部テキスト", "text"))</p>
+						<h1 class="formlp-front-section--s0001c3-txt2">
+							<span class="formlp-front-section--s0001c3-txt2-txt1 @setting.GetAttributeValue("メインテキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("メインテキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="メインテキスト1">@Html.Raw(setting.GetAttributeValue("メインテキスト1", "text"))</span>
+							<span class="formlp-front-section--s0001c3-txt2-txt2 @setting.GetAttributeValue("メインテキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("メインテキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="メインテキスト2">@Html.Raw(setting.GetAttributeValue("メインテキスト2", "text"))</span>
+							<span class="formlp-front-section--s0001c3-txt2-txt3 @setting.GetAttributeValue("メインテキスト3", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("メインテキスト3", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="メインテキスト3">@Html.Raw(setting.GetAttributeValue("メインテキスト3", "text"))</span>
+						</h1>
+						<p class="formlp-front-section--s0001c3-txt3 @setting.GetAttributeValue("サブテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("サブテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="サブテキスト">@Html.Raw(setting.GetAttributeValue("サブテキスト", "text"))</p>
+					</div>
+					<div class="formlp-front-section--s0001c3-points">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("ポイント上部テキスト").Length; index++)
+						{
+							<div class="formlp-front-section--s0001c3-point" data-edit-group="1" data-edit-group-placeholder="ポイント" data-edit-group-max="3">
+								<p class="formlp-front-section--s0001c3-point-txt1" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ポイント上部テキスト", new[] { "background-color", "background-image" }, index)' data-edit-prop-placeholder="ポイント上部テキスト">
+									<span class="formlp-front-section--s0001c3-point-txt1-txt1 @setting.GetAttributeValue("上部テキスト1", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部テキスト1", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="上部テキスト1">@Html.Raw(setting.GetAttributeValue("上部テキスト1", "text", index))</span>
+									<span class="formlp-front-section--s0001c3-point-txt1-txt2 @setting.GetAttributeValue("上部テキスト2", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部テキスト2", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="上部テキスト2">@Html.Raw(setting.GetAttributeValue("上部テキスト2", "text", index))</span>
+									<span class="formlp-front-section--s0001c3-point-txt1-txt3 @setting.GetAttributeValue("上部テキスト3", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("上部テキスト3", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="上部テキスト3">@Html.Raw(setting.GetAttributeValue("上部テキスト3", "text", index))</span>
+								</p>
+								<h2 class="formlp-front-section--s0001c3-point-txt2 @setting.GetAttributeValue("見出し", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("見出し", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="見出し">@Html.Raw(setting.GetAttributeValue("見出し", "text", index))</h2>
+								<p class="formlp-front-section--s0001c3-point-txt3 @setting.GetAttributeValue("説明テキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("説明テキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="説明テキスト">@Html.Raw(setting.GetAttributeValue("説明テキスト", "text", index))</p>
+							</div>
+						}
+					</div>
+				</div>
+				<div class="formlp-front-section--s0001c3-block2">
+					<p class="formlp-front-section--s0001c3-txt4">
+						<span class="formlp-front-section--s0001c3-txt4-txt1 @setting.GetAttributeValue("下部テキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("下部テキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="下部テキスト1">@Html.Raw(setting.GetAttributeValue("下部テキスト1", "text"))</span>
+						<span class="formlp-front-section--s0001c3-txt4-txt2 @setting.GetAttributeValue("下部テキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("下部テキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="下部テキスト2">@Html.Raw(setting.GetAttributeValue("下部テキスト2", "text"))</span>
+					</p>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：購入エリアa1 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0002a1")
+	{
+		<div class="formlp-front-section formlp-front-section--s0002a1">
+			<div class="formlp-front-section--s0002a1-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0002a1-inner">
+					<div class="formlp-front-section--s0002a1-header" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ヘッダー", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="ヘッダー">
+						<p class="formlp-front-section--s0002a1-header-txt @setting.GetAttributeValue("ヘッダーテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ヘッダーテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="ヘッダーテキスト">@Html.Raw(setting.GetAttributeValue("ヘッダーテキスト", "text"))</p>
+					</div>
+					<div class="formlp-front-section--s0002a1-body" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="背景（内側）">
+						<h2 class="formlp-front-section--s0002a1-name @setting.GetAttributeValue("商品名", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("商品名", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="商品名">@Html.Raw(setting.GetAttributeValue("商品名", "text"))</h2>
+						<p class="formlp-front-section--s0002a1-txt1 @setting.GetAttributeValue("説明テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("説明テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="説明テキスト">@Html.Raw(setting.GetAttributeValue("説明テキスト", "text"))</p>
+						<div class="formlp-front-section--s0002a1-priceblock">
+							<p class="formlp-front-section--s0002a1-priceblock-txt1 @setting.GetAttributeValue("特別価格", "font")" data-edit-prop="text,background,border" style='@setting.GetAttributeValueStyleFormat("特別価格", new[] { "background-color", "background-image", "border-color", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="特別価格">@Html.Raw(setting.GetAttributeValue("特別価格", "text"))</p>
+							<p class="formlp-front-section--s0002a1-priceblock-price">
+								<span class="formlp-front-section--s0002a1-priceblock-price-value @setting.GetAttributeValue("金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="金額テキスト">@Html.Raw(setting.GetAttributeValue("金額テキスト", "text"))</span>
+								<span class="formlp-front-section--s0002a1-priceblock-price-unit @setting.GetAttributeValue("単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="単位テキスト">@Html.Raw(setting.GetAttributeValue("単位テキスト", "text"))</span>
+								<span class="formlp-front-section--s0002a1-priceblock-price-tax @setting.GetAttributeValue("税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="税込テキスト">@Html.Raw(setting.GetAttributeValue("税込テキスト", "text"))</span>
+							</p>
+							<p class="formlp-front-section--s0002a1-priceblock-price-free" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("送料無料", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="送料無料">
+								<span class="formlp-front-section--s0002a1-priceblock-price-free-txt @setting.GetAttributeValue("送料無料テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("送料無料テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="送料無料テキスト">@Html.Raw(setting.GetAttributeValue("送料無料テキスト", "text"))</span>
+							</p>
+						</div>
+						<div class="formlp-front-section--s0002a1-btns">
+							<a class="formlp-front-section--s0002a1-btn btn-hover-scale" href="@setting.GetAttributeValue("購入ボタン", "href")" target='@setting.GetAttributeValue("購入ボタン", "target")' data-edit-prop="background,href" style='@setting.GetAttributeValueStyleFormat("購入ボタン", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="購入ボタン">
+								<span class="formlp-front-section--s0002a1-btn-label @setting.GetAttributeValue("購入ボタンテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("購入ボタンテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="購入ボタンテキスト">@Html.Raw(setting.GetAttributeValue("購入ボタンテキスト", "text"))</span>
+							</a>
+						</div>
+						<div class="formlp-front-section--s0002a1-notes">
+							<p class="formlp-front-section--s0002a1-note @setting.GetAttributeValue("注釈", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("注釈", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="注釈">@Html.Raw(setting.GetAttributeValue("注釈", "text"))</p>
+						</div>
+						<div class="formlp-front-section--s0002a1-img">
+							<img src="@setting.GetAttributeValue("商品画像", "src")" alt="" data-edit-prop="src" data-edit-prop-placeholder="商品画像">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：購入エリアa2 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0002a2")
+	{
+		<div class="formlp-front-section formlp-front-section--s0002a2">
+			<div class="formlp-front-section--s0002a2-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0002a2-inner">
+					<div class="formlp-front-section--s0002a2-header" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ヘッダー", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="ヘッダー">
+						<p class="formlp-front-section--s0002a2-header-txt @setting.GetAttributeValue("ヘッダーテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ヘッダーテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="ヘッダーテキスト">@Html.Raw(setting.GetAttributeValue("ヘッダーテキスト", "text"))</p>
+					</div>
+					<div class="formlp-front-section--s0002a2-body" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="背景（内側）">
+						<h2 class="formlp-front-section--s0002a2-name @setting.GetAttributeValue("商品名", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("商品名", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="商品名">@Html.Raw(setting.GetAttributeValue("商品名", "text"))</h2>
+						<p class="formlp-front-section--s0002a2-txt1 @setting.GetAttributeValue("説明テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("説明テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="説明テキスト">@Html.Raw(setting.GetAttributeValue("説明テキスト", "text"))</p>
+						<div class="formlp-front-section--s0002a2-priceblock">
+							<p class="formlp-front-section--s0002a2-priceblock-txt1 @setting.GetAttributeValue("特別価格", "font")" data-edit-prop="text,background,border" style='@setting.GetAttributeValueStyleFormat("特別価格", new[] { "background-color", "background-image", "border-color", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="特別価格">@Html.Raw(setting.GetAttributeValue("特別価格", "text"))</p>
+							<p class="formlp-front-section--s0002a2-priceblock-price">
+								<span class="formlp-front-section--s0002a2-priceblock-price-value @setting.GetAttributeValue("金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="金額テキスト">@Html.Raw(setting.GetAttributeValue("金額テキスト", "text"))</span>
+								<span class="formlp-front-section--s0002a2-priceblock-price-unit @setting.GetAttributeValue("単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="単位テキスト">@Html.Raw(setting.GetAttributeValue("単位テキスト", "text"))</span>
+								<span class="formlp-front-section--s0002a2-priceblock-price-tax @setting.GetAttributeValue("税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="税込テキスト">@Html.Raw(setting.GetAttributeValue("税込テキスト", "text"))</span>
+							</p>
+							<p class="formlp-front-section--s0002a2-priceblock-price-free" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("送料無料", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="送料無料">
+								<span class="formlp-front-section--s0002a2-priceblock-price-free-txt @setting.GetAttributeValue("送料無料テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("送料無料テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="送料無料テキスト">@Html.Raw(setting.GetAttributeValue("送料無料テキスト", "text"))</span>
+							</p>
+						</div>
+						<div class="formlp-front-section--s0002a2-btns">
+							<a class="formlp-front-section--s0002a2-btn btn-hover-scale" href="@setting.GetAttributeValue("購入ボタン", "href")" target='@setting.GetAttributeValue("購入ボタン", "target")' data-edit-prop="background,href" style='@setting.GetAttributeValueStyleFormat("購入ボタン", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="購入ボタン">
+								<span class="formlp-front-section--s0002a2-btn-label @setting.GetAttributeValue("購入ボタンテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("購入ボタンテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="購入ボタンテキスト">@Html.Raw(setting.GetAttributeValue("購入ボタンテキスト", "text"))</span>
+							</a>
+						</div>
+						<div class="formlp-front-section--s0002a2-notes">
+							<p class="formlp-front-section--s0002a2-note @setting.GetAttributeValue("注釈", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("注釈", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="注釈">@Html.Raw(setting.GetAttributeValue("注釈", "text"))</p>
+						</div>
+						<div class="formlp-front-section--s0002a2-img">
+							<img src="@setting.GetAttributeValue("商品画像", "src")" alt="" data-edit-prop="src" data-edit-prop-placeholder="商品画像">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：購入エリアa3 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0002a3")
+	{
+		<div class="formlp-front-section formlp-front-section--s0002a3">
+			<div class="formlp-front-section--s0002a3-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0002a3-inner">
+					<div class="formlp-front-section--s0002a3-header" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ヘッダー", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="ヘッダー">
+						<p class="formlp-front-section--s0002a3-header-txt @setting.GetAttributeValue("ヘッダーテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ヘッダーテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="ヘッダーテキスト">@Html.Raw(setting.GetAttributeValue("ヘッダーテキスト", "text"))</p>
+					</div>
+					<div class="formlp-front-section--s0002a3-body" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="背景（内側）">
+						<h2 class="formlp-front-section--s0002a3-name @setting.GetAttributeValue("商品名", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("商品名", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="商品名">@Html.Raw(setting.GetAttributeValue("商品名", "text"))</h2>
+						<p class="formlp-front-section--s0002a3-txt1 @setting.GetAttributeValue("説明テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("説明テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="説明テキスト">@Html.Raw(setting.GetAttributeValue("説明テキスト", "text"))</p>
+						<div class="formlp-front-section--s0002a3-priceblock">
+							<p class="formlp-front-section--s0002a3-priceblock-txt1 @setting.GetAttributeValue("特別価格", "font")" data-edit-prop="text,background,border" style='@setting.GetAttributeValueStyleFormat("特別価格", new[] { "background-color", "background-image", "border-color", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="特別価格">@Html.Raw(setting.GetAttributeValue("特別価格", "text"))</p>
+							<p class="formlp-front-section--s0002a3-priceblock-price">
+								<span class="formlp-front-section--s0002a3-priceblock-price-value @setting.GetAttributeValue("金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="金額テキスト">@Html.Raw(setting.GetAttributeValue("金額テキスト", "text"))</span>
+								<span class="formlp-front-section--s0002a3-priceblock-price-unit @setting.GetAttributeValue("単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="単位テキスト">@Html.Raw(setting.GetAttributeValue("単位テキスト", "text"))</span>
+								<span class="formlp-front-section--s0002a3-priceblock-price-tax @setting.GetAttributeValue("税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="税込テキスト">@Html.Raw(setting.GetAttributeValue("税込テキスト", "text"))</span>
+							</p>
+							<p class="formlp-front-section--s0002a3-priceblock-price-free" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("送料無料", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="送料無料">
+								<span class="formlp-front-section--s0002a3-priceblock-price-free-txt @setting.GetAttributeValue("送料無料テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("送料無料テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="送料無料テキスト">@Html.Raw(setting.GetAttributeValue("送料無料テキスト", "text"))</span>
+							</p>
+						</div>
+						<div class="formlp-front-section--s0002a3-btns">
+							<a class="formlp-front-section--s0002a3-btn btn-hover-scale" href="@setting.GetAttributeValue("購入ボタン", "href")" target='@setting.GetAttributeValue("購入ボタン", "target")' data-edit-prop="background,href" style='@setting.GetAttributeValueStyleFormat("購入ボタン", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="購入ボタン">
+								<span class="formlp-front-section--s0002a3-btn-label @setting.GetAttributeValue("購入ボタンテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("購入ボタンテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="購入ボタンテキスト">@Html.Raw(setting.GetAttributeValue("購入ボタンテキスト", "text"))</span>
+							</a>
+						</div>
+						<div class="formlp-front-section--s0002a3-notes">
+							<p class="formlp-front-section--s0002a3-note @setting.GetAttributeValue("注釈", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("注釈", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="注釈">@Html.Raw(setting.GetAttributeValue("注釈", "text"))</p>
+						</div>
+						<div class="formlp-front-section--s0002a3-img">
+							<img src="@setting.GetAttributeValue("商品画像", "src")" alt="" data-edit-prop="src" data-edit-prop-placeholder="商品画像">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：購入エリアb1 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0002b1")
+	{
+		<div class="formlp-front-section formlp-front-section--s0002b1">
+			<div class="formlp-front-section--s0002b1-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0002b1-inner">
+					<div class="formlp-front-section--s0002b1-header" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ヘッダー", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="ヘッダー">
+						<p class="formlp-front-section--s0002b1-header-txt @setting.GetAttributeValue("ヘッダーテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ヘッダーテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="ヘッダーテキスト">@Html.Raw(setting.GetAttributeValue("ヘッダーテキスト", "text"))</p>
+					</div>
+					<div class="formlp-front-section--s0002b1-body" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="背景（内側）">
+						<h2 class="formlp-front-section--s0002b1-name @setting.GetAttributeValue("商品名", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("商品名", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="商品名">@Html.Raw(setting.GetAttributeValue("商品名", "text"))</h2>
+						<p class="formlp-front-section--s0002b1-txt1 @setting.GetAttributeValue("説明テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("説明テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="説明テキスト">@Html.Raw(setting.GetAttributeValue("説明テキスト", "text"))</p>
+						<div class="formlp-front-section--s0002b1-priceblock">
+							<div class="formlp-front-section--s0002b1-priceblock-before">
+								<p class="formlp-front-section--s0002b1-priceblock-before-price">
+									<span class="formlp-front-section--s0002b1-priceblock-before-price-txt1 @setting.GetAttributeValue("通常金額ラベル", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常金額ラベル", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常金額ラベル">@Html.Raw(setting.GetAttributeValue("通常金額ラベル", "text"))</span>
+									<span class="formlp-front-section--s0002b1-priceblock-before-price-value @setting.GetAttributeValue("通常金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常金額テキスト">@Html.Raw(setting.GetAttributeValue("通常金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002b1-priceblock-before-price-unit @setting.GetAttributeValue("通常単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常単位テキスト">@Html.Raw(setting.GetAttributeValue("通常単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002b1-priceblock-before-price-tax @setting.GetAttributeValue("通常税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常税込テキスト">@Html.Raw(setting.GetAttributeValue("通常税込テキスト", "text"))</span>
+								</p>
+							</div>
+							<div class="formlp-front-section--s0002b1-priceblock-arrow"></div>
+							<div class="formlp-front-section--s0002b1-priceblock-after">
+								<p class="formlp-front-section--s0002b1-priceblock-after-txt1 @setting.GetAttributeValue("割引金額ラベル", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("割引金額ラベル", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="割引金額ラベル">@Html.Raw(setting.GetAttributeValue("割引金額ラベル", "text"))</p>
+								<p class="formlp-front-section--s0002b1-priceblock-after-price">
+									<span class="formlp-front-section--s0002b1-priceblock-after-price-value @setting.GetAttributeValue("割引金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("割引金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="割引金額テキスト">@Html.Raw(setting.GetAttributeValue("割引金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002b1-priceblock-after-price-unit @setting.GetAttributeValue("割引単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("割引単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="割引単位テキスト">@Html.Raw(setting.GetAttributeValue("割引単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002b1-priceblock-after-price-tax @setting.GetAttributeValue("割引税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("割引税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="割引税込テキスト">@Html.Raw(setting.GetAttributeValue("割引税込テキスト", "text"))</span>
+								</p>
+								<p class="formlp-front-section--s0002b1-priceblock-after-price-free" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("送料無料", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="送料無料">
+									<span class="formlp-front-section--s0002b1-priceblock-after-price-free-txt @setting.GetAttributeValue("送料無料テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("送料無料テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="送料無料テキスト">@Html.Raw(setting.GetAttributeValue("送料無料テキスト", "text"))</span>
+								</p>
+							</div>
+						</div>
+						<div class="formlp-front-section--s0002b1-btns">
+							<a class="formlp-front-section--s0002b1-btn btn-hover-scale" href="@setting.GetAttributeValue("購入ボタン", "href")" target="@setting.GetAttributeValue("購入ボタン", "target")" data-edit-prop="background,href" style='@setting.GetAttributeValueStyleFormat("購入ボタン", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="購入ボタン">
+								<span class="formlp-front-section--s0002b1-btn-label @setting.GetAttributeValue("購入ボタンテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("購入ボタンテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="購入ボタンテキスト">@Html.Raw(setting.GetAttributeValue("購入ボタンテキスト", "text"))</span>
+							</a>
+						</div>
+						<div class="formlp-front-section--s0002b1-notes">
+							<p class="formlp-front-section--s0002b1-note @setting.GetAttributeValue("注釈", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("注釈", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="注釈">@Html.Raw(setting.GetAttributeValue("注釈", "text"))</p>
+						</div>
+						<div class="formlp-front-section--s0002b1-img">
+							<img src="@setting.GetAttributeValue("商品画像", "src")" alt="" data-edit-prop="src" data-edit-prop-placeholder="商品画像">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：購入エリアb2 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0002b2")
+	{
+		<div class="formlp-front-section formlp-front-section--s0002b2">
+			<div class="formlp-front-section--s0002b2-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0002b2-inner">
+					<div class="formlp-front-section--s0002b2-header" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ヘッダー", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="ヘッダー">
+						<p class="formlp-front-section--s0002b2-header-txt @setting.GetAttributeValue("ヘッダーテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ヘッダーテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="ヘッダーテキスト">@Html.Raw(setting.GetAttributeValue("ヘッダーテキスト", "text"))</p>
+					</div>
+					<div class="formlp-front-section--s0002b2-body" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="背景（内側）">
+						<h2 class="formlp-front-section--s0002b2-name @setting.GetAttributeValue("商品名", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("商品名", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="商品名">@Html.Raw(setting.GetAttributeValue("商品名", "text"))</h2>
+						<p class="formlp-front-section--s0002b2-txt1 @setting.GetAttributeValue("説明テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("説明テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="説明テキスト">@Html.Raw(setting.GetAttributeValue("説明テキスト", "text"))</p>
+						<div class="formlp-front-section--s0002b2-priceblock">
+							<div class="formlp-front-section--s0002b2-priceblock-before">
+								<p class="formlp-front-section--s0002b2-priceblock-before-price">
+									<span class="formlp-front-section--s0002b2-priceblock-before-price-txt1 @setting.GetAttributeValue("通常金額ラベル", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常金額ラベル", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常金額ラベル">@Html.Raw(setting.GetAttributeValue("通常金額ラベル", "text"))</span>
+									<span class="formlp-front-section--s0002b2-priceblock-before-price-value @setting.GetAttributeValue("通常金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常金額テキスト">@Html.Raw(setting.GetAttributeValue("通常金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002b2-priceblock-before-price-unit @setting.GetAttributeValue("通常単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常単位テキスト">@Html.Raw(setting.GetAttributeValue("通常単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002b2-priceblock-before-price-tax @setting.GetAttributeValue("通常税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常税込テキスト">@Html.Raw(setting.GetAttributeValue("通常税込テキスト", "text"))</span>
+								</p>
+							</div>
+							<div class="formlp-front-section--s0002b2-priceblock-arrow"></div>
+							<div class="formlp-front-section--s0002b2-priceblock-after">
+								<p class="formlp-front-section--s0002b2-priceblock-after-txt1 @setting.GetAttributeValue("割引金額ラベル", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("割引金額ラベル", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="割引金額ラベル">@Html.Raw(setting.GetAttributeValue("割引金額ラベル", "text"))</p>
+								<p class="formlp-front-section--s0002b2-priceblock-after-price">
+									<span class="formlp-front-section--s0002b2-priceblock-after-price-value @setting.GetAttributeValue("割引金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("割引金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="割引金額テキスト">@Html.Raw(setting.GetAttributeValue("割引金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002b2-priceblock-after-price-unit @setting.GetAttributeValue("割引単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("割引単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="割引単位テキスト">@Html.Raw(setting.GetAttributeValue("割引単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002b2-priceblock-after-price-tax @setting.GetAttributeValue("割引税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("割引税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="割引税込テキスト">@Html.Raw(setting.GetAttributeValue("割引税込テキスト", "text"))</span>
+								</p>
+								<p class="formlp-front-section--s0002b2-priceblock-after-price-free" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("送料無料", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="送料無料">
+									<span class="formlp-front-section--s0002b2-priceblock-after-price-free-txt @setting.GetAttributeValue("送料無料テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("送料無料テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="送料無料テキスト">@Html.Raw(setting.GetAttributeValue("送料無料テキスト", "text"))</span>
+								</p>
+							</div>
+						</div>
+						<div class="formlp-front-section--s0002b2-btns">
+							<a class="formlp-front-section--s0002b2-btn btn-hover-scale" href="@setting.GetAttributeValue("購入ボタン", "href")" target="@setting.GetAttributeValue("購入ボタン", "target")" data-edit-prop="background,href" style='@setting.GetAttributeValueStyleFormat("購入ボタン", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="購入ボタン">
+								<span class="formlp-front-section--s0002b2-btn-label @setting.GetAttributeValue("購入ボタンテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("購入ボタンテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="購入ボタンテキスト">@Html.Raw(setting.GetAttributeValue("購入ボタンテキスト", "text"))</span>
+							</a>
+						</div>
+						<div class="formlp-front-section--s0002b2-notes">
+							<p class="formlp-front-section--s0002b2-note @setting.GetAttributeValue("注釈", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("注釈", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="注釈">@Html.Raw(setting.GetAttributeValue("注釈", "text"))</p>
+						</div>
+						<div class="formlp-front-section--s0002b2-img">
+							<img src="@setting.GetAttributeValue("商品画像", "src")" alt="" data-edit-prop="src" data-edit-prop-placeholder="商品画像">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：購入エリアb3 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0002b3")
+	{
+		<div class="formlp-front-section formlp-front-section--s0002b3">
+			<div class="formlp-front-section--s0002b3-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0002b3-inner">
+					<div class="formlp-front-section--s0002b3-header" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("ヘッダー", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="ヘッダー">
+						<p class="formlp-front-section--s0002b3-header-txt @setting.GetAttributeValue("ヘッダーテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("ヘッダーテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="ヘッダーテキスト">@Html.Raw(setting.GetAttributeValue("ヘッダーテキスト", "text"))</p>
+					</div>
+					<div class="formlp-front-section--s0002b3-body" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="背景（内側）">
+						<h2 class="formlp-front-section--s0002b3-name @setting.GetAttributeValue("商品名", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("商品名", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="商品名">@Html.Raw(setting.GetAttributeValue("商品名", "text"))</h2>
+						<p class="formlp-front-section--s0002b3-txt1 @setting.GetAttributeValue("説明テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("説明テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="説明テキスト">@Html.Raw(setting.GetAttributeValue("説明テキスト", "text"))</p>
+						<div class="formlp-front-section--s0002b3-priceblock">
+							<div class="formlp-front-section--s0002b3-priceblock-before">
+								<p class="formlp-front-section--s0002b3-priceblock-before-price">
+									<span class="formlp-front-section--s0002b3-priceblock-before-price-txt1 @setting.GetAttributeValue("通常金額ラベル", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常金額ラベル", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常金額ラベル">@Html.Raw(setting.GetAttributeValue("通常金額ラベル", "text"))</span>
+									<span class="formlp-front-section--s0002b3-priceblock-before-price-value @setting.GetAttributeValue("通常金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常金額テキスト">@Html.Raw(setting.GetAttributeValue("通常金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002b3-priceblock-before-price-unit @setting.GetAttributeValue("通常単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常単位テキスト">@Html.Raw(setting.GetAttributeValue("通常単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002b3-priceblock-before-price-tax @setting.GetAttributeValue("通常税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常税込テキスト">@Html.Raw(setting.GetAttributeValue("通常税込テキスト", "text"))</span>
+								</p>
+							</div>
+							<div class="formlp-front-section--s0002b3-priceblock-arrow"></div>
+							<div class="formlp-front-section--s0002b3-priceblock-after">
+								<p class="formlp-front-section--s0002b3-priceblock-after-txt1 @setting.GetAttributeValue("割引金額ラベル", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("割引金額ラベル", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="割引金額ラベル">@Html.Raw(setting.GetAttributeValue("割引金額ラベル", "text"))</p>
+								<p class="formlp-front-section--s0002b3-priceblock-after-price">
+									<span class="formlp-front-section--s0002b3-priceblock-after-price-value @setting.GetAttributeValue("割引金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("割引金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="割引金額テキスト">@Html.Raw(setting.GetAttributeValue("割引金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002b3-priceblock-after-price-unit @setting.GetAttributeValue("割引単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("割引単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="割引単位テキスト">@Html.Raw(setting.GetAttributeValue("割引単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002b3-priceblock-after-price-tax @setting.GetAttributeValue("割引税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("割引税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="割引税込テキスト">@Html.Raw(setting.GetAttributeValue("割引税込テキスト", "text"))</span>
+								</p>
+								<p class="formlp-front-section--s0002b3-priceblock-after-price-free" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("送料無料", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="送料無料">
+									<span class="formlp-front-section--s0002b3-priceblock-after-price-free-txt @setting.GetAttributeValue("送料無料テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("送料無料テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="送料無料テキスト">@Html.Raw(setting.GetAttributeValue("送料無料テキスト", "text"))</span>
+								</p>
+							</div>
+						</div>
+						<div class="formlp-front-section--s0002b3-btns">
+							<a class="formlp-front-section--s0002b3-btn btn-hover-scale" href="@setting.GetAttributeValue("購入ボタン", "href")" target="@setting.GetAttributeValue("購入ボタン", "target")" data-edit-prop="background,href" style='@setting.GetAttributeValueStyleFormat("購入ボタン", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="購入ボタン">
+								<span class="formlp-front-section--s0002b3-btn-label @setting.GetAttributeValue("購入ボタンテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("購入ボタンテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="購入ボタンテキスト">@Html.Raw(setting.GetAttributeValue("購入ボタンテキスト", "text"))</span>
+							</a>
+						</div>
+						<div class="formlp-front-section--s0002b3-notes">
+							<p class="formlp-front-section--s0002b3-note @setting.GetAttributeValue("注釈", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("注釈", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="注釈">@Html.Raw(setting.GetAttributeValue("注釈", "text"))</p>
+						</div>
+						<div class="formlp-front-section--s0002b3-img">
+							<img src="@setting.GetAttributeValue("商品画像", "src")" alt="" data-edit-prop="src" data-edit-prop-placeholder="商品画像">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：購入エリアc1 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0002c1")
+	{
+		<div class="formlp-front-section formlp-front-section--s0002c1">
+			<div class="formlp-front-section--s0002c1-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0002c1-inner">
+					<div class="formlp-front-section--s0002c1-teiki" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("定期商品ブロック", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="定期商品ブロック">
+						<div class="formlp-front-section--s0002c1-teiki-tag" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("割引タグ", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="割引タグ">
+							<span class="formlp-front-section--s0002c1-teiki-tag-txt">
+								<span class="formlp-front-section--s0002c1-teiki-tag-txt1 @setting.GetAttributeValue("テキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト1">@Html.Raw(setting.GetAttributeValue("テキスト1", "text"))</span>
+								<span class="formlp-front-section--s0002c1-teiki-tag-txt2 @setting.GetAttributeValue("テキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト2">@Html.Raw(setting.GetAttributeValue("テキスト2", "text"))</span>
+								<span class="formlp-front-section--s0002c1-teiki-tag-txt3 @setting.GetAttributeValue("テキスト3", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト3", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト3">@Html.Raw(setting.GetAttributeValue("テキスト3", "text"))</span>
+							</span>
+						</div>
+						<h2 class="formlp-front-section--s0002c1-teiki-name @setting.GetAttributeValue("定期商品名", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期商品名", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期商品名">@Html.Raw(setting.GetAttributeValue("定期商品名", "text"))</h2>
+						<div class="formlp-front-section--s0002c1-teiki-priceblock">
+							<div class="formlp-front-section--s0002c1-teiki-priceblock-before">
+								<p class="formlp-front-section--s0002c1-teiki-priceblock-before-price">
+									<span class="formlp-front-section--s0002c1-teiki-priceblock-before-price-txt1 @setting.GetAttributeValue("定期通常価格", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期通常価格", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期通常価格">@Html.Raw(setting.GetAttributeValue("定期通常価格", "text"))</span>
+									<span class="formlp-front-section--s0002c1-teiki-priceblock-before-price-value @setting.GetAttributeValue("定期通常金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期通常金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期通常金額テキスト">@Html.Raw(setting.GetAttributeValue("定期通常金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c1-teiki-priceblock-before-price-unit @setting.GetAttributeValue("定期通常単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期通常単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期通常単位テキスト">@Html.Raw(setting.GetAttributeValue("定期通常単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c1-teiki-priceblock-before-price-tax @setting.GetAttributeValue("定期通常税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期通常税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期通常税込テキスト">@Html.Raw(setting.GetAttributeValue("定期通常税込テキスト", "text"))</span>
+								</p>
+							</div>
+							<div class="formlp-front-section--s0002c1-teiki-priceblock-after">
+								<p class="formlp-front-section--s0002c1-teiki-priceblock-after-txt1 @setting.GetAttributeValue("定期限定価格", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("定期限定価格", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期限定価格">@Html.Raw(setting.GetAttributeValue("定期限定価格", "text"))</p>
+								<p class="formlp-front-section--s0002c1-teiki-priceblock-after-price">
+									<span class="formlp-front-section--s0002c1-teiki-priceblock-after-price-value @setting.GetAttributeValue("定期限定金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期限定金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期限定金額テキスト">@Html.Raw(setting.GetAttributeValue("定期限定金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c1-teiki-priceblock-after-price-unit @setting.GetAttributeValue("定期限定単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期限定単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期限定単位テキスト">@Html.Raw(setting.GetAttributeValue("定期限定単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c1-teiki-priceblock-after-price-tax @setting.GetAttributeValue("定期限定税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期限定税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期限定税込テキスト">@Html.Raw(setting.GetAttributeValue("定期限定税込テキスト", "text"))</span>
+								</p>
+							</div>
+						</div>
+						<div class="formlp-front-section--s0002c1-teiki-notes">
+							<p class="formlp-front-section--s0002c1-teiki-note @setting.GetAttributeValue("定期注釈", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期注釈", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期注釈">@Html.Raw(setting.GetAttributeValue("定期注釈", "text"))</p>
+						</div>
+						<div class="formlp-front-section--s0002c1-teiki-btns">
+							<a class="formlp-front-section--s0002c1-teiki-btn btn-hover-scale" href="@setting.GetAttributeValue("定期購入ボタン", "href")" target="@setting.GetAttributeValue("定期購入ボタン", "target")" data-edit-prop="background,href" style='@setting.GetAttributeValueStyleFormat("定期購入ボタン", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="定期購入ボタン">
+								<span class="formlp-front-section--s0002c1-teiki-btn-label1 @setting.GetAttributeValue("定期購入ボタンテキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期購入ボタンテキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期購入ボタンテキスト1">@Html.Raw(setting.GetAttributeValue("定期購入ボタンテキスト1", "text"))</span>
+								<span class="formlp-front-section--s0002c1-teiki-btn-label2 @setting.GetAttributeValue("定期購入ボタンテキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期購入ボタンテキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期購入ボタンテキスト2">@Html.Raw(setting.GetAttributeValue("定期購入ボタンテキスト2", "text"))</span>
+							</a>
+						</div>
+					</div>
+					<div class="formlp-front-section--s0002c1-tanpin">
+						<h2 class="formlp-front-section--s0002c1-tanpin-name @setting.GetAttributeValue("通常商品名", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常商品名", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常商品名">@Html.Raw(setting.GetAttributeValue("通常商品名", "text"))</h2>
+						<div class="formlp-front-section--s0002c1-tanpin-priceblock">
+							<div class="formlp-front-section--s0002c1-tanpin-priceblock-after">
+								<p class="formlp-front-section--s0002c1-tanpin-priceblock-after-txt1 @setting.GetAttributeValue("通常価格", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("通常価格", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常価格">@Html.Raw(setting.GetAttributeValue("通常価格", "text"))</p>
+								<p class="formlp-front-section--s0002c1-tanpin-priceblock-after-price">
+									<span class="formlp-front-section--s0002c1-tanpin-priceblock-after-price-value @setting.GetAttributeValue("通常金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常金額テキスト">@Html.Raw(setting.GetAttributeValue("通常金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c1-tanpin-priceblock-after-price-unit @setting.GetAttributeValue("通常単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常単位テキスト">@Html.Raw(setting.GetAttributeValue("通常単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c1-tanpin-priceblock-after-price-tax @setting.GetAttributeValue("通常税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常税込テキスト">@Html.Raw(setting.GetAttributeValue("通常税込テキスト", "text"))</span>
+								</p>
+							</div>
+						</div>
+						<div class="formlp-front-section--s0002c1-tanpin-notes">
+							<p class="formlp-front-section--s0002c1-tanpin-note @setting.GetAttributeValue("注釈", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("注釈", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="注釈">@Html.Raw(setting.GetAttributeValue("注釈", "text"))</p>
+						</div>
+						<div class="formlp-front-section--s0002c1-tanpin-btns">
+							<a class="formlp-front-section--s0002c1-tanpin-btn btn-hover-scale" href="@setting.GetAttributeValue("購入ボタン", "href")" target="@setting.GetAttributeValue("購入ボタン", "target")" data-edit-prop="background,href" style='@setting.GetAttributeValueStyleFormat("購入ボタン", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="購入ボタン">
+								<span class="formlp-front-section--s0002c1-tanpin-btn-label1 @setting.GetAttributeValue("購入ボタンテキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("購入ボタンテキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="購入ボタンテキスト1">@Html.Raw(setting.GetAttributeValue("購入ボタンテキスト1", "text"))</span>
+								<span class="formlp-front-section--s0002c1-tanpin-btn-label2 @setting.GetAttributeValue("購入ボタンテキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("購入ボタンテキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="購入ボタンテキスト2">@Html.Raw(setting.GetAttributeValue("購入ボタンテキスト2", "text"))</span>
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：購入エリアc2 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0002c2")
+	{
+		<div class="formlp-front-section formlp-front-section--s0002c2">
+			<div class="formlp-front-section--s0002c2-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0002c2-inner">
+					<div class="formlp-front-section--s0002c2-teiki" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("定期商品ブロック", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="定期商品ブロック">
+						<h2 class="formlp-front-section--s0002c2-teiki-name" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("定期商品名背景", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="定期商品名背景">
+							<span class="formlp-front-section--s0002c2-teiki-name-text @setting.GetAttributeValue("定期商品名", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期商品名", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期商品名">@Html.Raw(setting.GetAttributeValue("定期商品名", "text"))</span>
+						</h2>
+						<div class="formlp-front-section--s0002c2-teiki-priceblock">
+							<div class="formlp-front-section--s0002c2-teiki-priceblock-before">
+								<p class="formlp-front-section--s0002c2-teiki-priceblock-before-price">
+									<span class="formlp-front-section--s0002c2-teiki-priceblock-before-price-txt1 @setting.GetAttributeValue("定期通常価格", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期通常価格", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期通常価格">@Html.Raw(setting.GetAttributeValue("定期通常価格", "text"))</span>
+									<span class="formlp-front-section--s0002c2-teiki-priceblock-before-price-value @setting.GetAttributeValue("定期通常金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期通常金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期通常金額テキスト">@Html.Raw(setting.GetAttributeValue("定期通常金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c2-teiki-priceblock-before-price-unit @setting.GetAttributeValue("定期通常単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期通常単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期通常単位テキスト">@Html.Raw(setting.GetAttributeValue("定期通常単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c2-teiki-priceblock-before-price-tax @setting.GetAttributeValue("定期通常税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期通常税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期通常税込テキスト">@Html.Raw(setting.GetAttributeValue("定期通常税込テキスト", "text"))</span>
+								</p>
+							</div>
+							<div class="formlp-front-section--s0002c2-teiki-priceblock-after">
+								<p class="formlp-front-section--s0002c2-teiki-priceblock-after-txt1 @setting.GetAttributeValue("定期限定価格", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("定期限定価格", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期限定価格">@Html.Raw(setting.GetAttributeValue("定期限定価格", "text"))</p>
+								<p class="formlp-front-section--s0002c2-teiki-priceblock-after-price">
+									<span class="formlp-front-section--s0002c2-teiki-priceblock-after-price-value @setting.GetAttributeValue("定期限定金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期限定金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期限定金額テキスト">@Html.Raw(setting.GetAttributeValue("定期限定金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c2-teiki-priceblock-after-price-unit @setting.GetAttributeValue("定期限定単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期限定単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期限定単位テキスト">@Html.Raw(setting.GetAttributeValue("定期限定単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c2-teiki-priceblock-after-price-tax @setting.GetAttributeValue("定期限定税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期限定税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期限定税込テキスト">@Html.Raw(setting.GetAttributeValue("定期限定税込テキスト", "text"))</span>
+								</p>
+								<div class="formlp-front-section--s0002c2-teiki-priceblock-after-tag" data-edit-prop="background" data-edit-prop-placeholder="定期割引タグ">
+									<span class="formlp-front-section--s0002c2-teiki-priceblock-after-tag-txt">
+										<span class="formlp-front-section--s0002c2-teiki-priceblock-after-tag-txt1 @setting.GetAttributeValue("定期割引テキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期割引テキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期割引テキスト1">@Html.Raw(setting.GetAttributeValue("定期割引テキスト1", "text"))</span>
+										<span class="formlp-front-section--s0002c2-teiki-priceblock-after-tag-txt2 @setting.GetAttributeValue("定期割引テキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期割引テキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期割引テキスト2">@Html.Raw(setting.GetAttributeValue("定期割引テキスト2", "text"))</span>
+										<span class="formlp-front-section--s0002c2-teiki-priceblock-after-tag-txt3 @setting.GetAttributeValue("定期割引テキスト3", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期割引テキスト3", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期割引テキスト3">@Html.Raw(setting.GetAttributeValue("定期割引テキスト3", "text"))</span>
+									</span>
+								</div>
+							</div>
+						</div>
+						<div class="formlp-front-section--s0002c2-teiki-notes">
+							<p class="formlp-front-section--s0002c2-teiki-note @setting.GetAttributeValue("定期注釈", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期注釈", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期注釈">@Html.Raw(setting.GetAttributeValue("定期注釈", "text"))</p>
+						</div>
+						<div class="formlp-front-section--s0002c2-teiki-btns">
+							<a class="formlp-front-section--s0002c2-teiki-btn btn-hover-scale" href="@setting.GetAttributeValue("定期購入ボタン", "href")" target="@setting.GetAttributeValue("定期購入ボタン", "target")" data-edit-prop="background,href" style='@setting.GetAttributeValueStyleFormat("定期購入ボタン", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="定期購入ボタン">
+								<span class="formlp-front-section--s0002c2-teiki-btn-label1 @setting.GetAttributeValue("定期購入ボタンテキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期購入ボタンテキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期購入ボタンテキスト1">@Html.Raw(setting.GetAttributeValue("定期購入ボタンテキスト1", "text"))</span>
+								<span class="formlp-front-section--s0002c2-teiki-btn-label2 @setting.GetAttributeValue("定期購入ボタンテキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期購入ボタンテキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期購入ボタンテキスト2">@Html.Raw(setting.GetAttributeValue("定期購入ボタンテキスト2", "text"))</span>
+							</a>
+						</div>
+					</div>
+					<div class="formlp-front-section--s0002c2-tanpin">
+						<h2 class="formlp-front-section--s0002c2-tanpin-name" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("通常商品名背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="通常商品名背景">
+							<span class="formlp-front-section--s0002c2-tanpin-name-text @setting.GetAttributeValue("通常商品名", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常商品名", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常商品名">@Html.Raw(setting.GetAttributeValue("通常商品名", "text"))</span>
+						</h2>
+						<div class="formlp-front-section--s0002c2-tanpin-priceblock">
+							<div class="formlp-front-section--s0002c2-tanpin-priceblock-after">
+								<p class="formlp-front-section--s0002c2-tanpin-priceblock-after-txt1 @setting.GetAttributeValue("通常価格", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("通常価格", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常価格">@Html.Raw(setting.GetAttributeValue("通常価格", "text"))</p>
+								<p class="formlp-front-section--s0002c2-tanpin-priceblock-after-price">
+									<span class="formlp-front-section--s0002c2-tanpin-priceblock-after-price-value @setting.GetAttributeValue("通常金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常金額テキスト">@Html.Raw(setting.GetAttributeValue("通常金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c2-tanpin-priceblock-after-price-unit @setting.GetAttributeValue("通常単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常単位テキスト">@Html.Raw(setting.GetAttributeValue("通常単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c2-tanpin-priceblock-after-price-tax @setting.GetAttributeValue("通常税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常税込テキスト">@Html.Raw(setting.GetAttributeValue("通常税込テキスト", "text"))</span>
+								</p>
+							</div>
+						</div>
+						<div class="formlp-front-section--s0002c2-tanpin-notes">
+							<p class="formlp-front-section--s0002c2-tanpin-note @setting.GetAttributeValue("注釈", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("注釈", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="注釈">@Html.Raw(setting.GetAttributeValue("注釈", "text"))</p>
+						</div>
+						<div class="formlp-front-section--s0002c2-tanpin-btns">
+							<a class="formlp-front-section--s0002c2-tanpin-btn btn-hover-scale" href="@setting.GetAttributeValue("購入ボタン", "href")" target="@setting.GetAttributeValue("購入ボタン", "target")" data-edit-prop="background,href" style='@setting.GetAttributeValueStyleFormat("購入ボタン", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="購入ボタン">
+								<span class="formlp-front-section--s0002c2-tanpin-btn-label1 @setting.GetAttributeValue("購入ボタンテキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("購入ボタンテキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="購入ボタンテキスト1">@Html.Raw(setting.GetAttributeValue("購入ボタンテキスト1", "text"))</span>
+								<span class="formlp-front-section--s0002c2-tanpin-btn-label2 @setting.GetAttributeValue("購入ボタンテキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("購入ボタンテキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="購入ボタンテキスト2">@Html.Raw(setting.GetAttributeValue("購入ボタンテキスト2", "text"))</span>
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：購入エリアc3 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0002c3")
+	{
+		<div class="formlp-front-section formlp-front-section--s0002c3">
+			<div class="formlp-front-section--s0002c3-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0002c3-inner">
+					<div class="formlp-front-section--s0002c3-teiki" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("定期商品ブロック", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="定期商品ブロック">
+						<div class="formlp-front-section--s0002c3-teiki-tag" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("割引タグ", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="割引タグ">
+							<span class="formlp-front-section--s0002c3-teiki-tag-txt">
+								<span class="formlp-front-section--s0002c3-teiki-tag-txt1 @setting.GetAttributeValue("テキスト1", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト1", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト1">@Html.Raw(setting.GetAttributeValue("テキスト1", "text"))</span>
+								<span class="formlp-front-section--s0002c3-teiki-tag-txt2 @setting.GetAttributeValue("テキスト2", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト2", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト2">@Html.Raw(setting.GetAttributeValue("テキスト2", "text"))</span>
+								<span class="formlp-front-section--s0002c3-teiki-tag-txt3 @setting.GetAttributeValue("テキスト3", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト3", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト3">@Html.Raw(setting.GetAttributeValue("テキスト3", "text"))</span>
+							</span>
+						</div>
+						<h2 class="formlp-front-section--s0002c3-teiki-name @setting.GetAttributeValue("定期商品名", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期商品名", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期商品名">@Html.Raw(setting.GetAttributeValue("定期商品名", "text"))</h2>
+						<div class="formlp-front-section--s0002c3-teiki-priceblock">
+							<div class="formlp-front-section--s0002c3-teiki-priceblock-before">
+								<p class="formlp-front-section--s0002c3-teiki-priceblock-before-price">
+									<span class="formlp-front-section--s0002c3-teiki-priceblock-before-price-txt1 @setting.GetAttributeValue("定期通常価格", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期通常価格", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期通常価格">@Html.Raw(setting.GetAttributeValue("定期通常価格", "text"))</span>
+									<span class="formlp-front-section--s0002c3-teiki-priceblock-before-price-value @setting.GetAttributeValue("定期通常金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期通常金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期通常金額テキスト">@Html.Raw(setting.GetAttributeValue("定期通常金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c3-teiki-priceblock-before-price-unit @setting.GetAttributeValue("定期通常単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期通常単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期通常単位テキスト">@Html.Raw(setting.GetAttributeValue("定期通常単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c3-teiki-priceblock-before-price-tax @setting.GetAttributeValue("定期通常税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期通常税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期通常税込テキスト">@Html.Raw(setting.GetAttributeValue("定期通常税込テキスト", "text"))</span>
+								</p>
+							</div>
+							<div class="formlp-front-section--s0002c3-teiki-priceblock-after">
+								<p class="formlp-front-section--s0002c3-teiki-priceblock-after-txt1 @setting.GetAttributeValue("定期限定価格", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("定期限定価格", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期限定価格">@Html.Raw(setting.GetAttributeValue("定期限定価格", "text"))</p>
+								<p class="formlp-front-section--s0002c3-teiki-priceblock-after-price">
+									<span class="formlp-front-section--s0002c3-teiki-priceblock-after-price-value @setting.GetAttributeValue("定期限定金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期限定金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期限定金額テキスト">@Html.Raw(setting.GetAttributeValue("定期限定金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c3-teiki-priceblock-after-price-unit @setting.GetAttributeValue("定期限定単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期限定単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期限定単位テキスト">@Html.Raw(setting.GetAttributeValue("定期限定単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c3-teiki-priceblock-after-price-tax @setting.GetAttributeValue("定期限定税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期限定税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期限定税込テキスト">@Html.Raw(setting.GetAttributeValue("定期限定税込テキスト", "text"))</span>
+								</p>
+							</div>
+						</div>
+						<div class="formlp-front-section--s0002c3-teiki-notes">
+							<p class="formlp-front-section--s0002c3-teiki-note @setting.GetAttributeValue("定期注釈", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期注釈", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期注釈">@Html.Raw(setting.GetAttributeValue("定期注釈", "text"))</p>
+						</div>
+						<div class="formlp-front-section--s0002c3-teiki-btns">
+							<a class="formlp-front-section--s0002c3-teiki-btn btn-hover-scale" href="@setting.GetAttributeValue("定期購入ボタン", "href")" target="@setting.GetAttributeValue("定期購入ボタン", "target")" data-edit-prop="background,href" style='@setting.GetAttributeValueStyleFormat("定期購入ボタン", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="定期購入ボタン">
+								<span class="formlp-front-section--s0002c3-teiki-btn-label @setting.GetAttributeValue("定期購入ボタンテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("定期購入ボタンテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="定期購入ボタンテキスト">@Html.Raw(setting.GetAttributeValue("定期購入ボタンテキスト", "text"))</span>
+							</a>
+						</div>
+					</div>
+					<div class="formlp-front-section--s0002c3-tanpin">
+						<h2 class="formlp-front-section--s0002c3-tanpin-name @setting.GetAttributeValue("通常商品名", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常商品名", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常商品名">@Html.Raw(setting.GetAttributeValue("通常商品名", "text"))</h2>
+						<div class="formlp-front-section--s0002c3-tanpin-priceblock">
+							<div class="formlp-front-section--s0002c3-tanpin-priceblock-after">
+								<p class="formlp-front-section--s0002c3-tanpin-priceblock-after-txt1 @setting.GetAttributeValue("通常価格", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("通常価格", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常価格">@Html.Raw(setting.GetAttributeValue("通常価格", "text"))</p>
+								<p class="formlp-front-section--s0002c3-tanpin-priceblock-after-price">
+									<span class="formlp-front-section--s0002c3-tanpin-priceblock-after-price-value @setting.GetAttributeValue("通常金額テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常金額テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常金額テキスト">@Html.Raw(setting.GetAttributeValue("通常金額テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c3-tanpin-priceblock-after-price-unit @setting.GetAttributeValue("通常単位テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常単位テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常単位テキスト">@Html.Raw(setting.GetAttributeValue("通常単位テキスト", "text"))</span>
+									<span class="formlp-front-section--s0002c3-tanpin-priceblock-after-price-tax @setting.GetAttributeValue("通常税込テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("通常税込テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="通常税込テキスト">@Html.Raw(setting.GetAttributeValue("通常税込テキスト", "text"))</span>
+								</p>
+							</div>
+						</div>
+						<div class="formlp-front-section--s0002c3-tanpin-notes">
+							<p class="formlp-front-section--s0002c3-tanpin-note @setting.GetAttributeValue("注釈", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("注釈", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="注釈">@Html.Raw(setting.GetAttributeValue("注釈", "text"))</p>
+						</div>
+						<div class="formlp-front-section--s0002c3-tanpin-btns">
+							<a class="formlp-front-section--s0002c3-tanpin-btn btn-hover-scale" href="@setting.GetAttributeValue("購入ボタン", "href")" target="@setting.GetAttributeValue("購入ボタン", "target")" data-edit-prop="background,href" style='@setting.GetAttributeValueStyleFormat("購入ボタン", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="購入ボタン">
+								<span class="formlp-front-section--s0002c3-tanpin-btn-label @setting.GetAttributeValue("購入ボタンテキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("購入ボタンテキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="購入ボタンテキスト">@Html.Raw(setting.GetAttributeValue("購入ボタンテキスト", "text"))</span>
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：購入エリア simple *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0002")
+	{
+		<div class="formlp-front-section formlp-front-section--s0002">
+			<div class="formlp-front-section--s0002-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0002-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0002-text @setting.GetAttributeValue("タイトル", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+					<div class="formlp-front-section--s0002-btns">
+						<a class="formlp-front-section--s0002-btn btn-action @setting.GetAttributeValue("購入ボタン", "font")" href="@setting.GetAttributeValue("購入ボタン", "href")" target="@setting.GetAttributeValue("購入ボタン", "target")" data-edit-prop="text,background,href" style='@setting.GetAttributeValueStyleFormat("購入ボタン", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="購入ボタン">@Html.Raw(setting.GetAttributeValue("購入ボタン", "text"))</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+
+	@* ブロック：お悩み *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0003")
+	{
+		<div class="formlp-front-section formlp-front-section--s0003">
+			<div class="formlp-front-section--s0003-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0003-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0003-title @setting.GetAttributeValue("タイトル", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+					<div class="formlp-front-section--s0003-body">
+						<div class="formlp-front-section--s0003-body-img">
+							<img src="@setting.GetAttributeValue("画像", "src")" alt="" data-edit-prop="src" data-edit-prop-placeholder="画像">
+						</div>
+						<ul class="formlp-front-section--s0003-body-list">
+							@for (var index = 0; index < setting.GetListElementsByPlaceHolder("見出しテキスト").Length; index++)
+							{
+								<li data-edit-group="1" data-edit-group-placeholder="リスト">
+									<span class="@setting.GetAttributeValue("見出しテキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("見出しテキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="見出しテキスト">@Html.Raw(setting.GetAttributeValue("見出しテキスト", "text", index))</span>
+								</li>
+							}
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：選ばれる理由 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0004")
+	{
+		<div class="formlp-front-section formlp-front-section--s0004">
+			<div class="formlp-front-section--s0004-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0004-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0004-title @setting.GetAttributeValue("タイトル", "font")" data-edit-prop="background,text" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+
+					<div class="formlp-front-section--s0004-items">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("画像").Length; index++)
+						{
+							<div class="formlp-front-section--s0004-item" data-edit-group="1" data-edit-group-placeholder="ブロック">
+								<div class="formlp-front-section--s0004-item-img">
+									<img src="@setting.GetAttributeValue("画像", "src", index)" alt="" data-edit-prop="src" data-edit-prop-placeholder="画像">
+								</div>
+								<div class="formlp-front-section--s0004-item-list">
+									<p class="formlp-front-section--s0004-item-list-cap @setting.GetAttributeValue("理由タグ", "font", index)" data-edit-prop="text,border" style='@setting.GetAttributeValueStyleFormat("理由タグ", new[] { "color", "font-size", "font-weight", "border-color" }, index)' data-edit-prop-placeholder="理由タグ">@Html.Raw(setting.GetAttributeValue("理由タグ", "text", index))</p>
+									<h3 class="formlp-front-section--s0004-item-list-title @setting.GetAttributeValue("見出し", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("見出し", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="見出し">@Html.Raw(setting.GetAttributeValue("見出し", "text", index))</h3>
+									<p class="formlp-front-section--s0004-item-list-text @setting.GetAttributeValue("テキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="テキスト">@Html.Raw(setting.GetAttributeValue("テキスト", "text", index))</p>
+								</div>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：3つの特徴 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0006")
+	{
+		<div class="formlp-front-section formlp-front-section--s0006">
+			<div class="formlp-front-section--s0006-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0006-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0006-title @setting.GetAttributeValue("タイトル", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+					<div class="formlp-front-section--s0006-items">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("タグ").Length; index++)
+						{
+							<div class="formlp-front-section--s0006-item" data-edit-group="1" data-edit-group-placeholder="ブロック">
+								<h3 class="formlp-front-section--s0006-item-title">
+									<span class="formlp-front-section--s0006-item-title-cap @setting.GetAttributeValue("タグ", "font")" data-edit-prop="background,text" style='@setting.GetAttributeValueStyleFormat("タグ", new[] { "background-color", "background-image", "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="タグ">@Html.Raw(setting.GetAttributeValue("タグ", "text", index))</span>
+									<span class="formlp-front-section--s0006-item-title-value @setting.GetAttributeValue("見出し", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("見出し", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="見出し">@Html.Raw(setting.GetAttributeValue("見出し", "text", index))</span>
+								</h3>
+								<div class="formlp-front-section--s0006-item-img">
+									<img src="@setting.GetAttributeValue("画像", "src", index)" alt="" data-edit-prop="src" data-edit-prop-placeholder="画像">
+								</div>
+								<p class="formlp-front-section--s0006-item-text @setting.GetAttributeValue("テキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="テキスト">@Html.Raw(setting.GetAttributeValue("テキスト", "text", index))</p>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：メリットデメリット *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0007")
+	{
+		<div class="formlp-front-section formlp-front-section--s0007">
+			<div class="formlp-front-section--s0007-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0007-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0007-title @setting.GetAttributeValue("タイトル", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+					<div class="formlp-front-section--s0007-merit" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("メリットブロック", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="メリットブロック">
+						<h3 class="formlp-front-section--s0007-merit-title @setting.GetAttributeValue("メリット見出し", "font")" data-edit-prop="background,text" style='@setting.GetAttributeValueStyleFormat("メリット見出し", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="メリット見出し">@Html.Raw(setting.GetAttributeValue("メリット見出し", "text"))</h3>
+						<ul class="formlp-front-section--s0007-merit-list">
+							@for (var index = 0; index < setting.GetListElementsByPlaceHolder("メリットテキスト").Length; index++)
+							{
+								<li class="formlp-front-section--s0007-merit-list-item" data-edit-group="1" data-edit-group-placeholder="メリット">
+									<span class="@setting.GetAttributeValue("メリットテキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("メリットテキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="メリットテキスト">@Html.Raw(setting.GetAttributeValue("メリットテキスト", "text", index))</span>
+								</li>
+							}
+						</ul>
+					</div>
+					<div class="formlp-front-section--s0007-demerit" data-edit-prop="background,border" style='@setting.GetAttributeValueStyleFormat("デメリットブロック", new[] { "background-color", "background-image", "border-color" })' data-edit-prop-placeholder="・デメリットブロック">
+						<h3 class="formlp-front-section--s0007-demerit-title @setting.GetAttributeValue("デメリット見出し", "font")" data-edit-prop="background,text" style='@setting.GetAttributeValueStyleFormat("デメリット見出し", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="デメリット見出し">@Html.Raw(setting.GetAttributeValue("デメリット見出し", "text"))</h3>
+						<ul class="formlp-front-section--s0007-demerit-list">
+							@for (var index = 0; index < setting.GetListElementsByPlaceHolder("デメリットテキスト").Length; index++)
+							{
+								<li class="formlp-front-section--s0007-demerit-list-item" data-edit-group="2" data-edit-group-placeholder="デメリット">
+									<span class="@setting.GetAttributeValue("デメリットテキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("デメリットテキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="デメリットテキスト">@Html.Raw(setting.GetAttributeValue("デメリットテキスト", "text", index))</span>
+								</li>
+							}
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：お客様の声 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0008")
+	{
+		<div class="formlp-front-section formlp-front-section--s0008">
+			<div class="formlp-front-section--s0008-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0008-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0008-title @setting.GetAttributeValue("タイトル", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+					<div class="formlp-front-section--s0008-voices">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("アイコン").Length; index++)
+						{
+							<div class="formlp-front-section--s0008-voice" data-edit-group="1" data-edit-group-placeholder="ブロック">
+								<div class="formlp-front-section--s0008-voice-icon" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("アイコン", new[] { "background-color", "background-image" }, index)' data-edit-prop-placeholder="アイコン"></div>
+								<h3 class="formlp-front-section--s0008-voice-title @setting.GetAttributeValue("見出し", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("見出し", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="見出し">@Html.Raw(setting.GetAttributeValue("見出し", "text", index))</h3>
+								<p class="formlp-front-section--s0008-voice-profile @setting.GetAttributeValue("プロフィール", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("プロフィール", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="プロフィール">@Html.Raw(setting.GetAttributeValue("プロフィール", "text", index))</p>
+								<p class="formlp-front-section--s0008-voice-text @setting.GetAttributeValue("本文テキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("本文テキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="本文テキスト">@Html.Raw(setting.GetAttributeValue("本文テキスト", "text", index))</p>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：よくあるご質問 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0009")
+	{
+		<div class="formlp-front-section formlp-front-section--s0009">
+			<div class="formlp-front-section--s0009-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0009-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0009-title @setting.GetAttributeValue("タイトル", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+					<div class="formlp-front-section--s0009-faq-items">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("質問アイコン").Length; index++)
+						{
+							<div class="formlp-front-section--s0009-faq-item" data-edit-group="1" data-edit-group-placeholder="質問">
+								<div class="formlp-front-section--s0009-faq-q">
+									<div class="formlp-front-section--s0009-faq-q-icon @setting.GetAttributeValue("質問アイコン", "font", index)" data-edit-prop="background,text" style='@setting.GetAttributeValueStyleFormat("質問アイコン", new[] { "background-color", "background-image", "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="質問アイコン">@Html.Raw(setting.GetAttributeValue("質問アイコン", "text", index))</div>
+									<h3 class="formlp-front-section--s0009-faq-q-text @setting.GetAttributeValue("質問テキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("質問テキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="質問テキスト">@Html.Raw(setting.GetAttributeValue("質問テキスト", "text", index))</h3>
+								</div>
+								<div class="formlp-front-section--s0009-faq-a">
+									<div class="formlp-front-section--s0009-faq-a-icon @setting.GetAttributeValue("回答アイコン", "font", index)" data-edit-prop="background,text" style='@setting.GetAttributeValueStyleFormat("回答アイコン", new[] { "background-color", "background-image", "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="回答アイコン">@Html.Raw(setting.GetAttributeValue("回答アイコン", "text", index))</div>
+									<p class="formlp-front-section--s0009-faq-a-text @setting.GetAttributeValue("回答テキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("回答テキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="回答テキスト">@Html.Raw(setting.GetAttributeValue("回答テキスト", "text", index))</p>
+								</div>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：購入ステップ *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0010")
+	{
+		<div class="formlp-front-section formlp-front-section--s0010">
+			<div class="formlp-front-section--s0010-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0010-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0010-title" data-edit-prop="background,text" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+					<div class="formlp-front-section--s0010-steps">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("タグ").Length; index++)
+						{
+							<div class="formlp-front-section--s0010-step" data-edit-group="1" data-edit-group-placeholder="ステップ">
+								<p class="formlp-front-section--s0010-step-cap @setting.GetAttributeValue("タグ", "font", index)" data-edit-prop="background,text" style='@setting.GetAttributeValueStyleFormat("タグ", new[] { "background-color", "background-image", "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="タグ">@Html.Raw(setting.GetAttributeValue("タグ", "text", index))</p>
+								<h3 class="formlp-front-section--s0010-step-title @setting.GetAttributeValue("見出し", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("見出し", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="見出し">@Html.Raw(setting.GetAttributeValue("見出し", "text", index))</h3>
+								<div class="formlp-front-section--s0010-step-body">
+									<div class="formlp-front-section--s0010-step-img">
+										<img src="@setting.GetAttributeValue("画像", "src", index)" alt="" data-edit-prop="src" data-edit-prop-placeholder="画像">
+									</div>
+									<p class="formlp-front-section--s0010-step-text @setting.GetAttributeValue("本文", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("本文", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="本文">@Html.Raw(setting.GetAttributeValue("本文", "text", index))</p>
+								</div>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：アクセス *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0011")
+	{
+		<div class="formlp-front-section formlp-front-section--s0011">
+			<div class="formlp-front-section--s0011-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0011-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0011-title @setting.GetAttributeValue("タイトル", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+					<div class="formlp-front-section--s0011-items">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("名前").Length; index++)
+						{
+							<div class="formlp-front-section--s0011-item" data-edit-group="1" data-edit-group-placeholder="ブロック">
+								<h3 class="formlp-front-section--s0011-item-title @setting.GetAttributeValue("名前", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("名前", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="名前">@Html.Raw(setting.GetAttributeValue("名前", "text", index))</h3>
+								<div class="formlp-front-section--s0011-item-img">
+									<img src="@setting.GetAttributeValue("画像", "src", index)" alt="" data-edit-prop="src" data-edit-prop-placeholder="画像">
+								</div>
+								<p class="formlp-front-section--s0011-item-text @setting.GetAttributeValue("テキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="テキスト">
+									@Html.Raw(setting.GetAttributeValue("テキスト", "text", index))
+								</p>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：会社情報 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0012")
+	{
+		<div class="formlp-front-section formlp-front-section--s0012">
+			<div class="formlp-front-section--s0012-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0012-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0012-title @setting.GetAttributeValue("タイトル", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+					<div class="formlp-front-section--s0012-items">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("タグ").Length; index++)
+						{
+							<div class="formlp-front-section--s0012-item" data-edit-group="1" data-edit-group-placeholder="ブロック">
+								<h3 class="formlp-front-section--s0012-item-title @setting.GetAttributeValue("タグ", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("タグ", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="タグ">@Html.Raw(setting.GetAttributeValue("タグ", "text", index))</h3>
+								<p class="formlp-front-section--s0012-item-descrirption @setting.GetAttributeValue("内容", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("内容", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="内容">@Html.Raw(setting.GetAttributeValue("内容", "text", index))</p>
+								<p class="formlp-front-section--s0012-item-text @setting.GetAttributeValue("テキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="テキスト">
+									@Html.Raw(setting.GetAttributeValue("テキスト", "text", index))
+								</p>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：募集要項 *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0013")
+	{
+		<div class="formlp-front-section formlp-front-section--s0013">
+			<div class="formlp-front-section--s0013-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0013-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0013-title @setting.GetAttributeValue("タイトル", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+					<div class="formlp-front-section--s0013-item">
+						<p class="formlp-front-section--s0013-item-descrirption @setting.GetAttributeValue("テキスト", "font")" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="テキスト">@Html.Raw(setting.GetAttributeValue("テキスト", "text"))</p>
+						<table class="formlp-front-section--s0013-item-table">
+							@for (var index = 0; index < setting.GetListElementsByPlaceHolder("項目名").Length; index++)
+							{
+								<tr data-edit-group="1" data-edit-group-placeholder="ブロック">
+									<th class="@setting.GetAttributeValue("項目名", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("項目名", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="項目名">@Html.Raw(setting.GetAttributeValue("項目名", "text", index))</th>
+									<td class="@setting.GetAttributeValue("内容", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("内容", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="内容">@Html.Raw(setting.GetAttributeValue("内容", "text", index))</td>
+								</tr>
+							}
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：旧SNS *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0014")
+	{
+		<div class="formlp-front-section formlp-front-section--s0014">
+			<div class="formlp-front-section--s0014-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0014-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0014-title @setting.GetAttributeValue("タイトル", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+					<div class="formlp-front-section--s0014-items">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("ボタン").Length; index++)
+						{
+							<div class="formlp-front-section--s0014-item formlp-front-section--s0014-item-facebook" data-edit-group="1" data-edit-group-placeholder="ブロック">
+								<a href="@setting.GetAttributeValue("ボタン", "href", index)" target="@setting.GetAttributeValue("ボタン", "target", index)" data-edit-prop="background,text,href" style='@setting.GetAttributeValueStyleFormat("ボタン", new[] { "background-color", "background-image", "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ボタン">@Html.Raw(setting.GetAttributeValue("ボタン", "text", index))</a>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：SNS *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--s0015")
+	{
+		<div class="formlp-front-section formlp-front-section--s0015">
+			<div class="formlp-front-section--s0015-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--s0015-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<h2 class="formlp-front-section--s0015-title @setting.GetAttributeValue("タイトル", "font")" data-edit-prop="text,background" style='@setting.GetAttributeValueStyleFormat("タイトル", new[] { "background-color", "background-image", "color", "font-size", "font-weight" })' data-edit-prop-placeholder="タイトル">@Html.Raw(setting.GetAttributeValue("タイトル", "text"))</h2>
+					<div class="formlp-front-section--s0015-items" style='@setting.GetAttributeValueStyleFormat("SNS要素", new[] { "display", "justify-content" })'>
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("ボタン").Length; index++)
+						{
+							<div class="formlp-front-section--s0015-item formlp-front-section--s0015-item-facebook" data-edit-group="1" data-edit-group-placeholder="ブロック">
+								<a href="@setting.GetAttributeValue("ボタン", "href", index)" target="@setting.GetAttributeValue("ボタン", "target", index)" data-edit-prop="background,text,href" style='@setting.GetAttributeValueStyleFormat("ボタン", new[] { "background-color", "background-image", "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="ボタン">@Html.Raw(setting.GetAttributeValue("ボタン", "text", index))</a>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：カートエリア *@
+	if (setting.BlockClassName == "formlp-front-section-form")
+	{
+		<!-- カートエリア -->
+		<div class="formlp-front-section-form">
+			<p data-edit-prop="text" data-edit-prop-placeholder="dummy">カートエリア</p>
+		</div>
+		<!-- /カートエリア -->
+	}
+
+	@* ブロック：フッター *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--footer")
+	{
+		<div class="formlp-front-section formlp-front-section--footer">
+			<div class="formlp-front-section--footer-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--footer-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<div class="formlp-front-section--footer-items">
+						@for (var index = 0; index < setting.GetListElementsByPlaceHolder("見出し").Length; index++)
+						{
+							<div class="formlp-front-section--footer-item" data-edit-group="1" data-edit-group-placeholder="ブロック">
+								<p class="formlp-front-section--footer-item-cap @setting.GetAttributeValue("見出し", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("見出し", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="見出し">@Html.Raw(setting.GetAttributeValue("見出し", "text", index))</p>
+								<p class="formlp-front-section--footer-item-text @setting.GetAttributeValue("テキスト", "font", index)" data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("テキスト", new[] { "color", "font-size", "font-weight" }, index)' data-edit-prop-placeholder="テキスト">@Html.Raw(setting.GetAttributeValue("テキスト", "text", index))</p>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+	@* ブロック：コピーライト *@
+	if (setting.BlockClassName == "formlp-front-section formlp-front-section--copyright")
+	{
+		<div class="formlp-front-section formlp-front-section--copyright">
+			<div class="formlp-front-section--copyright-outer" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景">
+				<div class="formlp-front-section--copyright-inner" data-edit-prop="background" style='@setting.GetAttributeValueStyleFormat("背景（内側）", new[] { "background-color", "background-image" })' data-edit-prop-placeholder="背景（内側）">
+					<p class='@setting.GetAttributeValue("コピーライト", "font")' data-edit-prop="text" style='@setting.GetAttributeValueStyleFormat("コピーライト", new[] { "color", "font-size", "font-weight" })' data-edit-prop-placeholder="コピーライト">@Html.Raw(setting.GetAttributeValue("コピーライト", "text"))</p>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+@* 画像ファイル選択用のモーダル *@
+
+@helper ImageModal()
+{
+	<div class="modal-content-hide">
+		<div id="modal-image-select">
+			<p class="modal-inner-ttl">画像を選択</p>
+			<div class="modal-inner-image-select">
+				<h4 class="h4">画像ファイルを選択</h4>
+				<div class="formlp-image-upload-content">
+					<div class="formlp-image-upload-content-drag">
+						<p class="formlp-image-upload-content-drag-text">ファイルをドラッグ&amp;ドロップして画像を貼り付けてください。</p>
+						<div class="formlp-image-upload-content-drag-btns">
+							<p class="formlp-image-upload-content-drag-btns-text">または</p>
+							<label class="btn btn-main btn-size-m">
+								画像ファイル選択
+								<input type="file" name="upload_img" id="upload_img" class="upload_img" style="display: none;" />
+							</label>
+						</div>
+					</div>
+				</div>
+				<h4 class="h4">画像リストから選択</h4>
+				<div class="imagelist-list">
+					<div class="list-tools">
+						<div class="list-tools-row">
+							<div class="list-tools-col">
+								<div class="form-element-group form-element-group-horizontal">
+									<div class="form-element-group-title">
+										<label for="form-select-005">グループ</label>
+									</div>
+									<div class="form-element-group-content">
+										<select name="" id="form-select-005" data-bind="options: GroupList, optionsText: 'text', optionsValue: 'value', value: CondGroup">
+										</select>
+									</div>
+								</div>
+							</div>
+							<div class="list-tools-col ta-right">
+								<div class="keyword-search">
+									<input name="" value="" type="text" class="keyword-search-input" data-bind="value: CondSearchWord">
+									<a href="javascript:lp_designer_page.get_img_list()" class="keyword-search-submit">
+										<span class="icon-search"></span>
+									</a>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="list">
+						<div class="list-head">
+							<div class="list-head-row">
+								<div class="list-head-col ta-left">
+									<div class="list-style-switch">
+										<div class="list-style-switch-inner">
+											<input type="radio" name="list-style" id="modal-list-style-1" value="list" checked="">
+											<label for="modal-list-style-1" class="btn-switch">
+												<span class="icon icon-list"></span><span class="label hide-list-detail">リスト</span>
+											</label>
+											<input type="radio" name="list-style" id="modal-list-style-2" value="thumb">
+											<label for="modal-list-style-2" class="btn-switch">
+												<span class="icon icon-thumbnail"></span><span class="label hide-list-detail">サムネイル</span>
+											</label>
+										</div>
+									</div>
+								</div>
+								<div class="list-head-col w15">
+									<p>更新日</p>
+								</div>
+								<div class="list-head-col w15">
+									<p>ファイル容量</p>
+								</div>
+								<div class="list-head-col w15">
+									<p>ファイルサイズ</p>
+								</div>
+								<div class="list-head-col w15">
+								</div>
+							</div>
+						</div>
+						<div class="list-content custom-scroll-area">
+							<!-- ko foreach: GroupImageViewModel -->
+							<div class="list-group">
+								<div class="list-group-row">
+									<p class="list-group-toggle-btn"></p>
+									<p class="list-group-name" data-bind="text: $data.GroupName"></p>
+								</div>
+								<div class="list-group-toggle-content" data-bind="foreach: { data: ListImageViewModels, as: 'Item' }">
+									<div class="list-row">
+										<div class="list-col list-col-thumb w10 hide-style-list">
+											<div class="list-col-inner">
+												<figure>
+													<img data-bind="attr: { src: Item.ImagePath }" alt="" />
+												</figure>
+											</div>
+										</div>
+										<div class="list-col list-col-title">
+											<div class="list-col-inner">
+												<p class="list-col-title-label line-clamp ta-left">
+													<a class="list-col-title-a" data-bind="text: Item.FileName, attr: { href: Item.ImagePath }" target="_blank"></a>
+												</p>
+											</div>
+										</div>
+										<div class="list-col w15">
+											<p data-bind="text: Item.DataChanged"></p>
+										</div>
+										<div class="list-col w15">
+											<p data-bind="text: Item.FileSize"></p>
+										</div>
+										<div class="list-col w15">
+											<p data-bind="text: Item.ImageSize"></p>
+										</div>
+										<div class="list-col w15">
+											<a data-bind="attr: { href: 'javascript:lp_designer_page.set_img(\'' + Item.ImagePath + '\')' }" class="btn btn-main btn-size-s btn-image-select">選択する</a>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /ko -->
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+@* ブロック選択用のモーダル *@
+
+@helper BlockModal()
+{
+	<div class="modal-content-hide">
+		<div id="modal-block-select">
+			<p class="modal-inner-ttl">バリエーションを選択</p>
+			<div class="modal-inner-block-select"></div>
+			<div class="modal-footer-action">
+				<input type="button" class="btn btn-main btn-size-l" onclick="formlp.block_select.set();" value="挿入する">
+			</div>
+		</div>
+	</div>
+}
+
+@if (Model.DesignType == LandingPageConst.PAGE_DESIGN_TYPE_PC)
+{
+	<link rel="stylesheet" href="@(Constants.PATH_ROOT_FRONT_PC)Landing/formlp/Css/front_formlp.css" type="text/css" media="screen" />
+}
+else if (Model.DesignType == LandingPageConst.PAGE_DESIGN_TYPE_SP)
+{
+	<link rel="stylesheet" href="@(Constants.PATH_ROOT_FRONT_PC)SmartPhone/Landing/formlp/Css/front_formlp.css" type="text/css" media="screen" />
+}
+<div class="formlp-front-webfont">
+	<link href="https://fonts.googleapis.com/css?family=Noto+Sans+JP:400,700&display=swap&subset=japanese" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css?family=Noto+Serif+JP:400,700&display=swap&subset=japanese" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css?family=Sawarabi+Mincho" rel="stylesheet">
+</div>
+
+@using (Html.BeginForm("Designer", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_LANDING_PAGE, FormMethod.Get))
+{
+	<div class="content">
+		<div class="formlp-design-editor">
+			<div class="formlp-design-editor-head">
+				<div class="formlp-design-editor-head-left">
+					<div class="formlp-design-editor-head-back">
+						<a href="javascript: window.close();">
+							<span class="icon-arrow-down icon-arrow-down-left"></span>閉じる
+						</a>
+					</div>
+					<div class="formlp-design-editor-head-title">
+						デザイン編集
+					</div>
+					<div class="formlp-design-editor-head-site-switch">
+						@if (Model.DesignType == LandingPageConst.PAGE_DESIGN_TYPE_PC)
+						{
+							if (w2.App.Common.Design.DesignCommon.UseResponsive)
+							{
+								<span class="btn btn-size-m btn-switch-on">RESPONSIVE</span>
+							}
+							else
+							{
+								<span class="btn btn-size-m btn-switch-on">PC</span>
+							}
+							if (w2.App.Common.Design.DesignCommon.UseSmartPhone)
+							{
+								<a href="@Url.Action("Designer", new {
+									         ActionStatus = ActionStatus.Update,
+									         pageId = Model.Input.PageId,
+									         designType = LandingPageConst.PAGE_DESIGN_TYPE_SP
+								         })" class="btn btn-size-m btn-switch-off">SP</a>
+							}
+						}
+						else if (Model.DesignType == LandingPageConst.PAGE_DESIGN_TYPE_SP)
+						{
+							<a href="@Url.Action("Designer", new {
+								         ActionStatus = ActionStatus.Update,
+								         pageId = Model.Input.PageId,
+								         designType = LandingPageConst.PAGE_DESIGN_TYPE_PC
+							         })" class="btn btn-size-m btn-switch-off">PC</a>
+							<span class="btn btn-size-m btn-switch-on">SP</span>
+						}
+					</div>
+					@if (w2.App.Common.LandingPage.LpDesignHelper.EnableMaintenaceTool())
+					{
+						<div class="formlp-design-editor-head-title">
+							<button class="btn btn-sub btn-size-m" id="b-json" type="button" onclick="javascript: lp_designer_page.create_json()">デザインJsonダウンロード</button>
+						</div>
+					}
+				</div>
+				<div class="formlp-design-editor-head-main-actions">
+					<div class="formlp-design-editor-head-update">
+						@Model.DateChanged
+					</div>
+					<div class="form-element-group form-element-group-horizontal">
+						<div class="form-element-group-content">
+							@if (Model.PublicStatus == LandingPageConst.PUBLIC_STATUS_PUBLISHED)
+							{
+								<text>公開</text>
+							}
+							else if (Model.PublicStatus == LandingPageConst.PUBLIC_STATUS_UNPUBLISHED)
+							{
+								<text>未公開</text>
+							}
+						</div>
+					</div>
+					@if (Model.DesignType == LandingPageConst.PAGE_DESIGN_TYPE_PC)
+					{
+						<a href="javascript:lp_designer_page.open_preview_page('@(LandingPageConst.PAGE_DESIGN_TYPE_PC)')" class="formlp-design-editor-head-btn-preview btn btn-txt btn-size-m">プレビュー</a>
+					}
+					else
+					{
+						<a href="javascript:lp_designer_page.open_preview_page('@(LandingPageConst.PAGE_DESIGN_TYPE_SP)')" class="formlp-design-editor-head-btn-preview btn btn-txt btn-size-m">プレビュー</a>
+					}
+					<input type="button" onclick="javascript: lp_designer_page.upd();" class="formlp-design-editor-head-btn-submit btn btn-main btn-size-l" value="更新">
+				</div>
+			</div>
+			@{
+				var editorClass = Model.DesignType == LandingPageConst.PAGE_DESIGN_TYPE_SP ? "formlp-design-editor-body-sp" : "";
+			}
+			<div class="formlp-design-editor-body @editorClass">
+				<div class="formlp-design-editor-page">
+					<div class="formlp-design-editor-page-body">
+						<!-- ブロックリスト -->
+						@for (var index = 0; index < Model.Input.Pagedesign.BlockSettings.Length; index++)
+						{
+							@Blocks(Model.Input.Pagedesign.BlockSettings[index])
+						}
+					</div>
+				</div>
+				<div class="formlp-design-editor-sidecolumn">
+					<!-- <div class="formlp-design-editor-sidecolumn-btns"><a href="javascript:void(0);" class="formlp-design-editor-sidecolumn-btn-toggle btn btn-main btn-size-m"><span class="icon-arrow-down icon-arrow-down-right"></span></a></div> -->
+					<div class="formlp-design-editor-sidecolumn-inner">
+						<div class="formlp-design-editor-sidecolumn-blocklist">
+							<div class="formlp-design-editor-sidecolumn-blocklist-title">ブロックの挿入</div>
+							<div class="formlp-design-editor-sidecolumn-blocklist-content"></div>
+						</div>
+						<div class="formlp-design-editor-sidecolumn-blockeditor">
+							<div class="formlp-design-editor-sidecolumn-blockeditor-title">ブロックの編集</div>
+							<div class="formlp-design-editor-sidecolumn-blockeditor-content"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+	<div id="free_html_temp" style="display: none;"></div>
+
+	<!-- モーダル：画像ファイル選択 -->
+	@ImageModal()
+	<!-- モーダル：画像ファイル選択 -->
+
+	<!-- モーダル：ブロック選択 -->
+	@BlockModal()
+	<!-- モーダル：ブロック選択 -->
+}
+
+@section JavaScript
+{
+	<script type="text/javascript">
+
+		var lp_designer_page = (function() {
+			var imageVm;
+
+			return {
+				ini: function() {
+					imageVm = {
+						CondGroup: ko.observable(''),
+						CondSearchWord: ko.observable(''),
+						GroupList: ko.observableArray([{ text: "", value: "" }]),
+						GroupImageViewModel: ko.observableArray([])
+					};
+					ko.applyBindings(imageVm);
+					for (var i = 0; i < imageVm.GroupImageViewModel.length; i++) {
+						imageVm.GroupImageViewModel[j].ListImageViewModels.splice(0,
+							imageVm.GroupImageViewModel[j].ListImageViewModels.length);
+					}
+					formlp_image_file_select.ini();
+					get_img_list();
+					get_group_list();
+					$('.upload_img').on('change', img_selected);
+					$('.formlp-image-upload-content-drag').on('drop', img_drag);
+					$('.formlp-image-upload-content-drag').on('drop', img_drop);
+					formlp.rep_pc_site_root =
+						'@(Constants.PROTOCOL_HTTPS + Constants.SITE_DOMAIN + Constants.PATH_ROOT_FRONT_PC)';
+
+					$('.formlp-front-section.formlp-front-section--sfree > .formlp-front-section--sfree-inner').each(function () {
+						var tempHtmlContent = delete_javascript_tag($(this).next('input').val());
+						$(this).html(tempHtmlContent);
+					});
+				},
+				open_preview_page: function(designtype) {
+					open_preview_page(designtype);
+				},
+				create_json: function() {
+					create_json();
+				},
+				get_img_list: function() {
+					get_img_list();
+				},
+				set_img: function(imgPath) {
+					set_img(imgPath);
+				},
+				upd: function() {
+					upd();
+				}
+			}
+
+			// 画像ドラッグ
+			function img_drag(evt) {
+				evt.originalEvent.stopPropagation();
+				evt.originalEvent.preventDefault();
+				evt.originalEvent.dataTransfer.dropEffect = 'copy';
+			}
+
+			// 画像ドロップ
+			function img_drop(evt) {
+				var max_file_size = 1048576;
+				evt.originalEvent.stopPropagation();
+				evt.originalEvent.preventDefault();
+				var files = evt.originalEvent.dataTransfer.files;
+				for (var i = 0; i < files.length; i++) {
+					if (!files[i] ||
+					(files[i].type.indexOf('image/jpeg') < 0 &&
+						files[i].type.indexOf('image/gif') < 0 &&
+						files[i].type.indexOf('image/png') < 0)) {
+						// notification.show('ファイル形式はJPEG / GIF / PNGとなります。', 'warning', 'fadeout');
+						return;
+					} else if (files[i].size > max_file_size) {
+						// notification.show('ファイルサイズは' + max_file_size / 1024 + 'KBまでです。', 'warning', 'fadeout');
+						return;
+					}
+				}
+				file_upload(files[0]);
+			}
+
+			// 画像選択
+			function img_selected(evt) {
+				var max_file_size = 1048576;
+				var files = evt.originalEvent.target.files;
+				for (var i = 0; i < files.length; i++) {
+					if (!files[i] ||
+					(files[i].type.indexOf('image/jpeg') < 0 &&
+						files[i].type.indexOf('image/gif') < 0 &&
+						files[i].type.indexOf('image/png') < 0)) {
+						return;
+					} else if (files[i].size > max_file_size) {
+						return;
+					}
+				}
+				file_upload(files[0]);
+			}
+
+			// ファイルアップロード
+			function file_upload(file) {
+				var fd = new FormData();
+				fd.append('files', file);
+				fd.append('groupId', imageVm.CondGroup());
+				sendFileToServer(fd);
+			}
+
+			// ファイル送信
+			function sendFileToServer(formData) {
+				var url = '@Url.Action("Upload", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE)';
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: formData,
+					//dataType: 'json',
+					dataType: "text",
+					traditional: true,
+					processData: false,
+					contentType: false,
+					error: function(XMLHttpRequest, textStatus, errorThrown) {
+						alert('ファイルアップロードに失敗しました' +
+							XMLHttpRequest.status +
+							":" +
+							textStatus +
+							":" +
+							errorThrown.message)
+					},
+					success: function(data) { upload_ok(data) }
+				});
+			}
+
+			// アップロードOK
+			function upload_ok(j) {
+				notification.show('アップロードしました。', 'info', 'fadeout');
+				get_img_list();
+			}
+
+			// グループ取得
+			function get_group_list() {
+				var url = '@Url.Action("GetImageGroupListItem")';
+
+				$.ajax({
+					url: url,
+					type: 'POST',
+					traditional: true,
+					contentType: 'application/json',
+					error: function(XMLHttpRequest, textStatus, errorThrown) {
+						alert('データ取得に失敗しました' + XMLHttpRequest.status + ":" + textStatus + ":" + errorThrown.message)
+					},
+					success: function(data) { getgroup_ok(data) }
+				});
+			}
+
+			// グループ取得OK
+			function getgroup_ok(j) {
+				// バインド配列クリア
+				imageVm.GroupList.splice(imageVm.GroupList.length);
+
+				// バインドし直し
+				for (i = 0; i < j.GroupListItems.length; i++) {
+					imageVm.GroupList.push({
+						text: j.GroupListItems[i].Text,
+						value: j.GroupListItems[i].Value
+					});
+				}
+			}
+
+			// 画像リスト取得
+			function get_img_list() {
+				loading_animation.start();
+				var url = '@Url.Action("GetImageList")';
+				var post_data = {
+					groupId: imageVm.CondGroup(),
+					keyWord: imageVm.CondSearchWord()
+				};
+
+				var postj = JSON.stringify(post_data);
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: postj,
+					dataType: 'json',
+					traditional: true,
+					contentType: 'application/json',
+					error: function(XMLHttpRequest, textStatus, errorThrown) {
+						alert('データ取得に失敗しました' + XMLHttpRequest.status + ":" + textStatus + ":" + errorThrown.message)
+					},
+					success: function(data) { get_ok(data) }
+				});
+				loading_animation.end();
+			}
+
+			// 画像リスト取得OK
+			function get_ok(j) {
+
+				// バインド配列クリア
+				for (i = 0; i < imageVm.GroupImageViewModel.length; i++) {
+					imageVm.GroupImageViewModel[j].ListImageViewModels.splice(0,
+						imageVm.GroupImageViewModel[j].ListImageViewModels.length);
+				}
+				imageVm.GroupImageViewModel.splice(imageVm.GroupImageViewModel.length);
+
+				var path = null;
+				var newDate;
+
+				// バインドし直し
+				for (i = 0; i < j.GroupImageViewModel.length; i++) {
+
+					var x = new Array();
+
+					for (k = 0; k < j.GroupImageViewModel[i].ListImageViewModels.length; k++) {
+						x.push({
+							ImageId: j.GroupImageViewModel[i].ListImageViewModels[k].ImageId,
+							FileName: j.GroupImageViewModel[i].ListImageViewModels[k].FileName,
+							DataChanged: j.GroupImageViewModel[i].ListImageViewModels[k].DataChanged,
+							FileSize: j.GroupImageViewModel[i].ListImageViewModels[k].FileSize,
+							ImageSize: j.GroupImageViewModel[i].ListImageViewModels[k].ImageSize,
+							ImagePath: '@(Constants.PROTOCOL_HTTPS + Constants.SITE_DOMAIN + Constants.PATH_ROOT_FRONT_PC)' +
+								j.GroupImageViewModel[i].ListImageViewModels[k].ImagePath,
+							GroupId: j.GroupImageViewModel[i].ListImageViewModels[k].GroupId,
+							Sort: j.GroupImageViewModel[i].ListImageViewModels[k].Sort
+						});
+
+						//更新画像パスを取得
+						var dateStr = j.GroupImageViewModel[i].ListImageViewModels[k].DataChanged;
+						var date = dateStr.replace(/(年|月)/g, '-').replace(/(時|分)/g, ':').replace(/(日|秒)/g, '');
+
+						if (path == null || (Date.parse(newDate) < Date.parse(date))) {
+							newDate = date;
+							path = j.GroupImageViewModel[i].ListImageViewModels[k].ImagePath;
+						}
+					}
+					imageVm.GroupImageViewModel.push({
+					GroupName: j.GroupImageViewModel[i].GroupName,
+					ListImageViewModels: x
+					});
+				}
+
+				list_group_toggle.ini();
+				list.style.ini();
+				//モーダルのwidth、heightをセット
+				var modal_height = jQuery(modal.selector_modal + ' .modal-inner').height();
+
+				if (jQuery(window).height() < modal_height) {
+					jQuery(modal.selector_modal + ' .modal-content-wrapper').css({
+						'max-height': modal_height + 'px'
+					});
+				}
+			}
+
+		// 画像セット
+		function set_img(imgPath) {
+			$('[data-target-name=\'' + formlp.image_edit_target_name + '\']').attr('src', imgPath);
+			$('input[name="' + formlp.image_edit_target_name + '"]').val(imgPath);
+			formlp.block_editor.prop_reflect();
+			modal.close();
+		}
+
+			// ブロック入力データ生成
+			function create_blocks_input() {
+				// ブロックとってくる
+				// ぐるぐる回して解析
+				var array = $('.formlp-front-section-form,.formlp-front-section');
+				console.log(array);
+				var item = [];
+				$.each(array,
+					function(i, element) {
+						var t = $(element).find("[data-edit-prop-placeholder]");
+						var eleprop = [];
+						$.each(t,
+							function(j, ele) {
+								// 編集対象Prop
+								var tprops = $(ele).attr('data-edit-prop');
+								var props = [];
+								$.each(tprops.split(','),
+									function(k, tatr) {
+										//テキスト内容
+										if (tatr === 'text') {
+											props.push({ Attribute: 'text', Value: $(ele).html() });
+											props.push({ Attribute: 'font-weight', Value: $(ele).css('font-weight') });
+											props.push({ Attribute: 'color', Value: $(ele).css('color') });
+											props.push({ Attribute: 'font-size', Value: $(ele).css('font-size') });
+											$(formlp.font_list).each(function() {
+												if ($(ele).hasClass(this.classname)) {
+													props.push({ Attribute: 'font', Value: this.classname });
+												}
+											});
+
+										}
+										//href
+										if (tatr.match(/href/)) {
+											props.push({ Attribute: 'href', Value: $(ele).attr('href') });
+											var target = $(ele).attr('target');
+											if (target == undefined) {
+												target = ''
+											}
+											props.push({ Attribute: 'target', Value: target });
+										}
+										//画像
+										if (tatr === 'src') {
+											props.push({ Attribute: 'src', Value: $(ele).attr('src') });
+										}
+										//背景色
+										if (tatr === 'background') {
+											props.push({
+												Attribute: 'background-color',
+												Value: $(ele).css('background-color')
+											});
+											props.push({
+												Attribute: 'background-image',
+												Value: $(ele).css('background-image')
+											});
+										}
+										//枠線の色
+										if (tatr === 'border') {
+											props.push({
+												Attribute: 'border-color',
+												Value: $(ele).css('border-color')
+											});
+										}
+										//フリーHTML
+										if (tatr === 'html-src') {
+											props.push({ Attribute: 'html-src', Value: $(ele).next('input').val() });
+										}
+									});
+
+								var placeHolderName = "";
+								placeHolderName = $(ele).attr('data-edit-prop-placeholder');
+
+								var elementdata = {
+									ElementPlaceHolderName: placeHolderName,
+									ElementIndex: j.toString() + "",
+									Attributes: props
+								};
+								eleprop.push(elementdata);
+
+							});
+						var ｃName = $(element).attr('class');
+						var blockdata = {
+							BlockClassName: ｃName.replace(' formlp-front-section-editing', ''),
+							BlockIndex: i.toString() + "",
+							Elements: eleprop
+						}
+						item.push(blockdata);
+					});
+				return item;
+			}
+
+			// 更新
+			function upd() {
+				checkOtherOperatorFileOpening('lPageId' + '@Model.Input.PageId').done(function(result) {
+					if (result !== "") {
+						notification.show(result, 'warning', 'fixed');
+						return;
+					} else {
+						var input = create_blocks_input();
+						var url = '@Url.Action("UpdateDesign")';
+
+						var post_data = {
+							PageId: '@Model.Input.PageId',
+							DesignType: '@Model.DesignType',
+							BlockSettings: input
+						};
+
+						var postj = JSON.stringify(post_data);
+						$.ajax({
+							url: url,
+							type: 'POST',
+							data: postj,
+							dataType: 'json',
+							traditional: true,
+							contentType: 'application/json',
+							error: function(XMLHttpRequest, textStatus, errorThrown) {
+								console.log(XMLHttpRequest);
+								alert('データ登録に失敗しました' +
+									XMLHttpRequest.status +
+									":" +
+									textStatus +
+									":" +
+									errorThrown.message);
+							},
+							success: function(data) { upd_ok(data) }
+						});
+					}
+				});
+			}
+
+			// 更新OK
+			function upd_ok(j) {
+				notification.show('デザインを保存しました。', 'info', 'fadeout');
+			}
+
+			// JSON生成
+			function create_json() {
+				var url = '@Url.Action("CreateDefBlockJson", new {
+							   pageid = Model.Input.PageId
+						   })';
+				window.location.href = url; // + '?pageid=' + vm.PageId();
+			}
+
+			// プレビューページ表示
+			function open_preview_page(designType) {
+				var input = create_blocks_input();
+				var url = '@Url.Action("CreatePreviewFileDesignerPage")';
+				var post_data = {
+					PageId: '@Model.Input.PageId',
+					DesignType: '@Model.DesignType',
+					BlockSettings: input
+				};
+				@* 終わってからプレビュー飛ばす用コールバック指定 *@
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: JSON.stringify(post_data),
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function(data) { compaction(data.previewKey, designType) },
+					function() { to_error() }
+				);
+			}
+
+			// プレビュー生成完了処理
+			function compaction(previewKey, designType) {
+				var url = '@Url.Action("Preview")?designType=' + designType + '&previewKey=' + previewKey;
+				if (designType === 'PC') {
+					open_window(url, 'PreviewPC', '');
+				} else {
+					open_window(url, 'PreviewSP', 'width=450,height=800,scrollbars=yes');
+				}
+			}
+
+			// エラー処理
+			function to_error() {
+				// エラーでたらエラーページに飛ぶようになったのでコメントアウト
+				// window.location.href = '@this.Url.Action("", Constants.CONTROLLER_W2CMS_MANAGER_ERROR, new { ErrorPageLayout = Constants.LAYOUT_PATH_DEFAULT, }) ';
+			}
+
+			checkOtherOperatorFileOpening('lPageId' + '@Model.Input.PageId').done(function(result) {
+				if (result !== "") {
+					notification.show(result, 'warning', 'fixed');
+					$('input[value="更新"]').attr('disabled', true);
+				} else {
+					sendOpeningFileName('lPageId' + '@Model.Input.PageId');
+					setInterval(function() { sendOpeningFileName('lPageId' + '@Model.Input.PageId') }, 50 * 1000);
+				}
+			});
+
+		})();
+
+		lp_designer_page.ini();
+
+	</script>
+}

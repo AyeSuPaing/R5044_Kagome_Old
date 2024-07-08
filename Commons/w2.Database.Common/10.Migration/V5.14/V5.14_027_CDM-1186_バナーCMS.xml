@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_FeatureAreaType]'))
+BEGIN
+/*
+=========================================================================================================
+  Module      : 特集エリアタイプマスタ (w2_FeatureAreaType.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_FeatureAreaType] (
+	[area_type_id] [nvarchar] (30) NOT NULL,
+	[area_type_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[action_type] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[internal_memo] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[pc_start_tag] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[pc_repeat_tag] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[pc_end_tag] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[pc_script_tag] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[sp_start_tag] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[sp_repeat_tag] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[sp_end_tag] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[sp_script_tag] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_FeatureAreaType] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_FeatureAreaType] PRIMARY KEY  CLUSTERED
+	(
+		[area_type_id]
+	) ON [PRIMARY]
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_FeatureAreaBanner]'))
+BEGIN
+/*
+=========================================================================================================
+  Module      : 特集エリアバナー (w2_FeatureAreaBanner.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_FeatureAreaBanner] (
+	[area_id] [nvarchar] (30) NOT NULL,
+	[banner_no] [int] NOT NULL,
+	[file_name] [nvarchar] (60) NOT NULL DEFAULT (N''),
+	[file_dir_path] [nvarchar] (300) NOT NULL DEFAULT (N''),
+	[alt_text] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[text] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[link_url] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[window_type] [nvarchar] (20) NOT NULL DEFAULT (N'NONPOPUP'),
+	[publish] [nvarchar] (20) NOT NULL DEFAULT (N'PUBLIC'),
+	[condition_publish_date_from] [datetime],
+	[condition_publish_date_to] [datetime],
+	[condition_member_only_type] [nvarchar] (20) NOT NULL DEFAULT (N'ALL'),
+	[condition_member_rank_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[condition_target_list_type] [nvarchar] (20) NOT NULL DEFAULT (N'OR'),
+	[condition_target_list_ids] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate())
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_FeatureAreaBanner] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_FeatureAreaBanner] PRIMARY KEY  CLUSTERED
+	(
+		[area_id],
+		[banner_no]
+	) ON [PRIMARY]
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_FeatureArea]'))
+BEGIN
+/*
+=========================================================================================================
+  Module      : 特集エリアマスタ (w2_FeatureArea.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_FeatureArea] (
+	[area_id] [nvarchar] (30) NOT NULL,
+	[area_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[area_type_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[internal_memo] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[side_max_count] [nvarchar] (1) NOT NULL DEFAULT (N''),
+	[side_turn] [nvarchar] (1) NOT NULL DEFAULT (N''),
+	[slider_count] [nvarchar] (1) NOT NULL DEFAULT (N''),
+	[slider_scroll_count] [nvarchar] (1) NOT NULL DEFAULT (N''),
+	[slider_scroll_auto] [nvarchar] (1) NOT NULL DEFAULT (N''),
+	[slider_scroll_interval] [nvarchar] (1) NOT NULL DEFAULT (N''),
+	[slider_arrow] [nvarchar] (1) NOT NULL DEFAULT (N''),
+	[slider_dot] [nvarchar] (1) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_FeatureArea] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_FeatureArea] PRIMARY KEY  CLUSTERED
+	(
+		[area_id]
+	) ON [PRIMARY]
+END
+
+if not exists (select * from w2_FeatureAreaType where area_type_id = 'VERTICAL')
+BEGIN
+INSERT INTO [dbo].[w2_FeatureAreaType]
+           ([area_type_id]
+           ,[area_type_name]
+           ,[action_type]
+           ,[internal_memo]
+           ,[pc_start_tag]
+           ,[pc_repeat_tag]
+           ,[pc_end_tag]
+           ,[pc_script_tag]
+           ,[sp_start_tag]
+           ,[sp_repeat_tag]
+           ,[sp_end_tag]
+           ,[sp_script_tag]
+           ,[date_created]
+           ,[date_changed]
+           ,[last_changed])
+     VALUES
+           ('VERTICAL'
+           ,'縦並び'
+           ,'VERTICAL'
+           ,''
+           ,'<div>'
+           ,'    <div>
+        <a href="<%#: Item.DisplayLinkUrl %>" target=''<%#: Item.IsAnotherWindow ? "_blank" : "" %>''>
+    	    <div>
+    		    <img src="<%#: Item.ImageFilePath %>" >
+    		</div>
+        </a>
+    </div>'
+           ,'</div>'
+           ,''
+           ,'<div>'
+           ,'    <div>
+        <a href="<%#: Item.DisplayLinkUrl %>" target=''<%#: Item.IsAnotherWindow ? "_blank" : "" %>''>
+    	    <div>
+    		    <img src="<%#: Item.ImageFilePath %>" >
+    		</div>
+        </a>
+    </div>'
+           ,'</div>'
+           ,''
+           ,GETDATE()
+           ,GETDATE()
+           ,'system')
+END
+
+if not exists (select * from w2_FeatureAreaType where area_type_id = 'SIDE')
+BEGIN
+INSERT INTO [dbo].[w2_FeatureAreaType]
+           ([area_type_id]
+           ,[area_type_name]
+           ,[action_type]
+           ,[internal_memo]
+           ,[pc_start_tag]
+           ,[pc_repeat_tag]
+           ,[pc_end_tag]
+           ,[pc_script_tag]
+           ,[sp_start_tag]
+           ,[sp_repeat_tag]
+           ,[sp_end_tag]
+           ,[sp_script_tag]
+           ,[date_created]
+           ,[date_changed]
+           ,[last_changed])
+     VALUES
+           ('SIDE'
+           ,'横並び'
+           ,'SIDE'
+           ,''
+           ,'<ul class="clearFix">'
+           ,'    <%-- 折り返す場合、明示的に領域のサイズを指定する --%>
+    <li style=''margin: 10px 0px; float: left; width:<%= 100 / int.Parse(this.SideMaxCount) %>%; display:<%# (this.IsSideTurn || Container.ItemIndex < int.Parse(this.SideMaxCount)) ? "block" : "none"  %>''>
+    	<a href="<%#: Item.DisplayLinkUrl %>" target=''<%#: Item.IsAnotherWindow ? "_blank" : "" %>''>
+    	    <div>
+    		    <img src="<%#: Item.ImageFilePath %>" >
+    		</div>
+    	</a>
+    </li>'
+           ,'</ul>'
+           ,''
+           ,'<ul class="clearFix">'
+           ,'    <%-- 折り返す場合、明示的に領域のサイズを指定する --%>
+    <li style=''margin: 10px 0px; float: left; width:<%= 100 / int.Parse(this.SideMaxCount) %>%; display:<%# (this.IsSideTurn || Container.ItemIndex < int.Parse(this.SideMaxCount)) ? "block" : "none"  %>''>
+    	<a href="<%#: Item.DisplayLinkUrl %>" target=''<%#: Item.IsAnotherWindow ? "_blank" : "" %>''>
+    	    <div>
+    		    <img src="<%#: Item.ImageFilePath %>" >
+    		</div>
+    	</a>
+    </li>'
+           ,'</ul>'
+           ,''
+           ,GETDATE()
+           ,GETDATE()
+           ,'system')
+END
+
+if not exists (select * from w2_FeatureAreaType where area_type_id = 'SLIDER')
+BEGIN
+INSERT INTO [dbo].[w2_FeatureAreaType]
+           ([area_type_id]
+           ,[area_type_name]
+           ,[action_type]
+           ,[internal_memo]
+           ,[pc_start_tag]
+           ,[pc_repeat_tag]
+           ,[pc_end_tag]
+           ,[pc_script_tag]
+           ,[sp_start_tag]
+           ,[sp_repeat_tag]
+           ,[sp_end_tag]
+           ,[sp_script_tag]
+           ,[date_created]
+           ,[date_changed]
+           ,[last_changed])
+     VALUES
+           ('SLIDER'
+           ,'スライダー'
+           ,'SLIDER'
+           ,''
+           ,'<%-- スライダーを表示す領域を明示的に指定する（指定しない場合、表示が崩れる可能性あり） --%>
+<ul class="slider clearFix" style="height:auto;margin:0px 25px 25px 25px">'
+           ,'    <li style="margin: 10px 0px; float: left; width:100%">
+		<a href="<%#: Item.DisplayLinkUrl %>" target=''<%#: Item.IsAnotherWindow ? "_blank" : "" %>''>
+		    <div>
+        	    <%-- スライダーを表示す領域を明示的に指定する（指定しない場合、表示が崩れる可能性あり） --%>
+	    		<img src="<%#: Item.ImageFilePath %>" >
+		    </div>
+		</a>
+	</li>'
+           ,'</ul>'
+           ,'$(document).on(''ready'',
+	function() {
+		$(''.slider'').slick({
+			autoplay: <%= this.SliderScrollAuto %>,
+			autoplaySpeed: <%= int.Parse(this.SliderScrollInterval) * 1000 %>,
+			dots: <%= this.SliderDot %>,
+			arrows: <%= this.SliderArrow %>,
+			slidesToShow: <%= this.SliderCount %>,
+			slidesToScroll: <%= this.SliderScrollCount %>
+		});
+	})'
+           ,'<%-- スライダーを表示す領域を明示的に指定する（指定しない場合、表示が崩れる可能性あり） --%>
+<ul class="slider clearFix" style="height:auto;margin:0px 25px 25px 25px">'
+           ,'    <li style="margin: 10px 0px; float: left; width:100%">
+		<a href="<%#: Item.DisplayLinkUrl %>" target=''<%#: Item.IsAnotherWindow ? "_blank" : "" %>''>
+		    <div>
+        	    <%-- スライダーを表示す領域を明示的に指定する（指定しない場合、表示が崩れる可能性あり） --%>
+	    		<img src="<%#: Item.ImageFilePath %>" >
+		    </div>
+		</a>
+	</li>'
+           ,'</ul>'
+           ,'$(document).on(''ready'',
+	function() {
+		$(''.slider'').slick({
+			autoplay: <%= this.SliderScrollAuto %>,
+			autoplaySpeed: <%= int.Parse(this.SliderScrollInterval) * 1000 %>,
+			dots: <%= this.SliderDot %>,
+			arrows: <%= this.SliderArrow %>,
+			slidesToShow: <%= this.SliderCount %>,
+			slidesToScroll: <%= this.SliderScrollCount %>
+		});
+	})'
+           ,GETDATE()
+           ,GETDATE()
+           ,'system')
+END
+
+if not exists (select * from w2_FeatureAreaType where area_type_id = 'RANDOM')
+BEGIN
+INSERT INTO [dbo].[w2_FeatureAreaType]
+           ([area_type_id]
+           ,[area_type_name]
+           ,[action_type]
+           ,[internal_memo]
+           ,[pc_start_tag]
+           ,[pc_repeat_tag]
+           ,[pc_end_tag]
+           ,[pc_script_tag]
+           ,[sp_start_tag]
+           ,[sp_repeat_tag]
+           ,[sp_end_tag]
+           ,[sp_script_tag]
+           ,[date_created]
+           ,[date_changed]
+           ,[last_changed])
+     VALUES
+           ('RANDOM'
+           ,'ランダム'
+           ,'RANDOM'
+           ,''
+           ,''
+           ,'<a href="<%#: Item.DisplayLinkUrl %>" target=''<%#: Item.IsAnotherWindow ? "_blank" : "" %>''>
+    <div>
+		<img src="<%#: Item.ImageFilePath %>">
+    </div>
+</a>'
+           ,''
+           ,''
+           ,''
+           ,'<a href="<%#: Item.DisplayLinkUrl %>" target=''<%#: Item.IsAnotherWindow ? "_blank" : "" %>''>
+    <div>
+		<img src="<%#: Item.ImageFilePath %>">
+    </div>
+</a>'
+           ,''
+           ,''
+           ,GETDATE()
+           ,GETDATE()
+           ,'system')
+END
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

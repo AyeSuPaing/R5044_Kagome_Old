@@ -1,0 +1,308 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 会員ランク系SQLステートメントXML(MemberRank.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<MemberRank>
+
+  <!-- 会員ランクリスト取得 -->
+  <GetMemberRankList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MemberRank.*
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.valid_flg = 'ON'  -- 有効
+        ORDER BY w2_MemberRank.member_rank_order
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetMemberRankList>
+
+  <!-- 会員ランク情報一覧を行区切りで取得 -->
+  <GetMemberRankListByRowIndex>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(member_rank_id), 0)
+          FROM  w2_MemberRank
+
+        -- 該当情報取得
+        SELECT  w2_MemberRank.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_MemberRank.member_rank_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MEMBERRANK_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MemberRank
+                ) AS RowIndex
+                INNER JOIN w2_MemberRank ON
+                (
+                  RowIndex.member_rank_id = w2_MemberRank.member_rank_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetMemberRankListByRowIndex>
+
+  <!-- 会員ランク情報全取得 -->
+  <GetMemberRankListAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MemberRank.*
+          FROM  w2_MemberRank
+         WHERE  valid_flg = 'ON'  -- 有効
+      ]]>
+    </Statement>
+  </GetMemberRankListAll>
+
+  <!-- 会員ランク情報全取得(有効・無効を問わず) -->
+  <GetMemberRankListAllIncludeValidInvalid>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MemberRank.*
+          FROM  w2_MemberRank
+      ]]>
+    </Statement>
+  </GetMemberRankListAllIncludeValidInvalid>
+
+  <!-- 会員ランク詳細情報取得 -->
+  <GetMemberRankDetail>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MemberRank.*
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.member_rank_id = @member_rank_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMemberRankDetail>
+  
+  <!-- デフォルト会員ランク設定を取得 -->
+  <GetDefaultMemberRank>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MemberRank.*
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.default_member_rank_setting_flg = 'ON'  -- デフォルトの会員ランク
+      ]]>
+    </Statement>
+  </GetDefaultMemberRank>
+
+  <!-- デフォルト会員ランクを変更 -->
+  <ChangeDefaultMemberRank>
+    <Statement>
+      <![CDATA[
+        -- 既存のデフォルト会員設定をOFFに変更
+        UPDATE  w2_MemberRank
+           SET  default_member_rank_setting_flg = 'OFF'  -- デフォルトの会員ランクではない
+         WHERE  member_rank_id = @member_rank_id_old
+         
+         -- 新規のデフォルト会員設定をONに変更
+        UPDATE  w2_MemberRank
+           SET  default_member_rank_setting_flg = 'ON'  -- デフォルトの会員ランク
+         WHERE  member_rank_id = @member_rank_id_new
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id_old" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id_new" Type="nvarchar" Size="30" />
+    </Parameter>
+  </ChangeDefaultMemberRank>
+  
+  <!-- 会員ランクID重複チェック（登録時） -->
+  <CheckDuplicationRegistMemberRankId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(member_rank_id)
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.member_rank_id = @member_rank_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationRegistMemberRankId>
+
+  <!-- 会員ランクID重複チェック（更新時） -->
+  <CheckDuplicationModifyMemberRankId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(member_rank_id)
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.member_rank_id = @member_rank_id
+           AND  w2_MemberRank.member_rank_id <> @member_rank_id_old
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id_old" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationModifyMemberRankId>
+
+  <!-- 会員ランク順位重複チェック（登録時） -->
+  <CheckDuplicationRegistMemberRankOrder>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(member_rank_id)
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.member_rank_order = @member_rank_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_order" Type="int" />
+    </Parameter>
+  </CheckDuplicationRegistMemberRankOrder>
+
+  <!-- 会員ランク順位重複チェック（更新時） -->
+  <CheckDuplicationModifyMemberRankOrder>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(member_rank_id)
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.member_rank_order = @member_rank_order
+           AND  w2_MemberRank.member_rank_order <> @member_rank_order_old
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_order" Type="int" />
+      <Input Name="member_rank_order_old" Type="int" />
+    </Parameter>
+  </CheckDuplicationModifyMemberRankOrder>
+
+  <!-- 会員ランク情報登録 -->
+  <InsertMemberRank>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_MemberRank
+                (
+                  member_rank_id,
+                  member_rank_order,
+                  member_rank_name,
+                  order_discount_type,
+                  order_discount_value,
+                  order_discount_threshold_price,
+                  point_add_type,
+                  point_add_value,
+                  shipping_discount_type,
+                  shipping_discount_value,
+                  default_member_rank_setting_flg,
+                  valid_flg,
+                  date_created,
+                  date_changed,
+                  last_changed,
+                  member_rank_memo,
+                  fixed_purchase_discount_rate
+                )
+        VALUES  (
+                  @member_rank_id,
+                  @member_rank_order,
+                  @member_rank_name,
+                  @order_discount_type,
+                  @order_discount_value,
+                  @order_discount_threshold_price,
+                  @point_add_type,
+                  @point_add_value,
+                  @shipping_discount_type,
+                  @shipping_discount_value,
+                  @default_member_rank_setting_flg,
+                  @valid_flg,
+                  getdate(),
+                  getdate(),
+                  @last_changed,
+                  @member_rank_memo,
+                  @fixed_purchase_discount_rate
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_order" Type="int" />
+      <Input Name="member_rank_name" Type="nvarchar" Size="100" />
+      <Input Name="order_discount_type" Type="nvarchar" Size="10" />
+      <Input Name="order_discount_value" Type="decimal" Size="18,3" />
+      <Input Name="order_discount_threshold_price" Type="decimal" Size="18,3" />
+      <Input Name="point_add_type" Type="nvarchar" Size="10" />
+      <Input Name="point_add_value" Type="decimal" />
+      <Input Name="shipping_discount_type" Type="nvarchar" Size="10" />
+      <Input Name="shipping_discount_value" Type="decimal" Size="18,3" />
+      <Input Name="default_member_rank_setting_flg" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="member_rank_memo" Type="nvarchar" Size="max" />
+      <Input Name="fixed_purchase_discount_rate" Type="decimal" />
+    </Parameter>
+  </InsertMemberRank>
+
+  <!-- 会員ランク情報更新 -->
+  <UpdateMemberRank>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MemberRank
+           SET  member_rank_id = @member_rank_id,
+                member_rank_order = @member_rank_order,
+                member_rank_name = @member_rank_name,
+                order_discount_type = @order_discount_type,
+                order_discount_value = @order_discount_value,
+                order_discount_threshold_price = @order_discount_threshold_price,
+                point_add_type = @point_add_type,
+                point_add_value = @point_add_value,
+                shipping_discount_type = @shipping_discount_type,
+                shipping_discount_value = @shipping_discount_value,
+                valid_flg = @valid_flg,
+                date_changed = getdate(),
+                last_changed = @last_changed,
+                member_rank_memo = @member_rank_memo,
+                fixed_purchase_discount_rate = @fixed_purchase_discount_rate
+         WHERE  member_rank_id = @member_rank_id_old
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id_old" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_order" Type="int" />
+      <Input Name="member_rank_name" Type="nvarchar" Size="100" />
+      <Input Name="order_discount_type" Type="nvarchar" Size="10" />
+      <Input Name="order_discount_value" Type="decimal" Size="18,3" />
+      <Input Name="order_discount_threshold_price" Type="decimal" Size="18,3" />
+      <Input Name="point_add_type" Type="nvarchar" Size="10" />
+      <Input Name="point_add_value" Type="decimal" />
+      <Input Name="shipping_discount_type" Type="nvarchar" Size="10" />
+      <Input Name="shipping_discount_value" Type="decimal" Size="18,3" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="member_rank_memo" Type="nvarchar" Size="max" />
+      <Input Name="fixed_purchase_discount_rate" Type="decimal" />
+    </Parameter>
+  </UpdateMemberRank>
+
+  <!-- 会員ランク情報削除 -->
+  <DeleteMemberRank>
+    <Statement>
+      <![CDATA[
+        DELETE
+          FROM  w2_MemberRank 
+         WHERE  w2_MemberRank.member_rank_id = @member_rank_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteMemberRank>
+
+</MemberRank>

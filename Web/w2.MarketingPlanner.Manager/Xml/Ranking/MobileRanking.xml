@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モバイルランキングセッティングXML(MobileRanking.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MobileRanking>
+  <!--
+    Statementへはvalue_name、countsが取得できるSQLを記述する。
+    （例）
+    ========================================
+    [rank]  [value_name]            [counts]  [extra](特殊な値)
+    ========================================
+        1   www.w2solution.co.jp       35           50
+        2   www.w2solution.com         32           25
+        2   w2solution.co.jp           32           60
+    ========================================
+  -->
+  <MobileCareerRanking>
+    <Title>モバイルキャリアランキング</Title>
+    <Value>キャリア</Value>
+    <Unit>アクセス</Unit>
+    <Extra></Extra>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @summary_kbn nvarchar(30)
+        SET @summary_kbn = 'mobile_career'
+
+        ---------------------------------------
+        -- 変数テーブル作成
+        ---------------------------------------
+        DECLARE  @temp_table TABLE
+        (
+          [row_num] [int] IDENTITY(1, 1),
+          [row_count] [int],
+          [value_name] [nvarchar](1000),
+          [counts] [int],
+          [extra] [nvarchar](50),
+          [total_counts] [int]
+        )
+
+        ---------------------------------------
+        -- データ取得(アクセス総数)
+        ---------------------------------------
+        DECLARE @total_counts int
+        SELECT  @total_counts = SUM(counts)
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+
+        ---------------------------------------
+        -- データ取得
+        ---------------------------------------
+        INSERT
+          INTO  @temp_table
+                (
+                value_name,
+                counts,
+                extra,
+                total_counts
+                )
+        SELECT  CASE value_name
+                  WHEN '01dc' THEN 'DoCoMo'
+                  WHEN '02au' THEN 'AU'
+                  WHEN '03vd' THEN 'SoftBank'
+                  ELSE value_name
+                END AS value_name,
+                SUM(counts) AS counts,
+                AVG(reserved1) AS extra,
+                @total_counts
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+        GROUP BY value_name
+        ORDER BY counts DESC
+
+        ---------------------------------------
+        -- 件数情報更新
+        ---------------------------------------
+        UPDATE  @temp_table
+           SET  row_count = (SELECT COUNT(*) FROM @temp_table)
+
+        ---------------------------------------
+        -- 絞込み（順位決定）
+        ---------------------------------------
+        SELECT  (
+                  SELECT  COUNT(*) + 1 
+                    FROM  @temp_table A 
+                   WHERE  A.counts > B.counts
+                ) AS rank, *
+          FROM  @temp_table B
+         WHERE  @bgn_row_num <= row_num 
+           AND  row_num <= @end_row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </MobileCareerRanking>
+
+  <MobileNameRanking>
+    <Title>モバイル機種名ランキング</Title>
+    <Value>機種名</Value>
+    <Unit>アクセス</Unit>
+    <Extra></Extra>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @summary_kbn nvarchar(30)
+        SET @summary_kbn = 'mobile_modelname'
+
+        ---------------------------------------
+        -- 変数テーブル作成
+        ---------------------------------------
+        DECLARE  @temp_table TABLE
+        (
+          [row_num] [int] IDENTITY(1, 1),
+          [row_count] [int],
+          [value_name] [nvarchar](1000),
+          [counts] [int],
+          [extra] [nvarchar](50),
+          [total_counts] [int]
+        )
+
+        ---------------------------------------
+        -- データ取得(アクセス総数)
+        ---------------------------------------
+        DECLARE @total_counts int
+        SELECT  @total_counts = SUM(counts)
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+
+        ---------------------------------------
+        -- データ取得
+        ---------------------------------------
+        INSERT
+          INTO  @temp_table
+                (
+                value_name,
+                counts,
+                total_counts
+                )
+        SELECT  value_name,
+                SUM(counts) AS counts,
+                @total_counts
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+        GROUP BY value_name
+        ORDER BY counts DESC
+
+        ---------------------------------------
+        -- 件数情報更新
+        ---------------------------------------
+        UPDATE  @temp_table
+           SET  row_count = (SELECT COUNT(*) FROM @temp_table)
+
+        ---------------------------------------
+        -- 絞込み（順位決定）
+        ---------------------------------------
+        SELECT  (
+                  SELECT  COUNT(*) + 1 
+                    FROM  @temp_table A 
+                   WHERE  A.counts > B.counts
+                ) AS rank, *
+          FROM  @temp_table B
+         WHERE  @bgn_row_num <= row_num 
+           AND  row_num <= @end_row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </MobileNameRanking>
+
+</MobileRanking>

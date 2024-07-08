@@ -1,0 +1,501 @@
+﻿@*
+=========================================================================================================
+  Module      : コーディネート情報 (Main.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2020 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.Coordinate.CoordinatePageViewModel
+@{
+	ViewBag.Title = "コーディネート情報";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+
+<div class="main-contents-inner-support"></div>
+<h1 class="page-title">コーディネート情報</h1>
+<div class="main-content-frame">
+<a href="javascript:void(0)" class="list-menu-btn"><span class="icon icon-menu"></span></a>
+<div class="main-content-list">
+	@using (Html.BeginForm("", "", new
+{
+}, FormMethod.Post, new
+{
+	Id = "search_form",
+	Onsubmit = "return false;"
+}))
+{
+<div class="list-tools">
+<div class="list-tools-row">
+<div class="list-tools-col ta-left">
+<div class="keyword-search">
+	@Html.TextBox("searchKeyword", "", new
+{
+	Id = "search_keyword",
+	Placeholder = "ページ名、カテゴリ名、タグ名、商品名"
+})
+	<a href="javascript:initialize_list();" class="keyword-search-submit">
+		<span class="icon-search"></span>
+	</a>
+</div>
+<a class="btn-toggle" data-toggle-content-selector=".toggle-content"></a>
+</div>
+
+<div class="list-tools-col ta-right">
+
+<div class="list-tools-col ta-right">
+	<div class="pager-content">
+		<p class="pager-content-info hide-list-detail"><span id="pager"></span><span id="total"></span></p>
+		@Html.Hidden("pagerNo", 1)
+		@Html.Hidden("coordinateCount", new{ id="coordianteCount" })
+		<span id="previous" class="pager-content-previous icon-arrow-left" onclick="reduce_pager_no();"></span>
+		<span id="next" class="pager-content-next icon-arrow-right" onclick="add_pager_no();"></span>
+	</div>
+	<button class="btn btn-main btn-size-m" type="submit" onclick="open_new_page();"><span class="icon icon-plus"></span><span class="hide-list-detail">新規作成</span></button>
+</div>
+</div>
+
+</div>
+<div class="list-tools-detailed-search toggle-content" style="display: none">
+<div class="list-tools-row">
+<div class="list-tools-col">
+<div class="form-element-group form-element-group-vertical">
+	<div class="form-element-group-title">
+		<label for="displayDateKbn">公開日</label>
+	</div>
+	<div class="form-element-group-content">
+		@Html.DropDownList("displayDateKbn", this.Model.DisplayDateKbnList ,new { onchange = "initialize_list();" })
+	</div>
+</div>
+<div class="form-element-group form-element-group-vertical">
+<div class="form-element-group-title">
+	<label for="searchStaff">スタッフ</label>
+</div>
+<div class="form-element-group-content">
+	<datalist id="searchStaffList">
+	@foreach (var staff in Model.StaffList)
+ {
+		<option value="@staff.Text" label="@staff.Value"></option>
+ }
+	</datalist>
+	@Html.TextBox("searchStaff", "", new
+{
+	autocomplete = "on",
+	list = "searchStaffList",
+})
+</div>
+</div>
+<div class="form-element-group form-element-group-vertical">
+<div class="form-element-group-title">
+	<label for="searchRealShop">店舗</label>
+</div>
+<div class="form-element-group-content">
+	<datalist id="searchRealShopList">
+	@foreach (var shop in Model.RealShopList)
+ {
+			<option value="@shop.Text" label="@shop.Value"></option>
+ }
+	</datalist>
+	@Html.TextBox("searchRealShop", "", new
+{
+	autocomplete = "on",
+	list = "searchRealShopList",
+})
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+}
+<div class="toggle-content list-tools-row" style="display: none; padding-bottom: 10px">
+	@using (Html.BeginForm("Main", Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE, new { }, FormMethod.Post, new { Id = "input_form" }))
+	{
+		<div>
+			<table cellspacing="1" cellpadding="2" width="830" border="0">
+				<tr>
+					<td class="search_title_bg" width="115" style="background-color: transparent">データ出力</td>
+					<td class="search_item_bg" style="background-color: transparent">
+						<input id="export_searchKeyword" name="searchKeyword" type="hidden" value="" />
+						<input id="export_pagerNo" name="pagerNo" type="hidden" value="" />
+						<input id="export_coordinateCount" name="coordinateCount" type="hidden" value="" />
+						<input id="export_displayDateKbn" name="displayDateKbn" type="hidden" value="" />
+						<input id="export_searchStaff" name="searchStaff" type="hidden" value="" />
+						<input id="export_searchRealShop" name="searchRealShop" type="hidden" value="" />
+						@Html.DropDownListFor(model => model.ParamModel.DataExportType, new SelectList(Model.ExportFiles, "Value", "Text"), "", new {
+							Name = "DataExportType",
+							style = "width: 600px;"
+						})
+						<input type="button" value="  出力  " class="btn btn-main" onclick="return validate_coordinate('export');">
+						<input type="submit" name="Export" id="export" style="display: none;" formmethod="post">
+					</td>
+				</tr>
+			</table>
+		</div>
+	}
+</div>
+<div class="list">
+<div class="list-head">
+<div class="list-head-row">
+<div class="list-style-switch">
+	<div class="list-style-switch-inner">
+		<input type="radio" name="list-style" id="list-style-2" value="thumb" checked="">
+		<label for="list-style-2" class="btn-switch">
+			<span class="icon icon-thumbnail"></span><span class="label hide-list-detail">サムネイル</span>
+		</label>
+		<input type="radio" name="list-style" id="list-style-1" value="list">
+		<label for="list-style-1" class="btn-switch">
+			<span class="icon icon-list"></span><span class="label hide-list-detail">リスト</span>
+		</label>
+	</div>
+</div>
+<div class="list-head-col hide-list-detail w10">
+	<p>更新日時</p>
+</div>
+<div class="list-head-col hide-list-detail w15">
+	<p>公開状態</p>
+</div>
+<div class="list-head-col hide-list-detail w15">
+	<p>集計</p>
+</div>
+</div>
+</div>
+<div id="list-content"></div>
+</div>
+</div>
+<div class="main-content-detail"></div>
+</div>
+
+@* モーダルウィンドウ: 拡大画像 *@
+@Html.Partial("_EnlargedImageModal")
+
+@section JavaScript
+{
+<script type="text/javascript">
+	$(function() {
+		// リスト初期読み込み
+		keyword_ini();
+		initialize_list();
+		var urlHash = location.hash;
+		if (urlHash) {
+			open_page(urlHash.replace("#page", ""));
+		}
+	});
+
+	var displayCount = @Constants.CONST_DISP_CONTENTS_DEFAULT_LIST;
+
+	/**
+	* キーワードフォーム初期化
+	*/
+	function keyword_ini() {
+		$('#search_keyword , #searchRealShop , #searchStaff, #searchCategory, #access-authority-setting-period-start-input-date-list').off("keydown").on("keydown",
+			function(e) {
+				if ((e.which && e.which === 13) || (e.keyCode && e.keyCode === 13)) {
+					initialize_list();
+					return false;
+				}
+				return true;
+			});
+	}
+
+	// カテゴリを追加
+	function add_category(categoryName) {
+		var addText = "," + categoryName +",";
+		var getData = String($('.custom-category-input').val());
+		var categories = getData + addText;
+
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("ChangeCategoryInput", Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+			data: { "categories": categories },
+			traditional: true
+		}).done(function (viewHtml) {
+			$("#categoryInput").html(viewHtml);
+		}).fail(function () {
+		});
+	}
+
+	// コーディネートリストを取得
+	function list_redraw() {
+		loading_animation.start();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("List", Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+			data: $('#search_form').serializeArray(),
+			traditional: true
+		}).done(function(viewHtml) {
+			$("#list-content").html(viewHtml);
+		}).done(function() {
+			var urlHash = location.hash;
+			if (urlHash) {
+				$("#" + urlHash.replace("#page", "")).addClass("selected-low");
+				$("#search_keyword").addClass("placeholder-display-none");
+			}
+		loading_animation.end();
+		}).fail(function() {
+		});
+	}
+
+	// カテゴリーリストを取得
+	function category_list_redraw() {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("CategoryList", Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+			data: {"searchCategoryModal" :$('#searchCategoryModal').val()},
+			traditional: true
+		}).done(function (viewHtml) {
+			$("#category-list-content").html(viewHtml);
+		}).fail(function () {
+		});
+	}
+
+	/**
+	* Ajax通信前 対象の編集画面の表示
+	*/
+	function open_main_content_detail_begin() {
+		loading_animation.start();
+		$('.main-content-frame').addClass('is-open-detail');
+	}
+
+	/**
+	* Ajax通信成功時 対象の編集画面の表示
+	* param {} viewHTML レスポンスHTML
+	*/
+	function open_main_content_detail_success(viewHtml) {
+		$(".main-content-detail").html(viewHtml);
+		setTimeout(function() {
+				loading_animation.end();
+				$('.main-content-detail-inner').show();
+			},
+			500);
+	}
+
+	/**
+	* 新規登録画面の表示
+	*/
+	function open_new_page() {
+		$(".selected-low").removeClass("selected-low");
+		open_main_content_detail_begin();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("Register", Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)"
+		}).done(function (viewHtml) {
+			open_main_content_detail_success(viewHtml);
+			initialize_list();
+		}).fail(function() {
+		});
+	}
+	/**
+	 * ページIDを指定してページ表示
+	 * param {} pageId  
+	 */
+	function open_page(coordinateId) {
+		$(".selected-low").removeClass("selected-low");
+		open_main_content_detail_begin();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("Detail", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+			data: { 'coordinateId': coordinateId }
+		}).done(function (viewHtml) {
+			if (viewHtml !== "open_page_failed()") {
+				$("#" + coordinateId).addClass("selected-low");
+				$("#search_keyword").addClass("placeholder-display-none");
+				open_main_content_detail_success(viewHtml);
+			}
+		}).fail(function () {
+		});
+	}
+
+	/**
+	 * イベントを解除できないため同一セレクタに複数のイベントを設定するとすべて実行されてしまう
+	 * そのため、main.cshtmlにて一度のみ設定
+	 */
+	var clipboard = new ClipboardJS('#url-copy-btn',
+		{
+			text: function (trigger) {
+				return clipboard_url_copy(trigger);
+			}
+		});
+	clipboard.off('success').on('success',
+		function (e) {
+			notification.show("「" + e.text + "」をクリップボードにコピーしました", 'info', 'fadeout');
+			e.clearSelection();
+		});
+
+	/**
+	 * ページ削除
+	 * param {} pageId ページID
+	 */
+	function delete_page(coordinateId) {
+		if (confirm('削除してもよろしいですか？')) {
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("Delete", Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+				data: { 'coordinateId': coordinateId }
+			}).done(function () {
+				list.close();
+				$(".main-content-detail").html(null);
+				notification.show('削除が実行されました', 'info', 'fadeout');
+				initialize_list();
+			}).fail(function () {
+			});
+		}
+	}
+
+	/**
+	* コピー新規
+	* param {} pageId コピー対象ページID
+	* param {} actionStatus アクションステータス
+	*/
+	function open_page_copy(coordinateId, actionStatus) {
+		loading_animation.start();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("CopyPage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+			data: {
+				'coordinateId': coordinateId,
+				'actionStatus' : actionStatus
+			}
+		}).done(function (viewHtml) {
+			open_main_content_detail_success(viewHtml);
+			notification.show('ページを複製しました。', 'info', 'fadeout');
+			initialize_list();
+		}).fail(function () {
+		});
+	}
+
+	// ページャー数を増やす
+	function add_pager_no() {
+		if ($("#next").hasClass('disabled')) return;
+		var nextPagerNo = parseInt($("#pagerNo").val()) + parseInt(1);
+		var coordinateCount = $("#coordinateCount").val();
+		var max = nextPagerNo * displayCount;
+
+		if (max >= coordinateCount) {
+			max = coordinateCount;
+			$('#next').addClass('disabled');
+		}
+
+		$("#pagerNo").val(nextPagerNo);
+		list_redraw();
+		change_pager(nextPagerNo, max);
+	}
+
+	// ページャー数を減らす
+	function reduce_pager_no() {
+		if ($("#previous").hasClass('disabled')) return;
+
+		var nextPagerNo = parseInt($("#pagerNo").val()) - parseInt(1);
+		var max = nextPagerNo * displayCount;
+
+		$("#pagerNo").val(nextPagerNo);
+		list_redraw();
+		change_pager(nextPagerNo, max);
+		$('#next').removeClass('disabled');
+	}
+
+	// ページャー変更
+	function change_pager(nextPagerNo, max) {
+		$("#pager").html(1 + (nextPagerNo - 1) * displayCount + '-' + max);
+		if ($("#pagerNo").val() === '1') {
+			$('#previous').addClass('disabled');
+		} else {
+			$('#previous').removeClass('disabled');
+		}
+	}
+
+	// 総件数を取得して、リストを初期化
+	function initialize_list() {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("GetCoordinateCount", Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+			data: $('#search_form').serializeArray(),
+			traditional: true
+		}).done(function(total) {
+			$("#coordinateCount").val(total);
+			$("#previous,#next").hide();
+			$("#total").html("/" + total);
+			$("#pagerNo").val(1);
+			$('#previous').addClass('disabled');
+
+			if (total > displayCount) {
+				$("#pager").html(1 + '-' + displayCount);
+				$('#next').removeClass('disabled');
+				$("#previous,#next").show();
+			} else {
+				$("#pager").html(1 + '-' + total);
+				$('#next').addClass('disabled');
+			}
+
+			list_redraw();
+		}).fail(function() {
+		});
+	}
+
+	// 入力確認
+	function validate_coordinate(name) {
+		loading_animation.start();
+		var formData = $("form").serializeArray();
+		var url = '@Url.Action("ValidateExport", new
+				{
+					this.Model.ParamModel
+				})';
+
+		$.ajax({
+			type: "POST",
+			url: url,
+			data: formData
+		}).done(function (errorMessage) {
+			setTimeout(function () { loading_animation.end(); }, 200);
+			// 警告表示を削除
+			$('.notification-message-warning').remove();
+			if (errorMessage !== "") {
+				notification.show(errorMessage, 'warning', 'fixed');
+			} else {
+				pass_values_to_hidden_fields_for_export();
+				$('#' + name).click();
+			}
+			return false;
+		});
+	}
+
+	function pass_values_to_hidden_fields_for_export() {
+		var formData = $("#search_form").serializeArray();
+
+		var hiddenFieldsForExport =
+			['searchKeyword', 'pagerNo', 'coordinateCount', 'displayDateKbn', 'searchStaff', 'searchRealShop'];
+
+		var size = hiddenFieldsForExport.length;
+		for (var i = 0; i < size; i++) {
+			$('#export_' + hiddenFieldsForExport[i]).val(formData[i].value);
+		}
+	}
+</script>
+}
+<style>
+	.list-col-coordinate {
+		display: flex;
+		align-items: center;
+		color: #7e7e7e;
+		line-height: 16px;
+		font-size: 12px;
+		margin-bottom: 5px;
+	}
+	.list-col-coordinate::before {
+		content: "スタッフ：";
+		font-size: 11px;
+	}
+	.feature-selected-item-list-head-item-variation {
+		padding: 0 5px;
+		text-align: center;
+		width: 20%;
+		box-sizing: border-box;
+	}
+	.feature-selected-item-list-item-variation {
+		padding: 0 5px;
+		text-align: center;
+		width: 20%;
+		box-sizing: border-box;
+		overflow: hidden;
+	}
+</style>

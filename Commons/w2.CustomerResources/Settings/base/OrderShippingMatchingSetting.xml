@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文者マッチング設定XML(OrderOwnerMatchingSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<!--
+ ■説明
+ ・ <ConditionTableName/>
+ ⇒チェック対象テーブル指定タグ。
+ ・SQL実行時の条件式内部のテーブル名を記述する。
+ ・指定できるテーブル
+    - w2_Order
+    - w2_OrderOwner
+    - w2_OrderShipping
+    
+
+ ・ <MatchCondition />
+ ⇒一致条件タグ。
+ 　論理演算子タグ、一致タグを組みさわせて一致条件を指定する。
+
+ ・ <LogicalOperators Operator="XX" />
+ ⇒論理演算子タグ。
+ 　属性「Operator」は「Or」または「And」を指定。子階層タグの評価に利用する。
+
+ 　<例>メールアドレス または 電話番号が一致
+ 　======================
+ 　<LogicalOperators Operator="Or">
+ 　　<Match Key="mail_addr" Qry="Eq" />
+ 　　<Match Key="tel1" Qry="Eq" />
+ 　</LogicalOperators>
+ 　======================
+
+ 　※一致条件タグ（<MatchCondition />）の子階層には必ず指定する。
+
+ ・<Match Key="XX" Qry="YY" Length="ZZ" />
+ ⇒一致タグ。
+ 　属性「Key」にはユーザー情報の項目を指定。
+ 　属性「Qry」には「Eq（等しい）」または属性「Length」と組み合わせて 「Sw（○文字まで等しい）」を指定します。
+
+ 　<例>市区町村+番地の先頭5文字が一致
+ 　======================
+ 　<Match Key="addr3+addr4" Qry="Sw" Length="5" />
+ 　======================
+-->
+<OrderShippingMatchingSetting>
+  <!-- チェック対象の論理テーブル名  -->
+  <ConditionTableName Table="w2_OrderShipping"/>
+
+  <!-- 一致条件  -->
+  <MatchCondition>
+    <LogicalOperators Operator="Or">
+
+      <!-- 都道府県と市区郡町村とそれ以外の住所が一致  -->
+      <LogicalOperators Operator="And">
+        <Match Key="shipping_addr1" Qry="Eq" />
+        <Match Key="shipping_addr2" Qry="Eq" />
+        <Match Key="shipping_addr3" Qry="Eq" />
+      </LogicalOperators>
+
+    </LogicalOperators>
+  </MatchCondition>
+
+</OrderShippingMatchingSetting>

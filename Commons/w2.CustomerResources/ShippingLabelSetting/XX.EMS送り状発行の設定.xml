@@ -1,0 +1,361 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<OrderDataExportSetting>
+
+  <!-- 出力ファイルの設定 -->
+  <ExportSetting>
+    <!-- 受注一覧・ワークフロー一覧画面に表示する送り状ダウンロードリンクの文言 -->
+    <DisplayName><![CDATA[EMS送り状発行]]></DisplayName>
+    <!-- 出力ファイルの種類（設定可能値：csv） -->
+    <FormatType>csv</FormatType>
+    <!-- 出力単位（設定可能値：Order） -->
+    <UnitType>Order</UnitType>
+    <!-- 出力ファイル名 -->
+    <FileName>
+      <Value Type="string">EMSOkurijyo_</Value>
+      <Value Type="dateString" Format="yyyyMMddHHmmss">Now</Value>
+      <Value Type="string">.csv</Value>
+    </FileName>
+    <!-- ヘッダ行出力有無（設定可能値：true, false） -->
+    <ExportHeader>true</ExportHeader>
+    <!-- 引用符常時出力有無（設定可能値：true, false） -->
+    <!--
+         例：引用符が「"」、1列目の値は「123」、2列目の値は「abc」、3列目の値は「1,2」の場合、
+             ・true の場合、"123","abc","1,2"を出力しますが、
+             ・false の場合、123,abc,"1,2"を出力します。（値にカンマ(,)があるときは強制エスケープ）
+    -->
+    <AlwaysExportQuotation>true</AlwaysExportQuotation>
+    <!-- 列の引用符 -->
+    <StringQuotationMark><![CDATA["]]></StringQuotationMark>
+    <!-- 区切り文字（設定可能値：COMMA, TAB） -->
+    <Separator>COMMA</Separator>
+    <!-- 文字コード（設定可能値：Shift_JIS, UTF-8） -->
+    <Encoding>UTF-8</Encoding>
+  </ExportSetting>
+
+  <!-- 出力項目・内容の設定 -->
+  <FieldsSetting>
+    <!-- 1.出荷予定日 -->
+    <Field Name="1.出荷予定日">
+      <Value Type="dateString" Format="yyyy/mm/dd" Plus="3">Add</Value>
+    </Field>
+
+    <!-- order_id(内容品出力に必要なだけなのでcsv出力しない) -->
+    <Field Name="order_id" IsHiddenField="true">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[((SELECT w2_MallCooperationSetting.mall_kbn FROM w2_MallCooperationSetting WHERE w2_MallCooperationSetting.mall_id = w2_Order.mall_id) = 'R') AND (LEN(w2_Order.order_id) - LEN(REPLACE(w2_Order.order_id, '-', '')) >= 2) AND (ISNUMERIC(REPLACE(w2_Order.order_id, '-', '')) > 0)]]></Condition>
+          <Value Type="field"><![CDATA[PARSENAME(REPLACE(w2_Order.order_id, '-', '.'), LEN(w2_Order.order_id) - LEN(REPLACE(w2_Order.order_id, '-', '')) - 1)]]></Value>
+        </Case>
+        <Else>
+          <Value Type="field">w2_Order.order_id</Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 2.発送方法 -->
+    <Field Name="2.発送方法">
+      <Value Type="string">1</Value>
+    </Field>
+
+    <!-- 3.ご依頼主_名前 -->
+    <Field Name="3.ご依頼主_名前">
+      <!-- 3.ご依頼主_名前、4.ご依頼主_会社名いずれかが必須-->
+      <!-- 3.ご依頼主_名前、4.ご依頼主_会社名、5.ご依頼主_部署名が合計で93桁以内-->
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 4.ご依頼主_会社名 -->
+    <Field Name="4.ご依頼主_会社名">
+      <!-- 3.ご依頼主_名前、4.ご依頼主_会社名いずれかが必須-->
+      <!-- 3.ご依頼主_名前、4.ご依頼主_会社名、5.ご依頼主_部署名が合計で93桁以内-->
+      <Value Type="string">w2solution</Value>
+    </Field>
+
+    <!-- 5.ご依頼主_部署名 -->
+    <!--<Field Name="5.ご依頼主_部署名">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 6.ご依頼主_郵便番号 -->
+    <Field Name="6.ご依頼主_郵便番号">
+      <Value Type="string">104-0061</Value>
+    </Field>
+
+    <!-- 7.ご依頼主_マンション・階など -->
+    <!--<Field Name="7.ご依頼主_マンション・階など">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 8.ご依頼主_番地 -->
+    <Field Name="8.ご依頼主_番地">
+      <Value Type="string">4-14-11</Value>
+    </Field>
+
+    <!-- 9.ご依頼主_市区町村名 -->
+    <Field Name="9.ご依頼主_市区町村名">
+      <!-- ローマ字表記-->
+      <Value Type="string">ginza chuou-ku</Value>
+    </Field>
+
+    <!-- 10.ご依頼主_都道府県 -->
+    <Field Name="10.ご依頼主_都道府県">
+      <!-- ローマ字表記-->
+      <Value Type="string">Tokyo</Value>
+    </Field>
+
+    <!-- 11.ご依頼主_電話番号 -->
+    <Field Name="11.ご依頼主_電話番号">
+      <Value Type="string">+81-3-5148-9631</Value>
+    </Field>
+
+    <!-- 12.ご依頼主_FAX番号 -->
+    <!--<Field Name="12.ご依頼主_FAX番号">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 13.ご依頼主_輸出者コード -->
+    <!--<Field Name="13.ご依頼主_輸出者コード">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 14.お届け先_名前 -->
+    <Field Name="14.お届け先_名前" ConvertString="ToHankaku">
+      <!-- 14.お届け先_名前、15.お届け先_会社名いずれかが必須-->
+      <!-- 14.お届け先_名前、15.お届け先_会社名、16.お届け先_部署名が合計で93桁以内-->
+      <Value Type="field">w2_OrderShipping.shipping_name</Value>
+    </Field>
+
+    <!-- 15.お届け先_会社名 -->
+    <Field Name="15.お届け先_会社名">
+      <!-- 14.お届け先_名前、15.お届け先_会社名いずれかが必須-->
+      <!-- 14.お届け先_名前、15.お届け先_会社名、16.お届け先_部署名が合計で93桁以内-->
+      <Value Type="field">w2_OrderShipping.shipping_company_name</Value>
+    </Field>
+
+    <!-- 16.お届け先_部署名 -->
+    <!--<Field Name="16.お届け先_部署名">
+      <Value Type="field">w2_OrderShipping.shipping_company_post_name</Value>
+    </Field>-->
+
+    <!-- 17.お届け先_郵便番号 -->
+    <Field Name="17.お届け先_郵便番号">
+      <Value Type="field">w2_OrderShipping.shipping_zip</Value>
+    </Field>
+
+    <!-- 18.お届け先_マンション・階など -->
+    <Field Name="18.お届け先_マンション・階など" ConvertString="ToHankaku">
+      <Value Type="field">w2_OrderShipping.shipping_addr4</Value>
+    </Field>
+
+    <!-- 19.お届け先_番地 -->
+    <Field Name="19.お届け先_番地" ConvertString="ToHankaku">
+      <Value Type="field">w2_OrderShipping.shipping_addr3</Value>
+    </Field>
+
+    <!-- 20.お届け先_市区町村名 -->
+    <Field Name="20.お届け先_市区町村名" ConvertString="ToHankaku">
+      <Value Type="field">w2_OrderShipping.shipping_addr2</Value>
+    </Field>
+
+    <!-- 21.お届け先_州名 -->
+    <Field Name="21.お届け先_州名">
+      <Value Type="field">w2_OrderShipping.shipping_addr5</Value>
+    </Field>
+
+    <!-- 22.お届け先_国名コード -->
+    <Field Name="22.お届け先_国名コード">
+      <Value Type="field">dbo.w2_ConvertCountryCodeForEMS(w2_OrderShipping.shipping_country_iso_code)</Value>
+    </Field>
+
+    <!-- 23.お届け先_電話番号 -->
+    <Field Name="23.お届け先_電話番号">
+      <Value Type="field">w2_OrderShipping.shipping_tel1</Value>
+    </Field>
+
+    <!-- 24.お届け先_FAX番号 -->
+    <!--<Field Name="24.お届け先_FAX番号">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 25.総重量 -->
+    <Field Name="25.総重量">
+      <Value Type="field">
+        <![CDATA[( SELECT  SUM(w2_OrderItem.item_quantity * w2_ProductVariationView.variation_weight_gram)
+                     FROM  w2_ProductVariationView
+                           INNER JOIN w2_OrderItem ON
+                           w2_OrderItem.product_id = w2_ProductVariationView.product_id
+                           AND
+                           w2_OrderItem.variation_id = w2_ProductVariationView.variation_id
+                    WHERE  w2_OrderItem.order_id = w2_Order.order_id)]]>
+      </Value>
+    </Field>
+
+    <!-- 26.番号 -->
+    <!--<Field Name="26.番号">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 27.総個数 -->
+    <!--<Field Name="27.総個数">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 28.内容品種類 -->
+    <Field Name="28.内容品種類">
+      <Value Type="string">3</Value>
+    </Field>
+
+    <!-- 29.内容品合計個数 -->
+    <Field Name="29.内容品合計個数">
+      <Value Type="field">w2_Order.order_product_count</Value>
+    </Field>
+
+    <!-- 30.内容品合計金額 -->
+    <Field Name="30.内容品合計金額">
+      <Value Type="field">CAST(CAST( Floor(w2_Order.order_price_total * POWER(10,@@ KEY_CURRENCY_DIGITS @@)) / POWER(10,@@ KEY_CURRENCY_DIGITS @@) AS decimal(18,@@ KEY_CURRENCY_DIGITS @@)) AS nvarchar)</Value>
+    </Field>
+
+    <!-- 31.損害要償額／保険金額 -->
+    <!--<Field Name="31.損害要償額／保険金額">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 32.TAXコードVATナンバー -->
+    <!--<Field Name="32.TAXコードVATナンバー">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 33.免許番号 -->
+    <!--<Field Name="33.免許番号">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 34.証明番号 -->
+    <!--<Field Name="34.証明番号">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 35.インボイス番号 -->
+    <!--<Field Name="35.インボイス番号">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 36.支払い条件 -->
+    <!--<Field Name="36.支払い条件">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 37.税関通知書／インボイス備考 -->
+    <!--<Field Name="37.税関通知書／インボイス備考">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 38.無償貨物フラグ -->
+    <Field Name="38.無償貨物フラグ">
+      <Value Type="string">1</Value>
+    </Field>
+
+    <!-- 39.ご依頼主_メールアドレス -->
+    <Field Name="39.ご依頼主_メールアドレス">
+      <Value Type="string">pkg_dev@w2solution.co.jp</Value>
+    </Field>
+
+    <!-- 40.お届け先_メールアドレス -->
+    <!--<Field Name="40.お届け先_メールアドレス">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 41.輸送種別 -->
+    <Field Name="41.輸送種別">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 42.速達 -->
+    <!--<Field Name="42.速達">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 43.受取通知 -->
+    <!--<Field Name="43.受取通知">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 44.ご依頼主指示事項 -->
+    <!--<Field Name="44.ご依頼主指示事項">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 45.保管期間 -->
+    <!--<Field Name="45.保管期間">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 46.輸送種別（転送・返送） -->
+    <!--<Field Name="46.輸送種別（転送・返送）">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 47.転送先_郵便番号 -->
+    <!--<Field Name="47.転送先_郵便番号">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 48.転送先_マンション・階など -->
+    <!--<Field Name="48.転送先_マンション・階など">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 49.転送先_番地 -->
+    <!--<Field Name="49.転送先_番地">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 50.転送先_市区町村名 -->
+    <!--<Field Name="50.転送先_市区町村名">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 51.転送先_州名 -->
+    <!--<Field Name="51.転送先_州名">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 52.転送先_国名コード -->
+    <!--<Field Name="52.転送先_国名コード">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 53.転送先_電話番号 -->
+    <!--<Field Name="53.転送先_電話番号">
+      <Value Type="string"></Value>
+    </Field>-->
+
+    <!-- 54.転送先_FAX番号 -->
+    <!--<Field Name="54.転送先_FAX番号">
+      <Value Type="string"></Value>
+    </Field>-->
+  </FieldsSetting>
+
+  <!-- 内容品項目の設定 -->
+  <ContentsSetting>
+    <!-- 1.内容品詳細名 -->
+    <Field Type="field">product_name</Field>
+    <!-- 2.HSコード -->
+    <!--
+    <Field Type="string">hs_code</Field>
+    -->
+    <!-- 3.原産国コード -->
+    <!--
+    <Field Type="string">native_code</Field>
+    -->
+    <!-- 4.個数 -->
+    <Field Type="field">item_quantity</Field>
+    <!-- 5.重量 -->
+    <Field Type="product_field">product_weight_gram</Field>
+    <!-- 6.単価 -->
+    <Field Type="field">product_price</Field>
+    <!-- 7.通貨単位 -->
+    <Field Type="string">JPY</Field>
+  </ContentsSetting>
+
+</OrderDataExportSetting>

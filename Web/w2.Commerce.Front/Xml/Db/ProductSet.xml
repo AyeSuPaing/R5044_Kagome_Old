@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品セット系SQLステートメントXML(ProductSet.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductSet>
+  
+  <!-- セット商品取得 -->
+  <GetProductSetProducts>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductSet.shop_id,
+                w2_ProductSet.product_set_id,
+                w2_ProductSet.product_set_name,
+                w2_ProductSet.parent_min,
+                w2_ProductSet.parent_max,
+                w2_ProductSet.child_min,
+                w2_ProductSet.child_max,
+                w2_ProductSet.description_kbn,
+                w2_ProductSet.description,
+                w2_ProductSetItem.setitem_price,
+                w2_ProductSetItem.count_min,
+                w2_ProductSetItem.count_max,
+                w2_ProductSetItem.family_flg,
+                w2_Product.Product_id,
+                w2_Product.name,
+                w2_Product.category_id1,
+                w2_Product.image_head,
+                w2_Product.max_sell_quantity,
+                w2_Product.use_variation_flg,
+                w2_Product.shipping_type,
+                w2_Product.digital_contents_flg,
+                w2_Product.display_member_rank,
+                w2_Product.buyable_member_rank,
+                w2_Product.return_exchange_message,
+                w2_ProductVariationView.variation_image_head,
+                w2_ProductVariationView.variation_id,
+                w2_ProductVariationView.variation_name1,
+                w2_ProductVariationView.variation_name2,
+                w2_ProductVariationView.variation_name3,
+                w2_ProductVariationView.price
+          FROM  w2_ProductSet
+                LEFT JOIN w2_ProductSetItem ON
+                (
+                  w2_ProductSet.shop_id = w2_ProductSetItem.shop_id
+                  AND
+                  w2_ProductSet.product_set_id = w2_ProductSetItem.product_set_id
+                )
+                INNER JOIN w2_Product ON
+                (
+                  w2_ProductSetItem.shop_id = w2_Product.shop_id
+                  AND
+                  w2_ProductSetItem.product_id = w2_Product.product_id
+                )
+                INNER JOIN w2_ProductVariationView ON
+                (
+                  w2_ProductSetItem.shop_id = w2_ProductVariationView.shop_id
+                  AND
+                  w2_ProductSetItem.product_id = w2_ProductVariationView.product_id
+                  AND
+                  w2_ProductSetItem.variation_id = w2_ProductVariationView.variation_id
+                )
+         WHERE  w2_ProductSet.shop_id = @shop_id
+           AND  w2_ProductSet.product_set_id = @product_set_id
+           AND  w2_ProductSet.valid_flg = '1'
+        ORDER BY w2_ProductSetItem.display_order, w2_ProductSetItem.product_id, w2_ProductSetItem.variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductSetProducts>
+  
+  <!-- 商品セット取得 -->
+  <GetProductSet>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductSet
+         WHERE  shop_id = @shop_id
+           AND  product_set_id = @product_set_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductSet>
+  
+  <!-- 商品セットアイテム取得 -->
+  <GetProductSetItem>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductSetItem
+         WHERE  shop_id = @shop_id
+           AND  product_set_id = @product_set_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetProductSetItem>
+  
+</ProductSet>

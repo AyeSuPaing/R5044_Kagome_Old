@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_Order' AND COLUMN_NAME = 'shipping_tax_rate')
+	ALTER TABLE [w2_Order] ADD [shipping_tax_rate] [decimal] (5,2) NOT NULL DEFAULT (0);
+GO
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_Order' AND COLUMN_NAME = 'payment_tax_rate')
+	ALTER TABLE [w2_Order] ADD [payment_tax_rate] [decimal] (5,2) NOT NULL DEFAULT (0);
+GO
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_OrderPriceByTaxRate]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+begin
+/*
+=========================================================================================================
+  Module      : 税率毎の注文金額情報 (w2_OrderPriceByTaxRate.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_OrderPriceByTaxRate] (
+	[order_id] [nvarchar] (30) NOT NULL,
+	[key_tax_rate] [decimal] (5,2) NOT NULL DEFAULT (0),
+	[price_subtotal_by_rate] [decimal] NOT NULL DEFAULT (0),
+	[price_shipping_by_rate] [decimal] NOT NULL DEFAULT (0),
+	[price_payment_by_rate] [decimal] NOT NULL DEFAULT (0),
+	[price_total_by_rate] [decimal] NOT NULL DEFAULT (0),
+	[tax_price_by_rate] [decimal] NOT NULL DEFAULT (0),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate())
+) ON [PRIMARY]
+
+
+ALTER TABLE [dbo].[w2_OrderPriceByTaxRate] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_OrderPriceByTaxRate] PRIMARY KEY  CLUSTERED
+	(
+		[order_id],
+		[key_tax_rate]
+	) ON [PRIMARY]
+
+end
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

@@ -1,0 +1,401 @@
+﻿@*
+=========================================================================================================
+  Module      : 商品一覧表示設定ページ(Modify.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@{
+	ViewBag.Title = "商品一覧表示設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+@model w2.Cms.Manager.ViewModels.ProductListDispSetting.ModifyViewModel
+@helper TopButtomControls()
+{
+	<input type="button" value="  更新する  " class="btn btn-main" onclick="return validate('modify');">
+	<input type="submit" name="Modify" id="modify" style="display: none;">
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr><td><h1 class="page-title">商品一覧表示設定</h1></td></tr>
+	<tr>
+		<td style="width: 792px">@LayoutHelper.Padding(10)</td>
+	</tr>
+	<tr><td><h2 class="cmn-hed-h2">商品一覧表示設定一覧</h2></td></tr>
+	<!--▽ 一覧 ▽-->
+	<tr>
+	<td style="width: 792px">
+	<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+	<tr>
+	<td>
+	<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+	<table cellspacing="0" cellpadding="0" border="0">
+	@using (Html.BeginForm("Modify", Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_LIST_DISP_SETTING, new 
+	{
+	}, FormMethod.Post,new {Id ="input_form"}))
+	{
+		<tr>
+			<td>@LayoutHelper.Padding(10)</td>
+		</tr>
+		<tr class="action_part_top">
+			<td>
+				@if (Model.UpdateSuccessFlg)
+				{
+				<table class="info_table" cellspacing="1" cellpadding="3" width="100%" border="0">
+					<tr class="info_item_bg">
+						<td align="left">商品一覧表示設定更新が正常に終了しました。</td>
+					</tr>
+				</table>
+				}
+			</td>
+			<!-- スペース -->
+			<td colspan="6">@LayoutHelper.Padding(4)</td>
+		</tr>
+		<tr>
+			<!-- 更新ボタン -->
+			<td align="right">
+			<div class="action_part_top">
+				@if (Constants.GLOBAL_OPTION_ENABLE)
+				{
+					<a href="NameTranslationSettingExport">翻訳データ出力</a>
+				}
+				@TopButtomControls()
+			</div>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<table class="list_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					<tr class="list_title_bg"><td align="center" colspan="7">並び順設定</td></tr>
+					<tr class="list_title_bg">
+						<td align="center" width="5%">No</td>
+						<td align="center" width="8%">表示/非表示</td>
+						<td align="center" width="8%">デフォルト<br/>設定</td>
+						<td align="center" width="30%">表示名<span class="notice">*</span></td>
+						<td align="center" width="8%">表示順<span class="notice">*</span></td>
+						<td align="center" width="61%">説明</td>
+					</tr>
+					<!-- ▽商品一覧表示設定一覧▽ -->
+					@for (var index = 0; index < Model.Input.SortSettings.Length; index++)
+					{
+						<tr class="edit_item_bg">
+							@Html.HiddenFor(m => m.Input.SortSettings[index].LastChanged)
+							@Html.HiddenFor(m => m.Input.SortSettings[index].SettingId)
+							@Html.HiddenFor(m => m.Input.SortSettings[index].SettingKbn)
+							<td align="center">@(index + 1)</td>
+							<td align="center">
+								@Html.CheckBoxFor(m => m.Input.SortSettings[index].IsDispEnable)
+							</td>
+							<td align="center">
+								@if (Model.Input.SortSettings[index].IsDefaultDisp)
+								{
+									@Html.RadioButtonFor(m => m.Input.SortSettings[index].IsDefaultDisp, Model.Input.SortSettings[index].SettingId, new
+									{
+										Name = "Input.SortDefaultDisp",
+										Checked = true
+									})
+								}
+								else
+								{
+									@Html.RadioButtonFor(m => m.Input.SortSettings[index].IsDefaultDisp, Model.Input.SortSettings[index].SettingId, new
+									{
+										Name = "Input.SortDefaultDisp",
+									})
+								}
+							</td>
+							<td align="center">
+								@Html.TextBoxFor(m => m.Input.SortSettings[index].SettingName, new
+								{
+									MaxLength = 50,
+									size = 30
+								})
+								@*表示名翻訳設定情報*@
+								@if (Constants.GLOBAL_OPTION_ENABLE)
+								{
+									foreach (var translation in Model.Input.SortSettings[index].SettingNameTranslationData)
+									{
+										<div align="left">
+											@string.Format("{0}({1})：{2}", translation.LanguageCode, translation.LanguageLocaleId, translation.AfterTranslationalName)
+										</div>
+									}
+								}
+							</td>
+							<td align="center">
+								@Html.TextBoxFor(m => m.Input.SortSettings[index].DispNo, new
+								{
+									size = 2,
+									MaxLength = 2
+								})
+							</td>
+							<td align="left">
+								@Model.Input.SortSettings[index].Description
+							</td>
+						</tr>
+					}
+					<!-- △商品一覧表示設定一覧△ -->
+				</table>
+				<table cellspacing="0" cellpadding="0" border="0">
+					<tr><td>@LayoutHelper.Padding(10)</td></tr>
+					<tr><td>@LayoutHelper.Padding(10)</td></tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<table class="list_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					<tr class="list_title_bg"><td align="center" colspan="7">在庫表示</td></tr>
+					<tr class="list_title_bg">
+						<td align="center" width="5%">No</td>
+						<td align="center" width="8%">表示/非表示</td>
+						<td align="center" width="8%">デフォルト<br/>設定</td>
+						<td align="center" width="30%">表示名<span class="notice">*</span></td>
+						<td align="center" width="8%">表示順<span class="notice">*</span></td>
+						<td align="center" width="61%">説明</td>
+					</tr>
+					<!-- ▽商品一覧表示設定一覧▽ -->
+					@for (var index = 0; index < Model.Input.StockSettings.Length; index++)
+					{
+						<tr class="edit_item_bg">
+							@Html.HiddenFor(m => m.Input.StockSettings[index].LastChanged)
+							@Html.HiddenFor(m => m.Input.StockSettings[index].SettingId)
+							@Html.HiddenFor(m => m.Input.StockSettings[index].SettingKbn)
+							<td align="center">@(index + 1)</td>
+							<td align="center">
+								@Html.CheckBoxFor(m => m.Input.StockSettings[index].IsDispEnable)
+							</td>
+							<td align="center">
+								@if (Model.Input.StockSettings[index].IsDefaultDisp)
+								{
+									@Html.RadioButtonFor(m => m.Input.StockSettings[index].IsDefaultDisp, Model.Input.StockSettings[index].SettingId, new
+									{
+										Name = "Input.StockDefaultDisp",
+										Checked = true
+									})
+								}
+								else
+								{
+									@Html.RadioButtonFor(m => m.Input.StockSettings[index].IsDefaultDisp, Model.Input.StockSettings[index].SettingId, new
+									{
+										Name = "Input.StockDefaultDisp",
+									})
+								}
+							</td>
+							<td align="center">
+								@Html.TextBoxFor(m => m.Input.StockSettings[index].SettingName, new
+								{
+									MaxLength = 50,
+									size = 30
+								})
+								@*表示名翻訳設定情報*@
+								@if (Constants.GLOBAL_OPTION_ENABLE)
+								{
+									foreach (var translation in Model.Input.StockSettings[index].SettingNameTranslationData)
+									{
+										<div align="left">
+											@string.Format("{0}({1})：{2}", translation.LanguageCode, translation.LanguageLocaleId, translation.AfterTranslationalName)
+										</div>
+									}
+								}
+							</td>
+							<td align="center">
+								@Html.TextBoxFor(m => m.Input.StockSettings[index].DispNo, new
+								{
+									size = 2,
+									MaxLength = 2
+								})
+							</td>
+							<td align="left">
+								@Model.Input.StockSettings[index].Description
+							</td>
+						</tr>
+					}
+					<!-- △商品一覧表示設定一覧△ -->
+				</table>
+				<table cellspacing="0" cellpadding="0" border="0">
+					<tr><td>@LayoutHelper.Padding(10)</td></tr>
+					<tr><td>@LayoutHelper.Padding(10)</td></tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<table class="list_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					<tr class="list_title_bg"><td align="center" colspan="7">表示形式</td></tr>
+					<tr class="list_title_bg">
+						<td align="center" width="5%">No</td>
+						<td align="center" width="8%">表示/非表示</td>
+						<td align="center" width="8%">デフォルト<br/>設定</td>
+						<td align="center" width="30%">表示名<span class="notice">*</span></td>
+						<td align="center" width="8%">表示順<span class="notice">*</span></td>
+						<td align="center" width="61%">説明</td>
+					</tr>
+					<!-- ▽商品一覧表示設定一覧▽ -->
+					@for (var index = 0; index < Model.Input.ImgSettings.Length; index++)
+					{
+						<tr class="edit_item_bg">
+							@Html.HiddenFor(m => m.Input.ImgSettings[index].LastChanged)
+							@Html.HiddenFor(m => m.Input.ImgSettings[index].SettingId)
+							@Html.HiddenFor(m => m.Input.ImgSettings[index].SettingKbn)
+							<td align="center">@(index + 1)</td>
+							<td align="center">
+								@Html.CheckBoxFor(m => m.Input.ImgSettings[index].IsDispEnable)
+							</td>
+							<td align="center">
+								@if (Model.Input.ImgSettings[index].IsDefaultDisp)
+								{
+									@Html.RadioButtonFor(m => m.Input.ImgSettings[index].IsDefaultDisp, Model.Input.ImgSettings[index].SettingId, new
+									{
+										Name = "Input.ImgDefaultDisp",
+										Checked = true
+									})
+								}
+								else
+								{
+									@Html.RadioButtonFor(m => m.Input.ImgSettings[index].IsDefaultDisp, Model.Input.ImgSettings[index].SettingId, new
+									{
+										Name = "Input.ImgDefaultDisp",
+									})
+								}
+							</td>
+							<td align="center">
+								@Html.TextBoxFor(m => m.Input.ImgSettings[index].SettingName, new
+								{
+									MaxLength = 50,
+									size = 30
+								})
+								@*表示名翻訳設定情報*@
+								@if (Constants.GLOBAL_OPTION_ENABLE)
+								{
+									foreach (var translation in Model.Input.ImgSettings[index].SettingNameTranslationData)
+									{
+										<div align="left">
+											@string.Format("{0}({1})：{2}", translation.LanguageCode, translation.LanguageLocaleId, translation.AfterTranslationalName)
+										</div>
+									}
+								}
+							</td>
+							<td align="center">
+								@Html.TextBoxFor(m => m.Input.ImgSettings[index].DispNo, new
+								{
+									size = 2,
+									MaxLength = 2
+								})
+							</td>
+							<td align="left">
+								@Model.Input.ImgSettings[index].Description
+							</td>
+						</tr>
+					}
+					<!-- △商品一覧表示設定一覧△ -->
+				</table>
+				<table cellspacing="0" cellpadding="0" border="0">
+					<tr><td>@LayoutHelper.Padding(10)</td></tr>
+					<tr><td>@LayoutHelper.Padding(10)</td></tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<table class="list_table" cellspacing="1" cellpadding="3" width="300" border="0">
+					<tr class="list_title_bg"><td align="center" colspan="7">表示件数</td></tr>
+					<tr class="list_title_bg">
+						<td align="center" width="5%">No</td>
+						<td align="center" width="8%">表示/非表示</td>
+						<td align="center" width="8%">デフォルト<br/>設定</td>
+						<td align="center" width="79%">件数<span class="notice">*</span></td>
+					</tr>
+					<!-- ▽商品一覧表示設定一覧▽ -->
+					@for (var index = 0; index < Model.Input.CountSettings.Length; index++)
+					{
+						<tr class="edit_item_bg">
+							@Html.HiddenFor(m => m.Input.CountSettings[index].LastChanged)
+							@Html.HiddenFor(m => m.Input.CountSettings[index].SettingId)
+							@Html.HiddenFor(m => m.Input.CountSettings[index].SettingKbn)
+							<td align="center">@(index + 1)</td>
+							<td align="center">
+								@Html.CheckBoxFor(m => m.Input.CountSettings[index].IsDispEnable)
+							</td>
+							<td align="center">
+								@if (Model.Input.CountSettings[index].IsDefaultDisp)
+								{
+									@Html.RadioButtonFor(m => m.Input.CountSettings[index].IsDefaultDisp, index, new
+									{
+										Name = "Input.CountDefaultDispIndex",
+										Checked = true
+									})
+								}
+								else
+								{
+									@Html.RadioButtonFor(m => m.Input.CountSettings[index].IsDefaultDisp, index, new
+									{
+										Name = "Input.CountDefaultDispIndex",
+									})
+								}
+							</td>
+							<td align="center">
+								@Html.TextBoxFor(m => m.Input.CountSettings[index].DispCount, new
+								{
+									MaxLength = 3,
+									size = 3
+								})
+							</td>
+						</tr>
+					}
+					<!-- △商品一覧表示設定一覧△ -->
+				</table>
+				<table cellspacing="0" cellpadding="0" border="0">
+					<tr>
+						<td>@LayoutHelper.Padding(10)</td>
+					</tr>
+				</table>
+				<table class="info_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					<tr class="info_item_bg">
+						<td align="left">備考<br/>
+							・設定はフロントサイト（PCサイト、スマートフォンサイト）共通になります。<br/>
+							・表示／非表示のチェックボックスがONの表示順のみ、フロントサイトの商品一覧画面で表示順の設定として表示されます。<br/>
+							・デフォルト設定がされている表示順がフロントサイトの商品一覧画面に最初に遷移した際の表示順となります。<br/>
+							・設定更新の反映確認は一度ブラウザを閉じて頂いた後に再度サイトへアクセスして頂きご確認下さい。
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td>@LayoutHelper.Padding(4)</td>
+		</tr>
+		<tr>
+			<!-- 更新ボタン -->
+			<td align="right">
+				@TopButtomControls()
+			</td>
+			<td width="5">@LayoutHelper.Padding(5)</td>
+		</tr>
+		<tr>
+			<td>@LayoutHelper.Padding(10)</td>
+		</tr>
+	}
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 一覧 △-->
+	<tr>
+		<td style="width: 792px">@LayoutHelper.Padding(10)</td>
+	</tr>
+</table>
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		// エンターキーによるsubmit禁止
+		prohibit_submission();
+	</script>
+}

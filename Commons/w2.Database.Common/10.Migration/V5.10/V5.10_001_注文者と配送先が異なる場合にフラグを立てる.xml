@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+-- カラム追加
+ALTER TABLE [w2_OrderShipping] ADD [another_shipping_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+GO
+
+-- 既存の注文情報で、注文者と配送先が違ったらフラグを立てる
+update w2_OrderShipping 
+set another_shipping_flg = '1'
+where w2_OrderShipping.order_id in
+(
+	select A.order_id
+	from w2_OrderShipping A inner join w2_OrderOwner B on A.order_id = B.order_id
+	where A.shipping_name != B.owner_name
+		OR A.shipping_addr1 != B.owner_addr1 
+		OR A.shipping_addr2 != B.owner_addr2
+		OR A.shipping_addr3 != B.owner_addr3
+		OR A.shipping_addr4 != B.owner_addr4
+		OR A.shipping_company_name != B.owner_company_name
+		OR A.shipping_company_post_name != B.owner_company_post_name
+		OR A.shipping_tel1 != B.owner_tel1
+		OR A.shipping_tel2 != B.owner_tel2
+		OR A.shipping_tel3 != B.owner_tel3
+		OR A.shipping_zip != B.owner_zip
+)
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

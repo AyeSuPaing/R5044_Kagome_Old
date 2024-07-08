@@ -1,0 +1,149 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メッセージメール添付系SQLステートメントXML(CsMessageMailAttachment.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsMessageMailAttachment>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CsMessageMailAttachment
+         WHERE  dept_id = @dept_id
+           AND  mail_id = @mail_id
+           AND  file_no = @file_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="30" />
+      <Input Name="file_no" Type="int" />
+    </Parameter>
+  </Get>
+
+  <!-- メールに紐づくものすべて取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  dept_id,
+                mail_id,
+                file_no,
+                file_name
+                --file_data 大容量の添付がある場合に画面表示へ影響あり(バグ3045)
+          FROM  w2_CsMessageMailAttachment
+         WHERE  dept_id = @dept_id
+           AND  mail_id = @mail_id
+        ORDER BY file_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAll>
+
+  <!-- 登録用ファイルNO取得 -->
+  <GetRegisterFileNo>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MAX(file_no),0) + 1 AS file_no
+          FROM  w2_CsMessageMailAttachment
+         WHERE  dept_id = @dept_id
+           AND  mail_id = @mail_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetRegisterFileNo>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT w2_CsMessageMailAttachment
+            (
+               dept_id,
+               mail_id,
+               file_no,
+               file_name,
+               file_data
+            )
+            VALUES
+            (
+              @dept_id,
+              @mail_id,
+              @file_no,
+              @file_name,
+              @file_data
+            )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="30" />
+      <Input Name="file_no" Type="int" />
+      <Input Name="file_name" Type="nvarchar" Size="256" />
+      <Input Name="file_data" Type="varbinary" Size="max" />
+    </Parameter>
+  </Register>
+
+  <!-- テンポラリIDを正しいIDに更新 -->
+  <UpdateTempIdToFormalId>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMessageMailAttachment
+           SET  mail_id = @mail_id,
+                file_no = @file_no
+         WHERE  dept_id = @dept_id
+           AND  mail_id = ''
+           AND  file_no = @file_no_before
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="30" />
+      <Input Name="file_no" Type="int" />
+      <Input Name="file_no_before" Type="int" />
+    </Parameter>
+  </UpdateTempIdToFormalId>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CsMessageMailAttachment
+         WHERE  dept_id = @dept_id
+           AND  mail_id = @mail_id
+           AND  file_no = @file_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="30" />
+      <Input Name="file_no" Type="int" />
+    </Parameter>
+  </Delete>
+
+  <!-- 全て削除 -->
+  <DeleteAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CsMessageMailAttachment
+         WHERE  dept_id = @dept_id
+           AND  mail_id = @mail_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteAll>
+
+</CsMessageMailAttachment>

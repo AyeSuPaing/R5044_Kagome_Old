@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+	  if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_CountryIpv4]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_CountryIpv4]
+GO
+/*
+=========================================================================================================
+  Module      : リージョン判定IP範囲テーブル (w2_CountryIpv4.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CountryIpv4] (
+	[ip_numeric] [int] NOT NULL DEFAULT (0),
+	[ip_broadcast_numeric] [int] NOT NULL DEFAULT (0),
+	[ip] [nvarchar] (15) NOT NULL DEFAULT (N''),
+	[ip_broadcast] [nvarchar] (15) NOT NULL DEFAULT (N''),
+	[geoname_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate())
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CountryIpv4] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CountryIpv4] PRIMARY KEY  CLUSTERED
+	(
+		[ip_numeric],
+		[ip_broadcast_numeric]
+	) ON [PRIMARY]
+GO
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_CountryLocation]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_CountryLocation]
+GO
+/*
+=========================================================================================================
+  Module      : 国ISOコードのマスタテーブル (w2_CountryLocation.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CountryLocation] (
+	[geoname_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N''),
+	[country_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate())
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CountryLocation] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CountryLocation] PRIMARY KEY  CLUSTERED
+	(
+		[geoname_id]
+	) ON [PRIMARY]
+GO
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_FixedPurchase' AND COLUMN_NAME = 'country_iso_code')
+ALTER TABLE [w2_FixedPurchase] ADD [country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_FixedPurchase' AND COLUMN_NAME = 'language_code')
+ALTER TABLE [w2_FixedPurchase] ADD [language_code] [nvarchar] (4) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_FixedPurchase' AND COLUMN_NAME = 'language_locale_id')
+ALTER TABLE [w2_FixedPurchase] ADD [language_locale_id] [nvarchar] (7) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_FixedPurchase' AND COLUMN_NAME = 'currency_code')
+ALTER TABLE [w2_FixedPurchase] ADD [currency_code] [nvarchar] (4) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_FixedPurchase' AND COLUMN_NAME = 'currency_locale_id')
+ALTER TABLE [w2_FixedPurchase] ADD [currency_locale_id] [nvarchar] (7) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_OrderOwner' AND COLUMN_NAME = 'country_iso_code')
+ALTER TABLE [w2_OrderOwner] ADD [country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_OrderOwner' AND COLUMN_NAME = 'language_code')
+ALTER TABLE [w2_OrderOwner] ADD [language_code] [nvarchar] (4) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_OrderOwner' AND COLUMN_NAME = 'language_locale_id')
+ALTER TABLE [w2_OrderOwner] ADD [language_locale_id] [nvarchar] (7) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_OrderOwner' AND COLUMN_NAME = 'currency_code')
+ALTER TABLE [w2_OrderOwner] ADD [currency_code] [nvarchar] (4) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_OrderOwner' AND COLUMN_NAME = 'currency_locale_id')
+ALTER TABLE [w2_OrderOwner] ADD [currency_locale_id] [nvarchar] (7) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_User' AND COLUMN_NAME = 'country_iso_code')
+ALTER TABLE [w2_User] ADD [country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_User' AND COLUMN_NAME = 'language_code')
+ALTER TABLE [w2_User] ADD [language_code] [nvarchar] (4) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_User' AND COLUMN_NAME = 'language_locale_id')
+ALTER TABLE [w2_User] ADD [language_locale_id] [nvarchar] (7) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_User' AND COLUMN_NAME = 'currency_code')
+ALTER TABLE [w2_User] ADD [currency_code] [nvarchar] (4) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_User' AND COLUMN_NAME = 'currency_locale_id')
+ALTER TABLE [w2_User] ADD [currency_locale_id] [nvarchar] (7) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_WorkUser' AND COLUMN_NAME = 'country_iso_code')
+ALTER TABLE [w2_WorkUser] ADD [country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_WorkUser' AND COLUMN_NAME = 'language_code')
+ALTER TABLE [w2_WorkUser] ADD [language_code] [nvarchar] (4) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_WorkUser' AND COLUMN_NAME = 'language_locale_id')
+ALTER TABLE [w2_WorkUser] ADD [language_locale_id] [nvarchar] (7) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_WorkUser' AND COLUMN_NAME = 'currency_code')
+ALTER TABLE [w2_WorkUser] ADD [currency_code] [nvarchar] (4) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_WorkUser' AND COLUMN_NAME = 'currency_locale_id')
+ALTER TABLE [w2_WorkUser] ADD [currency_locale_id] [nvarchar] (7) NOT NULL DEFAULT (N'');
+GO
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

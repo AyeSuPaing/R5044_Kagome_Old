@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+--配送料地帯区分が０ある場合、MAX値で更新する（Bug＃2618）
+IF EXISTS (SELECT * FROM w2_ShopShippingZone WHERE shipping_zone_no=0)
+BEGIN
+ UPDATE  ZONE SET shipping_zone_no = ShippingGroup.maxzone +1
+   FROM  w2_ShopShippingZone AS ZONE
+         INNER JOIN
+	     (
+             SELECT  shop_id, shipping_id, max(shipping_zone_no) AS maxzone
+               FROM  w2_ShopShippingZone
+              WHERE  EXISTS (
+                       SELECT 'X'
+                         FROM w2_ShopShippingZone AS tmp 
+                        WHERE tmp.shop_id = w2_ShopShippingZone.shop_id
+                          AND tmp.shipping_id = w2_ShopShippingZone.shipping_id
+                          AND tmp.shipping_zone_no = 0
+                      )
+	       GROUP BY  shop_id, shipping_id
+		 ) AS ShippingGroup ON (ZONE.shop_id = ShippingGroup.shop_id AND ZONE.shipping_id = ShippingGroup.shipping_id)
+  WHERE  ZONE.shipping_zone_no = 0
+END
+ELSE
+BEGIN
+ SELECT 'none'
+END 
+
+              ]]>
+    </Statement>
+  </Up>
+</Migration>

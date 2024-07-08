@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ポイント最新レポート系SQLステートメントXML(PointReport.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<PointReport>
+  <!-- 各累計ポイント取得 -->
+  <GetAmountPoint>
+    <Statement>
+      <![CDATA[
+        -- 変数宣言
+        DECLARE @add_point decimal 
+        DECLARE @use_point decimal 
+        DECLARE @exp_point decimal 
+        DECLARE @user_point decimal 
+        
+        -- 初期化
+        SET @add_point = 0
+        SET @use_point = 0
+        SET @exp_point = 0
+        SET @user_point = 0
+        
+        -- 発行ポイント取得        
+        SELECT  @add_point = ISNULL(SUM(w2_UserPointHistory.point_inc),0)
+          FROM  w2_UserPointHistory
+         WHERE  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+           AND  w2_UserPointHistory.point_type = '01'         -- 本ポイント
+           AND  w2_UserPointHistory.point_inc >= 0            -- 0ポイント以上
+
+        -- 回収ポイント取得
+        SELECT  @use_point = ISNULL(SUM(w2_UserPointHistory.point_inc),0)
+          FROM  w2_UserPointHistory
+         WHERE  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+           AND  w2_UserPointHistory.point_type = '01'         -- 本ポイント
+           AND  w2_UserPointHistory.point_inc < 0             -- 0ポイント未満
+           AND  w2_UserPointHistory.point_inc_kbn != '11'     -- ポイント有効期限切れ削除以外
+        
+        -- 有効期限切れポイント
+        SELECT  @exp_point = ISNULL(SUM(w2_UserPointHistory.point_inc),0)
+          FROM  w2_UserPointHistory
+         WHERE  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+           AND  w2_UserPointHistory.point_type = '01'         -- 本ポイント
+           AND  w2_UserPointHistory.point_inc_kbn = '11'      -- ポイント有効期限切れ削除
+
+        -- 発行ポイント + 回収ポイント + 有効期限切れポイント = 未回収ポイント
+        SET @user_point = @add_point + @use_point + @exp_point        
+        
+        -- 結果出力
+        SELECT  @add_point AS add_point,
+                @use_point AS use_point,
+                @exp_point AS exp_point,
+                @user_point AS user_point
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAmountPoint>
+</PointReport>

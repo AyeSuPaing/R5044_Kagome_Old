@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : レポート作成SQLステートメントXML(CreateReport.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<CreateReport>
+  <!-- 未利用ポイントレポート作成 -->
+  <CreateUnusedPointReport>
+    <Statement>
+      <![CDATA[
+        -- 変数宣言
+        DECLARE @add_point decimal 
+        DECLARE @use_point decimal 
+        DECLARE @exp_point decimal 
+
+        -- 発行ポイント取得				
+        SELECT	@add_point = ISNULL(SUM(w2_UserPointHistory.point_inc),0)
+          FROM	w2_UserPointHistory WITH (NOLOCK)
+         WHERE	w2_UserPointHistory.point_type = '01'					-- 本ポイント
+           AND	w2_UserPointHistory.point_inc >= 0						-- 0ポイント以上
+           AND  CONVERT(date, GETDATE()) > CONVERT(date, CONVERT(nvarchar, tgt_year) + '/' + CONVERT(nvarchar, tgt_month) + '/' + CONVERT(nvarchar, tgt_day))
+
+        -- 回収ポイント取得
+        SELECT	@use_point = ISNULL(SUM(w2_UserPointHistory.point_inc),0)
+          FROM	w2_UserPointHistory WITH (NOLOCK)
+         WHERE	w2_UserPointHistory.point_type = '01'					-- 本ポイント
+           AND	w2_UserPointHistory.point_inc < 0						-- 0ポイント未満
+           AND	w2_UserPointHistory.point_inc_kbn != '11'				-- ポイント有効期限切れ削除以外
+           AND  CONVERT(date, GETDATE()) > CONVERT(date, CONVERT(nvarchar, tgt_year) + '/' + CONVERT(nvarchar, tgt_month) + '/' + CONVERT(nvarchar, tgt_day))
+
+        -- 有効期限切れポイント
+        SELECT	@exp_point = ISNULL(SUM(w2_UserPointHistory.point_inc),0)
+          FROM	w2_UserPointHistory WITH (NOLOCK)
+         WHERE	w2_UserPointHistory.point_type = '01'					-- 本ポイント
+           AND	w2_UserPointHistory.point_inc_kbn = '11'				-- ポイント有効期限切れ削除
+           AND  CONVERT(date, GETDATE()) > CONVERT(date, CONVERT(nvarchar, tgt_year) + '/' + CONVERT(nvarchar, tgt_month) + '/' + CONVERT(nvarchar, tgt_day))
+
+        -- 削除
+        DELETE  w2_DispSummaryAnalysis
+         WHERE  summary_kbn = @summary_kbn
+           AND  tgt_year = @tgt_year
+           AND  tgt_month = @tgt_month
+           AND  tgt_day = @tgt_day
+        
+        -- レポート作成
+        INSERT  w2_DispSummaryAnalysis
+                (
+                dept_id,
+                summary_kbn,
+                tgt_year,
+                tgt_month,
+                tgt_day,
+                counts
+                )
+        SELECT  @dept_id,
+                @summary_kbn,
+                @tgt_year,
+                @tgt_month,
+                @tgt_day,
+                @add_point + @use_point + @exp_point  -- 未回収ポイント = 発行ポイント + 回収ポイント + 有効期限切れポイント
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_kbn" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+    </Parameter>
+  </CreateUnusedPointReport>
+</CreateReport>

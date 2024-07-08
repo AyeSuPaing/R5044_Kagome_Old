@@ -1,0 +1,169 @@
+﻿@*
+=========================================================================================================
+  Module      : コンテンツ画像管理ページ(Main.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Input
+@model w2.Cms.Manager.ViewModels.FeatureImage.MainViewModel
+@{
+	ViewBag.Title = "コンテンツ画像管理";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+<script type="text/javascript" charset="UTF-8" src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.4/ace.js"></script>
+<script type="text/javascript">
+	$(function () {
+		all_open_close_toggle_ini();
+
+		group_list_redraw();
+
+		$('#search_keyword').keypress(function (e) {
+			if (e.which === 13) {
+				group_list_redraw();
+			}
+		});
+	});
+
+	function group_list_redraw() {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("GroupList", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE)",
+			data: $('#search_form').serialize(),
+			traditional: true
+		}).done(function(viewHTML) {
+			$("#list-content").html(viewHTML);
+		}).fail(function() {
+		});
+	}
+
+	function group_add(inputId) {
+		var name = $('#' + inputId).val();
+		if (CheckGroupName(name)) {
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("GroupAdd", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE)",
+				data: { 'Input.GroupName': $('#' + inputId).val() }
+			}).done(function () {
+				location.reload();
+			});
+		}
+	}
+
+	function CheckGroupName(name, id) {
+		var confirmVal = true;
+		$('.list-group-name').each(function () {
+			var addedGroupName = $(this).text();
+			var addedId = $(this).parents('.list-group')[0].dataset.listGroupId;
+
+			addedGroupName = addedGroupName.replace(/\s+/g, "");
+
+			if ((addedGroupName === name) && (addedId !== id)) {
+				confirmVal = (confirm('同じ名前のグループがありますが作成しますか？'))
+				return false;
+			}
+		});
+
+		return confirmVal;
+	}
+</script>
+
+<h1 class="page-title">コンテンツ画像管理</h1>
+<div class="main-content-frame">
+	<a href="javascript:void(0)" class="list-menu-btn"><span class="icon icon-menu"></span></a>
+	<div class="main-content-list">
+	@using (Html.BeginForm("", "", new
+	{
+	}, FormMethod.Post, new
+	{
+		Id = "search_form",
+		Name = "search_form",
+		Onsubmit = "return false;"
+	}))
+	{
+		<div class="list-tools">
+			<div class="list-tools-row">
+				<div class="list-tools-col ta-left">
+					<div class="keyword-search">
+						@Html.TextBoxFor(model => model.ParamModel.Keyword, new
+						{
+							Id = "search_keyword",
+							Name = "ParamModel.Keyword",
+							Class = "keyword-search-input",
+							placeholder = "ファイル名"
+						})
+						<a href="javascript:group_list_redraw()" class="keyword-search-submit"><span class="icon-search"></span></a>
+					</div>
+
+					<label for="form-select-005" style="padding: 0 10px;">グループ</label>
+					@Html.DropDownListFor(m => m.ParamModel.GroupId, Model.GroupItems, new
+					{
+						Name = "ParamModel.GroupId",
+						Onchange = "Javascript: group_list_redraw();",
+					})
+					<label for="form-select-005" style="padding: 0 10px;">アップロード日</label>
+					@Html.DropDownListFor(m => m.ParamModel.DateCreatedKbn, Model.DateCreatedKbnItems, new
+					{
+						Name = "ParamModel.DateCreatedKbn",
+						Onchange = "Javascript: group_list_redraw();",
+					})
+				</div>
+			</div>
+		</div>
+	}
+	<div class="list">
+		<div class="list-head">
+			<div class="list-head-row">
+				<div class="list-head-col ta-left">
+					@LayoutHelper.ListOpenToggleBtn()
+					@LayoutHelper.AddGroupBtn()
+				</div>
+				<div class="list-head-col hide-list-detail w15">
+					<p>アップロード日時</p>
+				</div>
+				<div class="list-head-col hide-list-detail w15">
+					<p>ファイルサイズ</p>
+				</div>
+				<div class="list-head-col hide-list-detail w15">
+					<p>イメージサイズ</p>
+				</div>
+			</div>
+		</div>
+		<!-- リストCONTENT -->
+		<div id="list-content" class="list-content custom-scroll-area"></div>
+	</div>
+	
+	</div>
+	@Html.Partial("_ModalAddGroup", new FeatureImageGroupInput())
+	
+	@* モーダルウィンドウ: 拡大画像 *@
+	@Html.Partial("_EnlargedImageModal")
+</div>
+
+<h2>特集画像アップロード</h2>
+<p style="padding-bottom: 10px;">アップロード先 @Html.DropDownListFor(m => m.ParamModel.GroupId, Model.GroupItems.Skip(1), new
+{
+	Name = "group",
+})</p>
+
+<div class="image-upload-content feature-image-form">
+	<div class="image-upload-content-drag">
+		<p class="image-upload-content-drag-text">画像ファイルをドラッグ&ドロップするか下記から選択してください</p>
+		<div class="image-upload-content-drag-btns">
+			<label class="btn btn-main btn-size-m">
+				画像ファイル選択
+				<input type="file" name="upload_img" class="upload_img" accept="image/*" style="display:none;">
+			</label>
+		</div>
+	</div>
+	<div class="image-upload-content-block-wrapper" style="padding-top: 20px;">
+		<div class="image-upload-content-block" style="width: 100%;">
+			<div style="display: flex; flex-wrap: wrap; width: 100%;">
+			</div>
+		</div>
+	</div>
+	<div style="text-align: center; padding-top: 10px;" >
+		<button class="upload_feature_image btn btn-main btn-size-m" disabled="disabled">ファイルアップロード</button>
+	</div>
+</div>

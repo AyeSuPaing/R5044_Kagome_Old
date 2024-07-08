@@ -1,0 +1,216 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Score Axis XML (ScoreAxis.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+-->
+<ScoreAxis>
+
+  <!-- Get search hit count -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(score_axis_id)
+          FROM  w2_ScoringSaleAxisSetting
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+
+  <!-- Search -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ScoringSaleAxisSetting
+         WHERE  1 = 1
+           <@@hasval:search_word@@>
+           AND  score_axis_title LIKE '%' + @search_word + '%'
+           </@@hasval:search_word@@>
+        ORDER BY date_changed DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="search_word" Type="nvarchar" Size="256" />
+    </Parameter>
+  </Search>
+
+  <!-- Search at modal -->
+  <SearchAtModal>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleAxisSetting.*
+          FROM  (
+                  SELECT  w2_ScoringSaleAxisSetting.score_axis_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            ORDER BY w2_ScoringSaleAxisSetting.date_changed DESC
+                          ) AS row_num
+                    FROM  w2_ScoringSaleAxisSetting
+                ) AS RowIndex
+                INNER JOIN w2_ScoringSaleAxisSetting ON
+                (
+                  RowIndex.score_axis_id = w2_ScoringSaleAxisSetting.score_axis_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchAtModal>
+
+  <!-- Get -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ScoringSaleAxisSetting
+         WHERE  score_axis_id = @score_axis_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="score_axis_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Get>
+
+  <!-- Insert -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ScoringSaleAxisSetting
+                (
+                  score_axis_id,
+                  score_axis_title,
+                  axis_name1,
+                  axis_name2,
+                  axis_name3,
+                  axis_name4,
+                  axis_name5,
+                  axis_name6,
+                  axis_name7,
+                  axis_name8,
+                  axis_name9,
+                  axis_name10,
+                  axis_name11,
+                  axis_name12,
+                  axis_name13,
+                  axis_name14,
+                  axis_name15,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @score_axis_id,
+                  @score_axis_title,
+                  @axis_name1,
+                  @axis_name2,
+                  @axis_name3,
+                  @axis_name4,
+                  @axis_name5,
+                  @axis_name6,
+                  @axis_name7,
+                  @axis_name8,
+                  @axis_name9,
+                  @axis_name10,
+                  @axis_name11,
+                  @axis_name12,
+                  @axis_name13,
+                  @axis_name14,
+                  @axis_name15,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="score_axis_id" Type="nvarchar" Size="20" />
+      <Input Name="score_axis_title" Type="nvarchar" Size="256" />
+      <Input Name="axis_name1" Type="nvarchar" Size="32" />
+      <Input Name="axis_name2" Type="nvarchar" Size="32" />
+      <Input Name="axis_name3" Type="nvarchar" Size="32" />
+      <Input Name="axis_name4" Type="nvarchar" Size="32" />
+      <Input Name="axis_name5" Type="nvarchar" Size="32" />
+      <Input Name="axis_name6" Type="nvarchar" Size="32" />
+      <Input Name="axis_name7" Type="nvarchar" Size="32" />
+      <Input Name="axis_name8" Type="nvarchar" Size="32" />
+      <Input Name="axis_name9" Type="nvarchar" Size="32" />
+      <Input Name="axis_name10" Type="nvarchar" Size="32" />
+      <Input Name="axis_name11" Type="nvarchar" Size="32" />
+      <Input Name="axis_name12" Type="nvarchar" Size="32" />
+      <Input Name="axis_name13" Type="nvarchar" Size="32" />
+      <Input Name="axis_name14" Type="nvarchar" Size="32" />
+      <Input Name="axis_name15" Type="nvarchar" Size="32" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- Update -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ScoringSaleAxisSetting
+           SET  score_axis_title = @score_axis_title,
+                axis_name1 = @axis_name1,
+                axis_name2 = @axis_name2,
+                axis_name3 = @axis_name3,
+                axis_name4 = @axis_name4,
+                axis_name5 = @axis_name5,
+                axis_name6 = @axis_name6,
+                axis_name7 = @axis_name7,
+                axis_name8 = @axis_name8,
+                axis_name9 = @axis_name9,
+                axis_name10 = @axis_name10,
+                axis_name11 = @axis_name11,
+                axis_name12 = @axis_name12,
+                axis_name13 = @axis_name13,
+                axis_name14 = @axis_name14,
+                axis_name15 = @axis_name15,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  score_axis_id = @score_axis_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="score_axis_id" Type="nvarchar" Size="20" />
+      <Input Name="score_axis_title" Type="nvarchar" Size="256" />
+      <Input Name="axis_name1" Type="nvarchar" Size="32" />
+      <Input Name="axis_name2" Type="nvarchar" Size="32" />
+      <Input Name="axis_name3" Type="nvarchar" Size="32" />
+      <Input Name="axis_name4" Type="nvarchar" Size="32" />
+      <Input Name="axis_name5" Type="nvarchar" Size="32" />
+      <Input Name="axis_name6" Type="nvarchar" Size="32" />
+      <Input Name="axis_name7" Type="nvarchar" Size="32" />
+      <Input Name="axis_name8" Type="nvarchar" Size="32" />
+      <Input Name="axis_name9" Type="nvarchar" Size="32" />
+      <Input Name="axis_name10" Type="nvarchar" Size="32" />
+      <Input Name="axis_name11" Type="nvarchar" Size="32" />
+      <Input Name="axis_name12" Type="nvarchar" Size="32" />
+      <Input Name="axis_name13" Type="nvarchar" Size="32" />
+      <Input Name="axis_name14" Type="nvarchar" Size="32" />
+      <Input Name="axis_name15" Type="nvarchar" Size="32" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- Delete -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ScoringSaleAxisSetting
+         WHERE  score_axis_id = @score_axis_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="score_axis_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Delete>
+
+</ScoreAxis>

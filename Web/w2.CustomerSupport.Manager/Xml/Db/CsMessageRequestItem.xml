@@ -1,0 +1,221 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メッセージ依頼アイテム系SQLステートメントXML(CsMessageRequestItem.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsMessageRequestItem>
+
+  <!-- すべて取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMessageRequestItem.*,
+                w2_ShopOperator.name AS appr_operator_name
+          FROM  w2_CsMessageRequestItem
+                LEFT JOIN w2_ShopOperator ON
+                (
+                  w2_CsMessageRequestItem.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsMessageRequestItem.appr_operator_id = w2_ShopOperator.operator_id
+                )
+         WHERE  w2_CsMessageRequestItem.dept_id = @dept_id
+           AND  w2_CsMessageRequestItem.incident_id = @incident_id
+           AND  w2_CsMessageRequestItem.message_no = @message_no
+           AND  w2_CsMessageRequestItem.request_no = @request_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+      <Input Name="request_no" Type="int" />
+    </Parameter>
+  </GetAll>
+  
+  <!-- 承認オペレータと結果ステータスから依頼アイテム取得 -->
+  <GetByApprovalOeratorAndResultStatus>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMessageRequestItem.*
+          FROM  w2_CsMessageRequestItem
+                INNER JOIN w2_CsMessageRequest ON
+                (
+                  w2_CsMessageRequest.dept_id = w2_CsMessageRequestItem.dept_id
+                  AND
+                  w2_CsMessageRequest.incident_id = w2_CsMessageRequestItem.incident_id
+                  AND
+                  w2_CsMessageRequest.message_no = w2_CsMessageRequestItem.message_no
+                )
+         WHERE  w2_CsMessageRequestItem.dept_id = @dept_id
+           AND  w2_CsMessageRequestItem.appr_operator_id = @appr_operator_id
+           AND  w2_CsMessageRequestItem.result_status = @result_status
+           AND  w2_CsMessageRequest.request_type = 'APPR'
+        ORDER BY w2_CsMessageRequest.urgency_flg DESC, w2_CsMessageRequest.date_created ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="appr_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="result_status" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetByApprovalOeratorAndResultStatus>
+  
+  <!-- 登録用メッセージ依頼アイテム枝番取得 -->
+  <GetRegisterBranchNo>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MAX(branch_no),0) + 1 AS branch_no
+          FROM  w2_CsMessageRequestItem
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+           AND  message_no = @message_no
+           AND  request_no = @request_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+      <Input Name="request_no" Type="int" />
+    </Parameter>
+  </GetRegisterBranchNo>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CsMessageRequestItem
+                (
+                  dept_id,
+                  incident_id,
+                  message_no,
+                  request_no,
+                  branch_no,
+                  appr_operator_id,
+                  result_status,
+                  comment,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @dept_id,
+                  @incident_id,
+                  @message_no,
+                  @request_no,
+                  @branch_no,
+                  @appr_operator_id,
+                  '',
+                  '',
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+      <Input Name="request_no" Type="int" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="appr_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+  
+  <!-- 結果更新 -->
+  <UpdateResult>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMessageRequestItem
+           SET  result_status = @result_status,
+                comment = @comment,
+                date_status_changed = GETDATE(),
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+           AND  message_no = @message_no
+           AND  request_no = @request_no
+           AND  branch_no = @branch_no
+           AND  appr_operator_id = @appr_operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+      <Input Name="request_no" Type="int" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="appr_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="result_status" Type="nvarchar" Size="10" />
+      <Input Name="comment" Type="nvarchar" Size="max" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateResult>
+
+  <!-- インシデントIDすべて更新 -->
+  <UpdateIncidentIdAll>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMessageRequestItem
+           SET  incident_id = @incident_id_after,
+                message_no = @message_no_after,
+                date_changed = getdate(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id_before
+           AND  message_no = @message_no_before
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id_before" Type="nvarchar" Size="30" />
+      <Input Name="message_no_before" Type="int" />
+      <Input Name="incident_id_after" Type="nvarchar" Size="30" />
+      <Input Name="message_no_after" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateIncidentIdAll>
+
+  <!-- メッセージのリクエストアイテムすべて削除 -->
+  <DeleteAllMessageRequestItems>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CsMessageRequestItem
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+           AND  message_no = @message_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+    </Parameter>
+  </DeleteAllMessageRequestItems>
+
+  <!-- すべて削除 -->
+  <DeleteAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CsMessageRequestItem
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+           AND  message_no = @message_no
+           AND  request_no = @request_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+      <Input Name="request_no" Type="int" />
+    </Parameter>
+  </DeleteAll>
+
+</CsMessageRequestItem>

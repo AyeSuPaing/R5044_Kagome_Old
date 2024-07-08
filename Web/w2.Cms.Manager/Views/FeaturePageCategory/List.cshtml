@@ -1,0 +1,653 @@
+﻿@*
+=========================================================================================================
+  Module      : 特集ページカテゴリ設定ページ(List.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+
+@model w2.Cms.Manager.ViewModels.FeaturePageCategory.ListViewModel
+@{
+	ViewBag.Title = "特集ページカテゴリ設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+
+@helper TopButtomControls()
+{
+	<div id="most-category">
+		<input type="submit" 
+			value="  最上位カテゴリ登録  "
+			name="clickButton"
+			class="btn btn-main"
+			onclick="change_page(
+				'@ActionStatus.RegistRootCategory',
+				'',
+				'',
+				'',
+				'',
+				'0',
+				'')"/>
+	</div>
+	<div id="regist-child-category-btn" style="display: none">
+		<input type="submit"
+			value="  子カテゴリの登録  "
+			name="clickButton"
+			class="btn btn-main"
+			onclick="change_page(
+				'@ActionStatus.RegistChildCategory',
+				'',
+				'@ViewBag.CategoryId',
+				'',
+				'',
+				'0',
+				'')"/>
+	</div>
+	<div id="edit-btn" style="display: none">
+		<input type="submit"
+			value="  編集する  "
+			name="clickButton"
+			class="btn btn-main"
+			onclick="change_page(
+				'@ActionStatus.Edit',
+				'@Model.ParamModel.ParentCategoryId',
+				'@Model.ParamModel.CategoryId',
+				'@Model.ParamModel.CategoryName',
+				'@Model.ParamModel.ValidFlg',
+				'@Model.ParamModel.DisplayOrder',
+				'@Model.ParamModel.ParentCategoryId')"/>
+	</div>
+	<div id="regist-btn" style="display: none">
+		<input type="submit" value="  登録する  " name="clickButton" class="btn btn-main" />
+	</div>
+	<div id="confirm-update-btn" style="display: none">
+		<input type="submit" value="  確認する  " name="clickButton" class="btn btn-main" onclick="change_page('@ActionStatus.ConfirmUpdate')" />
+	</div>
+	<div id="confirm-regist-btn" style="display: none">
+		<input type="submit" value="  確認する  " name="clickButton" class="btn btn-main" onclick="change_page('@ActionStatus.ConfirmRegist')" />
+	</div>
+	<div id="update-btn" style="display: none">
+		<input type="submit" value="  更新する  " name="clickButton" class="btn btn-main" />
+	</div>
+	<div id="delete-btn" style="display: none">
+		<input type="submit" value="  削除する  " name="clickButton" class="btn btn-main" onclick="return check();" />
+	</div>
+	<div id="back-btn" style="display: none">
+		<input type="submit"
+				value="  戻る  "
+				name="clickButton"
+				class="btn btn-main"
+				onclick="change_page(
+					'@ActionStatus.Back',
+					'@Model.ParamModel.ParentCategoryId',
+					'@Model.ParamModel.CategoryId',
+					'@Model.ParamModel.CategoryName',
+					'@Model.ParamModel.ValidFlg',
+					'@Model.ParamModel.DisplayOrder',
+					'@Model.ParamModel.CategoryOutline')"/>
+	</div>
+}
+
+@helper TdClick(string parentCategoryId,
+	string categoryId,
+	string categoryName,
+	string validFlg,
+	int displayOrder,
+	string categoryOutline,
+	string dispValue,
+	string space)
+{
+	<td align="left"
+		onclick="change_page(
+			'@ActionStatus.SelectCategory',
+			'@parentCategoryId',
+			'@categoryId',
+			'@categoryName',
+			'@validFlg',
+			'@displayOrder',
+			'@categoryOutline')">
+		@space @dispValue
+	</td>
+}
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		window.onload = function () {
+			switch (sessionStorage.getItem('actionStatus')) {
+				case 'RegistRootCategory':
+					$('#main-content-message').css('display', 'none');
+					$('#most-category').css('display', 'none');
+					$('#main-content-detail').css('display', 'block');
+					$('#confirm-category').css('display', 'block');
+					$('#confirm-regist-btn').show();
+					$('#back-btn').show();
+					checkError();
+					sessionStorage.clear();
+					sessionStorage.setItem('page', 'RegistRootCategory');
+					break;
+
+				case 'RegistChildCategory':
+					$('#main-content-message').css('display', 'none');
+					$('#most-category').css('display', 'none');
+					$('#main-content-detail').css('display', 'block');
+					$('#confirm-category').css('display', 'block');
+					$('#confirm-regist-btn').show();
+					$('#back-category-detail-btn').show();
+					$('#back-btn').show();
+					checkError();
+					sessionStorage.clear();
+					sessionStorage.setItem('page', 'RegistChildCategory');
+					break;
+
+				case 'ConfirmRegist':
+					$('#main-content-message').css('display', 'none');
+					$('#main-content-detail').css('display', 'none');
+					$('#confirm-category').css('display', 'none');
+					$('#confirm-btn').css('display', 'none');
+					$('#most-category').css('display', 'none');
+					$('#main-content-confirm').show();
+					$('#regist-btn').show();
+					$('#back-btn').show();
+					sessionStorage.clear();
+					sessionStorage.setItem('page', 'ConfirmRegist');
+					break;
+
+				case 'ConfirmUpdate':
+					$('#main-content-message').css('display', 'none');
+					$('#main-content-detail').css('display', 'none');
+					$('#confirm-category').css('display', 'none');
+					$('#confirm-btn').css('display', 'none');
+					$('#most-category').css('display', 'none');
+					$('#main-content-confirm').show();
+					$('#update-btn').show();
+					$('#back-btn').show();
+					sessionStorage.clear();
+					sessionStorage.setItem('page', 'ConfirmUpdate');
+					break;
+
+				case 'SelectCategory':
+					$('#main-content-message').css('display', 'none');
+					$('#main-content-detail').css('display', 'none');
+					$('#confirm-btn').css('display', 'none');
+					$('#update-btn').css('display', 'none');
+					$('#most-category').show();
+					$('#main-content-confirm').show();
+					$('#edit-btn').show();
+					$('#delete-btn').show();
+					var categoryId = '@ViewBag.CategoryId';
+					if (categoryId.length < 6) {
+						$('#regist-child-category-btn').show();
+					}
+					$('#create-category-btn').show();
+					sessionStorage.clear();
+					sessionStorage.setItem('page', 'SelectCategory');
+					break;
+
+				case 'Regist':
+					$('#main-content-message').css('display', 'none');
+					$('#most-category').css('display', 'none');
+					$('#main-content-detail').css('display', 'block');
+					$('#confirm-category').css('display', 'block');
+					$('#confirm-update-btn').show();
+					$('#back-btn').show();
+					sessionStorage.clear();
+					sessionStorage.setItem('page', 'Regist');
+					break;
+
+				case 'Edit':
+					$('#main-content-message').css('display', 'none');
+					$('#most-category').css('display', 'none');
+					$('#main-content-detail').css('display', 'block');
+					$('#confirm-category').css('display', 'block');
+					$('#confirm-update-btn').show();
+					$('#back-btn').show();
+					checkError();
+					sessionStorage.clear();
+					sessionStorage.setItem('page', 'Edit');
+					break;
+				default:
+			}
+		}
+
+		/**
+		* 画面切り替え
+		*/
+		function change_page(
+			actionStatus,
+			parentCategoryId,
+			categoryId,
+			categoryName,
+			validFlg,
+			displayOrder,
+			categoryOutline) {
+			var fm = document.getElementById('fm');
+			fm.method = 'POST';
+			switch (actionStatus) {
+				case 'RegistRootCategory':
+					sessionStorage.setItem('actionStatus', actionStatus);
+					$.ajax({
+						type: "POST",
+						url:
+							"@Url.Action("FeaturePageCategoryRegistRootCategory", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_CATEGORY)"
+					}).done(function () {
+						fm.submit();
+					});
+					break;
+
+				case 'RegistChildCategory':
+					sessionStorage.setItem('actionStatus', actionStatus);
+					$.ajax({
+						type: "POST",
+						url:
+							"@Url.Action("FeaturePageCategoryRegistChildCategory", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_CATEGORY)",
+						data: {
+							'categoryId': categoryId
+						}
+					}).done(function () {
+						fm.submit();
+					});
+					break;
+
+				case 'ConfirmUpdate':
+				case 'ConfirmRegist':
+					var inputCategoryId = document.getElementById('input-category-id').value;
+					var inputParentCategoryId = document.getElementById('inputParentCategoryId').value;
+					var inputDisplayOrder = document.getElementById('inputDisplayOrder').value;
+					$.ajax({
+						type: "POST",
+						url: "@Url.Action("Validate", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_CATEGORY)",
+						data: {
+							'parentCategoryId': inputParentCategoryId,
+							'categoryId': inputCategoryId,
+							'displayOrder': inputDisplayOrder
+						}
+					}).done(function (result) {
+						if (result === 'True') {
+							$('.error-message').css('display', 'none');
+							sessionStorage.setItem('actionStatus', actionStatus);
+						} else {
+							sessionStorage.setItem('actionStatus', 'RegistRootCategory');
+							sessionStorage.setItem('page', 'error');
+						}
+					});
+					break;
+
+				case 'SelectCategory':
+					sessionStorage.setItem('actionStatus', actionStatus);
+					$.ajax({
+						type: "POST",
+						url:
+							"@Url.Action("FeaturePageCategoryDetail", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_CATEGORY)",
+						data: {
+							'parentCategoryId': parentCategoryId,
+							'categoryId': categoryId,
+							'categoryName': categoryName,
+							'validFlg': validFlg,
+							'displayOrder': displayOrder,
+							'categoryOutline': categoryOutline
+						}
+					}).done(function () {
+						fm.submit();
+					});
+					break;
+
+				case 'Edit':
+					sessionStorage.setItem('actionStatus', actionStatus);
+					fm.submit();
+					break;
+
+				case 'BackCategoryDetail':
+				case 'Back':
+					switch (sessionStorage.getItem('page')) {
+						case 'RegistRootCategory':
+							sessionStorage.clear();
+							$.ajax({
+								type: "POST",
+								url: "@Url.Action("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_CATEGORY)"
+							}).done(function () {
+								fm.submit();
+							});
+							break;
+
+						case 'Edit':
+							sessionStorage.setItem('actionStatus', 'SelectCategory');
+							$.ajax({
+								type: "POST",
+								url: "@Url.Action("FeaturePageCategoryPageBack", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_CATEGORY)"
+							}).done(function () {
+								fm.submit();
+							});
+							break;
+
+						case 'RegistChildCategory':
+							sessionStorage.setItem('actionStatus', 'SelectCategory');
+							$.ajax({
+								type: "POST",
+								url: "@Url.Action("FeaturePageCategoryPageBack", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_CATEGORY)"
+							}).done(function () {
+								fm.submit();
+							});
+							break;
+
+						case 'ConfirmUpdate':
+							sessionStorage.setItem('actionStatus', 'Edit');
+							$.ajax({
+								type: "POST",
+								url: "@Url.Action("FeaturePageCategoryPageBackInput", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_CATEGORY)",
+								data: {
+									'parentCategoryId': parentCategoryId,
+									'categoryId': categoryId,
+									'categoryName': categoryName,
+									'displayOrder': displayOrder,
+									'categoryOutline': categoryOutline,
+									'validFlg': validFlg,
+									'readParentCategory': parentCategoryId
+								}
+							}).done(function () {
+								fm.submit();
+							});
+							break;
+
+						case 'ConfirmRegist':
+							debugger;
+							sessionStorage.setItem('actionStatus', 'Regist');
+							$.ajax({
+								type: "POST",
+								url: "@Url.Action("FeaturePageCategoryPageBackInput", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_CATEGORY)",
+								data: {
+									'parentCategoryId': parentCategoryId,
+									'categoryId': categoryId,
+									'categoryName': categoryName,
+									'displayOrder': displayOrder,
+									'categoryOutline': categoryOutline,
+									'validFlg': validFlg,
+									'readParentCategory': parentCategoryId
+								}
+							}).done(function () {
+								fm.submit();
+							});
+							break;
+
+						case 'Regist':
+							sessionStorage.setItem('actionStatus', 'SelectCategory');
+							$.ajax({
+								type: "POST",
+								url: "@Url.Action("FeaturePageCategoryPageBack", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_CATEGORY)"
+							}).done(function () {
+								fm.submit();
+							});
+							break;
+						default:
+					}
+					break;
+				default:
+			}
+		}
+
+		function check() {
+			if (window.confirm("カテゴリを削除します。よろしいですか？")) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		function checkError() {
+			if (sessionStorage.getItem('page') === 'error') {
+				$('.error-message').css('display', 'block');
+			}
+		}
+	</script>
+}
+
+	<!--▽ 検索 ▽-->
+	<table cellspacing="0" cellpadding="0" width="791" border="0">
+		<tr>
+			<td>
+				<h1 class="page-title">特集ページカテゴリ設定</h1>
+			</td>
+		</tr>
+		@LayoutHelper.PaddingTr(10)
+		<tr>
+			<td style="width: 792px">
+				<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+					<tr>
+						<td class="search_box_bg">
+							@using (Html.BeginForm("List", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_CATEGORY, FormMethod.Get, new
+							{
+								name = "searchForm"
+							}))
+							{
+								<table cellspacing="0" cellpadding="0" width="100%" border="0">
+									<tr>
+										<td align="center">
+											<table cellspacing="0" cellpadding="0" border="0">
+												@LayoutHelper.PaddingTr(10)
+												<tr>
+													<td class="search_table">
+														<table cellspacing="1" cellpadding="2" width="768" border="0">
+															<tr>
+																<td class="search_title_bg" width="100">
+																	カテゴリ名
+																</td>
+																<td class="search_item_bg" width="130">
+																	@Html.DropDownListFor(model => model.ParamModel.SortKbn, new SelectList(Model.SortKbnItems, "Value", "Text", "Selected"), new
+																	{
+																		Name = "SortKbn"
+																	})
+																</td>
+																<td class="search_title_bg" width="95">
+																	カテゴリID
+																</td>
+																<td class="search_item_bg" width="130">
+																	<input type="text" name="sortCategoryId" width="125"/>
+																</td>
+																<td class="search_btn_bg" width="83" rowspan="2">
+																	<div class="search_btn_main">
+																		<input type="submit" name="search" value="  検索  " class="btn btn-main"/>
+																	</div>
+																	<div class="search_btn_sub">
+																		@Html.ActionLink("クリア", "List", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_CATEGORY)&nbsp;
+																		<a href="javascript:searchForm.reset();">リセット</a>
+																	</div>
+																</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+												@LayoutHelper.PaddingTr(5)
+											</table>
+										</td>
+									</tr>
+								</table>
+							}
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+	<!--△ 検索 △-->
+	@LayoutHelper.PaddingTr(10)
+	<!--▽ 一覧 ▽-->
+	<table cellspacing="0" cellpadding="0" width="791" border="0">
+		<tr>
+			<td>
+				<table class="box_border" cellspacing="1" cellpadding="3" width="375" border="0">
+					<tr>
+						<td>
+							<h2 class="cmn-hed-h2">特集ページカテゴリ設定一覧</h2></td>
+						<td></td>
+						<td>
+							<h2 class="cmn-hed-h2">特集ページカテゴリ設定詳細</h2></td>
+					</tr>
+					<tr>
+						<td style="padding: 5px"></td>
+					</tr>
+					<tr>
+						<td>
+							<div class="action_part_top">
+								<!-- ▽ページング▽ -->
+								<table class="list_pager" cellspacing="0" cellpadding="0" width="375" border="0">
+									<tr>
+										<td width="550" style="height: 22px">
+											@Html.Raw(this.Model.PagerHtml)
+										</td>
+									</tr>
+								</table>
+								<!-- △ページング△ -->
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td style="padding: 5px"></td>
+					</tr>
+					<tr>
+						<td valign="top" width ="40%">
+							<table class="list_table">
+								<tr class="list_title_bg" align="center">
+									<td width="40%">カテゴリID</td>
+									<td width="60%">カテゴリ名</td>
+								</tr>
+								@{
+									var lineNo = 1;
+									var index = 0;
+								}
+
+								@foreach (var vm in this.Model.List)
+								{
+									lineNo = ((lineNo + 1) % 2);
+									var listItemBgClass = "list_item_bg" + (lineNo + 1);
+									var listSelectMoutClass = string.Format("listselect_mout{0}(this)", +lineNo + 1);
+									var length = (vm.CategoryId.Length / 3);
+									var space = "";
+									for (var i = 1; i < length; i++)
+									{
+										space += "　";
+									}
+									<tr class="@listItemBgClass" onmouseover="listselect_mover(this)" onmouseout="@listSelectMoutClass" onmousedown="listselect_mdown(this)">
+										@TdClick(vm.ParentCategoryId, vm.CategoryId, vm.CategoryName, vm.ValidFlg, vm.DisplayOrder, vm.CategoryOutline, vm.CategoryId, space)
+										@TdClick(vm.ParentCategoryId, vm.CategoryId, vm.CategoryName, vm.ValidFlg, vm.DisplayOrder, vm.CategoryOutline, vm.CategoryName, "")
+									</tr>
+									index++;
+								}
+								@if (string.IsNullOrEmpty(Model.ErrorMessage) == false)
+								{
+									<tr class="list_alert">
+										<td colspan="10">
+											@Model.ErrorMessage
+										</td >
+									</tr>
+								}
+							</table>
+						</td>
+						<td style="padding: 5px"></td>
+						<td align="right" valign="top">
+							<form id="fm" method="post">
+								<table class="box_border" cellspacing="1" cellpadding="3" width="100%" border="0">
+									<tr>
+										<td>
+											<table class="edit_table" cellspacing="1" cellpadding="3" width="375" border="0">
+												<tr>
+													<td class="edit_item_bg">
+														<div id="main-content-message">
+															カテゴリ情報の編集及び子カテゴリの登録には、左の「商品カテゴリ一覧」より、カテゴリを選択してから実施してください。<br/>
+															また、新規登録は、下の「最上位カテゴリの登録」ボタンより実施してください。
+														</div>
+														@* 領域:詳細画面 *@
+														<div id="main-content-detail" style="display: none">
+															<table class="edit_table" cellspacing="1" cellpadding="3" width="370" border="0">
+																<tr>
+																	<td class="edit_title_bg" align="left" width="35%">親カテゴリ</td>
+																	<td class="edit_item_bg" align="left">@ViewBag.ParentCategoryId</td>
+																</tr>
+																<tr>
+																	<td class="edit_title_bg" align="left">カテゴリID</td>
+																	<td class="edit_item_bg" align="left">
+																		<input id="inputParentCategoryId"type="text" size="5" readonly="readonly" name="parentCategoryId" value="@ViewBag.ReadParentCategoryId"/>
+																		<input id="input-category-id"type="text" size="10" name="categoryId" maxlength="3" value="@ViewBag.CategoryId" />
+																		<div class="error-message" style="display: none; color: red;">
+																			@Session[Constants.SESSION_KEY_FEATURE_PAGE_CATEGORY_CATEGORY_ERRORMESSSAGE]
+																		</div>
+																	</td>
+																</tr>
+																<tr>
+																	<td class="edit_title_bg" align="left">カテゴリ名</td>
+																	<td class="edit_item_bg" align="left"><input id="input-category-name" type="text" name="categoryName" value="@ViewBag.CategoryName"/></td>
+																</tr>
+																<tr>
+																	<td class="edit_title_bg" align="left">表示順</td>
+																	<td class="edit_item_bg" align="left">
+																		<input id="inputDisplayOrder" type="text" size="8" name="displayOrder" maxlength="8" value="@ViewBag.DisplayOrder" />
+																		<div class="error-message" style="display: none; color: red;">
+																			@Session[Constants.SESSION_KEY_FEATURE_PAGE_CATEGORY_DISPLAY_ORDER_ERRORMESSSAGE]
+																		</div>
+																	</td>
+																</tr>
+																<tr>
+																	<td class="edit_title_bg" align="left">カテゴリ説明文</td>
+																	<td class="edit_item_bg" align="left"><textarea name="categoryOutline" >@ViewBag.CategoryOutline</textarea></td>
+																</tr>
+																<tr>
+																	<td class="edit_title_bg" align="left">有効フラグ</td>
+																	<td class="edit_item_bg" align="left"><input type="checkbox" name="validFlg" checked="@(ViewBag.ValidFlg == Constants.FLG_FEATURE_PAGE_CATEGORY_VALID_FLG_ON)"/></td>
+																</tr>
+															</table>
+														</div>
+														@* 領域:確認画面 *@
+														<div id="main-content-confirm" class="main-content-confirm" style="display: none">
+															<table class="edit_table" cellspacing="1" cellpadding="3" width="370" border="0">
+																<tr>
+																	<td class="edit_title_bg" align="left" width="35%">親カテゴリ</td>
+																	<td class="edit_item_bg" align="left">@ViewBag.ParentCategoryId</td>
+																</tr>
+																<tr>
+																	<td class="edit_title_bg" align="left">カテゴリID</td>
+																	<td class="edit_item_bg" align="left">@ViewBag.CategoryId</td>
+																</tr>
+																<tr>
+																	<td class="edit_title_bg" align="left">カテゴリ名</td>
+																	<td class="edit_item_bg" align="left">@ViewBag.CategoryName</td>
+																</tr>
+																<tr>
+																	<td class="edit_title_bg" align="left">表示順</td>
+																	<td class="edit_item_bg" align="left">@ViewBag.DisplayOrder</td>
+																</tr>
+																<tr>
+																	<td class="edit_title_bg" align="left">カテゴリ説明文</td>
+																	<td class="edit_item_bg" align="left">@ViewBag.CategoryOutline</td>
+																</tr>
+																<tr>
+																	<td class="edit_title_bg" align="left">有効フラグ</td>
+																	<td class="edit_item_bg" align="left">@((ViewBag.ValidFlg == Constants.FLG_FEATURE_PAGE_CATEGORY_VALID_FLG_ON) ? "有効" : "無効")</td>
+																</tr>
+															</table>
+														</div>
+													</td>
+												</tr>
+											</table>
+											<div class="action_part_bottom">
+												@TopButtomControls()
+											</div>
+										</td>
+									</tr>
+								</table>
+							</form>
+						</td>
+					</tr>
+					@LayoutHelper.PaddingTr(6)
+					@LayoutHelper.PaddingTr(10)
+
+				</table>
+				<table class="info_table" cellspacing="1" cellpadding="3" width="792" border="0">
+					<tr class="info_item_bg">
+						<td align="left">備考<br/>
+							カテゴリ名のドロップダウンリストには最上位カテゴリのみが表示されています。
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		@LayoutHelper.PaddingTr(10)
+	</table>
+	<!--△ 一覧 △-->

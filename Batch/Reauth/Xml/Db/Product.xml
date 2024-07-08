@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品系SQLステートメントXML(Product.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<Product>
+
+  <!-- 商品情報を取得 -->
+  <GetProductVariation>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                w2_ProductView.*,
+                [[ MEMBER_RANK_PRICE_PRODUCTVARIATION ]]
+          FROM  w2_ProductView
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id = @product_id
+           AND  w2_ProductView.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductVariation>
+
+  <!-- 商品情報取得（商品バリエーション情報数分取得）-->
+  <GetProduct>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  w2_ProductView.*,
+                RIGHT(w2_ProductView.variation_id, LEN(w2_ProductView.variation_id) - LEN(w2_ProductView.product_id)) AS v_id,
+                w2_ProductExtend.*,
+                w2_ShopShipping.shop_shipping_name,
+                w2_ProductTag.*,
+                w2_ProductTaxCategory.tax_category_name + ':' + CAST(w2_ProductTaxCategory.tax_rate as nvarchar) + '(%)' AS tax_category_name
+          FROM  w2_ProductView
+                LEFT JOIN w2_ShopShipping ON
+                (
+                  w2_ProductView.shop_id = w2_ShopShipping.shop_id
+                  AND
+                  w2_ProductView.shipping_type = w2_ShopShipping.shipping_id
+                )
+                LEFT JOIN w2_ProductExtend ON
+                (
+                  w2_ProductView.shop_id = w2_ProductExtend.shop_id
+                  AND
+                  w2_ProductView.product_id = w2_ProductExtend.product_id
+                )
+                LEFT JOIN w2_ProductTag ON
+                (
+                  w2_ProductView.product_id = w2_ProductTag.product_id
+                )
+                LEFT JOIN w2_ProductTaxCategory ON
+                (
+                  w2_ProductView.tax_category_id = w2_ProductTaxCategory.tax_category_id
+                )
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id = @product_id
+        ORDER BY display_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProduct>
+</Product>

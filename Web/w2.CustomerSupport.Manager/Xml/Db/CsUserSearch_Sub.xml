@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : CS顧客検索サブSQLステートメントXML(CsUserSearch_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsUserSearch_Sub>
+
+  <!-- ユーザー検索 WHERE -->
+  <SearchUserCount_Where>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_User.integrated_flg = '0' -- ユーザー統合フラグ：通常のみ
+           <@@hasval:name_like_escaped@@>
+           AND  (
+                  name LIKE '%' + @name_like_escaped + '%' ESCAPE '#'
+                  OR
+                  name_kana LIKE '%' + @name_like_escaped + '%' ESCAPE '#'
+                )
+           </@@hasval:name_like_escaped@@>
+           <@@hasval:tel1_like_escaped@@>
+           AND  (
+                  tel1 LIKE '%' + @tel1_like_escaped + '%' ESCAPE '#'
+                  OR
+                  tel1_1 +  tel1_2 +  tel1_3 LIKE '%' + @tel1_like_escaped + '%' ESCAPE '#'
+                  OR
+                  tel2 LIKE '%' + @tel1_like_escaped + '%' ESCAPE '#'
+                  OR
+                  tel2_1 +  tel2_2 +  tel2_3 LIKE '%' + @tel1_like_escaped + '%' ESCAPE '#'
+                )
+           </@@hasval:tel1_like_escaped@@>
+           <@@hasval:mail_addr_like_escaped@@>
+           AND  (
+                  mail_addr LIKE '%' + @mail_addr_like_escaped + '%' ESCAPE '#'
+                  OR
+                  mail_addr2 LIKE '%' + @mail_addr_like_escaped + '%' ESCAPE '#'
+                )
+           </@@hasval:mail_addr_like_escaped@@>
+           <@@hasval:user_id_like_escaped@@>
+           AND  (
+                  user_id LIKE '%' + @user_id_like_escaped + '%' ESCAPE '#'
+                )
+           </@@hasval:user_id_like_escaped@@>
+           <@@hasval:order_id_like_escaped@@>
+           AND  (
+                  EXISTS
+                  (
+                    SELECT  TOP 1 order_id
+                      FROM  w2_Order
+                     WHERE  w2_Order.user_id = w2_User.user_id
+                       AND  w2_Order.order_id LIKE @order_id_like_escaped + '%' ESCAPE '#'
+                  )
+                )
+           </@@hasval:order_id_like_escaped@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="tel1_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="mail_addr_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="order_id_like_escaped" Type="nvarchar" Size="100" />
+    </Parameter>
+  </SearchUserCount_Where>
+  
+</CsUserSearch_Sub>

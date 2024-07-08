@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+/*
+商品IDとバリエーションIDが同じかつ、バリエーションIDが空白の設定を持っていないものを補正
+このクエリでは商品IDとバリエーションIDが同じもののバリエーションIDを空にするよう補正します
+*/
+;WITH hosei_ng AS
+(
+SELECT *
+FROM w2_ProductPrice with(nolock)
+WHERE EXISTS
+(
+  SELECT 'X'
+  FROM w2_ProductPrice AS same_id with(nolock)
+  WHERE w2_ProductPrice.shop_id = same_id.shop_id
+  AND w2_ProductPrice.product_id = same_id.product_id
+  AND w2_ProductPrice.member_rank_id = same_id.member_rank_id
+  AND same_id.product_id = same_id.variation_id
+)
+AND EXISTS
+(
+  SELECT 'X'
+  FROM w2_ProductPrice AS blank_id with(nolock)
+  WHERE w2_ProductPrice.shop_id = blank_id.shop_id
+  AND w2_ProductPrice.product_id = blank_id.product_id
+  AND w2_ProductPrice.member_rank_id = blank_id.member_rank_id
+  AND blank_id.variation_id = ''
+)
+AND (w2_ProductPrice.product_id = w2_ProductPrice.variation_id
+    OR w2_ProductPrice.variation_id = '')
+)
+UPDATE w2_ProductPrice
+SET variation_id = ''
+WHERE product_id = variation_id
+AND NOT EXISTS
+(
+  SELECT 'X'
+  FROM hosei_ng
+  WHERE w2_ProductPrice.product_id = hosei_ng.product_id
+)
+		]]>
+    </Statement>
+  </Up>
+</Migration>

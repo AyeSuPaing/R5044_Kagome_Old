@@ -1,0 +1,47 @@
+﻿/*
+=========================================================================================================
+  Module      : 与信審査結果取得のリクエスト値(GmoRequestGetCreditStatuscs.cs)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*/
+using System.Xml.Serialization;
+
+namespace w2.App.Common.Order.Payment.GMO.GetCreditStatus
+{
+	/// <summary>
+	/// 与信審査結果取得のリクエスト値
+	/// </summary>
+	[XmlRoot(DataType = "string", ElementName = "request", IsNullable = false, Namespace = "")]
+	public class GmoRequestGetCreditStatus : BaseGmoRequest
+	{
+	/// <summary>コンストラクタ</summary>
+		public GmoRequestGetCreditStatus()
+			: base()
+		{
+			this.Transaction = new TransactionElement();
+		}
+
+		/// <summary>取引情報</summary>
+		[XmlElement("transaction")]
+		public TransactionElement Transaction;
+	}
+
+	#region BuyerElement 取引情報要素
+	/// <summary>
+	/// 取引情報要素
+	/// </summary>
+	public class TransactionElement
+	{
+		/// <summary>コンストラクタ</summary>
+		public TransactionElement()
+		{
+			this.GmoTransactionId = "";
+		}
+
+		/// <summary>GMO取引ID</summary>
+		[XmlElement("gmoTransactionId")]
+		public string GmoTransactionId;
+	}
+	#endregion
+}

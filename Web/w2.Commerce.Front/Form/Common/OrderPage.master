@@ -1,0 +1,114 @@
+﻿<%--
+=========================================================================================================
+  Module      : 注文ページマスタ(OrderPage.master)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+--%>
+<%@ Register TagPrefix="uc" TagName="HeaderScriptDeclaration" Src="~/Form/Common/HeaderScriptDeclaration.ascx" %>
+<%@ Register TagPrefix="uc" TagName="BodyHeaderMain" Src="~/Form/Common/BodyHeaderMain.ascx" %>
+<%@ Register TagPrefix="uc" TagName="BodyFooterMain" Src="~/Form/Common/BodyFooterMain.ascx" %>
+<%@ Register TagPrefix="uc" TagName="AffiliateTag" Src="~/Form/Common/AffiliateTag.ascx" %>
+<%@ Master Language="C#" AutoEventWireup="true" CodeFile="~/Form/Common/OrderPage.master.cs" Inherits="Form_Common_OrderPage" %>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja">
+<head id="Head1" runat="server">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>タイトルはページ生成時に置き換えられます</title>
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
+<%-- キャッシュ無効設定：ここから（消さないでください） --%>
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Cache-Control" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<%-- キャッシュ無効設定：ここまで --%>
+<%
+	SetCssLink("lCommonCss", Constants.PATH_ROOT + "Css/common.css?20180216");
+	SetCssLink("lPrintCss", Constants.PATH_ROOT + "Css/imports/print.css");
+%>
+<link id="lCommonCss" rel="stylesheet" type="text/css" media="screen,print" />
+<link id="lPrintCss" rel="stylesheet" type="text/css"  media="print" />
+<asp:ContentPlaceHolder id="head" runat="server">
+</asp:ContentPlaceHolder>
+
+<%--▽CVタグ出力 head▽--%>
+<uc:AffiliateTag ID="AffiliateTagHeadAll" Location="head" AllTag="true" runat="server"/>
+<asp:contentplaceholder id="AffiliateTagHead" runat="server"></asp:contentplaceholder>
+<%--△CVタグ出力 head△--%>
+
+<%-- 各種Js読み込み --%>
+<uc:HeaderScriptDeclaration id="HeaderScriptDeclaration" runat="server"></uc:HeaderScriptDeclaration>
+</head>
+<body onload="<%= OnLoadEvents %>">
+<%--▽CVタグ出力 body上▽--%>
+<uc:AffiliateTag ID="AffiliateTagBodyTopAll" Location="body_top" AllTag="true" runat="server"/>
+<asp:contentplaceholder id="AffiliateTagBodyTop" runat="server"></asp:contentplaceholder>
+<%--△CVタグ出力 body上△--%>
+<%
+	// テキストボックスでEnterキー押下時、意図しないSubmitを防止する（Safari、Opera対策）
+	if (Regex.IsMatch(StringUtility.ToEmpty(Request.UserAgent), "safari|opera", RegexOptions.IgnoreCase))
+	{
+		form1.Attributes.Add("onkeypress", "return ((event.keyCode != 13) || (window.event.srcElement.type != 'text'));");
+	}	
+%>
+<form id="form1" onsubmit="return (document.getElementById('__EVENTVALIDATION') != null);" runat="server">
+
+<script type="text/javascript">
+<!--
+	// クリックジャック攻撃対策
+	CheckClickJack('<%= Constants.PATH_ROOT + Constants.PAGE_FRONT_BLANK %>');
+//-->
+</script>
+<%-- スクリプトマネージャ --%>
+<asp:ScriptManager ID="smScriptManager" runat="server" OnAsyncPostBackError="smScriptManager_AsyncPostBackError"  ScriptMode="Release"></asp:ScriptManager>
+
+	<%--▽ヘッダーエリア▽--%>
+	<div id="Header">
+	<uc:BodyHeaderMain id="BodyHeaderMain" runat="server"></uc:BodyHeaderMain>
+	</div><!--Header-->
+	<%--△ヘッダーエリア△--%>
+
+<div id="Wrap">
+<div class="wrapBottom">
+<div class="wrapTop">
+	
+	<%--▽コンテンツエリア▽--%>
+	<div id="Contents">
+	<asp:contentplaceholder id="ContentPlaceHolder1" runat="server"></asp:contentplaceholder>
+	</div>
+	<%--△コンテンツエリア△--%>
+	
+</div><!--wrapTop-->
+</div><!--wrapBottom-->
+</div><!--Wrap-->
+
+	<%--▽フッターエリア▽--%>
+	<div id="Foot">
+		<uc:BodyFooterMain id="BodyFooterMain" runat="server"></uc:BodyFooterMain>
+		<%--下記のタグはファイル情報保持用です。削除しないでください--%>
+		<%--▽フッターコンテンツエリア▽--%>
+		<asp:contentplaceholder id="ContentPlaceHolderFooter" runat="server"></asp:contentplaceholder>
+		<%--△フッターコンテンツエリア△--%>
+	</div>
+	<%--△フッターエリア△--%>
+
+</form>
+<% if (this.IsEfoOptionEnabled){ %>
+<!-- GeeeN Tag Manager Start -->
+<script type="text/javascript">
+	if (window.location.pathname.split('/').slice(-3).join('/') != '<%= w2.App.Common.Constants.PAGE_MANAGER_ORDER_CONFIRM %>') {
+		(function (i, g, m, a, h) { i[a] = i[a] || []; i[a].push({ "geeen_tag_manger.start": new Date().getTime(), event: "js" }); var k = g.getElementsByTagName(m)[0], f = g.createElement(m), b = a != "GeeeNData" ? "&l=" + a : "", j = encodeURIComponent(window.location.href); f.async = true; f.src = "https://gntm.geeen.co.jp/Onetag/?id=" + h + "&u=" + j + b; k.parentNode.insertBefore(f, k) })(window, document, "script", "GeeeNData", '<%= int.Parse(w2.App.Common.Constants.EFO_OPTION_PROJECT_NO) %>');
+	}
+</script>
+<!-- GeeeN Tag Manager End -->
+<% } %>
+<%--▽CVタグ出力 body下▽--%>
+<uc:AffiliateTag ID="AffiliateTagBodyBottomAll" Location="body_bottom" AllTag="true" runat="server"/>
+<asp:contentplaceholder id="AffiliateTagBodyBottom" runat="server"></asp:contentplaceholder>
+<%--△CVタグ出力 body下△--%>
+<script type="text/javascript">
+	// セッション維持メソッド
+	MaintainSession.execute("<%= Constants.PATH_ROOT %>");
+</script>
+</body>
+</html>

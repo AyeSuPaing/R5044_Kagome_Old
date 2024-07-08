@@ -1,0 +1,187 @@
+﻿@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.Extensions
+@*
+=========================================================================================================
+  Module      : レイアウト系 ヘルパーメソッド(LayoutHelper.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@* table内の要素間隔設定（trあり） *@
+@helper PaddingTr(int height)
+{
+	<tr>
+		<td>
+			@Padding(height)
+		</td>
+	</tr>
+}
+@* table内の要素間隔設定 *@
+@helper Padding(int height)
+{
+	<img height="@height" alt="" src="~/Images/Common/sp.gif" width="100%" border="0" />
+}
+
+@* AJAXエラーハンドラスクリプト *@
+@helper AjaxErrorHandlerScript(System.Web.Mvc.HtmlHelper html)
+{
+	<script type="text/javascript">
+		@* AJAXエラーで401を捕捉する *@
+		$.ajaxSetup({
+			error: function (ajaxContext, e) {
+				handleError(ajaxContext, e);
+			}
+		});
+
+		@* AJAXエラーハンドラ *@
+		function handleError(ajaxContext, e) {
+			if (ajaxContext.status == 401) {
+				location.href = "@html.Raw(UrlUtil.CreateUnloggedInErrorUrl())";
+			} else if (ajaxContext.status == 404) {
+				location.href = "@html.Raw(UrlUtil.CreateErrorPageUrl(Constants.REQUEST_KBN_ERROR_KBN_404_ERROR))";
+			} else if (e == "timeout") {
+				// タイムアウト時は何もしない
+			} else {
+				@if (html.IsDebug())
+				{
+					@:document.body.style.overflow = "visible";
+					@:$("body").html("<div style='padding:10px;' class=\"ajaxErr\">" + ajaxContext.responseText + "</div>");
+				}
+				else
+				{
+					@:location.href = '@UrlUtil.CreateErrorPageUrl("ajaxErr")';
+				}
+			}
+		}
+
+		//------------------------------------------------------
+		// マウスオーバーイベント
+		//------------------------------------------------------
+		function listselect_mover(obj) {
+			if (obj != null) {
+				obj.className = "list_item_bg_over";
+			}
+		}
+
+		//------------------------------------------------------
+		// マウスアウトイベント１
+		//------------------------------------------------------
+		function listselect_mout1(obj) {
+			if (obj != null) {
+				obj.className = "list_item_bg1";
+			}
+		}
+
+		//------------------------------------------------------
+		// マウス座標取得用
+		//------------------------------------------------------
+		// マウス座標保持用変数
+		var mouseX = 0;
+		var mouseY = 0;
+
+		if (navigator.appName.charAt(0) == "N") {
+			// NN,Firefox用（マウス座標取得用イベントリスナ）
+			document.addEventListener('mousemove', funcMouseMove, false);
+		}
+
+		// マウス座標取得用関数
+		function funcMouseMove(event) {
+			mouseX = event.clientX;
+			mouseY = event.clientY;
+		}
+
+		//------------------------------------------------------
+		// マウスダウンイベント（座標取得）
+		//------------------------------------------------------
+		function listselect_mdown() {
+			if (navigator.appName.charAt(0) == "M") {
+				// IE
+				funcMouseMove(event);
+			}
+			//if (navigator.appName.charAt(0)=="N"){
+			// Mozilla用
+			//}
+
+			xx_mousedown = mouseX;
+			yy_mousedown = mouseY;
+		}
+
+
+		//------------------------------------------------------
+		// マウスクリックイベント（座標判定して画面遷移）
+		//------------------------------------------------------
+		function listselect_mclick(obj, target_url) {
+			if (navigator.appName.charAt(0) == "M") {
+				funcMouseMove(event);
+			}
+
+			// 20マウスクリックしてから離すまでが指定ドット以下の場合、画面遷移
+			if ((Math.abs(xx_mousedown - mouseX) < 25) && (Math.abs(yy_mousedown - mouseY) < 25)) {
+				obj.className = "list_item_bg_click";
+				location.href = target_url;
+			}
+		}
+
+		// 入力データ取得
+		function get_input_date() {
+			var pageDate = $('#input_form').serializeArray();
+			return pageDate;
+		}
+
+		// 入力確認
+		function validate(name, param) {
+			loading_animation.start();
+			var formData = get_input_date();
+			if (param != undefined) formData.push(param);
+			$.ajax({
+				type: "POST",
+				url: "Validate",
+				data: formData
+			}).done(function (errorMessage) {
+				setTimeout(function () { loading_animation.end(); }, 200);
+				// 警告表示を削除
+				$('.notification-message-warning').remove();
+				if (errorMessage !== "") {
+					notification.show(errorMessage, 'warning', 'fixed');
+				} else {
+					$('#' + name).click();
+				}
+				return false;
+			});
+		}
+		// エンターキーによるsubmit禁止
+		function prohibit_submission(exceptName) {
+			$("input").keydown(function (e) {
+				if (e.target.name !== exceptName) {
+					if ((e.which && e.which === 13) || (e.keyCode && e.keyCode === 13)) {
+						return false;
+					} else {
+						return true;
+					}
+				}
+			});
+		}
+	</script>
+}
+
+@* リスト開閉トグルボタン *@
+@helper ListOpenToggleBtn()
+{
+	<button class="btn btn-sub btn-size-s icon-arrow-down is-list-open-toggle" type="button" id="all_open_close_toggle_btn" title="リストを開閉します"></button>
+}
+
+@* グループ追加ボタン *@
+@helper AddGroupBtn()
+{
+	<button class="btn btn-main btn-size-s btn-modal-open"  type="button" title="グループを追加します" data-modal-selector="#modal-list-group-add" data-modal-classname="modal-size-s modal-list-group-add">＋グループ</button>
+}
+
+@* 管理用タイトルチェック *@
+@helper ManagerTitleCheck(string title, string dummyTitle)
+{
+	@* 空白の場合は詳細リンクが表示されないためダミータイトルに置き換え *@
+	var outputTitle = (string.IsNullOrEmpty(title)) ? dummyTitle + "を設定してください" : title;
+
+	@outputTitle
+}

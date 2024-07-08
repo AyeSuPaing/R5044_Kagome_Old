@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザー系SQLステートメントXML(User.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<User>
+
+  <!-- 
+    ユーザーマスタ件数取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetUserMasterCount>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        ;WITH UserList AS
+        (
+          SELECT  DISTINCT @@ fields @@
+            FROM  w2_User
+                  LEFT JOIN w2_UserExtend ON
+                  (
+                    w2_User.user_id = w2_UserExtend.user_id
+                  )
+                    LEFT JOIN w2_UserAttribute ON
+                  (
+                    w2_User.user_id = w2_UserAttribute.user_id
+                  )
+                    [[ USER_SEARCH_WHERE ]]
+        ),
+        TempTL AS
+        (
+          SELECT  *
+            FROM  UserList
+           WHERE  UserList.del_flg = '0'
+        ),
+        TempTLAC AS
+        (
+          SELECT  COUNT(*) count
+            FROM  TempTL
+        ),
+        TempTLMC AS
+        (
+          SELECT  COUNT(*) count
+            FROM  TempTL
+           WHERE  @mail_send_both_pc_and_mobile_enabled = 'True'
+             AND  TempTL.mail_addr <> ''
+             AND  TempTL.mail_addr2 <> ''
+        )
+        SELECT  TempTLAC.count + TempTLMC.count
+          FROM  TempTLAC,
+                TempTLMC
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_send_both_pc_and_mobile_enabled" Type="nvarchar" Size="5" />
+    </Parameter>
+  </GetUserMasterCount>
+
+  <!-- 
+    ユーザーマスタ情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetUserMaster>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  @@ fields @@
+          FROM  w2_User
+                LEFT JOIN w2_UserExtend ON
+              (
+                  w2_User.user_id = w2_UserExtend.user_id
+              )
+                LEFT JOIN w2_UserAttribute ON
+              (
+                  w2_User.user_id = w2_UserAttribute.user_id
+              )
+                [[ USER_SEARCH_WHERE ]]
+                [[ USER_SEARCH_ORDER_BY ]]
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetUserMaster>
+  
+  <!-- 
+     配送先情報マスタ情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetUserShippingMaster>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  @@ fields @@
+          FROM  w2_User
+                LEFT JOIN w2_UserShipping ON
+              (
+                  w2_User.user_id = w2_UserShipping.user_id
+              )
+                [[ USER_SEARCH_WHERE ]]
+                AND w2_UserShipping.shipping_no IS NOT NULL
+                [[ USER_SEARCH_ORDER_BY ]]
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetUserShippingMaster>
+
+  <!-- 
+    ユーザー電子発票管理マスタ情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetUserTaiwanInvoice>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  @@ fields @@
+          FROM  w2_TwUserInvoice
+                INNER JOIN w2_User ON
+              (
+                  w2_User.user_id = w2_TwUserInvoice.user_id
+              )
+                [[ USER_SEARCH_WHERE ]]
+                [[ USER_SEARCH_ORDER_BY ]]
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetUserTaiwanInvoice>
+
+</User>

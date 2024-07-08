@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+UPDATE w2_MasterExportSetting 
+SET fields = REPLACE(RTRIM(cast(fields as nvarchar(max))), ',send_mail_addr', '')
+WHERE master_kbn = 'UserProductArrivalMail'
+AND fields LIKE '%,send_mail_addr%';
+
+UPDATE w2_MasterExportSetting 
+SET fields = REPLACE(RTRIM(cast(fields as nvarchar(max))), 'send_mail_addr,', '')
+WHERE master_kbn = 'UserProductArrivalMail'
+AND fields LIKE '%send_mail_addr,%';
+
+INSERT INTO w2_MasterExportSetting
+VALUES('0', 'UserProductArrivalMailDetail', '001','入荷通知メールマスタ（明細）（削除不可）', 
+'shop_id,product_id,variation_id,name,variation_name1,variation_name2,stock,sell_from,arrival_mail_count,release_mail_count,resale_mail_count,send_mail_addr,date_created,date_changed,last_changed,date_expired',
+'0',GETDATE(), GETDATE(), 'w2','CSV');
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

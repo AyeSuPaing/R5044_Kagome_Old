@@ -1,0 +1,583 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+/*
+=========================================================================================================
+  Module      : Cs incident work table(w2_WorkCsIncident.sql)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*/
+IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id = OBJECT_ID(N'[dbo].[w2_WorkCsIncident]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+	DROP TABLE [dbo].[w2_WorkCsIncident]
+GO
+
+CREATE TABLE [dbo].[w2_WorkCsIncident] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[incident_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[user_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[incident_category_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[incident_title] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[status] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[voc_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[voc_memo] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[comment] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[importance] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[user_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[user_contact] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[cs_group_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[lock_status] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[lock_operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'1'),
+	[date_last_received] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[date_completed] [datetime],
+	[date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[date_changed] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[date_message_last_send_received] [datetime] NOT NULL DEFAULT (GETDATE())
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_WorkCsIncident] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkCsIncident] PRIMARY KEY CLUSTERED
+	(
+		[dept_id],
+		[incident_id]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : Cs message work table(w2_WorkCsMessage.sql)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*/
+IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id = OBJECT_ID(N'[dbo].[w2_WorkCsMessage]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+	DROP TABLE [dbo].[w2_WorkCsMessage]
+GO
+
+CREATE TABLE [dbo].[w2_WorkCsMessage] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[incident_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[message_no] [int] NOT NULL DEFAULT (1),
+	[media_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'TEL'),
+	[direction_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'REC'),
+	[operator_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[inquiry_reply_date] [datetime],
+	[message_status] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[user_name1] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[user_name2] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[user_name_kana1] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[user_name_kana2] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[user_mail_addr] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[user_tel1] [nvarchar] (16) NOT NULL DEFAULT (N''),
+	[inquiry_title] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[inquiry_text] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[reply_text] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[reply_operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[receive_mail_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[send_mail_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[date_changed] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_WorkCsMessage] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkCsMessage] PRIMARY KEY CLUSTERED
+	(
+		[dept_id],
+		[incident_id],
+		[message_no]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : Fixed purchase work table(w2_WorkFixedPurchase.sql)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*/
+IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id = OBJECT_ID(N'[dbo].[w2_WorkFixedPurchase]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+	DROP TABLE [dbo].[w2_WorkFixedPurchase]
+GO
+
+CREATE TABLE [dbo].[w2_WorkFixedPurchase] (
+	[fixed_purchase_id] [nvarchar] (30) NOT NULL,
+	[fixed_purchase_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'01'),
+	[fixed_purchase_setting1] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[base_tel_no] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[fixed_purchase_status] [nvarchar] (10) NOT NULL DEFAULT (N'10'),
+	[payment_status] [nvarchar] (10) NOT NULL DEFAULT (N'10'),
+	[last_order_date] [datetime],
+	[order_count] [int] NOT NULL DEFAULT (0),
+	[user_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[supplier_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[order_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'PC'),
+	[order_payment_kbn] [nvarchar] (10) DEFAULT (N'00'),
+	[fixed_purchase_date_bgn] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[card_kbn] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[valid_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[date_changed] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[credit_branch_no] [int],
+	[next_shipping_date] [datetime],
+	[next_next_shipping_date] [datetime],
+	[fixed_purchase_management_memo] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[card_installments_code] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[extend_status1] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status2] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status3] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status4] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status5] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status6] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status7] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status8] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status9] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status10] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status11] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status12] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status13] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status14] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status15] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status16] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status17] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status18] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status19] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status20] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status21] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status22] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status23] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status24] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status25] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status26] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status27] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status28] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status29] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status30] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[cancel_reason_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[cancel_memo] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[shipped_count] [int] NOT NULL DEFAULT (0),
+	[next_shipping_use_point] [decimal] NOT NULL DEFAULT (0),
+	[extend_status31] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status32] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status33] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status34] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status35] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status36] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status37] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status38] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status39] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status40] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[combined_org_fixedpurchase_ids] [nvarchar] (MAX) DEFAULT (N''),
+	[access_country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N''),
+	[disp_language_code] [nvarchar] (4) NOT NULL DEFAULT (N''),
+	[disp_language_locale_id] [nvarchar] (7) NOT NULL DEFAULT (N''),
+	[disp_currency_code] [nvarchar] (4) NOT NULL DEFAULT (N''),
+	[disp_currency_locale_id] [nvarchar] (7) NOT NULL DEFAULT (N''),
+	[external_payment_agreement_id] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[resume_date] [datetime],
+	[suspend_reason] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[shipping_memo] [nvarchar] (MAX) DEFAULT (N''),
+	[extend_status_date1] [datetime],
+	[extend_status_date2] [datetime],
+	[extend_status_date3] [datetime],
+	[extend_status_date4] [datetime],
+	[extend_status_date5] [datetime],
+	[extend_status_date6] [datetime],
+	[extend_status_date7] [datetime],
+	[extend_status_date8] [datetime],
+	[extend_status_date9] [datetime],
+	[extend_status_date10] [datetime],
+	[extend_status_date11] [datetime],
+	[extend_status_date12] [datetime],
+	[extend_status_date13] [datetime],
+	[extend_status_date14] [datetime],
+	[extend_status_date15] [datetime],
+	[extend_status_date16] [datetime],
+	[extend_status_date17] [datetime],
+	[extend_status_date18] [datetime],
+	[extend_status_date19] [datetime],
+	[extend_status_date20] [datetime],
+	[extend_status_date21] [datetime],
+	[extend_status_date22] [datetime],
+	[extend_status_date23] [datetime],
+	[extend_status_date24] [datetime],
+	[extend_status_date25] [datetime],
+	[extend_status_date26] [datetime],
+	[extend_status_date27] [datetime],
+	[extend_status_date28] [datetime],
+	[extend_status_date29] [datetime],
+	[extend_status_date30] [datetime],
+	[extend_status_date31] [datetime],
+	[extend_status_date32] [datetime],
+	[extend_status_date33] [datetime],
+	[extend_status_date34] [datetime],
+	[extend_status_date35] [datetime],
+	[extend_status_date36] [datetime],
+	[extend_status_date37] [datetime],
+	[extend_status_date38] [datetime],
+	[extend_status_date39] [datetime],
+	[extend_status_date40] [datetime],
+	[cancel_date] [datetime],
+	[restart_date] [datetime],
+	[memo] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[next_shipping_use_coupon_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[next_shipping_use_coupon_no] [int] NOT NULL DEFAULT (0),
+	[receipt_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[receipt_address] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[receipt_proviso] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[skipped_count] [int] NOT NULL DEFAULT (0),
+	[extend_status41] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status42] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status43] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status44] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status45] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status46] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status47] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status48] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status49] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status50] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[extend_status_date41] [datetime],
+	[extend_status_date42] [datetime],
+	[extend_status_date43] [datetime],
+	[extend_status_date44] [datetime],
+	[extend_status_date45] [datetime],
+	[extend_status_date46] [datetime],
+	[extend_status_date47] [datetime],
+	[extend_status_date48] [datetime],
+	[extend_status_date49] [datetime],
+	[extend_status_date50] [datetime],
+	[attribute1] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[attribute2] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[attribute3] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[attribute4] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[attribute5] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[attribute6] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[attribute7] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[attribute8] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[attribute9] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[attribute10] [nvarchar] (100) NOT NULL DEFAULT (N''),
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_WorkFixedPurchase] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkFixedPurchase] PRIMARY KEY CLUSTERED
+	(
+		[fixed_purchase_id]
+	) ON [PRIMARY]
+GO
+
+
+/*
+=========================================================================================================
+  Module      : Fixed purchase history work table(w2_WorkFixedPurchaseHistory.sql)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*/
+IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id = OBJECT_ID(N'[dbo].[w2_WorkFixedPurchaseHistory]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+	DROP TABLE [dbo].[w2_WorkFixedPurchaseHistory]
+GO
+
+CREATE TABLE [dbo].[w2_WorkFixedPurchaseHistory] (
+	[fixed_purchase_id] [nvarchar] (30) NOT NULL,
+	[fixed_purchase_history_no] [bigint] NOT NULL,
+	[fixed_purchase_history_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'10'),
+	[base_tel_no] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[user_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[order_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[update_order_count] [int],
+	[update_shipped_count] [int],
+	[update_order_count_result] [int],
+	[update_shipped_count_result] [int],
+	[external_payment_cooperation_log] [nvarchar] (MAX) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_WorkFixedPurchaseHistory] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkFixedPurchaseHistory] PRIMARY KEY CLUSTERED
+	(
+		[fixed_purchase_id],
+		[fixed_purchase_history_no]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : Fixed purchase item work table(w2_WorkFixedPurchaseItem.sql)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*/
+IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id = OBJECT_ID(N'[dbo].[w2_WorkFixedPurchaseItem]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+	DROP TABLE [dbo].[w2_WorkFixedPurchaseItem]
+GO
+
+CREATE TABLE [dbo].[w2_WorkFixedPurchaseItem] (
+	[fixed_purchase_id] [nvarchar] (30) NOT NULL,
+	[fixed_purchase_item_no] [int] NOT NULL DEFAULT (1),
+	[fixed_purchase_shipping_no] [int] NOT NULL DEFAULT (1),
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[product_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[variation_id] [nvarchar] (60) NOT NULL DEFAULT (N''),
+	[supplier_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[item_quantity] [int] NOT NULL DEFAULT (1),
+	[item_quantity_single] [int] NOT NULL DEFAULT (1),
+	[product_set_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[product_set_no] [int],
+	[product_set_count] [int],
+	[date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[date_changed] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[product_option_texts] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[item_order_count] [int] NOT NULL DEFAULT (0),
+	[item_shipped_count] [int] NOT NULL DEFAULT (0)
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_WorkFixedPurchaseItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkFixedPurchaseItem] PRIMARY KEY CLUSTERED
+	(
+		[fixed_purchase_id],
+		[fixed_purchase_item_no]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : Fixed purchase shipping work table(w2_WorkFixedPurchaseShipping.sql)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*/
+IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id = OBJECT_ID(N'[dbo].[w2_WorkFixedPurchaseShipping]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+	DROP TABLE [dbo].[w2_WorkFixedPurchaseShipping]
+GO
+
+CREATE TABLE [dbo].[w2_WorkFixedPurchaseShipping] (
+	[fixed_purchase_id] [nvarchar] (30) NOT NULL,
+	[fixed_purchase_shipping_no] [int] NOT NULL DEFAULT (1),
+	[shipping_name] [nvarchar] (40) NOT NULL DEFAULT (N''),
+	[shipping_name_kana] [nvarchar] (60) NOT NULL DEFAULT (N''),
+	[shipping_zip] [nvarchar] (8) NOT NULL DEFAULT (N''),
+	[shipping_addr1] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[shipping_addr2] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[shipping_addr3] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[shipping_addr4] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[shipping_tel1] [nvarchar] (16) NOT NULL DEFAULT (N''),
+	[shipping_tel2] [nvarchar] (16) NOT NULL DEFAULT (N''),
+	[shipping_tel3] [nvarchar] (16) NOT NULL DEFAULT (N''),
+	[shipping_fax] [nvarchar] (16) NOT NULL DEFAULT (N''),
+	[shipping_company] [nvarchar] (30) NOT NULL DEFAULT (N'0'),
+	[shipping_date] [datetime],
+	[shipping_time] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[date_changed] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[shipping_name1] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[shipping_name2] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[shipping_name_kana1] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shipping_name_kana2] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shipping_company_name] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[shipping_company_post_name] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[shipping_method] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[delivery_company_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[shipping_country_iso_code] [nvarchar] (3) NOT NULL DEFAULT (N''),
+	[shipping_country_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[shipping_addr5] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[shipping_receiving_store_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[shipping_receiving_store_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[shipping_receiving_store_type] [nvarchar] (5) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_WorkFixedPurchaseShipping] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkFixedPurchaseShipping] PRIMARY KEY CLUSTERED
+	(
+		[fixed_purchase_id],
+		[fixed_purchase_shipping_no]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : User credit card work table(w2_WorkUserCreditCard.sql)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*/
+IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id = OBJECT_ID(N'[dbo].[w2_WorkUserCreditCard]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+	DROP TABLE [dbo].[w2_WorkUserCreditCard]
+GO
+
+CREATE TABLE [dbo].[w2_WorkUserCreditCard] (
+	[user_id] [nvarchar] (30) NOT NULL,
+	[branch_no] [int] NOT NULL DEFAULT (1),
+	[cooperation_id] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[card_disp_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[last_four_digit] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[expiration_month] [nvarchar] (2) NOT NULL DEFAULT (N''),
+	[expiration_year] [nvarchar] (4) NOT NULL DEFAULT (N''),
+	[author_name] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[disp_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[date_changed] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[company_code] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[cooperation_id2] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[register_action_kbn] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[register_status] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[register_target_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[before_order_status] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[cooperation_type] [nvarchar] (10) NOT NULL DEFAULT (N'CREDIT')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_WorkUserCreditCard] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkUserCreditCard] PRIMARY KEY CLUSTERED
+	(
+		[user_id],
+		[branch_no]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+メールテンプレート作成
+=========================================================================================================
+*/
+IF NOT EXISTS (SELECT *  FROM [w2_MailTemplate]  WHERE  [mail_id]='10000012')
+	BEGIN
+	INSERT [dbo].[w2_MailTemplate]
+	(
+		[shop_id],
+		[mail_id],
+		[mail_name],
+		[mail_from],
+		[mail_to],
+		[mail_cc],
+		[mail_bcc],
+		[mail_subject],
+		[mail_body],
+		[mail_subject_mobile],
+		[mail_body_mobile],
+		[mail_attachmentfile_path],
+		[del_flg],
+		[date_created],
+		[date_changed],
+		[last_changed],
+		[mail_from_name],
+		[mail_category],
+		[auto_send_flg],
+		[language_code],
+		[language_locale_id],
+		[sms_use_flg]
+	)
+	VALUES
+	(
+		'0',
+		'10000012',
+		'データ移行バッチ完了メール【管理者向け】',
+		'bh@w2s.xyz',
+		'bh@w2s.xyz',
+		'',
+		'',
+		'【移行用データ取込】[@@ result @@]@@ migration_name @@取込処理完了',
+		'移行用データ種別「@@ migration_name @@」の 取込に@@ result @@しました。
+		
+ファイル：@@ file_name @@
+
+ @@ message @@',
+		'',
+		'',
+		'',
+		'0',
+		GETDATE(),
+		GETDATE(),
+		'SYSTEM',
+		'',
+		'',
+		'1',
+		'',
+		'',
+		'0'
+	)
+	END
+GO
+
+IF NOT EXISTS (SELECT *  FROM [w2_MailTemplate]  WHERE  [mail_id]='10000072')
+	BEGIN
+	INSERT [dbo].[w2_MailTemplate]
+	(
+		[shop_id],
+		[mail_id],
+		[mail_name],
+		[mail_from],
+		[mail_to],
+		[mail_cc],
+		[mail_bcc],
+		[mail_subject],
+		[mail_body],
+		[mail_subject_mobile],
+		[mail_body_mobile],
+		[mail_attachmentfile_path],
+		[del_flg],
+		[date_created],
+		[date_changed],
+		[last_changed],
+		[mail_from_name],
+		[mail_category],
+		[auto_send_flg],
+		[language_code],
+		[language_locale_id],
+		[sms_use_flg]
+	)
+	VALUES
+	(
+		'0',
+		'10000072',
+		'再与信バッチ完了メール【管理者向け】',
+		'bh@w2s.xyz',
+		'bh@w2s.xyz',
+		'',
+		'',
+		'[@@ reauth_total_count @@件]再与信実行バッチメール【管理者向け】',
+		'再与信バッチを実行しました。
+
+与信モード： @@ reauth_mode @@
+日付：@@ reauth_date @@
+拡張ステータス：@@ reauth_extend @@
+----------------------------------------------------------------------------------------------------
+総件数：@@ reauth_total_count @@
+成功件数：@@ reauth_success_count @@
+失敗件数：@@ reauth_failure_count @@',
+		'',
+		'',
+		'',
+		'0',
+		GETDATE(),
+		GETDATE(),
+		'SYSTEM',
+		'',
+		'',
+		'1',
+		'',
+		'',
+		'0'
+	)
+	END
+GO
+       ]]>
+    </Statement>
+  </Up>
+</Migration>

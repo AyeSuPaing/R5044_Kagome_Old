@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        IF NOT EXISTS (SELECT * FROM w2_MailTemplate WHERE mail_id = '00000406')
+          BEGIN
+            INSERT  [dbo].[w2_MailTemplate]
+                    (
+                      shop_id,
+                      mail_id,
+                      mail_name,
+                      mail_from,
+                      mail_to,
+                      mail_cc,
+                      mail_bcc,
+                      mail_subject,
+                      mail_body,
+                      mail_subject_mobile,
+                      mail_body_mobile,
+                      mail_attachmentfile_path,
+                      del_flg,
+                      date_created,
+                      date_changed,
+                      last_changed,
+                      mail_category,
+                      auto_send_flg,
+                      mail_from_name
+                    )
+            VALUES
+                    (
+                      '0',
+                      '00000406',
+                      N'注文同梱完了メール【管理者向け】',
+                      'bh@w2s.xyz',
+                      'bh@w2s.xyz',
+                      '',
+                      '',
+                      N'★管理者向け★ 【@@ ShopMessage.ShopName @@】[注文No.@@ order_id @@]御注文ありがとうございます。 ★管理者向け★',
+                      N'@@ owner_name @@ 様'+ NCHAR(13) + NCHAR(10)
+                      + NCHAR(13) + NCHAR(10)
+                      + N'この度は、「@@ ShopMessage.ShopName @@」でお買い上げ頂き、誠にありがとうございます。' + CHAR(13) + CHAR(10)
+                      + N'下記にご注文内容をご連絡致します。ご確認くださいますようお願い致します。' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'<@@OrderPaymentKbn:K10@@>' + CHAR(13) + CHAR(10)
+                      + N'カードでお支払い済みです。' + CHAR(13) + CHAR(10)
+                      + N'</@@OrderPaymentKbn:K10@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@OrderPaymentKbn:K20@@>' + CHAR(13) + CHAR(10)
+                      + N'代金引換です。' + CHAR(13) + CHAR(10)
+                      + N'</@@OrderPaymentKbn:K20@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@OrderPaymentKbn:K31@@>' + CHAR(13) + CHAR(10)
+                      + N'以下の情報からコンビニで前払いしてください。' + CHAR(13) + CHAR(10)
+                      + N'@@ payment_message_text @@' + CHAR(13) + CHAR(10)
+                      + N'</@@OrderPaymentKbn:K31@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@OrderPaymentKbn:K41@@>' + CHAR(13) + CHAR(10)
+                      + N'以下のページから銀行振り込みしてください。' + CHAR(13) + CHAR(10)
+                      + N'@@ payment_message_text @@' + CHAR(13) + CHAR(10)
+                      + N'</@@OrderPaymentKbn:K41@@>' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'お客様のご注文内容は以下のとおりです。' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'■注文情報' + CHAR(13) + CHAR(10)
+                      + N'注文番号      : @@ order_id @@' + CHAR(13) + CHAR(10)
+                      + N'ご注文日時    : @@ order_date @@' + CHAR(13) + CHAR(10)
+                      + N'お支払方法    : @@ payment_name @@' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'■注文メモ' + CHAR(13) + CHAR(10)
+                      + N'@@ memo @@' + CHAR(13) + CHAR(10)
+                      + N'<@@IsNotGift@@>' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'■配送先' + CHAR(13) + CHAR(10)
+                      + N'〒@@ shipping_zip @@' + CHAR(13) + CHAR(10)
+                      + N'  @@ shipping_addr1 @@@@ shipping_addr2 @@' + CHAR(13) + CHAR(10)
+                      + N'  @@ shipping_addr3 @@@@ shipping_addr4 @@' + CHAR(13) + CHAR(10)
+                      + N'  @@ shipping_name @@' + CHAR(13) + CHAR(10)
+                      + N'  @@ shipping_name_kana @@' + CHAR(13) + CHAR(10)
+                      + N'  @@ shipping_tel1 @@' + CHAR(13) + CHAR(10)
+                      + N'<@@UseShippingDate@@>' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'■配送希望日    : @@ shipping_date @@' + CHAR(13) + CHAR(10)
+                      + N'</@@UseShippingDate@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@UseShippingTime@@>' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'■配送希望時間帯: @@ shipping_time @@' + CHAR(13) + CHAR(10)
+                      + N'</@@UseShippingTime@@>' + CHAR(13) + CHAR(10)
+                      + N'</@@IsNotGift@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@IsGift@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@GiftShippingLoop@@>' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'■配送先@@ order_shipping_no @@' + CHAR(13) + CHAR(10)
+                      + N'◇送り主' + CHAR(13) + CHAR(10)
+                      + N'〒@@ sender_zip @@' + CHAR(13) + CHAR(10)
+                      + N'@@ sender_addr1 @@@@ sender_addr2 @@' + CHAR(13) + CHAR(10)
+                      + N'@@ sender_addr3 @@@@ sender_addr4 @@' + CHAR(13) + CHAR(10)
+                      + N'@@ sender_name @@' + CHAR(13) + CHAR(10)
+                      + N'@@ sender_name_kana @@' + CHAR(13) + CHAR(10)
+                      + N'@@ sender_tel1 @@' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'◇配送先' + CHAR(13) + CHAR(10)
+                      + N'〒@@ shipping_zip @@' + CHAR(13) + CHAR(10)
+                      + N'  @@ shipping_addr1 @@@@ shipping_addr2 @@' + CHAR(13) + CHAR(10)
+                      + N'  @@ shipping_addr3 @@@@ shipping_addr4 @@' + CHAR(13) + CHAR(10)
+                      + N'  @@ shipping_name @@' + CHAR(13) + CHAR(10)
+                      + N'  @@ shipping_name_kana @@' + CHAR(13) + CHAR(10)
+                      + N'  @@ shipping_tel1 @@' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'◇商品' + CHAR(13) + CHAR(10)
+                      + N'@@ order_items @@' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'<@@UseWrappingPaper@@>' + CHAR(13) + CHAR(10)
+                      + N'◇のし' + CHAR(13) + CHAR(10)
+                      + N'@@ wrapping_paper_type @@' + CHAR(13) + CHAR(10)
+                      + N'◇差出人' + CHAR(13) + CHAR(10)
+                      + N'@@ wrapping_paper_name @@' + CHAR(13) + CHAR(10)
+                      + N'</@@UseWrappingPaper@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@UseWrappingBag@@>' + CHAR(13) + CHAR(10)
+                      + N'◇包装' + CHAR(13) + CHAR(10)
+                      + N'@@ wrapping_bag_type @@' + CHAR(13) + CHAR(10)
+                      + N'</@@UseWrappingBag@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@UseShippingDate@@>' + CHAR(13) + CHAR(10)
+                      + N'◇配送希望日' + CHAR(13) + CHAR(10)
+                      + N'@@ shipping_date @@' + CHAR(13) + CHAR(10)
+                      + N'</@@UseShippingDate@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@UseShippingTime@@>' + CHAR(13) + CHAR(10)
+                      + N'◇配送希望時間帯' + CHAR(13) + CHAR(10)
+                      + N'@@ shipping_time @@' + CHAR(13) + CHAR(10)
+                      + N'</@@UseShippingTime@@>' + CHAR(13) + CHAR(10)
+                      + N'</@@GiftShippingLoop@@>' + CHAR(13) + CHAR(10)
+                      + N'</@@IsGift@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@UseFixedPurchase@@>' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'■定期配送情報' + CHAR(13) + CHAR(10)
+                      + N'配送パターン  : @@ fixed_purchase_pattern @@' + CHAR(13) + CHAR(10)
+                      + N'今回配送予定  : @@ first_shipping_date_yyyymd(d) @@ / @@ first_shipping_date_yyyymmdd(d) @@' + CHAR(13) + CHAR(10)
+                      + N'次回配送予定  : @@ next_shipping_date_yyyymd(d) @@ / @@ next_shipping_date_yyyymmdd(d) @@' + CHAR(13) + CHAR(10)
+                      + N'次々回配送予定: @@ next_next_shipping_date_yyyymd(d) @@ / @@ next_next_shipping_date_yyyymmdd(d) @@' + CHAR(13) + CHAR(10)
+                      + N'<@@UseShippingTime@@>' + CHAR(13) + CHAR(10)
+                      + N'配送希望時間帯: @@ shipping_time @@' + CHAR(13) + CHAR(10)
+                      + N'</@@UseShippingTime@@>' + CHAR(13) + CHAR(10)
+                      + N'</@@UseFixedPurchase@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@IsNotGift@@>' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'■商品明細' + CHAR(13) + CHAR(10)
+                      + N'@@ order_items @@' + CHAR(13) + CHAR(10)
+                      + N'</@@IsNotGift@@>' + CHAR(13) + CHAR(10)
+                      + N'────────────────────────' + CHAR(13) + CHAR(10)
+                      + N'小計       : ¥@@ order_price_subtotal @@' + CHAR(13) + CHAR(10)
+                      + N'配送料     : ¥@@ order_price_shipping @@' + CHAR(13) + CHAR(10)
+                      + N'決済手数料 : ¥@@ order_price_exchange @@' + CHAR(13) + CHAR(10)
+                      + N'<@@SetPromotionProductDiscount@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@SetPromotionProductDiscountLoop@@>' + CHAR(13) + CHAR(10)
+                      + N'「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@</@@SetPromotionProductDiscountLoop@@>' + CHAR(13) + CHAR(10)
+                      + N'</@@SetPromotionProductDiscount@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@SetPromotionShippingChargeDiscount@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@SetPromotionShippingChargeDiscountLoop@@>' + CHAR(13) + CHAR(10)
+                      + N'「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@</@@SetPromotionShippingChargeDiscountLoop@@>' + CHAR(13) + CHAR(10)
+                      + N'</@@SetPromotionShippingChargeDiscount@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@SetPromotionPaymentChargeDiscount@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@SetPromotionPaymentChargeDiscountLoop@@>' + CHAR(13) + CHAR(10)
+                      + N'「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount  @@</@@SetPromotionPaymentChargeDiscountLoop@@>' + CHAR(13) + CHAR(10)
+                      + N'</@@SetPromotionPaymentChargeDiscount@@>' + CHAR(13) + CHAR(10)
+                      + N'注文合計   : ¥@@ order_price_total @@(税込み)' + CHAR(13) + CHAR(10) + CHAR(13) + CHAR(10) + CHAR(13) + CHAR(10)
+                      + N'会員ランク割引額 : ¥@@ member_rank_discount_price @@' + CHAR(13) + CHAR(10) + CHAR(13) + CHAR(10) + CHAR(13) + CHAR(10)
+                      + N'<@@OwnerKbnUser@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@PublishPoint@@>' + CHAR(13) + CHAR(10)
+                      + N'取得ポイント   : @@ order_point_add @@ ポイント' + CHAR(13) + CHAR(10)
+                      + N'</@@PublishPoint@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@UsePoint@@>' + CHAR(13) + CHAR(10)
+                      + N'利用ポイント   : @@ order_point_use @@ ポイント' + CHAR(13) + CHAR(10)
+                      + N'ポイント利用額 : ¥@@ order_point_use_yen @@' + CHAR(13) + CHAR(10)
+                      + N'</@@UsePoint@@>' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。' + CHAR(13) + CHAR(10)
+                      + N'</@@OwnerKbnUser@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@OwnerKbnGuest@@>' + CHAR(13) + CHAR(10)
+                      + N'会員登録することでお得なポイントが発行されます。' + CHAR(13) + CHAR(10)
+                      + N'</@@OwnerKbnGuest@@>' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'<@@PublishCoupon@@>' + CHAR(13) + CHAR(10)
+                      + N'■クーポン発行' + CHAR(13) + CHAR(10)
+                      + N'今回以下のクーポンを発行致しました。' + CHAR(13) + CHAR(10)
+                      + N'次回ご注文の際にご利用下さい。' + CHAR(13) + CHAR(10)
+                      + N'@@ publish_coupons @@' + CHAR(13) + CHAR(10)
+                      + N'</@@PublishCoupon@@>' + CHAR(13) + CHAR(10)
+                      + N'<@@UseCoupon@@>' + CHAR(13) + CHAR(10)
+                      + N'■クーポン利用' + CHAR(13) + CHAR(10)
+                      + N'クーポンコード : @@ coupon_code @@' + CHAR(13) + CHAR(10)
+                      + N'クーポン名     : @@ coupon_disp_name @@' + CHAR(13) + CHAR(10)
+                      + N'クーポン割引額 : ¥@@ order_coupon_use @@' + CHAR(13) + CHAR(10)
+                      + N'</@@UseCoupon@@>' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'またのご利用をお待ちしております。' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10)
+                      + N'@@ ShopMessage.Signature @@' + CHAR(13) + CHAR(10)
+                      + CHAR(13) + CHAR(10),
+                      '',
+                      '',
+                      '',
+                      '0',
+                      GETDATE(),
+                      GETDATE(),
+                      '更新者',
+                      'Order',
+                      '1',
+                      ''
+                    )
+
+             UPDATE  w2_MailTemplate
+                SET  mail_body = CONCAT(
+                       mail_body,
+                       N'------------------------------------' + CHAR(13) + CHAR(10)
+                       + N'システム会社によるスクリプトテスト' + CHAR(13) + CHAR(10)
+                       + N'------------------------------------' + CHAR(13) + CHAR(10)
+                       + N'@@ order_id @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_kbn @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_name @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_name_kana @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_mail_addr @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_mail_addr2 @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_zip @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_addr1 @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_addr2 @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_addr3 @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_addr4 @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_tel1 @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_sex @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_birth @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_company_name @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_company_post_name @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_name1 @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_name2 @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_name_kana1 @@' + CHAR(13) + CHAR(10)
+                       + N'@@ owner_name_kana2 @@' + CHAR(13) + CHAR(10)
+                       + N'------------------------------------')
+              WHERE  mail_id = '00000406'
+          END
+
+        IF NOT EXISTS (SELECT * FROM w2_MailTemplate WHERE mail_id = '10000113')
+          BEGIN
+            INSERT  [dbo].[w2_MailTemplate]
+                    (
+                      shop_id,
+                      mail_id,
+                      mail_name,
+                      mail_from,
+                      mail_to,
+                      mail_cc,
+                      mail_bcc,
+                      mail_subject,
+                      mail_body,
+                      mail_subject_mobile,
+                      mail_body_mobile,
+                      mail_attachmentfile_path,
+                      del_flg,
+                      date_created,
+                      date_changed,
+                      last_changed,
+                      mail_category,
+                      auto_send_flg,
+                      mail_from_name
+                    )
+            VALUES
+                    (
+                      '0',
+                      '10000113',
+                      N'ネクストエンジン注文キャンセル失敗【管理者向け】',
+                      'bh@w2s.xyz',
+                      'bh@w2s.xyz',
+                      '',
+                      '',
+                      N'ネクストエンジン注文キャンセル失敗【管理者向け】',
+                      '@@ message @@',
+                      '',
+                      '',
+                      '',
+                      '0',
+                      GETDATE(),
+                      GETDATE(),
+                      '更新者',
+                      '',
+                      '0',
+                      ''
+                    )
+          END
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

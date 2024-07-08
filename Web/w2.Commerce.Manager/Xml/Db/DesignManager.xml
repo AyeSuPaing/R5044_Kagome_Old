@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : デザインマネージャ系SQLステートメントXML(DesignManager.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<DesignManager>
+
+  <!-- 先頭の商品取得 -->
+  <GetProductTop>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                shop_id,
+                product_id
+          FROM  w2_ProductView
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.display_from <= getdate()    -- 表示期間内
+           AND ((w2_ProductView.display_to IS NULL) OR (w2_ProductView.display_to >= getdate()))
+           AND  w2_ProductView.display_kbn IN ('0','1')     -- 商品一覧○、商品詳細○ OR 商品一覧×、商品詳細○
+           AND  w2_ProductView.mobile_disp_flg IN ('0','1') -- PC&モバイル OR PCのみ
+           AND  w2_ProductView.valid_flg = '1'              -- 有効
+           AND  ISNULL(w2_ProductView.display_member_rank,'') = ''  -- 閲覧可能会員ランクが指定されていない
+           AND  ISNULL(w2_ProductView.buyable_member_rank,'') = ''  -- 販売可能会員ランクが指定されていない
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductTop>
+
+  <!-- 先頭のリアル店舗商品在庫取得 -->
+  <GetRealShopProductStockTop>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                w2_RealShopProductStock.product_id,
+                w2_RealShopProductStock.variation_id
+          FROM  w2_RealShop
+                INNER JOIN w2_RealShopProductStock ON
+                (
+                   w2_RealShop.real_shop_id = w2_RealShopProductStock.real_shop_id
+                )
+                INNER JOIN w2_ProductView ON
+                (
+                   w2_ProductView.shop_id = @shop_id
+                   AND
+                   w2_RealShopProductStock.product_id = w2_ProductView.product_id
+                   AND
+                   w2_RealShopProductStock.variation_id = w2_ProductView.variation_id
+                )
+           AND  w2_RealShop.valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetRealShopProductStockTop>
+  
+</DesignManager>

@@ -1,0 +1,131 @@
+﻿@*
+	=========================================================================================================
+	  Module      : 特集エリア一覧(パーシャルビュー)(_FeatureAreaList.cshtml)
+	 ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+	  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+	=========================================================================================================
+*@
+@using w2.App.Common.Design
+@using w2.App.Common.Util
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.PageDesign
+@using w2.Cms.Manager.WorkerServices
+@model w2.Cms.Manager.ViewModels.FeatureArea.ListViewModel
+
+@helper thumbImage(string areaId)
+{
+	var src = (w2.App.Common.Constants.PATH_ROOT_CMS
+		  + (WebBrowserCapture.GetImageFilePath(
+			  Model.ThumbFileName,
+			  new List<KeyValuePair<string, string>>()
+			  {
+				  new KeyValuePair<string, string>(Constants.FIELD_FEATUREAREA_AREA_ID, areaId)
+						  },
+			  device:WebBrowserCapture.Device.Pc,
+			  delay:100, iSizeH:800, iSizeW:800, bSizeH:1280, bSizeW:720))
+		  + "?" + DateTime.Now.ToString("yyyyMMddHHmmss")).Replace(@"\", "/");
+
+	<img class="web-browser-capture-image frame-pc"
+		 onError="this.onerror=null; this.style='display:none';"
+		 style="cursor: hand; cursor:pointer; display: none;"
+		 onclick="imageModal('@src')"
+		 src="@src"
+		 alt="PC">
+}
+<!-- リスト要素 -->
+<div class="list-content custom-scroll-area">
+	@foreach (var list in Model.List)
+	{
+		<div class="list-row" id="@list.AreaId">
+			<div class="list-col list-col-thumb w10">
+				<div class="list-col-inner">
+					<figure>
+						@thumbImage(list.AreaId)
+					</figure>
+				</div>
+			</div>
+			<div class="list-col">
+				<div class="list-col-inner-row">
+					<div class="list-col-inner">
+						<p class="list-col-title-label line-clamp ta-left">
+							<a href="javascript:open_page('@list.AreaId', '@ActionStatus.Update')" class="list-col-title-a">@list.AreaName</a>
+						</p>
+					</div>
+				</div>
+				<div class="list-col-inner-row-vertical hide-list-detail">
+					<div class="list-col-id">
+						@list.AreaId
+					</div>
+					<div class="list-col-memo">
+						@list.InternalMemo
+					</div>
+				</div>
+				<div class="list-col-inner-row hide-list-detail">
+					<div class="list-col-set-items">
+						<div class="list-col-set-items-title" style="min-width: 100px;">バナー設定数</div>
+						<div class="list-col-set-items-count">@list.BannerCount</div>
+						<div class="list-col-set-items-thums">
+							@foreach (var thumb in list.ThumbFileNames)
+							{
+								<figure>
+									@{
+										var path = string.IsNullOrEmpty(thumb) ? "" : Constants.PATH_ROOT_FRONT_PC + thumb;
+										var thumbText = string.IsNullOrEmpty(thumb) ? "画像なし" : "サムネイル";
+										<img loading=”lazy” src="@path" alt="@thumbText">
+									}
+								</figure>
+							}
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="list-col hide-list-detail w20">
+				<div class="list-col-type">
+					<figure>
+						<img src="~/@FeatureAreaTypeWorkerService.GetThumbnailByActionType(list.ActionType)" alt="サムネイル">
+					</figure>
+					@list.AreaTypeName
+				</div>
+			</div>
+			<div class="list-col hide-list-detail w10">
+				@if (list.PartsModel.UseType == Constants.FLG_PARTSDESIGN_USE_TYPE_PC)
+				{
+					<span class="icon-site-type icon-site-type-pc">
+						@Html.Raw((DesignCommon.UseResponsive) ? "RESPONSIVE" : "PC")
+					</span>
+				}
+				@if ((list.PartsModel.UseType == Constants.FLG_PARTSDESIGN_USE_TYPE_SP) && DesignCommon.UseSmartPhone)
+				{
+					<span class="icon-site-type icon-site-type-sp">SP</span>
+				}
+				@if (list.PartsModel.UseType == Constants.FLG_PARTSDESIGN_USE_TYPE_PC_SP)
+				{
+					<span class="icon-site-type icon-site-type-pc">
+						@Html.Raw((DesignCommon.UseResponsive) ? "RESPONSIVE" : "PC")
+					</span>
+					<span class="icon-site-type icon-site-type-sp">
+						@Html.Raw((DesignCommon.UseSmartPhone) ? "SP" : "")
+					</span>
+				}
+			</div>
+			<div class="list-col hide-list-detail w20">
+				@{
+					var displayDate = list.DisplayDateChanged.Split(new[] { " " }, StringSplitOptions.None);
+					<p>@displayDate[0]</p>
+					<p>@displayDate[1]</p>
+				}
+			</div>
+		</div>
+	}
+	<br/>
+</div>
+
+@Html.Hidden("hideHitCount", this.Model.HitCount)
+
+<script type="text/javascript">
+	$(function() {
+		custom_scroll.ini();
+
+		thumbnail_ini();
+	});
+</script>

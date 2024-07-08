@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メールクリックレポート系SQLステートメントXML(MailClickReport.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MailClickReport>
+
+  <!-- メールクリック情報一覧取得 -->
+  <GetMailClickList>
+    <Statement>
+      <![CDATA[
+        DECLARE @return_table TABLE (
+          row_num int IDENTITY(1, 1),
+          row_count int ,
+          dept_id nvarchar(30) NOT NULL,
+          mailtext_id nvarchar(30) NOT NULL,
+          maildist_id nvarchar(30) NOT NULL,
+          mailtext_name nvarchar(30) NOT NULL,
+          maildist_name nvarchar(30) NOT NULL,
+          count int
+        )
+
+        INSERT INTO @return_table (
+                dept_id,
+                mailtext_id,
+                maildist_id,
+                mailtext_name,
+                maildist_name,
+                count
+                )
+        SELECT  w2_MailClick.dept_id,
+                w2_MailClick.mailtext_id,
+                w2_MailClick.maildist_id,
+                ISNULL(w2_MailDistText.mailtext_name, ''),
+                ISNULL(w2_MailDistSetting.maildist_name, ''),
+                (
+                  SELECT COUNT(*)
+                  FROM (
+                      SELECT  dept_id, mailtext_id, maildist_id, action_no
+                        FROM  w2_MailClick mc
+                       WHERE  mc.dept_id = w2_MailClick.dept_id
+                         AND  mc.mailtext_id = w2_MailClick.mailtext_id
+                         AND  mc.maildist_id = w2_MailClick.maildist_id
+                      GROUP BY dept_id, mailtext_id, maildist_id, action_no
+                  ) a
+                )                  
+          FROM  w2_MailClick
+                LEFT JOIN w2_MailDistText ON (w2_MailClick.dept_id = w2_MailDistText.dept_id AND w2_MailClick.mailtext_id = w2_MailDistText.mailtext_id)
+                LEFT JOIN w2_MailDistSetting ON (w2_MailClick.dept_id = w2_MailDistSetting.dept_id AND w2_MailClick.maildist_id = w2_MailDistSetting.maildist_id)
+         WHERE  w2_MailClick.dept_id = @dept_id
+           AND  (
+                  (@mailtext_id_like_escaped = '' OR w2_MailClick.mailtext_id LIKE @mailtext_id_like_escaped + '%'  ESCAPE '#')
+                  AND 
+                  (@mailtext_name_like_escaped = '' OR w2_MailDistText.mailtext_name LIKE '%' + @mailtext_name_like_escaped + '%'  ESCAPE '#')
+                  AND
+                  (@maildist_id_like_escaped = '' OR w2_MailDistSetting.maildist_id LIKE @maildist_id_like_escaped + '%'  ESCAPE '#')
+                  AND 
+                  (@maildist_name_like_escaped = '' OR w2_MailDistSetting.maildist_name LIKE '%' + @maildist_name_like_escaped + '%'  ESCAPE '#')
+                  AND
+                  (@mailclick_url_like_escaped = '' OR w2_MailClick.mailclick_url LIKE '%' + @mailclick_url_like_escaped + '%'  ESCAPE '#')
+                  AND 
+                  (@mailclick_key_like_escaped = '' OR w2_MailClick.mailclick_key LIKE '%' + @mailclick_key_like_escaped + '%'  ESCAPE '#')
+                )
+           AND  w2_MailClick.maildist_id <> ''  -- 設定は取得しない
+           AND  w2_MailClick.valid_flg = '1'
+        GROUP BY w2_MailClick.dept_id, w2_MailClick.mailtext_id, w2_MailClick.maildist_id, w2_MailDistText.mailtext_name, w2_MailDistSetting.maildist_name
+        ORDER BY w2_MailClick.mailtext_id DESC, w2_MailClick.maildist_id DESC
+
+        UPDATE  @return_table
+           SET  row_count = (SELECT COUNT(*) FROM @return_table)
+
+        SELECT  * 
+          FROM  @return_table
+         WHERE  @bgn_row_num <= row_num 
+           AND  row_num <= @end_row_num 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="maildist_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="mailtext_name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="maildist_name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="mailclick_url_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="mailclick_key_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetMailClickList>
+
+  <!-- メールクリック情報取得（該当文章に対して複数取得） -->
+  <GetMailClickDetailHead>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MailClick.dept_id,
+                w2_MailClick.mailtext_id,
+                w2_MailClick.maildist_id,
+                w2_MailDistText.mailtext_name,
+                w2_MailDistSetting.maildist_name,
+                w2_MailClick.action_no,
+                COUNT(w2_MailClick.mailtext_id) AS counts
+          FROM  w2_MailClick
+                LEFT JOIN w2_MailDistSetting ON (w2_MailClick.dept_id = w2_MailDistSetting.dept_id AND w2_MailClick.maildist_id = w2_MailDistSetting.maildist_id)
+                LEFT JOIN w2_MailDistText ON (w2_MailClick.dept_id = w2_MailDistText.dept_id AND w2_MailClick.mailtext_id = w2_MailDistText.mailtext_id)
+         WHERE  w2_MailClick.dept_id = @dept_id
+           AND  w2_MailClick.mailtext_id = @mailtext_id
+           AND  w2_MailClick.maildist_id = @maildist_id
+           AND  w2_MailClick.valid_flg = '1'
+        GROUP BY w2_MailClick.dept_id, w2_MailClick.mailtext_id, w2_MailClick.maildist_id, w2_MailDistText.mailtext_name, w2_MailDistSetting.maildist_name, w2_MailClick.action_no
+        ORDER BY w2_MailClick.mailtext_id DESC, w2_MailClick.maildist_id DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMailClickDetailHead>
+
+  <!-- メールクリック配信情報一覧取得 -->
+  <GetMailClickDistList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_TaskSchedule.date_begin,
+                w2_TaskSchedule.action_no,
+                (
+                  SELECT  COUNT(history_no)
+                    FROM  w2_TaskScheduleHistory
+                   WHERE  w2_TaskScheduleHistory.dept_id = @dept_id
+                     AND  w2_TaskScheduleHistory.action_kbn = @action_kbn
+                     AND  w2_TaskScheduleHistory.action_master_id = @maildist_id
+                     AND  w2_TaskScheduleHistory.action_no = w2_TaskSchedule.action_no
+                     AND  w2_TaskScheduleHistory.action_result = 'MLOK' -- 成功
+                )
+                +
+                (
+                  SELECT  IsNull(SUM(history_count), 0)
+                    FROM  w2_TaskScheduleHistorySummary
+                   WHERE  w2_TaskScheduleHistorySummary.dept_id = @dept_id
+                     AND  w2_TaskScheduleHistorySummary.action_kbn = @action_kbn
+                     AND  w2_TaskScheduleHistorySummary.action_master_id = @maildist_id
+                     AND  w2_TaskScheduleHistorySummary.action_no = w2_TaskSchedule.action_no
+                     AND  w2_TaskScheduleHistorySummary.action_result = 'MLOK' -- 成功
+                ) AS send_counts,
+                (
+                  SELECT  COUNT(log_no)
+                    FROM  w2_MailClickLog
+                   WHERE  w2_MailClickLog.dept_id = @dept_id
+                     AND  w2_MailClickLog.mailtext_id = @mailtext_id
+                     AND  w2_MailClickLog.maildist_id = @maildist_id_prefix + @maildist_id
+                     AND  w2_MailClickLog.action_no = w2_TaskSchedule.action_no
+                ) AS total_click_counts
+          FROM  w2_MailClick
+                INNER JOIN w2_TaskSchedule ON
+                (
+                  w2_TaskSchedule.dept_id = w2_MailClick.dept_id
+                  AND
+                  w2_TaskSchedule.action_kbn =  @action_kbn
+                  AND
+                  w2_TaskSchedule.action_master_id = @maildist_id
+                  AND
+                  w2_TaskSchedule.action_no = w2_MailClick.action_no
+                )
+                LEFT JOIN w2_TaskScheduleHistory ON
+                (
+                  w2_TaskScheduleHistory.dept_id = w2_TaskSchedule.dept_id
+                  AND
+                  w2_TaskScheduleHistory.action_kbn = w2_TaskSchedule.action_kbn
+                  AND
+                  w2_TaskScheduleHistory.action_master_id = w2_TaskSchedule.action_master_id
+                  AND
+                  w2_TaskScheduleHistory.action_no = w2_TaskSchedule.action_no
+                  AND
+                  w2_TaskScheduleHistory.action_result = 'MLOK' -- 成功
+                )
+         WHERE  w2_MailClick.dept_id = @dept_id
+           AND  w2_MailClick.mailtext_id = @mailtext_id
+           AND  w2_MailClick.maildist_id = @maildist_id_prefix + @maildist_id
+           AND  w2_MailClick.valid_flg = '1'
+        GROUP BY  w2_TaskSchedule.date_begin, w2_TaskSchedule.action_no
+        ORDER BY  w2_TaskSchedule.action_no DESC
+       ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id_prefix" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetMailClickDistList>
+
+  <!-- メールクリックレポート取得 -->
+  <GetMailClickReport>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MailClick.action_no,
+                w2_MailClick.mailclick_id,
+                w2_MailClick.mailclick_url,
+                w2_MailClick.pcmobile_kbn,
+                w2_MailClick.action_no,
+                w2_MailClick.valid_flg,
+                (
+                  SELECT  COUNT(DISTINCT user_id)
+                    FROM  w2_MailClickLog
+                   WHERE  w2_MailClickLog.dept_id = @dept_id
+                     AND  w2_MailClickLog.mailtext_id = @mailtext_id
+                     AND  w2_MailClickLog.maildist_id like '%' + @maildist_id
+                     AND  w2_MailClickLog.action_no = @action_no
+                     AND  w2_MailClickLog.mailclick_id = w2_MailClick.mailclick_id
+                ) AS click_users,
+                (
+                  SELECT  (COUNT(DISTINCT user_id)  * 100.00) / @send_counts
+                    FROM  w2_MailClickLog
+                   WHERE  w2_MailClickLog.dept_id = @dept_id
+                     AND  w2_MailClickLog.mailtext_id = @mailtext_id
+                     AND  w2_MailClickLog.maildist_id like '%' + @maildist_id
+                     AND  w2_MailClickLog.action_no = @action_no
+                     AND  w2_MailClickLog.mailclick_id = w2_MailClick.mailclick_id
+                ) AS click_rate,
+                (
+                  SELECT  COUNT(w2_MailClickLog.log_no)
+                    FROM  w2_MailClickLog
+                   WHERE  w2_MailClickLog.dept_id = w2_MailClick.dept_id
+                     AND  w2_MailClickLog.mailtext_id = w2_MailClick.mailtext_id
+                     AND  w2_MailClickLog.maildist_id like '%' + w2_MailClick.maildist_id
+                     AND  w2_MailClickLog.action_no = w2_MailClick.action_no
+                     AND  w2_MailClickLog.mailclick_id = w2_MailClick.mailclick_id
+                ) AS click_counts
+          FROM  w2_MailClick
+         WHERE  w2_MailClick.dept_id = @dept_id
+           AND  w2_MailClick.mailtext_id = @mailtext_id
+           AND  w2_MailClick.maildist_id like '%' + @maildist_id
+           AND  w2_MailClick.action_no = @action_no
+           AND  w2_MailClick.valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <Input Name="send_counts" Type="int" />
+    </Parameter>
+  </GetMailClickReport>
+
+  <GetMailClickTransitionMonth>
+    <Statement>
+      <![CDATA[
+        SELECT  Year(date_created) AS tgt_year,
+                Month(date_created) AS tgt_month,
+                COUNT(log_no) AS click_counts,
+                COUNT(DISTINCT user_id) AS click_users
+          FROM  w2_MailClickLog
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  maildist_id = @maildist_id
+           AND  action_no = @action_no
+           AND  mailclick_id = @mailclick_id
+           AND  Year(date_created) = @tgt_year
+        GROUP BY Year(date_created), Month(date_created)
+        ORDER BY Year(date_created), Month(date_created)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <Input Name="mailclick_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="int" />
+    </Parameter>
+  </GetMailClickTransitionMonth>
+
+  <GetMailClickTransitionDay>
+    <Statement>
+      <![CDATA[
+        SELECT  Year(date_created) AS tgt_year,
+                Month(date_created) AS tgt_month,
+                Day(date_created) AS tgt_day,
+                COUNT(log_no) AS click_counts,
+                COUNT(DISTINCT user_id) AS click_users
+          FROM  w2_MailClickLog
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  maildist_id = @maildist_id
+           AND  action_no = @action_no
+           AND  mailclick_id = @mailclick_id
+           AND  Year(date_created) = @tgt_year
+           AND  Month(date_created) = @tgt_month
+        GROUP BY Year(date_created),Month(date_created),Day(date_created)
+        ORDER BY Year(date_created),Month(date_created),Day(date_created)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <Input Name="mailclick_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="int" />
+      <Input Name="tgt_month" Type="int" />
+    </Parameter>
+  </GetMailClickTransitionDay>
+
+</MailClickReport>

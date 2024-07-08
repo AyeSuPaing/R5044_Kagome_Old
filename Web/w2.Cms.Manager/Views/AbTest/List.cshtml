@@ -1,0 +1,756 @@
+﻿@*
+=========================================================================================================
+  Module      :ABテスト(List.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.ViewModels.AbTest
+@using w2.Cms.Manager.ViewModels.Shared
+@{
+	var sessionWrapper = new SessionWrapper(Session);
+}
+@Html.Hidden("controller", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_AB_TEST)
+
+<!-- PageList用のエリア -->
+@helper PageListArea()
+{
+	<div class="list">
+		<div class="list-head">
+			<div class="list-head-row">
+				<div class="list-head-col hide-list-detail w1">
+				</div>
+				<div class="list-head-col ta-left w29">
+					<p>ABテストID</p>
+				</div>
+				<div class="list-head-col ta-left w29">
+					<p>ABテスト管理名</p>
+				</div>
+				<div class="list-head-col hide-list-detail w10">
+					<p>更新日時</p>
+				</div>
+				<div class="list-head-col hide-list-detail w15">
+					<p>振り分け設定数</p>
+				</div>
+				<div class="list-head-col hide-list-detail w15">
+					<p>振り分け実行回数</p>
+				</div>
+				<div class="list-head-col hide-list-detail w1">
+				</div>
+			</div>
+		</div>
+		<div class="list-content custom-scroll-area">
+			<!-- ko foreach: AbTestList -->
+			<div class="list-row" data-list-id="1-1" data-bind="attr: { id: $data.AbTestId }">
+				<div class="list-col list-col-thumb w1 hide-list-detail">
+				</div>
+				<div class="list-col w29">
+					<div class="list-col-url" style="margin: 0 auto;">
+						<a style="overflow: hidden; text-overflow: ellipsis;" data-bind="attr: { href: 'javascript:abtest_list_page.set_detail_datas(\'' + $data.AbTestId + '\')' }, text: $data.AbTestId"></a>
+					</div>
+				</div>
+				<div class="list-col w29">
+					<div class="list-col-url" style="margin: 0 auto;">
+						<p style="overflow: hidden; text-overflow: ellipsis;" data-bind="text: $data.AbTestTitle"></p>
+					</div>
+				</div>
+				<div class="list-col hide-list-detail ta-center w10">
+					<p data-bind="text: $data.DateChanged1"></p>
+					<p data-bind="text: $data.DateChanged2"></p>
+				</div>
+				<div class="list-col hide-list-detail ta-center w15">
+					<p data-bind="text: $data.Items.length"></p>
+				</div>
+				<div class="list-col hide-list-detail ta-center w15">
+					<a data-bind="attr: { href: 'javascript:abtest_list_page.set_analysis_modal(\'' + $data.AbTestId + '\');' }" style="text-decoration: none; color: black">
+						<div data-popover-message="クリックでレポート表示" class="list-col-recent-status">
+							<dl class="list-col-recent-status-item">
+								<dt>View</dt>
+								<dd><span class="list-col-recent-status-value" data-bind="text: $data.ViewCount"></span>件</dd>
+							</dl>
+						</div>
+					</a>
+				</div>
+				<div class="list-head-col hide-list-detail w1">
+				</div>
+			</div>
+			<!-- ko popbind: --><!-- /ko -->
+			<!-- /ko -->
+		</div>
+	</div>
+}
+
+<!-- PageList用のツールエリア -->
+@helper PageListToolArea()
+{
+	<div class="list-tools">
+		<div class="list-tools-row">
+			<div class="list-tools-col ta-left">
+				<div class="keyword-search">
+					<input name="" id="search_keyword" type="text" placeholder="ABテストID/ABテスト管理名" class="keyword-search-input" data-bind="value: SearchWord">
+					<a href="javascript:abtest_list_page.get_page_list()" class="keyword-search-submit">
+						<span class="icon-search"></span>
+					</a>
+				</div>
+			</div>
+			<div class="list-tools-col ta-right">
+				@if (Constants.LPBUILDER_MAXCOUNT.HasValue)
+				{
+					<span id="lp-count" style="font-size: 13px; vertical-align: middle;"></span>
+				}
+				<button id="lp-new-register" class="btn btn-main btn-size-m" type="button" onclick="abtest_list_page.open_new_page();">
+					<span class="icon icon-plus"></span>
+					<span class="hide-list-detail">新規作成</span>
+				</button>
+			</div>
+		</div>
+	</div>
+}
+
+<!-- Page詳細用のエリア -->
+@helper PageDetailArea()
+{
+	<div class="main-content-detail-inner">
+		<a class="main-content-detail-btn-close main-content-detail-btn-close-Abtest"><span class="icon icon-close"></span>閉じる</a>
+		<div class="main-content-detail-head">
+			<div class="main-content-detail-head-title h2">
+				<input name="input.ManagementTitle" data-bind="value: AbTestTitle" type="text" placeholder="ABテスト管理名を設定してください（必須）">
+			</div>
+			<div class="main-content-detail-head-main-actions">
+				<div class="form-element-group form-element-group-horizontal">
+					<div class="form-element-group-title">
+						<label for="form-select-page-status">状態</label>
+					</div>
+					<div class="form-element-group-content">
+						<select name="" id="form-select-page-status" data-bind="options: publicstatuslist, optionsText: 'text', optionsValue: 'value', value: PublicStatus">
+						</select>
+					</div>
+				</div>
+				<input type="button" name="Update" onclick="javascript: abtest_list_page.upd()" class="btn btn-main btn-size-l" data-bind="visible: IsModify" value="更新" />
+				<input type="button" name="Update" onclick="javascript: abtest_list_page.regi()" class="btn btn-main btn-size-l" data-bind="visible: IsRegist" value="登録" />
+				<div class="dropdown" data-bind="visible: IsModify">
+					<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle">
+						<span class="icon-dots"></span>
+					</a>
+					<div class="dropdown-menu" data-bind="visible: IsModify">
+						<a id="abtest-copy-new-register" class="dropdown-menu-item" href="javascript:abtest_list_page.copy_new()">複製して新規作成する</a>
+						<a class="dropdown-menu-item" href="javascript:abtest_list_page.delete_lp()">削除する</a>
+						<a class="dropdown-menu-item" href="javascript:abtest_list_page.reset()">リセットする</a>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="main-content-detail-body">
+			<div class="form-element-group form-element-group-horizontal" style="height: 34px">
+				<div style="margin: auto 0">
+					<span class="form-element-group-title" style="margin: auto 10px">URL</span>
+					@(Constants.PROTOCOL_HTTPS + Constants.SITE_DOMAIN + Constants.PATH_ROOT_FRONT_PC + Constants.PAGE_FRONT_AB_TEST + "?abUrl=")<span class="page-url-value"><span class="page-url-value-filename" data-bind="text: AbTestId, visible: IsModify"></span>
+						<input type="text" class="page-url-value-form-input" name="AbTestId" id="AbTestId" data-bind=" value: AbTestId, visible: IsRegist">
+					</span>
+				</div>
+			</div>
+			<div class="form-element-group-title form-element-group-title-Abtest">
+				<h3>振り分け対象LPページ</h3>
+			</div>
+			<div class="feature-selected-item-list">
+				<div class="feature-selected-item-list-head">
+					<div class="w3"></div>
+					<div class="w32 ta-left">ページID</div>
+					<div class="w32 ta-left">管理用ページ名</div>
+					<div class="w26 ta-center">振り分け比率</div>
+					<div class="w4 ta-center">削除</div>
+					<div class="w3"></div>
+				</div>
+				<div class="feature-selected-item-list-body" data-bind="visible: $data.Items().length > 0">
+					<!-- ko foreach: Items -->
+					<div data-bind="attr: { class: ($index() < ($parent.Items().length - 1)) ? 'feature-selected-item-list-item' : 'item-list-bottom-Abtest' }">
+						<div class="w3"></div>
+						<div class="w32 ta-left">
+							<span data-bind="text: PageId" class="s_page_id"></span>
+						</div>
+						<div class="w32 ta-left">
+							<span data-bind="text: PageTitle"></span>
+						</div>
+						<div class="w26 ta-center">
+							<input type="text" id="qu" class="ta-right" data-bind="value: DistributionRate" style="width: 40px" /><span>%</span>
+						</div>
+						<div class="w4 ta-center" style="cursor: pointer;">
+							<span class="icon icon-close" data-bind="click: function (data, event) { abtest_list_page.remove_product_vm(data); }"></span>
+						</div>
+						<div class="w3"></div>
+					</div>
+					<!-- /ko -->
+				</div>
+			</div>
+			<div class="feature-item-list-btn mb10" style="margin: 10px 0;">
+				<a href="javascript:void(0);" data-bind="click: product_set_modify" class="btn btn-sub btn-size-m">
+					<div data-bind="visible: $data.Items.length == 0">追加する</div>
+				</a>
+			</div>
+			<h3>ABテスト実施期間</h3>
+			<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature">
+				<div class="access-authority-setting-period-start-input">
+					<div class="access-authority-setting-period-start-input-date" style="border-radius: 5px">
+						@Html.Label("access-authority-setting-period-start-input-date", "開始日")
+						<input type="text" class="access-authority-setting-period-start-input-date-value input-datepicker" data-bind="value: RangeStartDate"/>
+					</div>
+					～
+					<div class="access-authority-setting-period-end-input-date">
+						@Html.Label("access-authority-setting-period-end-input-date", "終了日")
+						<input type="text" class="access-authority-setting-period-end-input-date-value input-datepicker" data-bind="value: RangeEndDate"/>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+<!-- LP設定用のモーダル -->
+@helper LandingPageModal(SessionWrapper sessionWrapper)
+{
+	<div class="modal-content-hide">
+		<div id="modal-landingpage">
+			@Html.Partial("LandingPageModal", new LandingPageSettingModalModel(Constants.CONTROLLER_W2CMS_MANAGER_AB_TEST))
+		</div>
+	</div>
+}
+
+<!-- 分析表示用のモーダル -->
+@helper AbTestAnalysisModal(SessionWrapper sessionWrapper)
+{
+	<div class="modal-content-hide">
+		<div id="modal-analysis"></div>
+	</div>
+}
+
+<div class="main-content-list">
+	<!-- ページリストツール -->
+	@PageListToolArea()
+
+	<!-- ページリスト -->
+	@PageListArea()
+</div>
+
+<div class="main-content-detail" id="lpDetailBody">
+	<!-- ページ詳細 -->
+	@PageDetailArea()
+</div>
+
+<!-- モーダル：LP設定 -->
+@LandingPageModal(sessionWrapper)
+
+<!-- モーダル：分析表示 -->
+@AbTestAnalysisModal(sessionWrapper)
+
+<script type="text/javascript">
+	$(function () {
+		list.ini();
+		list_group_toggle.ini();
+		dropdown_toggle.ini();
+		custom_scroll.ini();
+		page_url_edit.ini();
+	});
+
+	var abtest_list_page = (function () {
+		var vm;
+		var ltimer;
+		var selectedProductSet;
+		var clipboard = new ClipboardJS('#url-copy-btn',
+			{
+				text: function (trigger) {
+					return clipboard_url_copy(trigger);
+				}
+			});
+
+		return {
+			ini: function () {
+				vm = {
+					AbTestId: ko.observable(),
+					AbTestTitle: ko.observable(),
+					RangeStartDate: ko.observable(),
+					RangeStartTime: ko.observable(),
+					RangeEndDate: ko.observable(),
+					RangeEndTime: ko.observable(),
+					publicstatuslist: ko.observableArray([
+						{ text: "公開", value: "PUBLIC" },
+						{ text: "非公開", value: "PRIVATE" }
+					]),
+					PublicStatus: ko.observable(),
+					IsRegist: ko.observable(),
+					IsModify: ko.observable(),
+					Items: ko.observableArray([]),
+					ItemLength: ko.observable(),
+					AbTestList: ko.observableArray([]),
+					SearchWord: ko.observable(),
+					product_set_modify: function () {
+						selectedProductSet = this;
+						modal.open('#modal-landingpage', 'modal-size-m modal-item-list');
+						$('.item-search-result').html('');
+						$('#ParamModel_Name').val('');
+						$('#ParamModel_PageId').val('');
+					},
+					get_selected_product_set: function () {
+						selectedProductSet = this;
+					}
+				}
+
+				// vmバインド
+				ko.applyBindings(vm);
+
+				//popover呼び出し(knockoutと処理順序の関係(?)でforeach内部で再呼び出しが必要)
+				ko.bindingHandlers.popbind = {
+					init: function () {
+						popover.ini();
+					}
+				};
+
+				ko.virtualElements.allowedBindings.popbind = true;
+
+				var openDetailId = '@Model.OpenDetailAbTestId';
+
+				// IDの指定がある場合は詳細開いた状態にする
+				if (openDetailId != '') {
+					set_detail_datas(openDetailId);
+					list.open();
+				}
+
+				var urlHash = location.hash;
+				if (urlHash) {
+					var pageId = urlHash.replace("#page", "");
+					$.ajax({
+						type: "POST",
+						url: "@Url.Action("ExistPage")",
+						data: { 'pageId': pageId }
+					}).done(function (data) {
+						if (data.result === "true") {
+							set_detail_datas(pageId);
+						} else {
+							setTimeout(function () { notification.show('ページを開くことに失敗しました。', 'warning', 'fadeout'); },
+								200);
+						}
+					});
+				}
+
+				get_page_list();
+
+				clipboard.off('success').on('success',
+					function (e) {
+						notification.show("「" + e.text + "」をクリップボードにコピーしました", 'info', 'fadeout');
+						e.clearSelection();
+					});
+
+			},
+			set_detail_datas: function (id) {
+				set_detail_datas(id);
+			},
+			reset: function () {
+				this.set_detail_datas(vm.AbTestId());
+			},
+			open_new_page: function () {
+				var url = '@Url.Action("GetAbTestDefaultDetailViewModel")';
+				$.ajax({
+					url: url,
+					type: 'POST',
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function (data) {
+						var today = new Date();
+
+						vm.AbTestId('');
+						vm.AbTestTitle('');
+						vm.RangeStartDate(today.getFullYear() + "/" + ('00' + (today.getMonth() + 1)).slice(-2) + "/" + ('00' + today.getDate()).slice(-2));
+						vm.RangeStartTime('00:00:00');
+						vm.RangeEndDate('');
+						vm.RangeEndTime('00:00:00');
+						vm.PublicStatus('PRIVATE');
+						vm.IsRegist(true);
+						vm.IsModify(false);
+						vm.Items.splice(vm.Items.length);
+						vm.ItemLength(vm.Items.length);
+						slide_check.ini();
+
+						list.open();
+						$("#search_keyword").addClass("placeholder-display-none");
+
+					},
+					function () { to_error(); }
+				);
+			},
+			upd: function () {
+				checkOtherOperatorFileOpening('lAbTestId' + vm.AbTestId()).done(function (result) {
+					if (result !== "") {
+						notification.show(result, 'warning', 'fixed');
+						return;
+					} else {
+						loading_animation.start();
+						var url = '@Url.Action("Update")';
+						var post_data = create_post_input();
+						$.ajax({
+							url: url,
+							type: 'POST',
+							data: JSON.stringify(post_data),
+							dataType: 'json',
+							contentType: 'application/json'
+						}).then(
+							function (data) { upd_ok(data); },
+							function () { to_error(); }
+						);
+					}
+				});
+			},
+			regi: function () {
+				loading_animation.start();
+				var url = '@Url.Action("Register")';
+				var post_data = create_post_input();
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: JSON.stringify(post_data),
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					// 1つめは通信成功時のコールバック
+					function (data) { regi_ok(data); },
+					// 2つめは通信失敗時のコールバック
+					function () { to_error(); });
+			},
+			delete_lp: function () {
+				if (confirm('削除します。よろしいですか？')) {
+					checkOtherOperatorFileOpening('lAbTestId' + vm.AbTestId()).done(function (result) {
+						if (result !== "") {
+							notification.show(result, 'warning', 'fixed');
+							return;
+						} else {
+							var url = '@Url.Action("Delete")';
+							var post_data = { AbTestId: vm.AbTestId() };
+							$.ajax({
+								url: url,
+								type: 'POST',
+								data: JSON.stringify(post_data),
+								dataType: 'json',
+								contentType: 'application/json'
+							}).then(
+								function (data) { del_ok(data) },
+								function () { to_error() }
+							);
+						}
+					});
+				}
+			},
+			copy_new: function () {
+				var url = '@Url.Action("GetAbTestDetailViewModel")';
+				var post_data = { AbTestId: vm.AbTestId() };
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: JSON.stringify(post_data),
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function (data) { change_copy_vm(data); },
+					function () { to_error(); }
+				);
+			},
+			remove_product_vm: function (data) {
+				vm.Items.remove(data);
+			},
+			//選択したLPを追加しながら、モーダル削除
+			set_product_view_html: function (j) {
+				var currentLpList = $('.s_page_id');
+				var notificationFlag = false;
+				for (var i = 0; i < j.Items.length; i++) {
+					var flag = false;
+					for (var k = 0; k < currentLpList.length; k++) {
+						//既にあるLPは追加しない
+						if (j.Items[i].PageId === currentLpList[k].innerHTML) {
+							flag = true;
+							notificationFlag = true;
+							break;
+						}
+					}
+					if (flag === false) {
+						selectedProductSet.Items.push(j.Items[i]);
+					}
+				}
+				modal.close();
+				if (notificationFlag === true) {
+					notification.show("同一のLPは複数設定できません。", 'warning', 'fadeout');
+				}
+			},
+			get_page_list: function () {
+				get_page_list();
+			},
+			set_analysis_modal: function(id) {
+				disp_analysis_modal(id);
+			}
+		}
+
+		// ページリスト取得
+		function get_page_list() {
+			loading_animation.start();
+			var post_data = {
+				SearchWord: vm.SearchWord()
+			};
+			var url = '@Url.Action("GetAbTestListViewModel")';
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: JSON.stringify(post_data),
+				dataType: 'json',
+				contentType: 'application/json'
+			}).then(
+				function (data) { change_list_vm(data); },
+				function () { to_error(); }
+			).then(
+				function () { setTimeout(function () { loading_animation.end(); }, 200); }
+			);
+		}
+
+		function set_detail_datas(id) {
+			$(".selected-low").removeClass("selected-low");
+			clearInterval(ltimer);
+			loading_animation.start();
+			var url = '@Url.Action("GetAbTestDetailViewModel")';
+			var post_data = { abTestId: id };
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: JSON.stringify(post_data),
+				dataType: 'json',
+				contentType: 'application/json'
+			}).then(
+				function (data) {
+					checkOtherOperatorFileOpening('lAbTestId' + id).done(function (result) {
+						$("#" + id).addClass("selected-low");
+						$("#search_keyword").addClass("placeholder-display-none");
+						$('input[value="更新"]').attr('disabled', false);
+
+						if (result !== "") {
+							notification.show(result, 'warning', 'fixed');
+							$('input[value="更新"]').attr('disabled', true);
+						} else {
+							sendOpeningFileName('lAbTestId' + id);
+							ltimer =
+								setInterval(function () { sendOpeningFileName('lAbTestId' + id) }, 50 * 1000);
+						}
+					});
+					change_vm(data);
+				},
+				function () { to_error(); }
+			).then(
+				function () { setTimeout(function () { loading_animation.end(); }, 200); }
+			);
+		}
+
+		// 分析モーダル表示
+		function disp_analysis_modal(id) {
+			loading_animation.start();
+			$.ajax({
+				url: "@Url.Action("GetDefaultAnalysisActionResult")",
+				type: "POST",
+				data: {
+					'abtestId': id
+				}
+			}).done(function(data) {
+				$('#modal-analysis').html(data);
+				$('#abTestIdsHidden').val(id);
+				modal.open("#modal-analysis", "modal-size-m modal-item-list");
+				loading_animation.end();
+			});
+		}
+
+		// VM変更
+		function change_vm(j) {
+			vm.AbTestId(j.AbTestId);
+			vm.AbTestTitle(j.AbTestTitle);
+			vm.RangeStartDate(j.RangeStartDate);
+			vm.RangeStartTime(j.RangeStartTime);
+			vm.RangeEndDate(j.RangeEndDate);
+			vm.RangeEndTime(j.RangeEndTime);
+			vm.PublicStatus(j.PublicStatus);
+			vm.IsRegist(false);
+			vm.IsModify(true);
+
+			var post_data = { abTestId: j.AbTestId };
+			var url = '@Url.Action("GetAbTestItemViewModel")';
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: JSON.stringify(post_data),
+				dataType: 'json',
+				contentType: 'application/json'
+			}).then(
+				function (data) {
+					change_item_vm(data);
+				},
+				function () { to_error(); }
+			);
+			list.open();
+		}
+
+		// コピー新規VM変更
+		function change_copy_vm(j) {
+			vm.AbTestId(j.AbTestId + '_copy');
+			vm.AbTestTitle(j.AbTestTitle + '_copy');
+			vm.RangeStartDate(j.RangeStartDate);
+			vm.RangeStartTime(j.RangeStartTime);
+			vm.RangeEndDate(j.RangeEndDate);
+			vm.RangeEndTime(j.RangeEndTime);
+			vm.PublicStatus('PRIVATE');
+			vm.IsModify(false);
+			vm.IsRegist(true);
+
+			var post_data = { AbTestId: j.AbTestId };
+			var url = '@Url.Action("GetAbTestItemViewModel")';
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: JSON.stringify(post_data),
+				dataType: 'json',
+				contentType: 'application/json'
+			}).then(
+				function(data) {
+					change_item_vm(data);
+				},
+				function () { to_error(); }
+			);
+		}
+
+		// ABテストアイテム変更
+		function change_item_vm(j) {
+			vm.Items.splice(0);
+			for (var i = 0; i < j.Items.length; i++) {
+				j.Items[i].PageId = ko.observable(j.Items[i].PageId);
+				j.Items[i].PageTitle = ko.observable(j.Items[i].PageTitle);
+				j.Items[i].DistributionRate = ko.observable(j.Items[i].DistributionRate);
+				vm.Items.push(j.Items[i]);
+			}
+			if ($(".set_name").length !== 1) $(".set_name").show();
+			slide_check.ini();
+		}
+
+		// リストVM変更
+		function change_list_vm(j) {
+			vm.AbTestList.splice(vm.AbTestList.length);
+			for (var i = 0; i < j.Items.length; i++) {
+				vm.AbTestList.push(j.Items[i]);
+			}
+		}
+
+		// 更新OK
+		function upd_ok(j) {
+			loading_animation.end();
+			if (j.result === 'ng') {
+				notification.show(j.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('更新しました。', 'info', 'fadeout');
+				set_detail_datas(j.id);
+				get_page_list();
+			}
+		}
+
+		// 登録OK
+		function regi_ok(j) {
+			loading_animation.end();
+			if (j.result === 'ng') {
+				notification.show(j.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('登録しました。', 'info', 'fadeout');
+				set_detail_datas(j.id);
+				get_page_list();
+			}
+		}
+
+		// 削除OK
+		function del_ok(j) {
+			if (j.result === 'ng') {
+				notification.show(j.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('削除しました。', 'info', 'fadeout');
+				get_page_list();
+				list.close();
+			}
+		}
+
+		// 入力値生成
+		function create_post_input() {
+			var post_data = {
+				AbTestId: vm.AbTestId(),
+				AbTestTitle: vm.AbTestTitle(),
+				RangeStartDate: vm.RangeStartDate(),
+				RangeStartTime: vm.RangeStartTime(),
+				RangeEndDate: vm.RangeEndDate(),
+				RangeEndTime: vm.RangeEndTime(),
+				PublicStatus: vm.PublicStatus(),
+				Items: []
+			};
+			for (var i = 0; i < vm.Items().length; i++) {
+				//knockout.jsの影響で既存のLPか追加されたLPかで分岐が必要。
+				if (typeof(vm.Items()[i].PageId) === "string") {
+					post_data.Items.push({
+						AbTestId: vm.AbTestId(),
+						ItemNo: (i + 1),
+						PageId: vm.Items()[i].PageId,
+						DistributionRate: vm.Items()[i].DistributionRate
+					});
+				}
+				else {
+					post_data.Items.push({
+						AbTestId: vm.AbTestId(),
+						ItemNo: (i + 1),
+						PageId: vm.Items()[i].PageId(),
+						DistributionRate: vm.Items()[i].DistributionRate()
+					});
+				}
+			}
+
+			return post_data;
+		}
+
+		// エラー処理
+		function to_error() {
+			window.location.href = '@this.Url.Action("", Constants.CONTROLLER_W2CMS_MANAGER_ERROR, new { ErrorPageLayout = Constants.LAYOUT_PATH_DEFAULT, }) ';
+		}
+	})();
+
+	abtest_list_page.ini();
+	keyword_ini();
+	function set_product_view_html(j) {
+		abtest_list_page.set_product_view_html(j);
+	}
+
+	//キーワードフォーム初期化
+	function keyword_ini() {
+		$('#search_keyword').off("keydown").on("keydown",
+			function (e) {
+				if ((e.which && e.which === 13) || (e.keyCode && e.keyCode === 13)) {
+					// knockoutはフォーカス外したときにデータバインドされるぽいので、フォーカス一度外す
+					$('#search_keyword').blur();
+					abtest_list_page.get_page_list();
+					$('#search_keyword').focus();
+					return false;
+				}
+				return true;
+			});
+	}
+
+	$(document).on('click', '.analysis', function () {
+		var url = '@Url.Action("GetAbTestDefaultDetailViewModel")';
+		$.ajax({
+			url: url,
+			type: 'POST',
+			dataType: 'json',
+			contentType: 'application/json'
+		}).then(
+			function (data) {
+
+				list.open();
+				$("#search_keyword").addClass("placeholder-display-none");
+
+			},
+			function () { to_error(); }
+		);
+	});
+</script>

@@ -1,0 +1,281 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : コンテンツログ系SQLステートメントXML (ContentsLog.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<ContentsLog>
+
+  <!-- コンテンツ解析データ取得 -->
+  <GetContentsSummaryData>
+    <Statement>
+      <![CDATA[
+        SELECT  <@@val:contents_type:SCRG@@>
+                LEFT
+                (
+                  w2_ContentsSummaryAnalysis.contents_id,
+                  CASE
+                    WHEN CHARINDEX('_', w2_ContentsSummaryAnalysis.contents_id) > 0 THEN CHARINDEX('_', w2_ContentsSummaryAnalysis.contents_id) - 1
+                    ELSE LEN(w2_ContentsSummaryAnalysis.contents_id)
+                  END
+                )
+                </@@val:contents_type:SCRG@@>
+                <@@notval:contents_type:SCRG@@>
+                w2_ContentsSummaryAnalysis.contents_id
+                </@@notval:contents_type:SCRG@@>
+                ,SUM(CASE WHEN w2_ContentsSummaryAnalysis.report_type = 'PV' THEN w2_ContentsSummaryAnalysis.count ELSE 0 END) AS pv_count
+                ,SUM(CASE WHEN w2_ContentsSummaryAnalysis.report_type = 'CV' THEN w2_ContentsSummaryAnalysis.count ELSE 0 END) AS cv_count
+                ,SUM(w2_ContentsSummaryAnalysis.price) AS price
+          FROM  w2_ContentsSummaryAnalysis
+         WHERE  w2_ContentsSummaryAnalysis.contents_type = @contents_type
+         <@@hasval:contents_id@@>
+           AND  w2_ContentsSummaryAnalysis.contents_id IN (@@ params @@)
+         </@@hasval:contents_id@@>
+      GROUP BY  <@@notval:contents_type:SCRG@@>
+                w2_ContentsSummaryAnalysis.contents_id
+                </@@notval:contents_type:SCRG@@>
+                <@@val:contents_type:SCRG@@>
+                LEFT
+                (
+                  w2_ContentsSummaryAnalysis.contents_id,
+                  CASE
+                    WHEN CHARINDEX('_', w2_ContentsSummaryAnalysis.contents_id) > 0 THEN CHARINDEX('_', w2_ContentsSummaryAnalysis.contents_id) - 1
+                    ELSE LEN(w2_ContentsSummaryAnalysis.contents_id)
+                  END
+                )
+                </@@val:contents_type:SCRG@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="contents_type" Type="nvarchar" Size="20" />
+      <Input Name="contents_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetContentsSummaryData>
+
+  <!-- コンテンツ解析データ取得(本日分) -->
+  <GetContentsSummaryDataOfToday>
+    <Statement>
+      <![CDATA[
+	      -- 変数定義
+        DECLARE @DATE datetime
+        SET @DATE = CONVERT(DATE, GETDATE())
+        
+        SELECT  <@@val:contents_type:SCRG@@>
+                LEFT
+                (
+                  w2_ContentsLog.contents_id,
+                  CASE
+                    WHEN CHARINDEX('_', w2_ContentsLog.contents_id) > 0 THEN CHARINDEX('_', w2_ContentsLog.contents_id) - 1
+                    ELSE LEN(w2_ContentsLog.contents_id)
+                  END
+                )
+                </@@val:contents_type:SCRG@@>
+                <@@notval:contents_type:SCRG@@>
+                w2_ContentsLog.contents_id
+                </@@notval:contents_type:SCRG@@>
+                ,SUM(CAST(CASE WHEN w2_ContentsLog.report_type = 'PV' THEN 1 ELSE 0 END AS BIGINT)) AS pv_count
+                ,SUM(CAST(CASE WHEN w2_ContentsLog.report_type = 'CV' THEN 1 ELSE 0 END AS BIGINT)) AS cv_count
+                ,SUM(w2_ContentsLog.price) AS price
+          FROM  w2_ContentsLog
+         WHERE  w2_ContentsLog.contents_type = @contents_type
+           AND  w2_ContentsLog.date >= @DATE
+         <@@hasval:contents_id@@>
+           AND  w2_ContentsLog.contents_id IN (@@ params @@)
+         </@@hasval:contents_id@@>
+      GROUP BY  <@@notval:contents_type:SCRG@@>
+                w2_ContentsLog.contents_id
+                </@@notval:contents_type:SCRG@@>
+                <@@val:contents_type:SCRG@@>
+                LEFT
+                (
+                  w2_ContentsLog.contents_id,
+                  CASE
+                    WHEN CHARINDEX('_', w2_ContentsLog.contents_id) > 0 THEN CHARINDEX('_', w2_ContentsLog.contents_id) - 1
+                    ELSE LEN(w2_ContentsLog.contents_id)
+                  END
+                )
+                </@@val:contents_type:SCRG@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="contents_type" Type="nvarchar" Size="20" />
+      <Input Name="contents_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetContentsSummaryDataOfToday>
+
+  <!--取得-->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ContentsLog
+         WHERE  log_no = @log_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="log_no" Type="bigint" />
+    </Parameter>
+  </Get>
+
+  <!--注文IDから取得-->
+  <GetByOrderId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ContentsLog
+         WHERE  order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetByOrderId>
+
+  <!--分析レポート用取得-->
+  <GetForAnalysisReport>
+    <Statement>
+      <![CDATA[
+        SELECT  CONVERT(DATE,date) AS 'date'
+                ,count
+                ,report_type
+                ,contents_id
+          FROM  w2_ContentsSummaryAnalysis
+         WHERE  contents_type = @contents_type
+           AND  date BETWEEN @start_date AND @end_date
+         <@@hasval:contents_id@@>
+           AND  contents_id IN (@@ params @@)
+         </@@hasval:contents_id@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="contents_type" Type="nvarchar" Size="20" />
+      <Input Name="contents_id" Type="nvarchar" Size="30" />
+      <Input Name="start_date" Type="datetime" />
+      <Input Name="end_date" Type="datetime" />
+    </Parameter>
+  </GetForAnalysisReport>
+
+  <!--分析レポート用取得(当日)-->
+  <GetForAnalysisReportOfToday>
+    <Statement>
+      <![CDATA[
+        -- 変数定義
+        DECLARE @DATE datetime
+        SET @DATE = CONVERT(DATE, GETDATE())
+        
+        SELECT  @DATE AS 'date'
+                ,COUNT_BIG(log_no) AS 'count'
+                ,report_type
+                ,contents_id
+          FROM  w2_ContentsLog
+         WHERE  contents_type = @contents_type
+           AND  date >= @DATE
+         <@@hasval:contents_id@@>
+           AND  contents_id IN (@@ params @@)
+         </@@hasval:contents_id@@>
+        GROUP BY report_type
+                 ,contents_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="contents_type" Type="nvarchar" Size="20" />
+      <Input Name="contents_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetForAnalysisReportOfToday>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ContentsLog
+                (
+                  date
+                  ,report_type
+                  ,access_kbn
+                  ,contents_type
+                  ,contents_id
+                  ,price
+                  ,order_id
+                )
+        VALUES  (
+                  @date
+                  ,@report_type
+                  ,@access_kbn
+                  ,@contents_type
+                  ,@contents_id
+                  ,@price
+                  ,@order_id
+                );
+
+        SELECT  SCOPE_IDENTITY()
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date" Type="datetime" />
+      <Input Name="report_type" Type="nvarchar" Size="10" />
+      <Input Name="access_kbn" Type="nvarchar" Size="10" />
+      <Input Name="contents_type" Type="nvarchar" Size="20" />
+      <Input Name="contents_id" Type="nvarchar" Size="30" />
+      <Input Name="price" Type="decimal" Size="23,3" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ContentsLog
+           SET  date = @date,
+                report_type = @report_type,
+                access_kbn = @access_kbn,
+                contents_type = @contents_type,
+                contents_id = @contents_id,
+                price = @price,
+                order_id = @order_id
+         WHERE  log_no = @log_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="log_no" Type="bigint" />
+      <Input Name="date" Type="datetime" />
+      <Input Name="report_type" Type="nvarchar" Size="10" />
+      <Input Name="access_kbn" Type="nvarchar" Size="10" />
+      <Input Name="contents_type" Type="nvarchar" Size="20" />
+      <Input Name="contents_id" Type="nvarchar" Size="100" />
+      <Input Name="price" Type="decimal" Size="23,3" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Update>
+
+  <!-- コンテンツIDによるログ削除 -->
+  <DeleteByContentsIds>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ContentsLog
+         WHERE  contents_type = @contents_type
+           AND  contents_id IN (@@ params @@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="contents_type" Type="nvarchar" Size="20" />
+    </Parameter>
+  </DeleteByContentsIds>
+
+  <!-- コンテンツIDによるサマリー削除 -->
+  <DeleteContentsSummaryAnalysisByContentsIds>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ContentsSummaryAnalysis
+         WHERE  contents_type = @contents_type
+           AND  contents_id IN (@@ params @@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="contents_type" Type="nvarchar" Size="20" />
+    </Parameter>
+  </DeleteContentsSummaryAnalysisByContentsIds>
+
+</ContentsLog>

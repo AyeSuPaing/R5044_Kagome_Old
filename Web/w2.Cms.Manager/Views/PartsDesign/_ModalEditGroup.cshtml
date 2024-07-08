@@ -1,0 +1,60 @@
+﻿@*
+=========================================================================================================
+  Module      : パーツ管理 モーダルウィンドウ:グループ変更(パーシャルビュー)(_ModalEditGroup.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@model w2.Cms.Manager.ViewModels.PartsDesign.GroupMoveViewModel
+
+<!-- グループ変更モーダル -->
+<div class="modal-content-hide">
+	<div id="modal-list-group-edit">
+		<p class="modal-inner-ttl">所属グループを変更</p>
+		<div class="modal-inner-change-group">
+			<div class="form-element-group form-element-group-horizontal">
+				<div class="form-element-group-title w40">
+					<label for="form-select-005">現在のグループ</label>
+				</div>
+				<div class="form-element-group-content" style="padding-top: 8px;">
+					@Model.SelectGroupModel.GroupName
+				</div>
+			</div>
+			<div class="form-element-group form-element-group-horizontal">
+				<div class="form-element-group-title w40">
+					<label for="form-select-005">変更後のグループ</label>
+				</div>
+				<div class="form-element-group-content">
+					@Html.DropDownListFor(m => m.SelectGroupModel.GroupId, Model.GroupItems, new
+					{
+						Id = "group_move_dropdown_list",
+					})
+				</div>
+			</div>
+			<div class="modal-footer-action">
+				<input type="button" class="btn btn-sub btn-size-m" onclick="modal.close();" value="キャンセル">
+				<input type="button" class="btn btn-main btn-size-m" onclick="group_move_edit_click()" value="設定する">
+			</div>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	/**
+	 * グループ移動
+	 */
+	function group_move_edit_click() {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("GroupMoveEdit", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)",
+			data: {
+				'groupId': $('#group_move_dropdown_list').val(),
+				'partsId': '@Model.PartsId'
+			},
+		}).done(function() {
+			group_list_redraw();
+		}).fail(function() {
+		});
+		modal.close();
+	}
+</script>

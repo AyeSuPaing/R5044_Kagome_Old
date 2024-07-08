@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 特集ページカテゴリSQLステートメントXML(FeaturePageCategory.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+-->
+<FeaturePageCategory>
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeaturePageCategory
+         WHERE  shop_id = @shop_id
+           AND  category_id = @category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- 特集ページカテゴリ一覧情報の該当件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        SELECT  ISNULL(COUNT(w2_FeaturePageCategory.category_id), 0) AS row_count
+          FROM  w2_FeaturePageCategory
+          [[ FEATUREPAGECATEGORY_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="20" />
+      <Input Name="category_name" Type="nvarchar" Size="40" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetSearchHitCount>
+
+  <!-- 親カテゴリに紐づく子カテゴリをすべて取得 -->
+  <GetChildCategoriesByParentCategoryId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeaturePageCategory
+         WHERE  shop_id = @shop_id
+           <@@hasval:parent_category_id@@>
+           AND  parent_category_id = @parent_category_id
+           </@@hasval:parent_category_id@@>
+           <@@hasnoval:parent_category_id@@>
+           AND  parent_category_id = 'ROOT'
+           </@@hasnoval:parent_category_id@@>
+           AND  valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="parent_category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetChildCategoriesByParentCategoryId>
+
+  <!-- 指定カテゴリIDと、その上位のカテゴリ(TOPカテゴリまで)のリストを取得する -->
+  <GetParentCategories>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeaturePageCategory
+         WHERE  shop_id = @shop_id
+           AND  (
+                  category_id = @category_id
+                  OR
+                  category_id = LEFT(@category_id, 3)
+                )
+           AND  valid_flg = '1'
+        ORDER BY category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetParentCategories>
+
+  <!-- 特集ページカテゴリ一覧情報の該当件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(COUNT(w2_FeaturePageCategory.category_id), 0) AS row_count
+          FROM  w2_FeaturePageCategory
+                [[ FEATUREPAGECATEGORY_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="20" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetSearchHitCount>
+
+  <!-- 特集ページカテゴリ一覧情報取得 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FeaturePageCategory.*
+          FROM  (
+                  SELECT  w2_FeaturePageCategory.shop_id,
+                          w2_FeaturePageCategory.category_id,
+                          w2_FeaturePageCategory.category_name,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ FEATUREPAGECATEGORY_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_FeaturePageCategory
+                          [[ FEATUREPAGECATEGORY_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_FeaturePageCategory ON
+                (
+                  RowIndex.shop_id = w2_FeaturePageCategory.shop_id
+                  AND
+                  RowIndex.category_id = w2_FeaturePageCategory.category_id
+                  AND
+                  RowIndex.category_name = w2_FeaturePageCategory.category_name
+                )
+          WHERE  @bgn_row_num <= RowIndex.row_num
+            AND  RowIndex.row_num <= @end_row_num
+          ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="20" />
+      <Input Name="category_name" Type="nvarchar" Size="40" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 特集ページ一覧情報取得 -->
+  <SearchCategory>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  w2_FeaturePageCategory.category_name
+          FROM  w2_FeaturePageCategory
+      ]]>
+    </Statement>
+  </SearchCategory>
+
+  <!-- 特集ページカテゴリ登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FeaturePagecategory
+                (
+                  w2_FeaturePagecategory.shop_id,
+                  w2_FeaturePagecategory.category_id,
+                  w2_FeaturePagecategory.parent_category_id,
+                  w2_FeaturePagecategory.category_name,
+                  w2_FeaturePagecategory.valid_flg,
+                  w2_FeaturePagecategory.display_order,
+                  w2_FeaturePagecategory.category_outline,
+                  w2_FeaturePagecategory.date_created,
+                  w2_FeaturePagecategory.date_changed,
+                  w2_FeaturePagecategory.last_changed
+                ) 
+        VALUES  (
+                  @shop_id,
+                  @category_id,
+                  @parent_category_id,
+                  @category_name,
+                  @valid_flg,
+                  @display_order,
+                  @category_outline,
+                  getdate(),
+                  getdate(),
+                  'user'
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="parent_category_id" Type="nvarchar" Size="30" />
+      <Input Name="category_name" Type="nvarchar" Size="40" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="category_outline" Type="nvarchar" Size="256" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+    </Parameter>
+  </Insert>
+
+  <!-- 特集ページカテゴリ情報更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FeaturePageCategory
+           SET  w2_FeaturePageCategory.shop_id = @shop_id,
+                w2_FeaturePageCategory.category_id = @category_id,
+                w2_FeaturePageCategory.parent_category_id = @parent_category_id,
+                w2_FeaturePageCategory.category_name = @category_name,
+                w2_FeaturePageCategory.valid_flg = @valid_flg,
+                w2_FeaturePageCategory.display_order = @display_order,
+                w2_FeaturePageCategory.category_outline = @category_outline,
+                w2_FeaturePageCategory.date_changed = getdate(),
+                w2_FeaturePageCategory.last_changed = 'user'
+         WHERE  w2_FeaturePageCategory.shop_id = @shop_id 
+           AND  w2_FeaturePageCategory.category_id = @before_category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="parent_category_id" Type="nvarchar" Size="30" />
+      <Input Name="category_name" Type="nvarchar" Size="40" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="category_outline" Type="nvarchar" Size="256" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="before_category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Update>
+
+  <!-- 特集ページカテゴリ情報削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FeaturePageCategory
+         WHERE  w2_FeaturePageCategory.shop_id = @shop_id
+           AND  w2_FeaturePageCategory.category_id like @category_id + '%'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- 全ての最上位カテゴリ取得 -->
+  <GetRootCategoryItem>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FeaturePageCategory.category_name
+                ,w2_FeaturePageCategory.category_id
+          FROM  w2_FeaturePageCategory
+         WHERE  parent_category_id = 'root'
+      ]]>
+    </Statement>
+  </GetRootCategoryItem>
+
+  <!-- 入力されたカテゴリIDと一致するカテゴリIDを取得 -->
+  <GetMatchingCategoryId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_FeaturePageCategory
+         WHERE  shop_id = @shop_id
+           AND  category_id = @category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMatchingCategoryId>
+</FeaturePageCategory>

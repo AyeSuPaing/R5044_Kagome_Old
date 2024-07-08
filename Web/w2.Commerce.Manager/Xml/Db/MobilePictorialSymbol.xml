@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モバイル絵文字系SQLステートメントXML(MobilePictorialSymbol.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MobilePictorialSymbol>
+
+  <!-- モバイル絵文字一覧取得 -->
+  <GetMobilePictorialSymbolList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_MobilePictorialSymbol.symbol_id), 0)
+          FROM  w2_MobilePictorialSymbol
+                [[ MOBILEPICTORIALSYMBOL_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_MobilePictorialSymbol.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_MobilePictorialSymbol.dept_id,
+                          w2_MobilePictorialSymbol.symbol_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MOBILEPICTORIALSYMBOL_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MobilePictorialSymbol
+                          [[ MOBILEPICTORIALSYMBOL_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_MobilePictorialSymbol ON
+                (
+                  RowIndex.dept_id = w2_MobilePictorialSymbol.dept_id
+                  AND
+                  RowIndex.symbol_id = w2_MobilePictorialSymbol.symbol_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="symbol_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="symbol_tag_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="symbol_name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetMobilePictorialSymbolList>
+
+  <!-- モバイル絵文字一覧取得(ポップアップ用) -->
+  <GetMobilePictorialSymbolListAll>
+    <Statement>
+      <![CDATA[      
+        SELECT  w2_MobilePictorialSymbol.dept_id,
+                w2_MobilePictorialSymbol.symbol_id,
+                w2_MobilePictorialSymbol.symbol_tag,
+                w2_MobilePictorialSymbol.symbol_name
+          FROM  w2_MobilePictorialSymbol
+         WHERE  w2_MobilePictorialSymbol.dept_id = @dept_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMobilePictorialSymbolListAll>
+  
+  <!-- モバイル絵文字詳細取得 -->
+  <GetMobilePictorialSymbolDetail>
+    <Statement>
+      <![CDATA[      
+          SELECT  *
+            FROM  w2_MobilePictorialSymbol
+           WHERE  w2_MobilePictorialSymbol.dept_id = @dept_id
+             AND  w2_MobilePictorialSymbol.symbol_id = @symbol_id
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="symbol_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMobilePictorialSymbolDetail>
+
+  <!-- モバイル絵文字登録 -->
+  <InsertMobilePictorialSymbol>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_MobilePictorialSymbol
+            (            
+            dept_id,
+            symbol_id,
+            symbol_tag,
+            symbol_name,
+            symbol_code1,
+            symbol_code2,
+            symbol_code6,
+            date_created,
+            date_changed,
+            last_changed
+            )
+         VALUES  (
+            @dept_id,
+            @symbol_id,
+            @symbol_tag,
+            @symbol_name,
+            @symbol_code1,
+            @symbol_code2,
+            @symbol_code6,            
+            getdate(),
+            getdate(),
+            @last_changed
+            )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="symbol_id" Type="nvarchar" Size="30" />
+      <Input Name="symbol_tag" Type="nvarchar" Size="30" />
+      <Input Name="symbol_name" Type="nvarchar" Size="30" />
+      <Input Name="symbol_code1" Type="nvarchar" Size="30" />
+      <Input Name="symbol_code2" Type="nvarchar" Size="30" />
+      <Input Name="symbol_code6" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertMobilePictorialSymbol>
+
+  <!-- モバイル絵文字更新 -->
+  <UpdateMobilePictorialSymbol>
+    <Statement>
+      <![CDATA[
+          UPDATE  w2_MobilePictorialSymbol 
+             SET  w2_MobilePictorialSymbol.symbol_id = @symbol_id, 
+                  w2_MobilePictorialSymbol.symbol_tag = @symbol_tag, 
+                  w2_MobilePictorialSymbol.symbol_name = @symbol_name, 
+                  w2_MobilePictorialSymbol.symbol_code1 = @symbol_code1, 
+                  w2_MobilePictorialSymbol.symbol_code2 = @symbol_code2, 
+                  w2_MobilePictorialSymbol.symbol_code6 = @symbol_code6,
+                  w2_MobilePictorialSymbol.date_changed = getdate(), 
+                  w2_MobilePictorialSymbol.last_changed = @last_changed 
+           WHERE  w2_MobilePictorialSymbol.dept_id = @dept_id 
+             AND  w2_MobilePictorialSymbol.symbol_id = @symbol_id_old
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="symbol_id" Type="nvarchar" Size="30" />
+      <Input Name="symbol_id_old" Type="nvarchar" Size="30" />
+      <Input Name="symbol_tag" Type="nvarchar" Size="30" />
+      <Input Name="symbol_name" Type="nvarchar" Size="30" />
+      <Input Name="symbol_code1" Type="nvarchar" Size="30" />
+      <Input Name="symbol_code2" Type="nvarchar" Size="30" />
+      <Input Name="symbol_code6" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateMobilePictorialSymbol>
+
+  <!-- モバイル絵文字削除 -->
+  <DeleteMobilePictorialSymbol>
+    <Statement>
+      <![CDATA[
+        DELETE
+          FROM  w2_MobilePictorialSymbol
+         WHERE  w2_MobilePictorialSymbol.dept_id = @dept_id
+           AND  w2_MobilePictorialSymbol.symbol_id = @symbol_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="symbol_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteMobilePictorialSymbol>
+
+  <!-- 重複チェック（モバイル絵文字登録時） -->
+  <CheckDuplicationInsertSymbolId>
+    <Statement>
+      <![CDATA[
+            SELECT 
+                COUNT(symbol_id) AS symbol_count 
+            FROM 
+                w2_MobilePictorialSymbol 
+            WHERE 
+                w2_MobilePictorialSymbol.dept_id = @dept_id 
+            AND           
+                w2_MobilePictorialSymbol.symbol_id = @symbol_id
+            ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="symbol_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationInsertSymbolId>
+
+  <!-- 重複チェック（モバイル絵文字更新時） -->
+  <CheckDuplicationUpdateSymbolId>
+    <Statement>
+      <![CDATA[
+        SELECT 
+            COUNT(symbol_id) AS symbol_count 
+        FROM 
+            w2_MobilePictorialSymbol 
+        WHERE 
+            w2_MobilePictorialSymbol.dept_id = @dept_id 
+        AND 
+            w2_MobilePictorialSymbol.symbol_id = @symbol_id
+        AND    
+            w2_MobilePictorialSymbol.symbol_id != @symbol_id_old
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="symbol_id" Type="nvarchar" Size="30" />
+      <Input Name="symbol_id_old" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationUpdateSymbolId>
+
+</MobilePictorialSymbol>

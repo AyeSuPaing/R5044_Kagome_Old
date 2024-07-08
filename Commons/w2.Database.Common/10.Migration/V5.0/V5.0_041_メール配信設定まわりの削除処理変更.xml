@@ -1,0 +1,246 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+/*
+=========================================================================================================
+  Module      : タスクスケジュール作成プロシージャ(w2_CreateTaskScheduleSp.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Application : w2.Database.Scripts
+  BaseVersion : V5.0
+  Author      : M.Ochiai
+  email       : product@w2solution.co.jp
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+  URL         : http://www.w2solution.co.jp/
+=========================================================================================================
+PKG-V5.0[PF0001] 2010/09/10 M.Ochiai        v5.0用に分離
+PKG-V5.0[PF0041][PB0183] 2011/01/18 T.Yachi         会員ランク付与ルールがスケジューリング実行されない件を修正
+PKG-V5.0[PB0200] 2011/01/24 Y.Abe           SQLサーバーのバージョンによってDATENAMEの文言が異なる件対応
+PKG-V5.1[PB0001] 2011/03/03 T.Kojima        メール配信設定、メール配信文章、ターゲットリスト削除時の処理を変更
+*/
+ALTER PROCEDURE [dbo].[w2_CreateTaskScheduleSp] (
+					@CREATE_DAYS int,
+					@CREATE_COUNT int output) AS
+
+	---------------------------------------
+	-- 変数定義
+	---------------------------------------
+	DECLARE @DAY_LOOP int
+	DECLARE @SCHEDULE_DATE datetime
+	DECLARE @SCHEDULE_DATETIME datetime
+	DECLARE @DEPT_ID nvarchar(30)
+	DECLARE @MASTER_ID nvarchar(10)
+	DECLARE @SCHEDULE_KBN nvarchar(10)
+	DECLARE @SCHEDULE_DAY_OF_WEEK nvarchar(10)
+	DECLARE @SCHEDULE_YEAR int
+	DECLARE @SCHEDULE_MONTH int
+	DECLARE @SCHEDULE_DAY int
+	DECLARE @SCHEDULE_HOUR int
+	DECLARE @SCHEDULE_MINUTE int
+	DECLARE @SCHEDULE_SECOND int
+	DECLARE @ACTION_KBN nvarchar(30)
+
+	DECLARE @COUNT int
+	DECLARE @ACTION_NO int
+
+	---------------------------------------
+	-- 変数初期化
+	---------------------------------------
+	SET @CREATE_COUNT = 0
+
+	---------------------------------------
+	-- スケジュール定義
+	---------------------------------------
+	DECLARE CUR_TLIST CURSOR FOR
+	(
+	-- ターゲットリスト
+	SELECT	dept_id,
+			target_id,
+			schedule_kbn,
+			schedule_day_of_week,
+			schedule_year,
+			schedule_month,
+			schedule_day,
+			schedule_hour,
+			schedule_minute,
+			schedule_second,
+			'CreateTargetList'
+	  FROM	w2_TargetList
+	 WHERE	exec_timing = '02'	-- スケジュール実行
+	   AND	schedule_kbn IN ('01', '02', '03', '05')	-- 日単位、週単位、月単位、一回のみ
+	   AND	valid_flg = '1'
+	   AND  del_flg = '0'
+	UNION ALL
+	-- メール配信
+	SELECT	dept_id,
+			maildist_id,
+			schedule_kbn,
+			schedule_day_of_week,
+			schedule_year,
+			schedule_month,
+			schedule_day,
+			schedule_hour,
+			schedule_minute,
+			schedule_second,
+			'MailDist'
+	  FROM	w2_MailDistSetting
+	 WHERE	exec_timing = '02'	-- スケジュール実行
+	   AND	schedule_kbn IN ('01', '02', '03', '05')	-- 日単位、週単位、月単位、一回のみ
+	   AND	valid_flg = '1'
+	   AND  del_flg = '0'
+    UNION ALL
+	-- 会員ランク付与
+	SELECT	'0',
+			member_rank_rule_id,
+			schedule_kbn,
+			schedule_day_of_week,
+			schedule_year,
+			schedule_month,
+			schedule_day,
+			schedule_hour,
+			schedule_minute,
+			schedule_second,
+			'ChangeMemberRank'
+	  FROM	w2_MemberRankRule
+	 WHERE	exec_timing = '02'	-- スケジュール実行
+	   AND	schedule_kbn IN ('01', '02', '03', '05')	-- 日単位、週単位、月単位、一回のみ
+	   AND	valid_flg = 'ON'
+	)
+	
+	---------------------------------------
+	--  ターゲットリストカーソル開く・最終行までループ
+	---------------------------------------
+	OPEN CUR_TLIST
+
+	WHILE (1=1)
+	BEGIN
+		---------------------------------------
+		-- スケジュール情報取得
+		---------------------------------------
+		FETCH NEXT FROM	CUR_TLIST
+		  INTO	@DEPT_ID,
+				@MASTER_ID,
+				@SCHEDULE_KBN,
+				@SCHEDULE_DAY_OF_WEEK,
+				@SCHEDULE_YEAR,
+				@SCHEDULE_MONTH,
+				@SCHEDULE_DAY,
+				@SCHEDULE_HOUR,
+				@SCHEDULE_MINUTE,
+				@SCHEDULE_SECOND,
+				@ACTION_KBN
+
+		-- 終端なら抜ける
+		IF @@FETCH_STATUS != 0
+		BEGIN
+			BREAK
+		END
+		
+		---------------------------------------
+		-- ターゲットリストスケジュール取得
+		---------------------------------------
+		SET @DAY_LOOP = 0
+		WHILE (@DAY_LOOP < @CREATE_DAYS)
+		BEGIN
+			SET @SCHEDULE_DATE = DATEADD(dd,  @DAY_LOOP, GETDATE())
+		
+			IF	(
+					-- 日単位であれば確定
+					(@SCHEDULE_KBN = '01')
+					OR
+					(
+						-- 週単位であれば曜日があっていれば確定
+						(@SCHEDULE_KBN = '02')
+						AND
+						(
+							(@SCHEDULE_DAY_OF_WEEK = 'Sunday' AND DATEPART(weekday, @SCHEDULE_DATE) = 1)  -- 日曜
+							OR
+							(@SCHEDULE_DAY_OF_WEEK = 'Monday' AND DATEPART(weekday, @SCHEDULE_DATE) = 2)  -- 月曜
+							OR
+							(@SCHEDULE_DAY_OF_WEEK = 'Tuesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 3)  -- 火曜
+							OR
+							(@SCHEDULE_DAY_OF_WEEK = 'Wednesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 4)  -- 水曜
+							OR
+							(@SCHEDULE_DAY_OF_WEEK = 'Thursday' AND DATEPART(weekday, @SCHEDULE_DATE) = 5)  -- 木曜
+							OR
+							(@SCHEDULE_DAY_OF_WEEK = 'Friday' AND DATEPART(weekday, @SCHEDULE_DATE) = 6)  -- 金曜
+							OR
+							(@SCHEDULE_DAY_OF_WEEK = 'Saturday' AND DATEPART(weekday, @SCHEDULE_DATE) = 7)  -- 土曜
+						)
+					)
+					OR
+					(
+						-- 月単位であれば日があっていれば確定
+						(@SCHEDULE_KBN = '03')
+						AND
+						(@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+					)
+					OR
+					(
+						-- 一回のみであれば、年月日があっていれば確定
+						(@SCHEDULE_KBN = '05')
+						AND
+						(@SCHEDULE_YEAR = DATEPART(yy, @SCHEDULE_DATE))
+						AND
+						(@SCHEDULE_MONTH = DATEPART(mm, @SCHEDULE_DATE))
+						AND
+						(@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+					)
+				)
+			BEGIN
+				-- スケジュール日付確定
+				SET @SCHEDULE_DATETIME = DATENAME(yyyy,@SCHEDULE_DATE) + '/' + DATENAME(mm,@SCHEDULE_DATE) + '/' + DATENAME(dd,@SCHEDULE_DATE) + ' ' + CONVERT(nvarchar, @SCHEDULE_HOUR) + ':' + CONVERT(nvarchar, @SCHEDULE_MINUTE) + ':' + CONVERT(nvarchar, @SCHEDULE_SECOND)
+				
+				SELECT	@COUNT = COUNT(*)
+				  FROM	w2_TaskSchedule
+				 WHERE	schedule_date = @SCHEDULE_DATETIME
+				   AND	dept_id = @DEPT_ID
+				   AND	action_kbn = @ACTION_KBN
+				   AND	action_master_id = @MASTER_ID
+
+				IF (@COUNT = 0)
+				BEGIN
+					-- マスタNO発行
+					SELECT	@ACTION_NO = ISNULL(MAX(action_no), 0) + 1
+					  FROM	w2_TaskSchedule
+					 WHERE	dept_id = @DEPT_ID
+					   AND	action_kbn = @ACTION_KBN
+					   AND	action_master_id = @MASTER_ID
+					
+					-- 未登録であれば登録
+					INSERT	w2_TaskSchedule
+							(
+							schedule_date,
+							dept_id,
+							action_kbn,
+							action_master_id,
+							action_no,
+							execute_status
+							)
+					VALUES	(
+							@SCHEDULE_DATETIME,
+							@DEPT_ID,
+							@ACTION_KBN,
+							@MASTER_ID,
+							@ACTION_NO,
+							'00'
+							)
+							
+					SET @CREATE_COUNT = @CREATE_COUNT + 1
+					END
+			END
+		
+			SET @DAY_LOOP = @DAY_LOOP + 1
+		END
+	END
+		
+	---------------------------------------
+	-- カーソル閉じる
+	---------------------------------------
+	CLOSE CUR_TLIST
+	DEALLOCATE CUR_TLIST
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

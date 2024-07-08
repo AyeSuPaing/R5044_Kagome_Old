@@ -1,0 +1,399 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ターゲットリストデータSQLステートメントXML(TargetListData.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<TargetListData>
+
+ <!-- ターゲットリストデータマスターのデータを取得します。-->
+  <GetTargetListDataMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_TargetListData
+          INNER JOIN w2_User ON ( w2_TargetListData.user_id = w2_User.user_id )
+           LEFT JOIN  w2_UserExtend ON (w2_User.user_id = w2_UserExtend.user_id)
+           LEFT JOIN w2_UserAttribute ON (w2_User.user_id = w2_UserAttribute.user_id)
+           LEFT JOIN  w2_AdvCode ON (w2_User.advcode_first = w2_advcode.advertisement_code)
+          WHERE w2_TargetListData.dept_id = @dept_id
+                AND  w2_TargetListData.target_kbn = @target_kbn
+                AND  w2_TargetListData.master_id = @master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetTargetListDataMaster>
+
+  <!-- ターゲットリストデータ作成 -->
+  <CreateTargetListData>
+    <Statement>
+      <![CDATA[
+          /* ダーティリードを許可して共有ロックを掛けなくする */
+          SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+          -- ターゲットリスト抽出
+          WITH  TargetData AS
+          (
+            -- 条件に合うユーザーの抽出
+            -- 優先度：PCアドレス > MBアドレス > アドレス無し
+            SELECT  w2_User.user_id,
+                    CASE
+                      WHEN w2_User.mail_addr <> ''  THEN w2_User.mail_addr
+                      WHEN w2_User.mail_addr2 <> '' THEN w2_User.mail_addr2
+                      ELSE '' END AS mail_addr,
+                    CASE
+                      WHEN w2_User.mail_addr <> ''  THEN 'PC'
+                      WHEN w2_User.mail_addr2 <> '' THEN 'MB'
+                      ELSE '' END AS mail_addr_kbn
+              FROM  w2_User
+             WHERE  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+                    AND
+                    (
+                      @@ param @@
+                    )
+          )
+          -- ターゲットリスト作成
+          INSERT  w2_TargetListData
+          (
+                  dept_id,
+                  target_kbn,
+                  master_id,
+                  user_id,
+                  mail_addr,
+                  mail_addr_kbn
+          )
+          SELECT  @dept_id,
+                  @target_kbn,
+                  @master_id,
+                  TargetData.user_id,
+                  TargetData.mail_addr,
+                  TargetData.mail_addr_kbn
+            FROM  TargetData
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CreateTargetListData>
+
+  <!-- ターゲットリストデータ作成(双方送信用) -->
+  <CreateTargetListDataBothPcAndMobile>
+    <Statement>
+      <![CDATA[
+          /* ダーティリードを許可して共有ロックを掛けなくする */
+          SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+          -- ターゲットリスト抽出
+          WITH  TargetDataMain AS
+          (
+            -- 条件に合うユーザーの抽出
+            -- 優先度：PCアドレス > MBアドレス > アドレス無し
+            SELECT  w2_User.user_id,
+                    CASE
+                      WHEN w2_User.mail_addr <> ''  THEN w2_User.mail_addr
+                      WHEN w2_User.mail_addr2 <> '' THEN w2_User.mail_addr2
+                      ELSE '' END AS mail_addr,
+                    CASE
+                      WHEN w2_User.mail_addr <> ''  THEN 'PC'
+                      WHEN w2_User.mail_addr2 <> '' THEN 'MB'
+                      ELSE '' END AS mail_addr_kbn
+              FROM  w2_User
+             WHERE  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+                    AND
+                    (
+                      @@ param @@
+                    )
+          ), TargetDataAppend AS
+          (
+            -- PC,MB両アドレスがあるユーザーのMBアドレス抽出
+            SELECT  w2_User.user_id,
+                    w2_User.mail_addr2 AS mail_addr,
+                    'MB' AS mail_addr_kbn
+              FROM  w2_User
+             WHERE  ((w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+               AND  w2_User.mail_addr <> ''
+               AND  w2_User.mail_addr2 <> '')
+               AND  (
+                      @@ param @@
+                    )
+          ), TargetData AS
+          (
+            SELECT  TargetDataMain.*
+              FROM  TargetDataMain
+            UNION ALL
+            SELECT  TargetDataAppend.*
+              FROM  TargetDataAppend
+          )
+          -- ターゲットリスト作成
+          INSERT  w2_TargetListData
+          (
+                  dept_id,
+                  target_kbn,
+                  master_id,
+                  user_id,
+                  mail_addr,
+                  mail_addr_kbn
+          )
+          SELECT  @dept_id,
+                  @target_kbn,
+                  @master_id,
+                  TargetData.user_id,
+                  TargetData.mail_addr,
+                  TargetData.mail_addr_kbn
+            FROM  TargetData
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CreateTargetListDataBothPcAndMobile>
+
+  <!--ターゲットリストデータを削除 -->
+  <DeleteTargetListData>
+    <Statement>
+      <![CDATA[
+        -- ターゲットリストデータを削除
+        DELETE  w2_TargetListData
+         WHERE  dept_id = @dept_id
+           AND  target_kbn = @target_kbn
+           AND  master_id = @master_id
+        
+        UPDATE w2_TargetList
+        SET data_count = 0,
+            data_count_date = GETDATE()
+         WHERE dept_id = @dept_id
+           AND target_id = @master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteTargetListData>
+
+  <!--データをマージ(FULL OUTER JOIN)-->
+  <MergeTargetListFullOuterJoin>
+    <Statement>
+      <![CDATA[
+            INSERT w2_TargetListData 
+                (
+                  dept_id
+                  ,target_kbn
+                  ,master_id
+                  ,user_id
+                  ,mail_addr
+                  ,mail_addr_kbn
+                  ,date_created
+                )
+            SELECT @dept_id
+                  ,@target_kbn
+                  ,@master_id
+                  ,InsertData.user_id
+                  ,InsertData.mail_addr
+                  ,InsertData.mail_addr_kbn
+                  ,GETDATE()
+            FROM (
+                SELECT DISTINCT user_id
+                    ,mail_addr
+                    ,mail_addr_kbn
+                FROM (
+                      [[ SELECT_TARGETLISTDATA_1 ]]
+                    
+                      UNION ALL
+                    
+                      [[ SELECT_TARGETLISTDATA_2 ]]
+                    
+                      ) AS MergeData
+                ) AS InsertData
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id_1" Type="nvarchar" Size="30" />
+      <Input Name="master_id_2" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </MergeTargetListFullOuterJoin>
+
+  <!--データをマージ(INNER JOIN)-->
+  <MergeTargetListInnerJoin>
+    <Statement>
+      <![CDATA[
+            INSERT w2_TargetListData (
+                dept_id
+                ,target_kbn
+                ,master_id
+                ,user_id
+                ,mail_addr
+                ,mail_addr_kbn
+                ,date_created
+                )
+            SELECT @dept_id
+                ,@target_kbn
+                ,@master_id
+                ,InsertData.user_id
+                ,InsertData.mail_addr
+                ,InsertData.mail_addr_kbn
+                ,GETDATE()
+            FROM (
+                SELECT DISTINCT user_id
+                    ,mail_addr
+                    ,mail_addr_kbn
+                FROM (
+                    SELECT TG1.user_id
+                          ,TG1.mail_addr
+                          ,TG1.mail_addr_kbn
+                    FROM  ([[ SELECT_TARGETLISTDATA_1 ]]) AS TG1
+                          JOIN
+                          ([[ SELECT_TARGETLISTDATA_2 ]]) AS TG2
+                          ON
+                          (
+                            TG2.user_id =  TG1.user_id 
+                            AND
+                            TG2.mail_addr = TG1.mail_addr
+                            AND
+                            TG2.mail_addr_kbn = TG1.mail_addr_kbn
+                        )
+                    ) AS MergeData
+                ) AS InsertData
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id_1" Type="nvarchar" Size="30" />
+      <Input Name="master_id_2" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </MergeTargetListInnerJoin>
+
+  <!--データをマージ(LEFT JOIN NOT INNER)-->
+  <MergeTargetListLeftJoinNotInner>
+    <Statement>
+      <![CDATA[
+            INSERT INTO w2_TargetListData (
+                dept_id
+                ,target_kbn
+                ,master_id
+                ,user_id
+                ,mail_addr
+                ,mail_addr_kbn
+                ,date_created
+                )
+
+            SELECT @dept_id
+                ,@target_kbn
+                ,@master_id
+                ,InsertData.user_id
+                ,InsertData.mail_addr
+                ,InsertData.mail_addr_kbn
+                ,GETDATE()
+            FROM (
+                SELECT DISTINCT user_id
+                    ,mail_addr
+                    ,mail_addr_kbn
+                FROM (
+                    SELECT TG1.user_id
+                          ,TG1.mail_addr
+                          ,TG1.mail_addr_kbn
+                    FROM  ([[ SELECT_TARGETLISTDATA_1 ]]) AS TG1
+                          LEFT JOIN ([[ SELECT_TARGETLISTDATA_2 ]]) AS TG2 
+                          ON
+                          (
+                            TG1.user_id = TG2.user_id 
+                            AND 
+                            TG1.mail_addr = TG2.mail_addr
+                          )
+                          WHERE TG2.user_id IS NULL
+                    ) AS MergeData
+                ) AS InsertData
+            OPTION (HASH JOIN)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id_1" Type="nvarchar" Size="30" />
+      <Input Name="master_id_2" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </MergeTargetListLeftJoinNotInner>
+
+  <!--データをマージ(FULL OUTER JOIN NOT INNER)-->
+  <MergeTargetListFullOuterJoinNotInner>
+    <Statement>
+      <![CDATA[
+            INSERT INTO w2_TargetListData (
+                dept_id
+                ,target_kbn
+                ,master_id
+                ,user_id
+                ,mail_addr
+                ,mail_addr_kbn
+                ,date_created
+                )
+
+            SELECT @dept_id
+                ,@target_kbn
+                ,@master_id
+                ,InsertData.user_id
+                ,InsertData.mail_addr
+                ,InsertData.mail_addr_kbn
+                ,GETDATE()
+            FROM (
+                SELECT DISTINCT user_id
+                    ,mail_addr
+                    ,mail_addr_kbn
+                FROM (
+                        SELECT TG1.user_id
+                              ,TG1.mail_addr
+                              ,TG1.mail_addr_kbn
+                        FROM ([[ SELECT_TARGETLISTDATA_1 ]]) AS TG1 
+                        LEFT JOIN ([[ SELECT_TARGETLISTDATA_2 ]]) AS TG2 
+                        ON
+                        (
+                          TG1.user_id = TG2.user_id 
+                          AND 
+                          TG1.mail_addr = TG2.mail_addr
+                        )
+                        WHERE TG2.user_id IS NULL
+                        
+                        UNION ALL
+                        
+                        SELECT TG2.user_id
+                              ,TG2.mail_addr
+                              ,TG2.mail_addr_kbn
+                        FROM ([[ SELECT_TARGETLISTDATA_2 ]]) AS TG2 
+                        LEFT JOIN ([[ SELECT_TARGETLISTDATA_1 ]]) AS TG1 ON
+                        (
+                          TG1.user_id = TG2.user_id 
+                          AND 
+                          TG1.mail_addr = TG2.mail_addr
+                        )
+                        WHERE TG1.user_id IS NULL
+                    ) AS MergeData
+                ) AS InsertData
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id_1" Type="nvarchar" Size="30" />
+      <Input Name="master_id_2" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </MergeTargetListFullOuterJoinNotInner>
+  
+</TargetListData>

@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Yahoo!カスタムフィールド追加情報系SQLステートメントXML(AddYahooCustomFields.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<AddYahooCustomFields>
+
+  <!-- 注文情報確認処理 -->
+  <CheckOrderId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Order.*
+        FROM    w2_Order
+        WHERE   w2_Order.shop_id = @shop_id
+          AND   w2_Order.order_id = @order_id
+          AND   w2_Order.order_status = 'ODR'    --　注文ステータスが「注文済み」      
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </CheckOrderId>
+
+  <!-- 注文ユーザメモ更新処理 -->
+  <AddOrderMemo>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Order
+        SET     w2_Order.memo = @memo,
+                w2_Order.date_changed = GETDATE()
+        WHERE   w2_Order.order_id = @order_id
+          AND   w2_Order.memo NOT LIKE '%■カスタムフィールド■%'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="memo" Type="nvarchar" Size="MAX" />
+    </Parameter>
+  </AddOrderMemo>
+  
+</AddYahooCustomFields>

@@ -1,0 +1,552 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ScoringSale]'))
+BEGIN
+/*
+=========================================================================================================
+  Module      : スコアリング販売 (w2_ScoringSale.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ScoringSale] (
+	[scoring_sale_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[scoring_sale_title] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[publish_status] [nvarchar] (20) NOT NULL DEFAULT (N'PUBLISHED'),
+	[public_start_datetime] [datetime],
+	[public_end_datetime] [datetime],
+	[score_axis_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[theme_color] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[top_page_use_flg] [nvarchar] (5) NOT NULL DEFAULT (N'ON'),
+	[top_page_title] [nvarchar] (250),
+	[top_page_sub_title] [nvarchar] (250),
+	[top_page_body] [nvarchar] (max),
+	[top_page_img_path] [nvarchar] (360),
+	[top_page_btn_caption] [nvarchar] (40),
+	[result_page_title] [nvarchar] (250) NOT NULL DEFAULT (N''),
+	[result_page_body_above] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[result_page_body_below] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[radar_chart_use_flg] [nvarchar] (5) NOT NULL DEFAULT (N'ON'),
+	[radar_chart_title] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[result_page_btn_caption] [nvarchar] (40) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_ScoringSale] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ScoringSale] PRIMARY KEY  CLUSTERED
+	(
+		[scoring_sale_id]
+	) ON [PRIMARY]
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ScoringSaleAxisSetting]'))
+BEGIN
+/*
+=========================================================================================================
+  Module      : スコア軸設定 (w2_ScoringSaleAxisSetting.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ScoringSaleAxisSetting] (
+	[score_axis_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[score_axis_title] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[axis_name1] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name2] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name3] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name4] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name5] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name6] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name7] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name8] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name9] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name10] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name11] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name12] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name13] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name14] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[axis_name15] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_ScoringSaleAxisSetting] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ScoringSaleAxisSetting] PRIMARY KEY  CLUSTERED
+	(
+		[score_axis_id]
+	) ON [PRIMARY]
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ScoringSaleProduct]'))
+BEGIN
+/*
+=========================================================================================================
+  Module      : スコアリング販売商品 (w2_ScoringSaleProduct.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ScoringSaleProduct] (
+	[scoring_sale_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[branch_no] [int] NOT NULL,
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[product_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[variation_id] [nvarchar] (60) NOT NULL DEFAULT (N''),
+	[quantity] [int] NOT NULL DEFAULT (0)
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_ScoringSaleProduct] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ScoringSaleProduct] PRIMARY KEY  CLUSTERED
+	(
+		[scoring_sale_id],
+		[branch_no]
+	) ON [PRIMARY]
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ScoringSaleQuestion]'))
+BEGIN
+/*
+=========================================================================================================
+  Module      : スコアリング販売質問 (w2_ScoringSaleQuestion.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ScoringSaleQuestion] (
+	[question_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[question_title] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[score_axis_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[answer_type] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[question_statement] [nvarchar] (250) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_ScoringSaleQuestion] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ScoringSaleQuestion] PRIMARY KEY  CLUSTERED
+	(
+		[question_id]
+	) ON [PRIMARY]
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ScoringSaleQuestionChoice]'))
+BEGIN
+/*
+=========================================================================================================
+  Module      : スコアリング販売質問選択肢 (w2_ScoringSaleQuestionChoice.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ScoringSaleQuestionChoice] (
+	[question_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[branch_no] [int] NOT NULL,
+	[question_choice_statement] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[question_choice_statement_img_path] [nvarchar] (360),
+	[axis_additional1] [int] NOT NULL,
+	[axis_additional2] [int] NOT NULL,
+	[axis_additional3] [int] NOT NULL,
+	[axis_additional4] [int] NOT NULL,
+	[axis_additional5] [int] NOT NULL,
+	[axis_additional6] [int] NOT NULL,
+	[axis_additional7] [int] NOT NULL,
+	[axis_additional8] [int] NOT NULL,
+	[axis_additional9] [int] NOT NULL,
+	[axis_additional10] [int] NOT NULL,
+	[axis_additional11] [int] NOT NULL,
+	[axis_additional12] [int] NOT NULL,
+	[axis_additional13] [int] NOT NULL,
+	[axis_additional14] [int] NOT NULL,
+	[axis_additional15] [int] NOT NULL
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_ScoringSaleQuestionChoice] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ScoringSaleQuestionChoice] PRIMARY KEY  CLUSTERED
+	(
+		[question_id],
+		[branch_no]
+	) ON [PRIMARY]
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ScoringSaleQuestionPage]'))
+BEGIN
+/*
+=========================================================================================================
+  Module      : スコアリング販売質問ページ (w2_ScoringSaleQuestionPage.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ScoringSaleQuestionPage] (
+	[scoring_sale_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[page_no] [int] NOT NULL DEFAULT (1),
+	[previous_page_btn_caption] [nvarchar] (40) NOT NULL DEFAULT (N''),
+	[next_page_btn_caption] [nvarchar] (40) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_ScoringSaleQuestionPage] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ScoringSaleQuestionPage] PRIMARY KEY  CLUSTERED
+	(
+		[scoring_sale_id],
+		[page_no]
+	) ON [PRIMARY]
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ScoringSaleQuestionPageItem]'))
+BEGIN
+/*
+=========================================================================================================
+  Module      : スコアリング販売質問ページ質問 (w2_ScoringSaleQuestionPageItem.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ScoringSaleQuestionPageItem] (
+	[scoring_sale_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[page_no] [int] NOT NULL DEFAULT (N''),
+	[branch_no] [int] NOT NULL,
+	[question_id] [nvarchar] (32) NOT NULL
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_ScoringSaleQuestionPageItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ScoringSaleQuestionPageItem] PRIMARY KEY  CLUSTERED
+	(
+		[scoring_sale_id],
+		[page_no],
+		[branch_no]
+	) ON [PRIMARY]
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ScoringSaleResultCondition]'))
+BEGIN
+/*
+=========================================================================================================
+  Module      : スコアリング販売結果条件 (w2_ScoringSaleResultCondition.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ScoringSaleResultCondition] (
+	[scoring_sale_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[branch_no] [int] NOT NULL,
+	[condition_branch_no] [int] NOT NULL,
+	[score_axis_axis_no] [int] NOT NULL,
+	[score_axis_axis_value_from] [int] NOT NULL,
+	[score_axis_axis_value_to] [int] NOT NULL,
+	[condition] [nvarchar] (10) NOT NULL,
+	[group_no] [int]
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_ScoringSaleResultCondition] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ScoringSaleResultCondition] PRIMARY KEY  CLUSTERED
+	(
+		[scoring_sale_id],
+		[branch_no],
+		[condition_branch_no]
+	) ON [PRIMARY]
+END
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_CreateSummaryAcsPageSp]') and OBJECTPROPERTY(id, N'IsProcedure') = 1)
+drop procedure [dbo].[w2_CreateSummaryAcsPageSp]
+GO
+/*
+=========================================================================================================
+  Module      : アクセスページサマリ作成プロシージャ(w2_CreateSummaryAcsPageSp.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE PROCEDURE [dbo].[w2_CreateSummaryAcsPageSp] (
+					@TARGET_DATE varchar(10)) AS
+
+	---------------------------------------
+	-- 定数設定
+	---------------------------------------
+	DECLARE @SUMMARY_KBN nvarchar(30)
+	SET @SUMMARY_KBN = 'acspage'
+
+	---------------------------------------
+	-- 変数定義
+	---------------------------------------
+	DECLARE @DEPT_ID nvarchar(30)
+	DECLARE @TGT_YEAR nvarchar(4)
+	DECLARE @TGT_MONTH nvarchar(2)
+	DECLARE @TGT_DAY nvarchar(2)
+	DECLARE @SCORING_SALE_TOP_URL NVARCHAR(MAX)
+	DECLARE @SCORING_SALE_QUESTION_URL NVARCHAR(MAX)
+	DECLARE @SCORING_SALE_RESULT_URL NVARCHAR(MAX)
+	DECLARE @SEPARATOR NVarChar(1)
+	
+	DECLARE @tmp_table TABLE(
+		[value_name] [nvarchar] (1000) NOT NULL DEFAULT (N''),
+		[counts] [bigint] NOT NULL DEFAULT (0)
+	)
+
+	---------------------------------------
+	-- dept_idカーソル定義
+	---------------------------------------
+	DECLARE CUR_DEPTID CURSOR FOR
+	SELECT	DISTINCT dept_id
+	  FROM	w2_AccessLogAccount
+
+	---------------------------------------
+	-- 日付分割
+	---------------------------------------
+	SET @TGT_YEAR = SUBSTRING(@TARGET_DATE, 0, 5)
+	SET @TGT_MONTH = SUBSTRING(@TARGET_DATE, 6, 2)
+	SET @TGT_DAY = SUBSTRING(@TARGET_DATE, 9, 2)
+	SET @SCORING_SALE_TOP_URL = '/ScoringSale/Top.aspx'
+	SET @SCORING_SALE_QUESTION_URL = '/ScoringSale/Question.aspx'
+	SET @SCORING_SALE_RESULT_URL = '/ScoringSale/ResultPage.aspx'
+	SET @SEPARATOR = '?'
+
+	---------------------------------------
+	-- 識別IDカーソル開く・最終行までループ
+	---------------------------------------
+	OPEN CUR_DEPTID
+
+	WHILE (1=1)
+	BEGIN
+		---------------------------------------
+		-- dept_id取得
+		---------------------------------------
+		FETCH NEXT FROM	CUR_DEPTID
+		  INTO	@DEPT_ID
+
+		-- 終端なら抜ける
+		IF @@FETCH_STATUS != 0
+		BEGIN
+			BREAK
+		END
+		
+		---------------------------------------
+		-- アクセスページサマリ作成（PC）
+		---------------------------------------
+		SET @SUMMARY_KBN = 'acspage'
+		
+		-- 初期化
+		DELETE FROM @tmp_table
+		
+		-- アクセスページ数取得・仮テーブルに格納
+		INSERT
+		  INTO	@tmp_table
+				(
+					value_name,
+					counts
+				)
+				SELECT
+					CASE WHEN
+							(
+								RIGHT(url_page, LEN(@SCORING_SALE_TOP_URL)) = @SCORING_SALE_TOP_URL
+								OR
+								RIGHT(url_page, LEN(@SCORING_SALE_QUESTION_URL)) = @SCORING_SALE_QUESTION_URL
+								OR
+								RIGHT(url_page, LEN(@SCORING_SALE_RESULT_URL)) = @SCORING_SALE_RESULT_URL
+							)
+							THEN a.url_page + @SEPARATOR + a.url_param
+							ELSE a.url_page
+						END,
+						SUM(a.count) AS count
+				FROM	(
+						SELECT
+							CASE WHEN
+								(
+									RIGHT(url_page, LEN(@SCORING_SALE_TOP_URL)) = @SCORING_SALE_TOP_URL
+									OR
+									RIGHT(url_page, LEN(@SCORING_SALE_QUESTION_URL)) = @SCORING_SALE_QUESTION_URL
+									OR
+									RIGHT(url_page, LEN(@SCORING_SALE_RESULT_URL)) = @SCORING_SALE_RESULT_URL
+								)
+								THEN url_page + @SEPARATOR + url_param
+								ELSE url_page
+							END AS url_page,
+								url_param,
+								count(*) AS count
+						 FROM	w2_AccessLog
+						WHERE	dept_id = @DEPT_ID
+						  AND	access_date = @TARGET_DATE
+						  AND	user_agent_kbn = 'PC'
+						GROUP BY
+							CASE WHEN
+								(
+									RIGHT(url_page, LEN(@SCORING_SALE_TOP_URL)) = @SCORING_SALE_TOP_URL
+									OR
+									RIGHT(url_page, LEN(@SCORING_SALE_QUESTION_URL)) = @SCORING_SALE_QUESTION_URL
+									OR
+									RIGHT(url_page, LEN(@SCORING_SALE_RESULT_URL)) = @SCORING_SALE_RESULT_URL
+								)
+								THEN url_page + @SEPARATOR + url_param
+								ELSE url_page
+								END,
+							url_param
+					) a
+				GROUP BY
+					CASE WHEN
+							(
+								RIGHT(url_page, LEN(@SCORING_SALE_TOP_URL)) = @SCORING_SALE_TOP_URL
+								OR
+								RIGHT(url_page, LEN(@SCORING_SALE_QUESTION_URL)) = @SCORING_SALE_QUESTION_URL
+								OR
+								RIGHT(url_page, LEN(@SCORING_SALE_RESULT_URL)) = @SCORING_SALE_RESULT_URL
+							)
+							THEN url_page + @SEPARATOR + url_param
+							ELSE url_page
+						END
+				ORDER BY count DESC
+		
+		-- デリート
+		DELETE
+		  FROM	w2_DispSummaryAnalysis
+		 WHERE	dept_id = @DEPT_ID
+		   AND	summary_kbn = @SUMMARY_KBN
+		   AND	tgt_year = @TGT_YEAR
+		   AND	tgt_month = @TGT_MONTH
+		   AND	tgt_day = @TGT_DAY
+		
+		-- インサート
+		INSERT
+		  INTO	w2_DispSummaryAnalysis
+				(
+				dept_id,
+				summary_kbn,
+				tgt_year,
+				tgt_month,
+				tgt_day,
+				value_name,
+				counts
+				)
+				SELECT	@DEPT_ID,
+						@SUMMARY_KBN,
+						@TGT_YEAR,
+						@TGT_MONTH,
+						@TGT_DAY,
+						value_name,
+						counts
+				  FROM	@tmp_table
+		
+		---------------------------------------
+		-- アクセスページサマリ作成（スマートフォン）
+		---------------------------------------
+		SET @SUMMARY_KBN = 'acspage_sp'
+		
+		-- 初期化
+		DELETE FROM @tmp_table
+		
+		-- アクセスページ数取得・仮テーブルに格納
+		INSERT
+		  INTO	@tmp_table
+				(
+					value_name,
+					counts
+				)
+		SELECT
+					CASE WHEN
+							(
+								RIGHT(url_page, LEN(@SCORING_SALE_TOP_URL)) = @SCORING_SALE_TOP_URL
+								OR
+								RIGHT(url_page, LEN(@SCORING_SALE_QUESTION_URL)) = @SCORING_SALE_QUESTION_URL
+								OR
+								RIGHT(url_page, LEN(@SCORING_SALE_RESULT_URL)) = @SCORING_SALE_RESULT_URL
+							)
+							THEN a.url_page + @SEPARATOR + a.url_param
+							ELSE a.url_page
+						 END,
+						SUM(a.count) AS count
+				FROM	(
+						SELECT
+							CASE WHEN
+								(
+									RIGHT(url_page, LEN(@SCORING_SALE_TOP_URL)) = @SCORING_SALE_TOP_URL
+									OR
+									RIGHT(url_page, LEN(@SCORING_SALE_QUESTION_URL)) = @SCORING_SALE_QUESTION_URL
+									OR
+									RIGHT(url_page, LEN(@SCORING_SALE_RESULT_URL)) = @SCORING_SALE_RESULT_URL
+								)
+								THEN url_page + @SEPARATOR + url_param
+								ELSE url_page
+							END AS url_page,
+								url_param,
+								count(*) AS count
+						  FROM	w2_AccessLog
+						 WHERE	dept_id = @DEPT_ID
+						   AND	access_date = @TARGET_DATE
+						   AND	user_agent_kbn = 'SP'
+						GROUP BY
+							CASE WHEN
+								(
+									RIGHT(url_page, LEN(@SCORING_SALE_TOP_URL)) = @SCORING_SALE_TOP_URL
+									OR
+									RIGHT(url_page, LEN(@SCORING_SALE_QUESTION_URL)) = @SCORING_SALE_QUESTION_URL
+									OR
+									RIGHT(url_page, LEN(@SCORING_SALE_RESULT_URL)) = @SCORING_SALE_RESULT_URL
+								)
+								THEN url_page + @SEPARATOR + url_param
+								ELSE url_page
+								END,
+							url_param
+					) a
+				GROUP BY
+					CASE WHEN
+							(
+								RIGHT(url_page, LEN(@SCORING_SALE_TOP_URL)) = @SCORING_SALE_TOP_URL
+								OR
+								RIGHT(url_page, LEN(@SCORING_SALE_QUESTION_URL)) = @SCORING_SALE_QUESTION_URL
+								OR
+								RIGHT(url_page, LEN(@SCORING_SALE_RESULT_URL)) = @SCORING_SALE_RESULT_URL
+							)
+							THEN url_page + @SEPARATOR + url_param
+							ELSE url_page
+						 END
+				ORDER BY count DESC
+		
+		-- デリート
+		DELETE
+		  FROM	w2_DispSummaryAnalysis
+		 WHERE	dept_id = @DEPT_ID
+		   AND	summary_kbn = @SUMMARY_KBN
+		   AND	tgt_year = @TGT_YEAR
+		   AND	tgt_month = @TGT_MONTH
+		   AND	tgt_day = @TGT_DAY
+		
+		-- インサート
+		INSERT
+		  INTO	w2_DispSummaryAnalysis
+				(
+				dept_id,
+				summary_kbn,
+				tgt_year,
+				tgt_month,
+				tgt_day,
+				value_name,
+				counts
+				)
+				SELECT	@DEPT_ID,
+						@SUMMARY_KBN,
+						@TGT_YEAR,
+						@TGT_MONTH,
+						@TGT_DAY,
+						value_name,
+						counts
+				  FROM	@tmp_table
+	END
+
+	---------------------------------------
+	-- カーソル閉じる
+	---------------------------------------
+	CLOSE CUR_DEPTID
+	DEALLOCATE CUR_DEPTID
+GO
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

@@ -1,0 +1,4082 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+-- メールテンプレート 自動送信フラグの追加
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_MailTemplate' AND column_name = 'auto_send_flg')
+ALTER TABLE [w2_MailTemplate] ADD [auto_send_flg] [nvarchar](1) NOT NULL DEFAULT (N'0');
+GO
+
+-- メールテンプレート新規追加
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000140')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000140'
+		,'購入履歴お支払い方法変更メール'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'お支払い方法変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お支払方法を@@ payment_name @@へ変更させて頂きました。
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'お支払い方法変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お支払方法を@@ payment_name @@へ変更させて頂きました。
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000141')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000141'
+		,'購入履歴お支払い方法変更メール【管理者向け】'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'お支払い方法変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お支払方法を@@ payment_name @@へ変更させて頂きました。
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'お支払い方法変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お支払方法を@@ payment_name @@へ変更させて頂きました。
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000142')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000142'
+		,'購入履歴お届け日変更メール'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'お届け日変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け日を変更させて頂きました。
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'お届け日変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け日を変更させて頂きました。
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000143')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000143'
+		,'購入履歴お届け日変更メール【管理者向け】'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'お届け日変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け日を変更させて頂きました。
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'お届け日変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け日を変更させて頂きました。
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000144')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000144'
+		,'購入履歴お届け先変更メール'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'お届け先変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け先を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■変更後のお届け先
+住所
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @
+氏名
+@@ shipping_name @@ 様
+電話番号
+@@ shipping_tel1 @@
+配送方法
+@@ shipping_method_name @@
+配送希望日
+@@ shipping_date @@
+配送希望時間帯
+@@ shipping_time @@
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'お届け先変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け先を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■変更後のお届け先
+住所
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @
+氏名
+@@ shipping_name @@ 様
+電話番号
+@@ shipping_tel1 @@
+配送方法
+@@ shipping_method_name @@
+配送希望日
+@@ shipping_date @@
+配送希望時間帯
+@@ shipping_time @@
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000145')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000145'
+		,'購入履歴お届け先変更メール【管理者向け】'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'お届け先変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け先を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■変更後のお届け先
+住所
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @
+氏名
+@@ shipping_name @@ 様
+電話番号
+@@ shipping_tel1 @@
+配送方法
+@@ shipping_method_name @@
+配送希望日
+@@ shipping_date @@
+配送希望時間帯
+@@ shipping_time @@
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'お届け先変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け先を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■変更後のお届け先
+住所
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @
+氏名
+@@ shipping_name @@ 様
+電話番号
+@@ shipping_tel1 @@
+配送方法
+@@ shipping_method_name @@
+配送希望日
+@@ shipping_date @@
+配送希望時間帯
+@@ shipping_time @@
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000146')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000146'
+		,'購入履歴利用ポイント変更メール'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'利用ポイント変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+利用ポイントを@@ order_point_use @@へ変更させて頂きました。
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'利用ポイント変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+利用ポイントを@@ order_point_use @@へ変更させて頂きました。
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000147')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000147'
+		,'購入履歴利用ポイント変更メール【管理者向け】'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'利用ポイント変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+利用ポイントを@@ order_point_use @@へ変更させて頂きました。
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'利用ポイント変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+利用ポイントを@@ order_point_use @@へ変更させて頂きました。
+
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000150')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000150'
+		,'ユーザー登録情報の変更メール'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'ユーザー登録情報変更のお知らせ'
+		,'@@ name1 @@@@ name2 @@様
+
+いつもご利用いただき、ありがとうございます。
+お客様情報を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■ 更新後のお客様情報
+メールアドレス：@@ mail_addr @@
+姓名(フリガナ)：@@ name1 @@@@ name2 @@(@@ name_kana1 @@@@ name_kana2 @@)
+郵便番号：@@ zip @@
+住所：@@ addr1 @@@@ addr2 @@@@ addr3 @@@@ addr4 @@
+電話番号：@@ tel1 @@
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'ユーザー登録情報変更のお知らせ'
+		,'@@ name1 @@@@ name2 @@様
+
+いつもご利用いただき、ありがとうございます。
+お客様情報を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■ 更新後のお客様情報
+メールアドレス：@@ mail_addr @@
+姓名(フリガナ)：@@ name1 @@@@ name2 @@(@@ name_kana1 @@@@ name_kana2 @@)
+郵便番号：@@ zip @@
+住所：@@ addr1 @@@@ addr2 @@@@ addr3 @@@@ addr4 @@
+電話番号：@@ tel1 @@
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000151')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000151'
+		,'ユーザー登録情報の変更メール【管理者向け】'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'ユーザー登録情報変更のお知らせ'
+		,'@@ name1 @@@@ name2 @@様
+
+いつもご利用いただき、ありがとうございます。
+お客様情報を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■ 更新後のお客様情報
+メールアドレス：@@ mail_addr @@
+姓名(フリガナ)：@@ name1 @@@@ name2 @@(@@ name_kana1 @@@@ name_kana2 @@)
+郵便番号：@@ zip @@
+住所：@@ addr1 @@@@ addr2 @@@@ addr3 @@@@ addr4 @@
+電話番号：@@ tel1 @@
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'ユーザー登録情報変更のお知らせ'
+		,'@@ name1 @@@@ name2 @@様
+
+いつもご利用いただき、ありがとうございます。
+お客様情報を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■ 更新後のお客様情報
+メールアドレス：@@ mail_addr @@
+姓名(フリガナ)：@@ name1 @@@@ name2 @@(@@ name_kana1 @@@@ name_kana2 @@)
+郵便番号：@@ zip @@
+住所：@@ addr1 @@@@ addr2 @@@@ addr3 @@@@ addr4 @@
+電話番号：@@ tel1 @@
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000152')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000152'
+		,'アドレス帳登録・変更メール'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'アドレス帳登録・変更のお知らせ'
+		,'@@ name1 @@@@ name2 @@様
+
+いつもご利用いただき、ありがとうございます。
+アドレス帳を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■登録・変更後のアドレス帳情報
+配送先名
+@@ name @@
+氏名(ふりがな)
+@@ shipping_name1 @@@@ shipping_name2 @@(@@ shipping_name_kana1 @@@@ shipping_name_kana2 @@)
+住所
+〒@@ shipping_zip @@
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+電話番号
+@@ shipping_tel1 @@
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'アドレス帳登録・変更のお知らせ'
+		,'@@ name1 @@@@ name2 @@様
+
+いつもご利用いただき、ありがとうございます。
+アドレス帳を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■登録・変更後のアドレス帳情報
+配送先名
+@@ name @@
+氏名(ふりがな)
+@@ shipping_name1 @@@@ shipping_name2 @@(@@ shipping_name_kana1 @@@@ shipping_name_kana2 @@)
+住所
+〒@@ shipping_zip @@
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+電話番号
+@@ shipping_tel1 @@
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000153')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000153'
+		,'アドレス帳登録・変更メール【管理者向け】'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'アドレス帳登録・変更のお知らせ'
+		,'@@ name1 @@@@ name2 @@様
+
+いつもご利用いただき、ありがとうございます。
+アドレス帳を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■登録・変更後のアドレス帳情報
+配送先名
+@@ name @@
+氏名(ふりがな)
+@@ shipping_name1 @@@@ shipping_name2 @@(@@ shipping_name_kana1 @@@@ shipping_name_kana2 @@)
+住所
+〒@@ shipping_zip @@
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+電話番号
+@@ shipping_tel1 @@
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'アドレス帳登録・変更のお知らせ'
+		,'@@ name1 @@@@ name2 @@様
+
+いつもご利用いただき、ありがとうございます。
+アドレス帳を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■登録・変更後のアドレス帳情報
+配送先名
+@@ name @@
+氏名(ふりがな)
+@@ shipping_name1 @@@@ shipping_name2 @@(@@ shipping_name_kana1 @@@@ shipping_name_kana2 @@)
+住所
+〒@@ shipping_zip @@
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+電話番号
+@@ shipping_tel1 @@
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000154')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000154'
+		,'クレジットカード登録案内メール'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'クレジットカード登録のお知らせ'
+		,'@@ name1 @@@@ name2 @@ 様
+
+いつもご利用いただき、ありがとうございます。
+クレジットカードの登録が完了いたしましたのでお知らせいたします。
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'クレジットカード登録のお知らせ'
+		,'@@ name1 @@@@ name2 @@ 様
+
+いつもご利用いただき、ありがとうございます。
+クレジットカードの登録が完了いたしましたのでお知らせいたします。
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000155')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000155'
+		,'クレジットカード登録案内メール【管理者向け】'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'クレジットカード登録のお知らせ'
+		,'@@ name1 @@@@ name2 @@ 様
+
+いつもご利用いただき、ありがとうございます。
+クレジットカードの登録が完了いたしましたのでお知らせいたします。
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'クレジットカード登録のお知らせ'
+		,'@@ name1 @@@@ name2 @@ 様
+
+いつもご利用いただき、ありがとうございます。
+クレジットカードの登録が完了いたしましたのでお知らせいたします。
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000156')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000156'
+		,'注文情報変更メール（管理画面）'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'注文情報変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+本メールにて、注文情報の変更を承りました。 
+詳細は下記注文情報をご確認ください。
+
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'注文情報変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+本メールにて、注文情報の変更を承りました。 
+詳細は下記注文情報をご確認ください。
+
+■注文情報
+注文番号      : @@ order_id @@
+ご注文日時    : @@ order_date @@
+お支払方法    : @@ payment_name @@ 
+運送会社      : @@ delivery_company_name @@
+配送方法      : @@ shipping_method_name @@
+配送希望日    : @@ shipping_date @@
+配送希望時間帯: @@ shipping_time @@
+■配送先
+〒@@ shipping_zip @@
+  @@ shipping_addr1 @@ @@ shipping_addr2 @@
+  @@ shipping_addr3 @@ @@ shipping_addr4 @@
+  @@ shipping_name @@
+  @@ shipping_tel1 @@
+
+■注文メモ
+@@ memo @@
+
+<@@UseFixedPurchase@@>
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定 : @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計       : @@ order_price_subtotal @@ 円
+配送料     : @@ order_price_shipping @@ 円
+決済手数料 : @@ order_price_exchange @@ 円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+<@@UseFixedPurchase@@>
+定期購入割引額：\@@ fixed_purchase_discount_price @@
+</@@UseFixedPurchase@@>
+注文合計   : @@ order_price_total @@ 円(税込み)
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント   : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント   : @@ order_point_use @@ ポイント
+ポイント利用額 : @@ order_point_use_yen @@ 円
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名     : @@ coupon_disp_name @@
+クーポン割引額 : @@ order_coupon_use @@ 円
+</@@UseCoupon@@>
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000157')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000157'
+		,'定期購入情報お支払い方法変更メール'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'定期購入お支払い方法変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お支払方法を@@ payment_name @@へ変更させて頂きました。
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'定期購入お支払い方法変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お支払方法を@@ payment_name @@へ変更させて頂きました。
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000158')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000158'
+		,'定期購入情報お支払い方法変更メール【管理者向け】'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'定期購入お支払い方法変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お支払方法を@@ payment_name @@へ変更させて頂きました。
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'定期購入お支払い方法変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お支払方法を@@ payment_name @@へ変更させて頂きました。
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000159')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000159'
+		,'定期購入情報配送パターン変更メール'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'定期購入配送パターン変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け日を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■変更後の配送パターン
+配送パターン：@@ fixed_purchase_pattern @@
+次回配送日　　：@@ next_shipping_date_yyyymd(d) @@
+次々回配送日　：@@ next_next_shipping_date_yyyymd(d) @@
+配送希望時間帯：@@ shipping_time @@
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'定期購入配送パターン変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け日を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■変更後の配送パターン
+配送パターン：@@ fixed_purchase_pattern @@
+次回配送日　　：@@ next_shipping_date_yyyymd(d) @@
+次々回配送日　：@@ next_next_shipping_date_yyyymd(d) @@
+配送希望時間帯：@@ shipping_time @@
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000160')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000160'
+		,'定期購入情報配送パターン変更メール【管理者向け】'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'定期購入配送パターン変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け日を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■変更後の配送パターン
+配送パターン：@@ fixed_purchase_pattern @@
+次回配送日　　：@@ next_shipping_date_yyyymd(d) @@
+次々回配送日　：@@ next_next_shipping_date_yyyymd(d) @@
+配送希望時間帯：@@ shipping_time @@
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'定期購入配送パターン変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け日を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■変更後の配送パターン
+配送パターン：@@ fixed_purchase_pattern @@
+次回配送日　　：@@ next_shipping_date_yyyymd(d) @@
+次々回配送日　：@@ next_next_shipping_date_yyyymd(d) @@
+配送希望時間帯：@@ shipping_time @@
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000161')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000161'
+		,'定期購入情報お届け先変更メール'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'定期購入お届け先変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け先を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■変更後のお届け先
+住所
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @
+氏名
+@@ shipping_name @@ 様
+電話番号
+@@ shipping_tel1 @@
+配送方法
+@@ shipping_method_name @@
+配送希望日
+@@ shipping_date @@
+配送希望時間帯
+@@ shipping_time @@
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'定期購入お届け先変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け先を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■変更後のお届け先
+住所
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @
+氏名
+@@ shipping_name @@ 様
+電話番号
+@@ shipping_tel1 @@
+配送方法
+@@ shipping_method_name @@
+配送希望日
+@@ shipping_date @@
+配送希望時間帯
+@@ shipping_time @@
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000162')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000162'
+		,'定期購入情報お届け先変更メール【管理者向け】'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'定期購入お届け先変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け先を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■変更後のお届け先
+住所
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @
+氏名
+@@ shipping_name @@ 様
+電話番号
+@@ shipping_tel1 @@
+配送方法
+@@ shipping_method_name @@
+配送希望日
+@@ shipping_date @@
+配送希望時間帯
+@@ shipping_time @@
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'定期購入お届け先変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+お届け先を下記へ変更させて頂きました。
+ご確認くださいますようお願い致します。
+
+■変更後のお届け先
+住所
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @
+氏名
+@@ shipping_name @@ 様
+電話番号
+@@ shipping_tel1 @@
+配送方法
+@@ shipping_method_name @@
+配送希望日
+@@ shipping_date @@
+配送希望時間帯
+@@ shipping_time @@
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000163')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000163'
+		,'定期購入情報利用ポイント変更メール'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'定期購入利用ポイント変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+次回利用ポイントを@@ next_shipping_use_point @@へ変更させて頂きました。
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'定期購入利用ポイント変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+次回利用ポイントを@@ next_shipping_use_point @@へ変更させて頂きました。
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000164')BEGIN
+	INSERT INTO [w2_MailTemplate] (
+		[shop_id]
+		,[mail_id]
+		,[mail_name]
+		,[mail_from]
+		,[mail_to]
+		,[mail_cc]
+		,[mail_bcc]
+		,[mail_subject]
+		,[mail_body]
+		,[mail_subject_mobile]
+		,[mail_body_mobile]
+		,[mail_attachmentfile_path]
+		,[del_flg]
+		,[date_created]
+		,[date_changed]
+		,[last_changed]
+		,[mail_from_name]
+		,[mail_category]
+		,[auto_send_flg]
+	)
+	VALUES (
+		'0'
+		,'00000164'
+		,'定期購入情報利用ポイント変更メール【管理者向け】'
+		,'bh@w2s.xyz'
+		,'bh@w2s.xyz'
+		,''
+		,''
+		,'定期購入利用ポイント変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+次回利用ポイントを@@ next_shipping_use_point @@へ変更させて頂きました。
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,'定期購入利用ポイント変更のお知らせ'
+		,'@@ owner_name @@ 様
+
+いつもご利用いただき、ありがとうございます。
+次回利用ポイントを@@ next_shipping_use_point @@へ変更させて頂きました。
+
+詳細は下記定期購入情報をご確認ください。
+
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【運送会社】　 : @@ delivery_company_name @@
+【配送方法】　 : @@ shipping_method_name @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+【定期購入商品】
+@@ fixed_purchase_items @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+
+今後とも、●●●●をよろしくお願いいたします。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+		,''
+		,'0'
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,CAST('20171018 00:00:00.000' AS DATETIME)
+		,'ｗ２ユーザー'
+		,''
+		,''
+		,'0'
+	)
+END
+
+-- 既存メールテンプレートのカテゴリ追加と自動送信フラグデフォルトONの振り分け
+  -- カテゴリ追加 通常注文
+  UPDATE w2_MailTemplate
+  SET mail_category = 'Order'
+  WHERE mail_id = '00000050' 
+    OR mail_id = '00000051' 
+    OR mail_id = '00000060' 
+    OR mail_id = '00000070' 
+    OR mail_id = '00000080' 
+    OR mail_id = '00000140' 
+    OR mail_id = '00000141' 
+    OR mail_id = '00000142' 
+    OR mail_id = '00000143' 
+    OR mail_id = '00000144' 
+    OR mail_id = '00000145' 
+    OR mail_id = '00000146' 
+    OR mail_id = '00000147' 
+    OR mail_id = '00000156'
+  
+  -- カテゴリ追加 定期購入
+  UPDATE w2_MailTemplate
+  SET mail_category = 'FixedPurchase'
+  WHERE mail_id = '00000157' 
+    OR mail_id = '00000158' 
+    OR mail_id = '00000159' 
+    OR mail_id = '00000160' 
+    OR mail_id = '00000161' 
+    OR mail_id = '00000162' 
+    OR mail_id = '00000163' 
+    OR mail_id = '00000164' 
+    OR mail_id = '10000050' 
+    OR mail_id = '10000051'
+
+  -- カテゴリ追加 再入荷通知
+  UPDATE w2_MailTemplate
+  SET mail_category = 'ProductArrival'
+  WHERE mail_id = '00000110' 
+    OR mail_id = '00000111' 
+    OR mail_id = '00000112'
+
+  -- 自動送信フラグ　デフォルトON
+  UPDATE w2_MailTemplate
+  SET auto_send_flg = '1'
+  WHERE mail_id = '00000010' 
+    OR mail_id = '00000011' 
+		OR mail_id = '00000020' 
+		OR mail_id = '00000021' 
+		OR mail_id = '00000022' 
+		OR mail_id = '00000023' 
+		OR mail_id = '00000024' 
+		OR mail_id = '00000050' 
+		OR mail_id = '00000051' 
+		OR mail_id = '00000100' 
+		OR mail_id = '00000101' 
+		OR mail_id = '00000120' 
+		OR mail_id = '00000121' 
+		OR mail_id = '00000122' 
+		OR mail_id = '00000201' 
+		OR mail_id = '00000202' 
+		OR mail_id = '00000203' 
+		OR mail_id = '00000204' 
+		OR mail_id = '00000300' 
+		OR mail_id = '10000010' 
+		OR mail_id = '10000011' 
+		OR mail_id = '10000015' 
+		OR mail_id = '10000050' 
+		OR mail_id = '10000051' 
+		OR mail_id = '10000060' 
+		OR mail_id = '10000061' 
+		OR mail_id = '10000070' 
+		OR mail_id = '10000071'
+]]>
+    </Statement>
+  </Up>
+</Migration>

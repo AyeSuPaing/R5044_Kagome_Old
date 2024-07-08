@@ -1,0 +1,175 @@
+﻿@*
+=========================================================================================================
+  Module      : スタッフ情報確認ページ(Confirm.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@{
+	ViewBag.Title = "スタッフ情報";
+	Layout = Model.PageLayout;
+	var sessionWrapper = new SessionWrapper(this.Session);
+}
+@model w2.Cms.Manager.ViewModels.Staff.ConfirmViewModel
+
+@helper TopButtomControls()
+{
+	using (Html.BeginForm("Confirm", Constants.CONTROLLER_W2CMS_MANAGER_STAFF, new
+	{
+		this.Model.ActionStatus,
+		this.Model.StaffId
+	}, FormMethod.Post, new
+	{
+		name = "Confirm",
+	}))
+	{
+		if (this.Model.PageLayout == Constants.LAYOUT_PATH_DEFAULT)
+		{
+		<input type="button" value="  戻る  " onclick="javascript: history.back();" class="btn btn-main"/>
+			if (this.Model.IsActionStatusDetail)
+			{
+				<input type="submit" name="Edit" value="  編集する  " class="btn btn-main" />
+			<input type="submit" name="CopyInsert" value="  コピー新規登録する  " class="btn btn-main" />
+			<input type="submit" name="Delete" value="  削除する  " onclick="return confirm('情報を削除してもよろしいですか？');" class="btn btn-main" />
+			}
+			if (this.Model.IsActionStatusUpdate)
+			{
+			<input type="submit" name="InsertUpdate" value="  更新する  " class="btn btn-main">
+			}
+			if (this.Model.IsActionStatusInsert)
+			{
+			<input type="submit" name="InsertUpdate" value="  登録する  " class="btn btn-main">
+			}
+		}
+	}
+}
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr><td><h1 class="page-title">スタッフ情報</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	<tr>
+		<td>
+			<h2 class="cmn-hed-h2">
+				@if (this.Model.IsActionStatusDetail)
+				{
+					@:スタッフ情報詳細
+				}
+				@if (this.Model.IsActionStatusInsert)
+				{
+					@:スタッフ情報入力確認
+				}
+				@if (this.Model.IsActionStatusUpdate)
+				{
+					@:スタッフ情報入力確認
+				}
+			</h2>
+		</td>
+	</tr>
+	<!--▽ 詳細 ▽-->
+	<tr>
+	<td>
+		<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+		<tr>
+		<td>
+		<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+		<tr>
+		<td align="center">
+		<table cellspacing="0" cellpadding="0" border="0">
+		<tr>
+			<td>
+				<div class="action_part_top">@TopButtomControls()</div>
+				<table class="detail_table" width="758" border="0" cellspacing="1" cellpadding="3">
+					@if (this.Model.IsActionStatusInsert == false)
+					{
+						<tr>
+							<td align="left" class="detail_title_bg" width="30%">スタッフID</td>
+							<td align="left" class="detail_item_bg">@this.Model.StaffId</td>
+							@Html.Hidden("staffId", @Model.StaffId)
+						</tr>
+					}
+					<tr>
+						<td align="left" class="detail_title_bg" width="30%">スタッフ名</td>
+						<td align="left" class="detail_item_bg">@this.Model.StaffName</td>
+					</tr>
+					<tr>
+						<td align="left" class="detail_title_bg" width="30%">性別</td>
+						<td align="left" class="detail_item_bg">@this.Model.StaffSex</td>
+					</tr>
+					<tr>
+						<td align="left" class="detail_title_bg" width="30%">身長</td>
+						<td align="left" class="detail_item_bg">@this.Model.StaffHeight</td>
+					</tr>
+					<tr>
+						<td align="left" class="detail_title_bg" width="30%">リアル店舗ID</td>
+						<td align="left" class="detail_item_bg">@this.Model.RealShopId</td>
+					</tr>
+					<tr>
+						<td align="left" class="detail_title_bg" width="30%">プロフィールテキスト</td>
+						<td align="left" class="detail_item_bg">@this.Model.StaffProfile.Replace("\r\n", "<br />")</td>
+					</tr>
+					<tr>
+						<td align="left" class="detail_title_bg" width="30%">インスタグラムID</td>
+						<td align="left" class="detail_item_bg">
+							@if (string.IsNullOrEmpty(this.Model.StaffInstagramId) == false)
+							{
+								<a target="_blank" href="@Html.Raw("https://www.instagram.com/" + this.Model.StaffInstagramId)">@Html.Label("@" + this.Model.StaffInstagramId)</a>
+							}
+						</td>
+					</tr>
+					<tr>
+						<td align="left" class="detail_title_bg" width="30%">オペレータID</td>
+						<td align="left" class="detail_item_bg">@this.Model.OperatorId</td>
+					</tr>
+					<tr style="display: none;">
+						<td align="left" class="detail_title_bg" width="30%">コーディネートモデルフラグ</td>
+						<td align="left" class="detail_item_bg">@this.Model.ModelFlg</td>
+					</tr>
+					<tr>
+						<td align="left" class="detail_title_bg" width="30%">有効フラグ</td>
+						<td align="left" class="detail_item_bg">@this.Model.ValidFlg</td>
+					</tr>
+					@if (this.Model.IsActionStatusDetail)
+					{
+						<tr id="trDateCreated">
+							<td align="left" class="detail_title_bg" width="30%">作成日</td>
+							<td align="left" class="detail_item_bg">@this.Model.DateCreated</td>
+						</tr>
+						<tr id="trDateChanged">
+							<td align="left" class="detail_title_bg" width="30%">更新日</td>
+							<td align="left" class="detail_item_bg">@this.Model.DateChanged</td>
+						</tr>
+						<tr id="trLastChanged">
+							<td align="left" class="detail_title_bg" width="30%">最終更新者</td>
+							<td align="left" class="detail_item_bg">@this.Model.LastChanged</td>
+						</tr>
+						if (this.Model.PageLayout == Constants.LAYOUT_PATH_DEFAULT)
+						{
+							<tr id="trThumbnail">
+								<td align="left" class="detail_title_bg">サムネイル</td>
+								<td align="left" class="detail_item_bg">
+									<img src="@this.Model.StaffThumbnail" border="0" style="width: 100px; height: 100px">
+								</td>
+							</tr>
+						}
+					}
+				</table>
+				@if (this.Model.IsActionStatusDetail && (this.Model.PageLayout == Constants.LAYOUT_PATH_DEFAULT))
+				{
+					@Html.Partial("ImageForm", this.Model.Image)
+				}
+				<div class="action_part_bottom">@TopButtomControls()</div>
+			</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+	</td>
+	</tr>
+	<!--△ 詳細 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+@Html.Hidden("pageLayout", @Model.PageLayout)

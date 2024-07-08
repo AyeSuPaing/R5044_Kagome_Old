@@ -1,0 +1,367 @@
+﻿@*
+=========================================================================================================
+  Module      : お知らせ設定登録・編集ページ(Register.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using w2.Cms.Manager.Codes
+@using w2.Common.Util
+@{
+	ViewBag.Title = "お知らせ設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+@model w2.Cms.Manager.ViewModels.News.RegisterViewModel
+
+@helper TopBottomControls()
+{
+	<input type="submit" name="BackList" value="  一覧へ戻る  " class="btn btn-main"/>
+	if (Model.IsActionStatusUpdate)
+	{
+	<input type="submit" name="CopyInsert" value="  コピー新規登録する  " class="btn btn-main"/>
+	<input type="submit" name="Delete" value="  削除する  " class="btn btn-main"/>
+	<input type="button" value="  更新する  " class="btn btn-main" onclick="validate('update', { name: 'Input.IsInsert', value: false });">
+	<input type="submit" name="Update" id="update" style="display: none;">
+	}
+	if (Model.IsActionStatusInsert)
+	{
+	<input type="button" value="  登録する  " class="btn btn-main" onclick="validate('insert', { name: 'Input.IsInsert', value: true });">
+	<input type="submit" name="Insert" id="insert" style="display: none;">
+	}
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<!--▽ タイトル ▽-->
+	<tr><td><h1 class="page-title">お知らせ設定</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	@if (Model.IsActionStatusInsert)
+	{
+		<tr id="trRegister">
+			<td>
+				<h2 class="cmn-hed-h2">お知らせ設定登録</h2>
+			</td>
+		</tr>
+
+	}
+	@if (Model.IsActionStatusUpdate)
+	{
+		<tr id="trEdit">
+			<td>
+				<h2 class="cmn-hed-h2">お知らせ設定編集</h2>
+			</td>
+		</tr>
+	}
+	<!--△ タイトル △-->
+	<!--▽ 登録・編集 ▽-->
+	<tr>
+	<td>
+	<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+	<tr>
+	<td>
+	<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+		<table cellspacing="0" cellpadding="0" border="0">
+			<tr>
+				<td>
+					<div id="divComp" class="action_part_top">
+						<table class="info_table" cellspacing="1" cellpadding="3" width="100%" border="0">
+							@if (Model.UpdateInsertSuccessFlg)
+							{
+								<tr class="info_item_bg">
+									<td align="left">お知らせ設定を登録/更新しました。
+									</td>
+								</tr>
+							}
+						</table>
+					</div>
+					@using (Html.BeginForm("Register", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_NEWS, new
+					{
+						Model.ActionStatus,
+						Model.Input.NewsId
+					}, FormMethod.Post,new{ Id="input_form" }))
+					{
+						<div class="action_part_top">
+							@TopBottomControls()
+						</div>
+						<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+							<tbody>
+								<tr>
+									<td class="edit_title_bg" align="center" colspan="2">基本情報</td>
+								</tr>
+								@if (Model.IsActionStatusInsert == false)
+								{
+									<tr id="trNewsId">
+										<td class="edit_title_bg" align="left">新着ID</td>
+										<td class="edit_item_bg" align="left">
+											@Model.Input.NewsId
+										</td>
+										@Html.HiddenFor(m => m.Input.NewsId, new
+										{
+											Name = "Input.NewsId"
+										})
+									</tr>
+								}
+								<tr>
+									<td class="edit_title_bg" align="left">表示日付</td>
+									<td class="edit_item_bg" align="left">
+										@Html.DropDownListFor(model => model.Input.DisplayDateFromYear, new SelectList(Model.YearItems, "Value", "Text"), "----", new
+										{
+											Id = "DisplayDateFromYear",
+											Name = "Input.DisplayDateFromYear"
+										})
+										/
+										@Html.DropDownListFor(model => model.Input.DisplayDateFromMonth, new SelectList(Model.MonthItems, "Value", "Text"), "--", new
+										{
+											Id = "DisplayDateFromMonth",
+											Name = "Input.DisplayDateFromMonth"
+										})
+										/
+										@Html.DropDownListFor(model => model.Input.DisplayDateFromDay, new SelectList(Model.DayItems, "Value", "Text"), "--", new
+										{
+											Id = "DisplayDateFromDay",
+											Name = "Input.DisplayDateFromDay"
+										})
+										&nbsp;
+										@Html.DropDownListFor(model => model.Input.DisplayDateFromHour, new SelectList(Model.HourItems, "Value", "Text"), "--", new
+										{
+											Id = "DisplayDateFromHour",
+											Name = "Input.DisplayDateFromHour"
+										})
+																								:
+										@Html.DropDownListFor(model => model.Input.DisplayDateFromMinute, new SelectList(Model.MinuteItems, "Value", "Text"), "--", new
+										{
+											Id = "DisplayDateFromMinute",
+											Name = "Input.DisplayDateFromMinute"
+										})
+																								:
+										@Html.DropDownListFor(model => model.Input.DisplayDateFromSecond, new SelectList(Model.SecondItems, "Value", "Text"), "--", new
+										{
+											Id = "DisplayDateFromSecond",
+											Name = "Input.DisplayDateFromSecond"
+										})
+										～<br />
+										@Html.DropDownListFor(model => model.Input.DisplayDateToYear, new SelectList(Model.YearItems, "Value", "Text"), "----", new
+										{
+											Id = "DisplayDateToYear",
+											Name = "Input.DisplayDateToYear"
+										})
+										/
+										@Html.DropDownListFor(model => model.Input.DisplayDateToMonth, new SelectList(Model.MonthItems, "Value", "Text"), "--", new
+										{
+											Id = "DisplayDateToMonth",
+											Name = "Input.DisplayDateToMonth"
+										})
+										/
+										@Html.DropDownListFor(model => model.Input.DisplayDateToDay, new SelectList(Model.DayItems, "Value", "Text"), "--", new
+										{
+											Id = "DisplayDateToDay",
+											Name = "Input.DisplayDateToDay"
+										})
+										&nbsp;
+										@Html.DropDownListFor(model => model.Input.DisplayDateToHour, new SelectList(Model.HourItems, "Value", "Text"), "--", new
+										{
+											Id = "DisplayDateToHour",
+											Name = "Input.DisplayDateToHour"
+										})
+										:
+										@Html.DropDownListFor(model => model.Input.DisplayDateToMinute, new SelectList(Model.MinuteItems, "Value", "Text"), "--", new
+										{
+											Id = "DisplayDateToMinute",
+											Name = "Input.DisplayDateToMinute"
+										})
+										:
+										@Html.DropDownListFor(model => model.Input.DisplayDateToSecond, new SelectList(Model.SecondItems, "Value", "Text"), "--", new
+										{
+											Id = "DisplayDateToSecond",
+											Name = "Input.DisplayDateToSecond"
+										})
+										&nbsp;(<a href="Javascript:SetNoDisplayDateTo('display_date_to');">終了日時を指定しない</a>)
+									</td>
+								</tr>
+								<tr>
+									<td class="edit_title_bg" align="left">本文<span class="notice">*</span></td>
+									<td class="edit_item_bg" align="left">
+										@Html.RadioButtonFor(m => m.Input.NewsTextKbn, w2.Database.Common.Constants.FLG_NEWS_NEWS_TEXT_KBN_TEXT, new { Id = "NewsTextKbn_TEXT" })
+										@Html.Label("NewsTextKbn_TEXT", "TEXT")
+										@Html.RadioButtonFor(m => m.Input.NewsTextKbn, w2.Database.Common.Constants.FLG_NEWS_NEWS_TEXT_KBN_HTML, new { Id = "NewsTextKbn_HTML" })
+										@Html.Label("NewsTextKbn_HTML", "HTML")
+										&nbsp;
+										<input type="button" onclick="Javascript: OpenWysiwyg('NewsText', 'NewsTextKbn_HTML');" value="  HTMLエディタ  " class="btn btn-main"/><br />
+										@Html.TextAreaFor(m => m.Input.NewsText, new
+										{
+											Id = "NewsText",
+											Name = "Input.NewsText",
+											Rows = "5",
+											cols = "20",
+											style = "width:620px"
+										})
+								</tr>
+								@if (Constants.GLOBAL_OPTION_ENABLE && Model.IsActionStatusUpdate)
+								{
+									foreach (var translation in Model.NewsTranslationData)
+									{
+									<tr>
+										<td class="edit_title_bg" align="left" rowspan="2">言語コード:@translation.LanguageCode<br />
+											言語ロケールID:@translation.LanguageLocaleId</td>
+										<td class="detail_item_bg" align="left">
+											@ValueText.GetValueText(w2.Database.Common.Constants.TABLE_NEWS, w2.Database.Common.Constants.FIELD_NEWS_NEWS_TEXT_KBN, translation.DisplayKbn)
+										</td>
+									</tr>
+									<tr>
+										<td class="detail_item_bg" align="left">
+											@translation.AfterTranslationalName
+										</td>
+									</tr>
+									}
+								}
+								<tr>
+									<td class="edit_title_bg" align="left">TOP表示</td>
+									<td class="edit_item_bg" align="left">
+										@Html.CheckBoxFor(m => m.Input.DispFlg, new
+										{
+											Name = "Input.DispFlg"
+										})@Html.LabelFor(m => m.Input.DispFlg, "表示する")
+									</td>
+								</tr>
+								@if (w2.App.Common.Constants.PRODUCT_BRAND_ENABLED)
+								{
+									<tr>
+										<td class="edit_title_bg" align="left">ブランドID</td>
+										<td class="edit_item_bg" align="left">
+											@Html.DropDownListFor(model => model.Input.BrandId, new SelectList(Model.BrandItems, "Value", "Text"), "", new
+											{
+												Id = "BrandId",
+												Name = "Input.BrandId"
+											})
+										</td>
+									</tr>
+								}
+								@if (Model.IsActionStatusInsert)
+								{
+									<tr id="trDisplayOrderRegister">
+										<td class="edit_title_bg" align="left">並び順</td>
+										<td class="edit_item_bg" align="left">新規登録は、先頭に追加されます。</td>
+									</tr>
+								}
+								else
+								{
+									<tr id="trDisplayOrderEdit">
+										<td class="edit_title_bg" align="left">並び順<span class="notice">*</span></td>
+										<td class="edit_item_bg" align="left">
+											@Html.TextBoxFor(m => m.Input.DisplayOrder, new
+											{
+												Name = "Input.DisplayOrder"
+											})
+										</td>
+									</tr>
+								}
+								<tr>
+									<td class="edit_title_bg" align="left">有効フラグ</td>
+									<td class="edit_item_bg" align="left">
+										@Html.CheckBoxFor(m => m.Input.ValidFlg, new
+										{
+											Name = "Input.ValidFlg"
+										})@Html.LabelFor(m => m.Input.ValidFlg, "有効")
+									</td>
+								</tr>
+								@if (Model.IsActionStatusInsert == false)
+								{
+									<tr id="trDateCreated">
+										<td class="edit_title_bg" align="left">作成日</td>
+										<td class="edit_item_bg" align="left">@Model.Input.DateCreated</td>
+										@Html.HiddenFor(m => m.Input.DateCreated, new
+										{
+											Name = "Input.DateCreated"
+										})
+									</tr>
+									<tr id="trDateChanged">
+										<td class="edit_title_bg" align="left">更新日</td>
+										<td class="edit_item_bg" align="left">@Model.Input.DateChanged</td>
+										@Html.HiddenFor(m => m.Input.DateChanged, new
+										{
+											Name = "Input.DateChanged"
+										})
+									</tr>
+									<tr id="trLastChanged">
+										<td class="edit_title_bg" align="left">最終更新者</td>
+										<td class="edit_item_bg" align="left">@Model.Input.LastChanged</td>
+										@Html.HiddenFor(m => m.Input.LastChanged, new
+										{
+											Name = "Input.LastChanged"
+										})
+									</tr>
+								}
+							</tbody>
+						</table>
+						<div class="action_part_bottom">
+							@TopBottomControls()
+						</div>
+					}
+				</td>
+			</tr>
+		</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 登録・編集 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		// Wysiwygエディタで編集中のTextarea
+		var textAreaWysiwygBinded;
+
+		// Wysiwygエディタを開く
+		function OpenWysiwyg(textAreaId, htmlTextKbn) {
+			textAreaWysiwygBinded = document.getElementById(textAreaId);
+			open_window('@Url.Action("Edit", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_WYSIWYG_EDITOR)',
+				'wysiwyg',
+				'width=1000,height=740,top=120,left=420,status=NO, resizable=yes,scrollbars=yes');
+			textAreaWysiwygBinded.setAttribute("disabled", "disabled");
+			document.getElementById(htmlTextKbn).checked = true;
+		}
+
+		// お知らせ設定に入力されているURLが現在のドメインと一致しているかどうかチェックする
+		// 一致していない場合、警告を表示する
+		function CheckNewsTextContainUrlSameDomain() {
+			var WARN_FIND_DIFFERENT_DOMAIN = "現在のドメイン（" + location.hostname + "）と異なるURLが記述されています。\n本当によろしいですか？";
+
+			// URLを含んでいるタグの配列を取得する(「http://」 「https://」 「//」が含まれているタグを対象)
+			var arrayTags = document.getElementById("NewsText").value.match(/<[^>]*(s?https?:)?\/\/[^>]*>/g);
+
+			// ループさせて、タグの配列に含まれているURLが現在のドメインと同一かをチェックする
+			if (arrayTags != null) {
+				for (i = 0; i < arrayTags.length; i++) {
+					if (arrayTags[i].indexOf("//" + location.hostname) == -1) {
+						return window.confirm(WARN_FIND_DIFFERENT_DOMAIN);
+					}
+				}
+			}
+		}
+
+		// 期間(To)指定なし設定
+		function SetNoDisplayDateTo(set_date) {
+			// 表示日付（To）
+			if (set_date == 'display_date_to') {
+				document.getElementById('DisplayDateToYear').value = '';
+				document.getElementById('DisplayDateToMonth').value = '';
+				document.getElementById('DisplayDateToDay').value = '';
+				document.getElementById('DisplayDateToHour').value = '';
+				document.getElementById('DisplayDateToMinute').value = '';
+				document.getElementById('DisplayDateToSecond').value = '';
+			}
+		}
+
+		// エンターキーによるsubmit禁止
+		prohibit_submission();
+	</script>
+}

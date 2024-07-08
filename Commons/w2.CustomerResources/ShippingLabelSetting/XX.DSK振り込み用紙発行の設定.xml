@@ -1,0 +1,231 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<OrderDataExportSetting>
+
+  <!-- 出力ファイルの設定 -->
+  <ExportSetting>
+    <!-- 受注一覧・ワークフロー一覧画面に表示する送り状ダウンロードリンクの文言 -->
+    <DisplayName><![CDATA[DSK振り込み用紙用CSV]]></DisplayName>
+    <!-- 出力ファイルの種類（設定可能値：csv） -->
+    <FormatType>csv</FormatType>
+    <!-- 出力単位（設定可能値：Order） -->
+    <UnitType>Order</UnitType>
+    <!-- 出力ファイル名 -->
+    <FileName>
+      <Value Type="string">DSKTransferPaper_</Value>
+      <Value Type="dateString" Format="yyyyMMddHHmmss">Now</Value>
+      <Value Type="string">.csv</Value>
+    </FileName>
+    <!-- ヘッダ行出力有無（設定可能値：true, false） -->
+    <ExportHeader>true</ExportHeader>
+    <!-- 引用符常時出力有無（設定可能値：true, false） -->
+    <!--
+         例：引用符が「"」、1列目の値は「123」、2列目の値は「abc」、3列目の値は「1,2」の場合、
+             ・true の場合、"123","abc","1,2"を出力しますが、
+             ・false の場合、123,abc,"1,2"を出力します。（値にカンマ(,)があるときは強制エスケープ）
+    -->
+    <AlwaysExportQuotation>true</AlwaysExportQuotation>
+    <!-- 列の引用符 -->
+    <StringQuotationMark><![CDATA["]]></StringQuotationMark>
+    <!-- 区切り文字（設定可能値：COMMA, TAB） -->
+    <Separator>COMMA</Separator>
+    <!-- 文字コード（設定可能値：Shift_JIS, UTF-8） -->
+    <Encoding>Shift_JIS</Encoding>
+  </ExportSetting>
+
+  <!-- 出力項目・内容の設定 -->
+  <FieldsSetting>
+    <!-- コード -->
+    <Field Name="コード">
+      <Value Type="field">
+        <![CDATA[CONCAT(YEAR(GETDATE()), DAY(GETDATE()), w2_Order.payment_order_id)]]>
+      </Value>
+    </Field>
+
+    <!-- 名前 -->
+    <Field Name="名前">
+      <Value Type="field">w2_OrderOwner.owner_name</Value>
+    </Field>
+
+    <!-- 郵便番号 -->
+    <Field Name="郵便番号">
+      <Value Type="field"><![CDATA[REPLACE(w2_OrderOwner.owner_zip, '-', '')]]></Value>
+    </Field>
+
+    <!-- 住所１ -->
+    <Field Name="住所１">
+      <Value Type="field"><![CDATA[w2_OrderOwner.owner_addr1 + w2_OrderOwner.owner_addr2 + w2_OrderOwner.owner_addr3]]></Value>
+    </Field>
+
+    <!-- 住所２ -->
+    <Field Name="住所２">
+      <Value Type="field">w2_OrderOwner.owner_addr4</Value>
+    </Field>
+
+    <!-- 連絡先 -->
+    <Field Name="連絡先">
+      <Value Type="field"><![CDATA[REPLACE(w2_OrderOwner.owner_tel1, '-', '')]]></Value>
+    </Field>
+
+    <!-- 金額 -->
+    <Field Name="金額">
+      <Value Type="field">CAST(FLOOR(w2_Order.order_price_total) AS NVARCHAR)</Value>
+    </Field>
+
+    <!-- 印紙フラグ -->
+    <Field Name="印紙フラグ">
+      <Value Type="string">0</Value>
+    </Field>
+
+    <!-- 消費税 -->
+    <Field Name="消費税">
+      <Value Type="field">w2_Order.order_price_tax</Value>
+    </Field>
+
+    <!-- 支払い期日 -->
+    <Field Name="支払い期日">
+      <Value Type="dateString" Format="yyyymmdd"><![CDATA[DATEADD(day, 14, GETDATE())]]></Value>
+    </Field>
+
+    <!-- 払込票発行日 -->
+    <Field Name="払込票発行日">
+      <Value Type="dateString" Format="yyyymmdd">Now</Value>
+    </Field>
+
+    <!-- 印刷日 -->
+    <Field Name="印刷日">
+      <Value Type="dateString" Format="yyyymmdd">Now</Value>
+    </Field>
+
+    <!-- 管理ID -->
+    <Field Name="管理ID">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 内訳コメント1-1 -->
+    <Field Name="内訳コメント1-1">
+      <Value Type="field"><![CDATA[ISNULL((SELECT TOP 1 product_name FROM w2_OrderItem WHERE w2_OrderItem.order_id = w2_Order.order_id), '')]]></Value>
+    </Field>
+
+    <!-- 内訳コメント1-2 -->
+    <Field Name="内訳コメント1-2">
+      <Value Type="field"><![CDATA[ISNULL((SELECT TOP 1 item_quantity FROM w2_OrderItem WHERE w2_OrderItem.order_id = w2_Order.order_id), '')]]></Value>
+    </Field>
+
+    <!-- 内訳コメント1-3 -->
+    <Field Name="内訳コメント1-3">
+      <Value Type="field"><![CDATA[ISNULL((SELECT TOP 1 CAST(product_price AS int) FROM w2_OrderItem WHERE w2_OrderItem.order_id = w2_Order.order_id), '')]]></Value>
+    </Field>
+
+    <!-- 内訳コメント2-1 -->
+    <Field Name="内訳コメント2-1">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 内訳コメント2-2 -->
+    <Field Name="内訳コメント2-2">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 内訳コメント2-3 -->
+    <Field Name="内訳コメント2-3">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 内訳コメント3-1 -->
+    <Field Name="内訳コメント3-1">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 内訳コメント3-2 -->
+    <Field Name="内訳コメント3-2">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 内訳コメント3-3 -->
+    <Field Name="内訳コメント3-3">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 内訳コメント4-1 -->
+    <Field Name="内訳コメント4-1">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 内訳コメント4-2 -->
+    <Field Name="内訳コメント4-2">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 内訳コメント4-3 -->
+    <Field Name="内訳コメント4-3">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 内訳コメント5-1 -->
+    <Field Name="内訳コメント5-1">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 内訳コメント5-2 -->
+    <Field Name="内訳コメント5-2">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 内訳コメント5-3 -->
+    <Field Name="内訳コメント5-3">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 自由項目1 -->
+    <Field Name="自由項目1">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 自由項目2 -->
+    <Field Name="自由項目2">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 自由項目3 -->
+    <Field Name="自由項目3">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 自由項目4 -->
+    <Field Name="自由項目4">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 自由項目5 -->
+    <Field Name="自由項目5">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 自由項目6 -->
+    <Field Name="自由項目6">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 自由項目7 -->
+    <Field Name="自由項目7">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 自由項目8 -->
+    <Field Name="自由項目8">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 自由項目9 -->
+    <Field Name="自由項目9">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 自由項目10 -->
+    <Field Name="自由項目10">
+      <Value Type="string"></Value>
+    </Field>
+
+  </FieldsSetting>
+
+</OrderDataExportSetting>

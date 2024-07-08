@@ -1,0 +1,405 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 海外配送系SQLステートメントXML (GlobalShipping.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<GlobalShipping>
+
+  <!-- 海外配送エリア検索件数取得 -->
+  <GetSearchGlobalShippingAreaListCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(w2_GlobalShippingArea.global_shipping_area_id)
+          FROM  w2_GlobalShippingArea
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetSearchGlobalShippingAreaListCount>
+
+  <!-- 海外配送エリア検索 -->
+  <SearchGlobalShippingAreaList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_GlobalShippingArea.*
+          FROM  (
+                  SELECT  w2_GlobalShippingArea.global_shipping_area_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            ORDER BY
+                            w2_GlobalShippingArea.sort_no
+                            ,w2_GlobalShippingArea.global_shipping_area_id
+                          ) AS row_num
+                    FROM  w2_GlobalShippingArea
+                ) AS RowIndex
+                INNER JOIN w2_GlobalShippingArea ON
+                (
+                  RowIndex.global_shipping_area_id = w2_GlobalShippingArea.global_shipping_area_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchGlobalShippingAreaList>
+  
+  <!-- 海外配送エリア登録 -->
+  <RegisterGlobalShippingArea>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_GlobalShippingArea
+                (
+                  global_shipping_area_id
+                  ,global_shipping_area_name
+                  ,sort_no
+                  ,valid_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @global_shipping_area_id
+                  ,@global_shipping_area_name
+                  ,@sort_no
+                  ,@valid_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="global_shipping_area_id" Type="nvarchar" Size="10" />
+      <Input Name="global_shipping_area_name" Type="nvarchar" Size="100" />
+      <Input Name="sort_no" Type="int"  />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </RegisterGlobalShippingArea>
+  
+  <!-- 海外配送エリア更新 -->
+  <UpdateGlobalShippingArea>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_GlobalShippingArea
+           SET  global_shipping_area_name = @global_shipping_area_name
+                ,sort_no = @sort_no
+                ,valid_flg = @valid_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  global_shipping_area_id = @global_shipping_area_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="global_shipping_area_id" Type="nvarchar" Size="10" />
+      <Input Name="global_shipping_area_name" Type="nvarchar" Size="100" />
+      <Input Name="sort_no" Type="int"  />
+      <Input Name="valid_flg" Type="nvarchar" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateGlobalShippingArea>
+
+  <!-- IDをもとに海外配送エリア取得 -->
+  <GetGlobalShippingAreaById>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_GlobalShippingArea
+         WHERE  global_shipping_area_id = @global_shipping_area_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="global_shipping_area_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetGlobalShippingAreaById>
+
+  <!-- 海外配送エリア構成登録 -->
+  <RegisterGlobalShippingAreaComponent>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_GlobalShippingAreaComponent
+                (
+                  global_shipping_area_id
+                  ,country_iso_code
+                  ,condition_addr5
+                  ,condition_addr4
+                  ,condition_addr3
+                  ,condition_addr2
+                  ,condition_zip
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @global_shipping_area_id
+                  ,@country_iso_code
+                  ,@condition_addr5
+                  ,@condition_addr4
+                  ,@condition_addr3
+                  ,@condition_addr2
+                  ,@condition_zip
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="global_shipping_area_id" Type="nvarchar" Size="10" />
+      <Input Name="country_iso_code" Type="nvarchar" Size="3" />
+      <Input Name="condition_addr5" Type="nvarchar" Size="200" />
+      <Input Name="condition_addr4" Type="nvarchar" Size="200" />
+      <Input Name="condition_addr3" Type="nvarchar" Size="200" />
+      <Input Name="condition_addr2" Type="nvarchar" Size="200" />
+      <Input Name="condition_zip" Type="nvarchar" Size="200" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </RegisterGlobalShippingAreaComponent>
+
+  <!-- SEQをもとに海外配送エリア構成削除 -->
+  <DeleteGlobalShippingAreaComponent>
+    <Statement>
+      <![CDATA[
+        DELETE  
+          FROM  w2_GlobalShippingAreaComponent
+         WHERE  seq = @seq
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="seq" Type="bigint" />
+    </Parameter>
+  </DeleteGlobalShippingAreaComponent>
+
+  <!-- IDをもとに海外配送エリア構成取得 -->
+  <GetAreaComponentByAreaId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_GlobalShippingAreaComponent
+         WHERE  global_shipping_area_id = @global_shipping_area_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="global_shipping_area_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAreaComponentByAreaId>
+
+  <!-- 有効な海外配送エリア取得 -->
+  <GetValidGlobalShippingArea>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_GlobalShippingArea
+         WHERE  valid_flg = '1'
+      ORDER BY  sort_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="global_shipping_area_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetValidGlobalShippingArea>
+
+  <!-- 国を基に海外配送エリア構成取得 -->
+  <GetAreaComponentByCountry>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_GlobalShippingAreaComponent 
+         INNER  JOIN w2_GlobalShippingArea ON (w2_GlobalShippingArea.global_shipping_area_id = w2_GlobalShippingAreaComponent.global_shipping_area_id)
+         WHERE  w2_GlobalShippingAreaComponent.country_iso_code = @country_iso_code
+           AND  w2_GlobalShippingArea.valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="country_iso_code" Type="nvarchar" Size="3" />
+    </Parameter>
+  </GetAreaComponentByCountry>
+
+  <!-- 海外配送料金表取得 -->
+  <GetAreaPostage>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_GlobalShippingPostage
+         WHERE  shop_id = @shop_id
+           AND  shipping_id = @shipping_id
+           AND  global_shipping_area_id = @global_shipping_area_id
+      ORDER BY  weight_gram_greater_than_or_equal_to ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="global_shipping_area_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAreaPostage>
+
+  <!-- 配送種別と配送会社で海外配送料金表取得 -->
+  <GetAreaPostageByShippingDeliveryCompany>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_GlobalShippingPostage
+         WHERE  shop_id = @shop_id
+           AND  shipping_id = @shipping_id
+           AND  global_shipping_area_id = @global_shipping_area_id
+           AND  delivery_company_id = @delivery_company_id
+        ORDER BY weight_gram_greater_than_or_equal_to ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="global_shipping_area_id" Type="nvarchar" Size="10" />
+      <Input Name="delivery_company_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAreaPostageByShippingDeliveryCompany>
+
+  <!-- 海外配送料金表登録 -->
+  <RegisterGlobalShippingPostage>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_GlobalShippingPostage
+                (
+                  shop_id
+                  ,shipping_id
+                  ,global_shipping_area_id
+                  ,weight_gram_greater_than_or_equal_to
+                  ,weight_gram_less_than
+                  ,global_shipping_postage
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,delivery_company_id
+                )
+        VALUES  (
+                  @shop_id
+                  ,@shipping_id
+                  ,@global_shipping_area_id
+                  ,@weight_gram_greater_than_or_equal_to
+                  ,@weight_gram_less_than
+                  ,@global_shipping_postage
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@delivery_company_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="global_shipping_area_id" Type="nvarchar" Size="10" />
+      <Input Name="weight_gram_greater_than_or_equal_to" Type="bigint" />
+      <Input Name="weight_gram_less_than" Type="bigint" />
+      <Input Name="global_shipping_postage" Type="decimal" Size="18,3" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="delivery_company_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </RegisterGlobalShippingPostage>
+
+  <!-- 海外配送料金表削除 -->
+  <DeleteGlobalShippingPostage>
+    <Statement>
+      <![CDATA[
+        DELETE  
+          FROM  w2_GlobalShippingPostage
+         WHERE  seq = @seq
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="seq" Type="bigint" />
+    </Parameter>
+  </DeleteGlobalShippingPostage>
+
+  <!-- 海外配送料金表金額変更 -->
+  <ChangeGlobalShippingPostage>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_GlobalShippingPostage
+           SET  global_shipping_postage = @global_shipping_postage
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  seq = @seq
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="seq" Type="bigint" />
+      <Input Name="global_shipping_postage" Type="decimal" Size="18,3" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </ChangeGlobalShippingPostage>
+
+  <!-- 配送種別で海外配送料金表削除 -->
+  <DeleteGlobalShippingPostageByShipping>
+    <Statement>
+      <![CDATA[
+        DELETE  
+          FROM  w2_GlobalShippingPostage
+         WHERE  shop_id = @shop_id
+           AND  shipping_id = @shipping_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteGlobalShippingPostageByShipping>
+
+  <!-- 配送種別と配送会社で海外配送料金表削除 -->
+  <DeleteGlobalShippingPostageByShippingDeliveryCompany>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_GlobalShippingPostage
+         WHERE  shop_id = @shop_id
+           AND  shipping_id = @shipping_id
+           AND  delivery_company_id = @delivery_company_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="delivery_company_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteGlobalShippingPostageByShippingDeliveryCompany>
+
+  <!-- 配送種別と配送会社で海外配送料金表コピー -->
+  <CopyGlobalShippingPostageByShippingDeliveryCompany>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_GlobalShippingPostage
+        SELECT  shop_id
+                ,@to_shipping_id
+                ,global_shipping_area_id
+                ,weight_gram_greater_than_or_equal_to
+                ,weight_gram_less_than
+                ,global_shipping_postage
+                ,GETDATE()
+                ,GETDATE()
+                ,@last_changed
+                ,@to_delivery_company_id
+          FROM  w2_GlobalShippingPostage
+         WHERE  shop_id = @shop_id
+           AND  shipping_id = @from_shipping_id
+           AND  delivery_company_id  = @from_delivery_company_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="from_shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="from_delivery_company_id" Type="nvarchar" Size="10" />
+      <Input Name="to_shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="to_delivery_company_id" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </CopyGlobalShippingPostageByShippingDeliveryCompany>
+
+</GlobalShipping>

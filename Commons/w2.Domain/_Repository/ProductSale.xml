@@ -1,0 +1,264 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品セールマスタ系SQLステートメントXML (ProductSale.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductSale>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductSale
+         WHERE  shop_id = @shop_id
+           AND  productsale_id = @productsale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Get>
+
+  <!-- 取得（有効なレコード） -->
+  <GetValidAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductSale
+         WHERE  shop_id = @shop_id
+           AND  valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetValidAll>
+
+  <!-- 取得（商品セール区分が条件） -->
+  <GetValidAllByProductSaleKbn>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductSale
+         WHERE  shop_id = @shop_id
+           AND  productsale_kbn = @productsale_kbn
+           AND  valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetValidAllByProductSaleKbn>
+
+  <!-- 期間内に更新された商品セール情報を取得 -->
+  <GetUpdatedProductSalePriceByDateChanged>
+    <Statement>
+      <![CDATA[
+        SELECT  DISTINCT shop_id, productsale_id
+          FROM  w2_ProductSalePrice
+         WHERE  date_changed BETWEEN @date_bgn AND @date_end
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date_bgn" Type="datetime" />
+      <Input Name="date_end" Type="datetime" />
+    </Parameter>
+  </GetUpdatedProductSalePriceByDateChanged>
+
+  <!-- 商品セール価格取得 -->
+  <GetProductSalePrice>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductSaleView
+         WHERE  w2_ProductSaleView.shop_id = @shop_id
+           AND  w2_ProductSaleView.productsale_id = @productsale_id
+           AND  w2_ProductSaleView.product_id = @product_id
+           AND  w2_ProductSaleView.variation_id = @variation_id
+           AND  w2_ProductSaleView.validity = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetProductSalePrice>
+
+  <!-- 商品セール価格マスタフィールドチェック -->
+  <CheckProductSalePriceFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ProductSalePrice
+           WHERE  w2_ProductSalePrice.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductSalePriceFields>
+
+  <!-- 
+    商品セール価格情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetProductSalePriceMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_ProductSalePrice
+         WHERE  w2_ProductSalePrice.shop_id = @shop_id
+           AND  w2_ProductSalePrice.productsale_id = @productsale_id
+      ORDER BY  w2_ProductSalePrice.display_order ASC, w2_ProductSalePrice.variation_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductSalePriceMaster>
+
+  <!--  商品セール価格テンポラリデータインサート -->
+  <InsertFromProductSalePriceTmp>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductSalePriceTmp
+                (
+                  shop_id
+                  ,productsale_id
+                  ,product_id
+                  ,sale_price
+                  ,display_order
+                  ,last_changed
+                )
+                SELECT  shop_id,
+                        productsale_id,
+                        product_id,
+                        sale_price,
+                        display_order,
+                        @last_changed
+                FROM
+                (
+                  SELECT  *,
+                          RANK() OVER(
+                            PARTITION BY w2_ProductSalePrice.product_id
+                            ORDER BY w2_ProductSalePrice.display_order ASC, w2_ProductSalePrice.variation_id ASC
+                          ) AS priority
+                    FROM  w2_ProductSalePrice
+                   WHERE  shop_id = @shop_id
+                     AND  productsale_id = @productsale_id
+                ) PSPT
+                WHERE  PSPT.priority = 1
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="sale_price" Type="decimal" Size="18,3" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertFromProductSalePriceTmp>
+
+  <!-- 商品セール価格テンポラリデータ削除 -->
+  <DeleteProductSalePriceTmpBySaleId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductSalePriceTmp
+         WHERE  shop_id = @shop_id
+           AND  productsale_id = @productsale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteProductSalePriceTmpBySaleId>
+
+  <!-- Get product sale count -->
+  <GetProductSaleCount>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        SELECT  ISNULL(COUNT(w2_ProductSale.productsale_id), 0)
+          FROM  w2_ProductSale
+                [[ PRODUCTSALE_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_kbn" Type="nvarchar" Size="10" />
+      <Input Name="sale_info_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="sale_opened" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductSaleCount>
+
+  <!-- 商品セール一覧取得 -->
+  <GetProductSaleList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_ProductSale.productsale_id), 0)
+          FROM  w2_ProductSale
+                [[ PRODUCTSALE_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_ProductSale.*,
+                CASE
+                  WHEN (w2_ProductSale.date_bgn > GETDATE()) THEN '0'
+                  WHEN (w2_ProductSale.date_bgn <= GETDATE() AND w2_ProductSale.date_end >= GETDATE() AND w2_ProductSale.valid_flg = '1') THEN '1'
+                  WHEN (w2_ProductSale.date_end < GETDATE()) THEN '2'
+                  WHEN (w2_ProductSale.date_bgn <= GETDATE() AND w2_ProductSale.date_end >= GETDATE() AND w2_ProductSale.valid_flg = '0') THEN '3'
+                END AS sale_opened,
+                (
+                  SELECT  COUNT(variation_id)
+                    FROM  w2_ProductSalePrice
+                   WHERE  w2_ProductSale.shop_id = w2_ProductSalePrice.shop_id
+                     AND  w2_ProductSale.productsale_id = w2_ProductSalePrice.productsale_id
+                ) AS price_count,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ProductSale.shop_id,
+                          w2_ProductSale.productsale_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCTSALE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductSale
+                          [[ PRODUCTSALE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductSale ON
+                (
+                  RowIndex.shop_id = w2_ProductSale.shop_id
+                  AND
+                  RowIndex.productsale_id = w2_ProductSale.productsale_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_kbn" Type="nvarchar" Size="10" />
+      <Input Name="sale_info_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="sale_opened" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetProductSaleList>
+
+</ProductSale>

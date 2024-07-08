@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モール出品設定系SQLサブステートメントXML(MallExhibitsConfig_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<MallExhibitsConfig_Sub>
+
+  <!-- モール出品設定情報一覧取得用WHERE文 -->
+  <MALLEXHIBITSCONFIG_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[      
+         WHERE  (
+                  (
+                    @srch_key = 0
+                    AND 
+                    w2_Product.product_id LIKE @srch_word_like_escaped + '%' ESCAPE '#'    -- 商品ID
+                  )
+                  OR
+                  (
+                    @srch_key = 1
+                    AND 
+                    w2_Product.name LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- 商品名
+                  )
+                  OR
+                  (
+                    @srch_key = 2
+                    AND 
+                    w2_Product.name_kana LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- フリガナ
+                  ) 
+                  OR
+                  @srch_key = 3
+                  AND 
+                  (
+                    w2_Product.category_id1 like @srch_word_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_Product.category_id2 like @srch_word_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_Product.category_id3 like @srch_word_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_Product.category_id4 like @srch_word_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_Product.category_id5 like @srch_word_like_escaped + '%' ESCAPE '#'
+                  )                    -- カテゴリID
+                  OR
+                  @srch_key = 99 AND  @srch_word_like_escaped = ''            -- 条件なし
+                )
+                AND
+                w2_Product.valid_flg = '1'            -- 有効
+      ]]>
+    </Statement>
+  </MALLEXHIBITSCONFIG_SEARCH_WHERE>
+
+  <!-- モール出品設定情報一覧取得用ORDER_BY -->
+  <MALLEXHIBITSCONFIG_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN 0 THEN w2_Product.product_id
+            WHEN 2 THEN w2_Product.name
+            WHEN 4 THEN w2_Product.name_kana
+            ELSE '1'
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN 6 THEN w2_Product.date_created
+            WHEN 8 THEN w2_Product.date_changed
+            ELSE NULL
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN 1 THEN w2_Product.product_id
+            WHEN 3 THEN w2_Product.name
+            WHEN 5 THEN w2_Product.name_kana
+            ELSE '1'
+          END 
+          DESC, 
+          CASE @sort_kbn
+            WHEN 7 THEN w2_Product.date_created
+            WHEN 9 THEN w2_Product.date_changed
+            ELSE NULL
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_Product.shop_id ASC, w2_Product.product_id ASC
+      ]]>
+    </Statement>
+  </MALLEXHIBITSCONFIG_SEARCH_ORDER_BY>
+
+</MallExhibitsConfig_Sub>

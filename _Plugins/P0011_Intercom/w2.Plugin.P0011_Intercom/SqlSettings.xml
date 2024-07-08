@@ -1,0 +1,198 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<root>
+  <!-- 会員登録の連携情報用Select文 -->
+  <section id="IUserRegisteredPlugin">
+    <sql>
+      <!-- SQL文を定義 -->
+      <state>
+        <![CDATA[
+        SELECT
+          '' AS attribute1,
+          login_id,
+          '' as password,
+          company_name,
+          company_post_name,
+          name1,
+          name2,
+          name_kana1,
+          name_kana2,
+          zip1,
+          zip2,
+          addr1,
+          addr2,
+          addr3,
+          addr4,
+          tel1_1,
+          tel1_2,
+          tel1_3,
+          mail_addr,
+          birth_year,
+          birth_month,
+          birth_day,
+          sex,
+          mail_flg,
+          last_changed,
+          del_flg,
+          user_id
+        FROM 
+          w2_User 
+        WHERE user_id = @user_id
+        ]]>
+      </state>
+      <!-- SQLパラメタを定義 pluginargnameはプラグインの引数のハッシュKEY pluginargtargetはパラメータ値格納型（hashの場合はPluginHostのData） -->
+      <!-- pluginargtargetがdatatableの場合は内部処理で作成したパラメータ用データテーブル -->
+      <params>
+        <param name="@user_id" pluginargname="user_id" pluginargtarget="hash" />
+      </params>
+    </sql>
+  </section>
+  <!-- 会員登録のインターコムユーザID更新用UPDATE文 -->
+  <section id="IUserRegisteredPlugin_AfterUpdate">
+    <sql>
+      <!-- SQL文を定義 -->
+      <state>
+        <![CDATA[
+        UPDATE 
+          w2_User 
+        SET 
+          ATTRIBUTE1 = @ic_UserID
+        where 
+          user_id = @user_id
+        ]]>
+      </state>
+      <params>
+        <param name="@user_id" pluginargname="user_id" pluginargtype="string" pluginargtarget="hash"/>
+        <param name="@ic_UserID"  pluginargname="UserID" pluginargtype="string" pluginargtarget="datatable"/>
+      </params>
+    </sql>
+  </section>
+  <!-- 会員退会の退会情報取得用SELECT文 -->
+   <section id="IUserWithdrawedPlugin">
+    <sql>
+      <!-- SQL文を定義 -->
+      <state>
+        <![CDATA[
+        SELECT 
+          user_id,
+          user_kbn,
+          mall_id,
+          name,
+          name1,
+          name2,
+          name_kana,
+          name_kana1,
+          name_kana2,
+          nick_name,
+          mail_addr,
+          mail_addr2,
+          zip,
+          zip1,
+          zip2,
+          addr,
+          addr1,
+          addr2,
+          addr3,
+          addr4,
+          tel1,
+          tel1_1,
+          tel1_2,
+          tel1_3,
+          sex,
+          birth,
+          birth_year,
+          birth_month,
+          birth_day,
+          company_name,
+          company_post_name,
+          advcode_first,
+          attribute1,
+          login_id,
+          '' as password,
+          question,
+          answer,
+          career_id,
+          mobile_uid,
+          remote_addr,
+          mail_flg,
+          user_memo,
+          del_flg,
+          last_changed,
+          member_rank_id
+        FROM 
+          w2_User 
+        WHERE user_id = @user_id
+        ]]>
+      </state>
+      <params>
+        <param name="@user_id" pluginargname="user_id" pluginargtarget="hash" />
+      </params>
+    </sql>
+  </section>
+  <!-- ログイン時の対象ユーザ取得用SELECT文 -->
+  <section id="IUserLoggedInPlugin">
+    <sql>
+      <!-- SQL文を定義 -->
+      <state>
+        <![CDATA[
+        SELECT 
+          user_id as LinkedUserID,
+          attribute1 as UserID,
+          password
+        FROM 
+          w2_User 
+        WHERE user_id = @user_id
+        ]]>
+      </state>
+      <params>
+        <param name="@user_id" pluginargname="user_id" pluginargtarget="hash" />
+      </params>
+    </sql>
+  </section>
+  <!-- ログイン時のシリアル商品カート情報削除 -->
+  <!-- 対象ユーザが一つでもシリアル商品をカートに入れていた場合は削除 -->
+  <section id="IUserLoggedInPluginCartDelete">
+    <sql>
+      <!-- SQL文を定義 -->
+      <state>
+        <![CDATA[
+        DELETE FROM W2_CART
+        WHERE USER_ID IN
+        (
+	        SELECT 
+		        USER_ID
+	        FROM 
+		        W2_CART
+		        INNER JOIN 
+			        W2_PRODUCT 
+		        ON W2_CART.PRODUCT_ID = W2_PRODUCT.PRODUCT_ID
+		        WHERE W2_PRODUCT.ICON_FLG10 = '1'
+		        AND W2_CART.user_id = @user_id
+        )
+        AND user_id = @user_id
+        ]]>
+      </state>
+      <params>
+        <param name="@user_id" pluginargname="user_id" pluginargtarget="datatable" />
+      </params>
+    </sql>
+  </section>
+  <!-- 注文完了時の外部連携メモにシリアルNo更新用UPDATE文 -->
+  <section id="IOrderCompletePlugin">
+    <sql>
+      <!-- SQL文を定義 -->
+      <state>
+        <![CDATA[
+        UPDATE w2_Order
+          SET relation_memo = @relation_memo
+        FROM 
+          w2_User 
+        WHERE order_id = @order_id
+        ]]>
+      </state>
+      <params>
+        <param name="@order_id" pluginargname="order_id" pluginargtarget="datatable" />
+        <param name="@relation_memo" pluginargname="relation_memo" pluginargtarget="datatable" />
+      </params>
+    </sql>
+  </section>
+</root>

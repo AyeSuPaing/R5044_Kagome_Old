@@ -1,0 +1,593 @@
+﻿@*
+=========================================================================================================
+  Module      : SEOタグ設定ページ(Modify.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using System.Web.UI.WebControls
+@using w2.App.Common.Option
+@using w2.Cms.Manager.Codes
+@{
+	ViewBag.Title = "SEOタグ設定";
+	Layout = this.Model.PageLayout;
+}
+@model w2.Cms.Manager.ViewModels.SeoMetadatas.ModifyViewModel
+
+@helper TopButtomControls(string className)
+{
+	<div class="@className">
+		<input type="button" onclick="update_onclick();" value="  更新する  " class="btn btn-main"/>
+	</div>
+}
+
+@{
+	var testBoxStyles = new
+	{
+		style
+			= "width: 100%;"
+			+ "resize: vertical;",
+		onFocus = "javascript:inputClick(this.id);",
+		SpellCheck = "False"
+	};
+}
+
+@section Style{
+	<style>
+		@* テキストボックスが右に寄ってしまう対応 *@
+		.edit_item_bg {
+			padding-right: 10px !important;
+		}
+	</style>
+}
+
+<form id="main-form" method="post" data-ajax-failure="handleError">
+
+	<table id="seo_table" style="width: 100%;">
+	<tr>
+		<td>
+			<h1 class="page-title">SEOタグ設定</h1>
+		</td>
+	</tr>
+		<tr>
+			<td>
+				<h2 class="cmn-hed-h2">全体設定</h2>
+			</td>
+			<td colspan="2">
+				<span style="float:right"><input type="button" onclick="update_onclick();" value="  更新する  " class="btn btn-main"/></span>
+			</td>
+		</tr>
+		  @LayoutHelper.PaddingTr(10)
+		  <tr>
+			<td colspan="2">
+				<table class="edit_table">
+					<tr>
+						<td class="edit_title_bg" colspan="2" style="text-align: center;">全体設定</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" style="width: 30%;">HTMLタイトル</td>
+						<td class="edit_item_bg" style="width: 70%;">
+							@Html.TextBoxFor(m => m.InputForDefault.HtmlTitle, testBoxStyles)
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg">ディスクリプション</td>
+						<td class="edit_item_bg">
+							@Html.TextAreaFor(m => m.InputForDefault.MetadataDesc, testBoxStyles)
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<td>&nbsp;</td>
+		@LayoutHelper.PaddingTr(10)
+		<tr>
+			<td>
+				<h2 class="cmn-hed-h2">商品設定</h2>
+			</td>
+		</tr>
+		@LayoutHelper.PaddingTr(10)
+		<tr>
+			<td colspan="2">
+				<table class="edit_table">
+					<tr>
+						<td class="edit_title_bg" colspan="2" style="text-align: center;">商品一覧設定</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" width="120">HTMLタイトル</td>
+						<td class="edit_item_bg" width="300">
+							@Html.TextBoxFor(m => m.InputForProductList.HtmlTitle, testBoxStyles)
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg">キーワード</td>
+						<td class="edit_item_bg">
+							@Html.TextAreaFor(m => m.InputForProductList.MetadataKeywords, testBoxStyles)
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg">ディスクリプション</td>
+						<td class="edit_item_bg">
+							@Html.TextAreaFor(m => m.InputForProductList.MetadataDesc, testBoxStyles)
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg">コメント</td>
+						<td class="edit_item_bg">
+							@Html.TextAreaFor(m => m.InputForProductList.Comment, testBoxStyles)
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg">SEO文言</td>
+						<td class="edit_item_bg">
+							@Html.TextAreaFor(m => m.InputForProductList.SeoText, testBoxStyles)
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg">デフォルト文言</td>
+						<td class="edit_item_bg">
+							@Html.TextAreaFor(m => m.InputForProductList.DefaultText, testBoxStyles)
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+		</tr>
+		<tr>
+			<td colspan="2">
+				<table class="edit_table">
+					<tr>
+						<td class="edit_title_bg" colspan="2" style="text-align: center;">商品詳細設定</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" width="120">HTMLタイトル</td>
+						<td class="edit_item_bg" width="300">
+							@Html.TextBoxFor(m => m.InputForProductDetail.HtmlTitle, testBoxStyles)
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg">キーワード</td>
+						<td class="edit_item_bg">
+							@Html.TextAreaFor(m => m.InputForProductDetail.MetadataKeywords, testBoxStyles)
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg">ディスクリプション</td>
+						<td class="edit_item_bg">
+							@Html.TextAreaFor(m => m.InputForProductDetail.MetadataDesc, testBoxStyles)
+						</td>
+					</tr>
+					<tr>
+					<td class="edit_title_bg">コメント</td>
+						<td class="edit_item_bg">
+							@Html.TextAreaFor(m => m.InputForProductDetail.Comment, testBoxStyles)
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		@LayoutHelper.PaddingTr(10)
+		<tr>
+			<td>
+				<h2 class="cmn-hed-h2">コーディネート設定</h2>
+			</td>
+		</tr>
+		@LayoutHelper.PaddingTr(10)
+		<tr>
+			<td colspan="2">
+				<table class="edit_table">
+					<tr>
+						<td class="edit_title_bg" colspan="2" style="text-align: center;">コーディネートトップ</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" style="width: 30%;">HTMLタイトル</td>
+						<td class="edit_item_bg" style="width: 70%;">
+							@Html.TextBoxFor(m => m.InputForCoordinateTop.HtmlTitle, testBoxStyles)
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg">ディスクリプション</td>
+						<td class="edit_item_bg">
+							@Html.TextAreaFor(m => m.InputForCoordinateTop.MetadataDesc, testBoxStyles)
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+		</tr>
+		<tr>
+			<td colspan="2">
+				<table class="edit_table">
+					<tr>
+						<td class="edit_title_bg" colspan="2" style="text-align: center;">コーディネート一覧設定</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" width="120">HTMLタイトル</td>
+						<td class="edit_item_bg" width="300">
+							@Html.TextBoxFor(m => m.InputForCoordinateList.HtmlTitle, testBoxStyles)
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg">ディスクリプション</td>
+						<td class="edit_item_bg">
+							@Html.TextAreaFor(m => m.InputForCoordinateList.MetadataDesc, testBoxStyles)
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+		</tr>
+		<tr>
+			<td style="vertical-align: top;" colspan="2">
+				<table class="edit_table">
+					<tr>
+						<td class="edit_title_bg" colspan="2" style="text-align: center;">コーディネート詳細設定</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" width="120">HTMLタイトル</td>
+						<td class="edit_item_bg" width="300">
+							@Html.TextBoxFor(m => m.InputForCoordinateDetail.HtmlTitle, testBoxStyles)
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg">ディスクリプション</td>
+						<td class="edit_item_bg">
+							@Html.TextAreaFor(m => m.InputForCoordinateDetail.MetadataDesc, testBoxStyles)
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+
+	<!-- ▽ 置換タグ説明 ▽ -->
+	@Html.Partial("_ReplaceTag")
+	<!--△ 置換タグ説明 △ -->
+
+	@TopButtomControls("action_part_bottom")
+</form>
+
+<table class="info_table" cellspacing="1" cellpadding="3" width="758" border="0">
+	<tr class="info_item_bg">
+		<td align="left">備考<br />
+			<p>・全体設定とは</p>
+			<p>個別のSEO設定がされていない場合に適用される設定です。</p><br />
+			・HTMLタイトル<br />
+			HTMLのtitleタグ部分です。検索結果ページのリストにページタイトルとして表示されます。<br /><br />
+			・ディスクリプション<br />
+			MetaタグのDescriptionの部分です。サイトの概要文・説明文として使われます。検索結果のページ概要として表示されます。<br /><br />
+			・キーワード<br />
+			Metaタグのkeywordsの部分です。元々検索エンジンの検索順位を決める要因でしたが、現在は参照されなくなりました。<br /><br />
+			・コメント<br />
+			管理用メモです。Metaタグには記述されません。<br /><br />
+			・SEO文言<br />
+			検索エンジンがサイトの内容を把握できSEO評価を上げるという効果を狙ったSEOの設定です。<br />
+			フロントには<%#: this.SeoText %>と埋め込み使用します。<br />
+			使用例としてはh1タグで囲み使用します。<br /><br />
+			・デフォルト文言<br />
+			置き換えタグのデフォルト文言(@@ default_text @@)で置き換えられる値を設定できます。<br /><br />
+			・コーディネートトップとデフォルト文言は置き換えタグが存在しないため置き換えタグ説明は表示されません。
+			<br />
+		</td>
+	</tr>
+</table>
+
+@section Javascript{
+	<script>
+		/**
+		 * 更新ボタンクリック
+		 */
+		function update_onclick() {
+			loading_animation.start();
+
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("Update", Constants.CONTROLLER_W2CMS_MANAGER_SEO_METADATAS)",
+				data: $('#main-form').serializeArray(),
+				traditional: true
+			}).done(function (message) {
+				if (message === "") {
+					notification.show('SEOタグ設定を更新しました。', 'info', 'fadeout');
+				} else {
+					notification.show(message, 'warning', 'fixed');
+				}
+			}).always(function () {
+				setTimeout(function () { loading_animation.end(); }, 500);
+			});
+		}
+
+		// 最後にフォーカスされている商品タグのテキストエリア
+		var area;
+
+		// テキストエリアのキャレット位置に文言を挿入
+		function tagInput(tag, isSurroundTag) {
+			if (area == null) return;
+			var textarea = area;
+			if (isSurroundTag) {
+				tag = tag.replace(/\s+/g, '');
+				tag = '<' + tag + '>' + '</' + tag + '>';
+			}
+
+			textarea.focus();
+			var sentence = textarea.value;
+			var len = sentence.length;
+			var pos = textarea.selectionStart;
+			var before = sentence.substr(0, pos);
+			var word = tag;
+			var after = sentence.substr(pos, len);
+			sentence = before + word + after;
+			textarea.value = sentence;
+			textarea.focus();
+			textarea.selectionStart = pos + word.length;
+			textarea.selectionEnd = pos + word.length;
+		}
+
+		// 現在、フォーカスされている商品タグのテキストエリアを保持
+		function inputClick(ele) {
+			area = document.getElementById(ele);
+
+			changeTagsList(ele);
+		}
+
+		// 使用できる置き換えタグを切り替え
+		function changeTagsList(id) {
+			$(".seo_tag_description").show();
+			$(".seo_all_replace_tags").css('display', 'none');
+			$(".seo_product_list_replace_tags").css('display', 'none');
+			$(".seo_product_detail_replace_tags").css('display', 'none');
+			$(".coordinate_list_replace_tags").css('display', 'none');
+			$(".coordinate_detail_replace_tags").css('display', 'none');
+
+			var tagsType = id.substring(0, id.indexOf('_'));
+			switch (tagsType) {
+				case 'InputForDefault':
+					// 全体設定
+					$(".seo_all_replace_tags").css('display', 'table-row');
+					$("#enclosure_tag").css("display", "none");
+					$("#remarks").attr("colSpan", "2");
+					break;
+
+				case 'InputForProductList':
+					// 商品一覧設定
+					if ((id === 'InputForProductList_DefaultText') && (flgMove == false)) {
+						$(".seo_tag_description").hide();
+					} else {
+						$(".seo_product_list_replace_tags").css('display', 'table-row');
+						$("#enclosure_tag").css("display", "block");
+						$("#remarks").attr("colSpan", "3");
+					}
+					break;
+
+				case 'InputForProductDetail':
+					// 商品詳細設定
+					$(".seo_product_detail_replace_tags").css('display', 'table-row');
+					$("#enclosure_tag").css("display", "block");
+					$("#remarks").attr("colSpan", "3");
+					break;
+
+				case 'InputForCoordinateTop':
+					// コーディネートトップ
+					if (flgMove) return;
+					$(".seo_tag_description").hide();
+					break;
+
+				case 'InputForCoordinateList':
+					// コーディネート一覧設定
+					$(".coordinate_list_replace_tags").css('display', 'table-row');
+					$("#enclosure_tag").css("display", "none");
+					$("#remarks").attr("colSpan", "2");
+					break;
+
+				case 'InputForCoordinateDetail':
+					// コーディネート詳細設定
+					$(".coordinate_detail_replace_tags").css('display', 'table-row');
+					$("#enclosure_tag").css("display", "none");
+					$("#remarks").attr("colSpan", "2");
+					break;
+			}
+		}
+
+		var flgMove = false;
+
+		// 移動時にフォーカスされるのを防止
+		$('[id^="InputFor"]').mousemove(function (e) {
+			if (flgMove) {
+				$(this).blur();
+			}
+		});
+
+		(function ($) {
+			$.fn.funcResizeBox = function (userOptions) {
+				var elements = this;
+				var defaults = {
+					minWidth: 0,
+					minHeight: 0,
+					maxWidth: 10000,
+					maxHeight: 10000,
+					mouseRange: 10,
+					isWidthResize: true,
+					isHeightResize: true
+				};
+
+				var option = $.extend(defaults, userOptions);
+
+				$(this).css('resize', 'none');
+				$(this).css('overflow', 'auto');
+				var pos_left = $(this).offset().left;
+				var pos_top = $(this).get(0).offsetTop;
+				var pos_right = $(this).outerWidth() + pos_left;
+				var pos_bottom = $(this).outerHeight() + pos_top;
+				var right_min = pos_right - option.mouseRange;
+				var bottom_min = pos_bottom - option.mouseRange;
+				var right_flg = false;
+				var bottom_flg = false;
+				var $box = $(this);
+				var resize_flg = false;
+				var diffX, diffY;
+
+				$(this).mousemove(function (e) {
+					right_flg = false;
+					left_flg = false;
+					top_flg = false;
+					bottom_flg = false;
+
+					if (resize_flg) return;
+
+					pos_left = Math.floor($box.offset().left);
+					pos_top = Math.floor($box.offset().top);
+					pos_right = Math.floor($box.outerWidth() + pos_left);
+					pos_bottom = Math.floor($box.outerHeight() + pos_top);
+					right_min = pos_right - option.mouseRange;
+					bottom_min = pos_bottom - option.mouseRange;
+
+					var pagex = Math.floor(window.event.clientX + (document.body.scrollLeft || document.documentElement.scrollLeft));
+					var pagey = Math.floor(window.event.clientY + (document.body.scrollTop || document.documentElement.scrollTop));
+
+					// right
+					if (pos_right - 5 <= pagex && option.isWidthResize) {
+						right_flg = true;
+					}
+					// left
+					if (pagex <= pos_left + 5 && option.isWidthResize) {
+						left_flg = true;
+					}
+					// top
+					if (pagey <= pos_top + 5 && option.isWidthResize) {
+						top_flg = true;
+					}
+					// bottom
+					if (pagey >= pos_bottom - 5 && option.isHeightResize) {
+						bottom_flg = true;
+					}
+
+					if (right_flg && bottom_flg) {
+						$(this).css('cursor', 'se-resize');
+					}
+					else if (right_flg && top_flg) {
+						$(this).css('cursor', 'nesw-resize');
+					}
+					else if (left_flg && bottom_flg) {
+						$(this).css('cursor', 'sw-resize');
+					}
+					else if (left_flg && top_flg) {
+						$(this).css('cursor', 'nw-resize');
+					}
+					else if (right_flg) {
+						$(this).css('cursor', 'e-resize');
+					}
+					else if (left_flg) {
+						$(this).css('cursor', 'w-resize');
+					}
+					else if (top_flg) {
+						$(this).css('cursor', 'n-resize');
+					}
+					else if (bottom_flg) {
+						$(this).css('cursor', 's-resize');
+					}
+					else {
+						$(this).css('cursor', 'auto');
+					}
+				});
+
+				$(this).mousedown(function (e) {
+
+					var resize_right_flg = false;
+					var resize_left_flg = false;
+					var resize_top_flg = false;
+					var resize_bottom_flg = false;
+
+					var pagex = e.pageX;
+					var pagey = e.pageY;
+					var boxWidth = $box.width();
+					var boxHeight = $box.height();
+
+					if (right_flg) {
+						resize_right_flg = true;
+					}
+
+					if (left_flg) {
+						resize_left_flg = true;
+					}
+
+					if (top_flg) {
+						resize_top_flg = true;
+					}
+
+					if (bottom_flg) {
+						resize_bottom_flg = true;
+					}
+
+					flgMove = true;
+
+					diffX = e.clientX - $(".seo_tag_description").position().left;
+					diffY = e.clientY - $(".seo_tag_description").position().top;
+
+					$(document).mousemove(function (e) {
+
+						if (!resize_right_flg && !resize_left_flg && !resize_top_flg && !resize_bottom_flg) {
+
+							if (flgMove) {
+								$(".seo_tag_description")
+									.css('right', 'auto')
+									.css('bottom', 'auto')
+									.css('left', (e.clientX - diffX))
+									.css('top', (e.clientY - diffY));
+							}
+							return;
+						}
+
+						$('body').css('cursor', $box.css('cursor'));
+						resize_flg = true;
+
+						var addWidth = e.pageX - pagex;
+						var resize_width = (resize_right_flg) ? boxWidth + addWidth : boxWidth + (-1 * addWidth);
+
+						if (resize_right_flg && resize_width <= option.maxWidth
+												&& option.minWidth <= resize_width) {
+							$box.width(resize_width);
+						}
+
+						if (resize_left_flg && resize_width <= option.maxWidth
+												&& option.minWidth <= resize_width) {
+							$box.css('left', pos_right - resize_width);
+							$box.width(resize_width);
+						}
+
+						var addheight = e.pageY - pagey;
+						var resize_height = (resize_bottom_flg) ? boxHeight + addheight : boxHeight + (-1 * addheight);
+						
+						if (resize_bottom_flg && resize_height <= option.maxHeight
+												&& option.minHeight <= resize_height) {
+							$box.height(resize_height);
+						}
+
+						if (resize_top_flg && resize_height <= option.maxHeight
+												&& option.minHeight <= resize_height) {
+							$box.css('top', (e.clientY - diffY));
+							$box.height(resize_height);
+						}
+
+					}).mouseup(function () {
+						$(document).off("mousemove");
+						resize_bottom_flg = false;
+						resize_right_flg = false;
+						resize_flg = false;
+						$('body').css('cursor', 'auto');
+						flgMove = false;
+					});
+				});
+				return (this);
+			};
+		})(jQuery);
+
+		$('#tags').funcResizeBox({});
+
+	</script>
+}

@@ -1,0 +1,839 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期購入系SQLステートメントXML(FixedPurchase.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchase>
+  
+  <!-- 定期購入マスタ情報取得(CSV出力用) -->
+  <GetFixedPurchaseMaster>
+    <Statement>
+      <![CDATA[ 
+        SELECT  @@ fields @@
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                LEFT JOIN w2_TwFixedPurchaseInvoice ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_TwFixedPurchaseInvoice.fixed_purchase_id
+                )
+                [[ FIXEDPURCHASE_SEARCH_WHERE ]]
+                [[ FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetFixedPurchaseMaster>
+
+  <!-- 定期購入商品マスタ情報取得(CSV出力用) -->
+  <GetFixedPurchaseItemMaster>
+    <Statement>
+      <![CDATA[ 
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        /* 会員ランク価格や特別価格などを考慮する商品価格を取得するため */
+        SELECT  w2_FixedPurchase.fixed_purchase_id,
+                w2_FixedPurchaseItem.shop_id,
+                w2_FixedPurchaseItem.product_id,
+                w2_FixedPurchaseItem.variation_id,
+                (
+                  SELECT  ISNULL(
+                             (SELECT TOP 1 member_rank_price
+                                FROM  w2_ProductPrice 
+                                      LEFT JOIN w2_MemberRank ON
+                                      (
+                                        w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                                      )
+                               WHERE  w2_ProductPrice.shop_id = w2_FixedPurchaseItem.shop_id
+                                 AND  w2_ProductPrice.product_id = w2_FixedPurchaseItem.product_id
+                                 AND  (w2_ProductPrice.variation_id = w2_FixedPurchaseItem.variation_id OR (w2_ProductView.use_variation_flg = '0' AND w2_ProductPrice.variation_id = ''))
+                                 AND  w2_User.member_rank_id <> ''
+                                 AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = w2_User.member_rank_id AND valid_flg = 'ON')
+                                 AND  w2_MemberRank.valid_flg = 'ON'
+                            ORDER BY  w2_MemberRank.member_rank_order),
+                              ISNULL(w2_ProductView.special_price, w2_ProductView.price))
+                    FROM  w2_ProductView
+                   WHERE  w2_ProductView.shop_id = w2_FixedPurchaseItem.shop_id
+                     AND  w2_ProductView.product_id = w2_FixedPurchaseItem.product_id
+                     AND  w2_ProductView.variation_id = w2_FixedPurchaseItem.variation_id
+                ) AS price
+        INTO  #ItemPrice
+        FROM  w2_FixedPurchase
+              INNER JOIN w2_User ON
+              (
+                w2_FixedPurchase.user_id = w2_User.user_id
+              )
+              INNER JOIN w2_FixedPurchaseItem ON
+              (
+                w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+              )
+        [[ FIXEDPURCHASE_SEARCH_WHERE ]]
+
+        SELECT  @@ fields @@
+          FROM  #ItemPrice
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  #ItemPrice.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  #ItemPrice.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  #ItemPrice.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                  AND
+                  #ItemPrice.product_id = w2_FixedPurchaseItem.product_id
+                  AND
+                  #ItemPrice.variation_id = w2_FixedPurchaseItem.variation_id
+                )
+                INNER JOIN w2_Product ON
+                (
+                  w2_FixedPurchaseItem.product_id = w2_Product.product_id
+                  AND
+                  w2_FixedPurchaseItem.shop_id = w2_Product.shop_id
+                )
+                [[ FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetFixedPurchaseItemMaster>
+
+  <!-- 定期購入マスタ件数取得(CSV出力用) -->
+  <GetFixedPurchaseMasterCount>
+    <Statement>
+      <![CDATA[ 
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  w2_FixedPurchase.fixed_purchase_id
+          INTO  #TempTable
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                )
+                [[ FIXEDPURCHASE_SEARCH_WHERE ]]
+        
+        ;WITH UserList AS
+        (
+          SELECT  DISTINCT @@ fields @@
+            FROM  #TempTable
+                  INNER JOIN w2_FixedPurchase ON
+                  
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = #TempTable.fixed_purchase_id
+                  )
+                  INNER JOIN w2_User ON
+                  (
+                    w2_FixedPurchase.user_id = w2_User.user_id
+                  )
+        ),
+        TempTL AS
+        (
+          SELECT  *
+            FROM  UserList
+           WHERE  UserList.del_flg = '0'
+        ),
+        TempTLAC AS
+        (
+          SELECT  COUNT(*) count
+            FROM  TempTL
+        ),
+        TempTLMC AS
+        (
+          SELECT  COUNT(*) count
+            FROM  TempTL
+           WHERE  @mail_send_both_pc_and_mobile_enabled = 'True'
+             AND  TempTL.mail_addr <> ''
+             AND  TempTL.mail_addr2 <> ''
+        )
+        SELECT  TempTLAC.count + TempTLMC.count
+          FROM  TempTLAC,
+                TempTLMC
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_send_both_pc_and_mobile_enabled" Type="nvarchar" Size="5" />
+    </Parameter>
+  </GetFixedPurchaseMasterCount>
+
+  <!-- 定期購入同梱可能な親定期購入情報取得-->
+  <GetCombinableParentFixedPurchaseWithCondition>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  (
+                  SELECT  ParentFp.*,
+                          ROW_NUMBER() OVER(ORDER BY ParentFp.next_shipping_date) AS row_num
+                    FROM  (
+                            SELECT  DISTINCT
+                                    w2_FixedPurchase.*,
+                                    w2_ProductView.shipping_type
+                              FROM  w2_FixedPurchase
+                                    INNER JOIN w2_User ON
+                                    (
+                                      w2_FixedPurchase.user_id = w2_user.user_id
+                                    )
+                                    INNER JOIN w2_FixedPurchaseItem ON
+                                    (
+                                      w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                                    )
+                                    INNER JOIN w2_ProductView ON
+                                    (
+                                      w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                                      AND
+                                      w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                                      AND
+                                      w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                                    )
+                              WHERE  w2_FixedPurchase.valid_flg = '1'
+                                AND  w2_FixedPurchase.next_shipping_date >= @next_shipping_date_from
+                                AND  w2_FixedPurchase.next_shipping_date <= @next_shipping_date_to
+                                AND  w2_FixedPurchase.fixed_purchase_status in (@@ allow_combine_fixedpurchase_status @@)
+                                AND  w2_FixedPurchase.payment_status in (@@ allow_combine_fixedpurchase_payment_status @@)
+                                AND  w2_FixedPurchase.subscription_box_course_id = ''
+                                @@ user_id_condition @@
+                                @@ user_name_condition @@
+                          ) AS ParentFp
+                   WHERE  Exists
+                          (
+                            SELECT  1
+                              FROM  (
+                                      SELECT  w2_FixedPurchase.*,
+                                              w2_ProductView.shipping_type
+                                        FROM  w2_FixedPurchase
+                                              INNER JOIN w2_FixedPurchaseItem ON
+                                              (
+                                                w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                                              )
+                                              INNER JOIN w2_ProductView ON
+                                              (
+                                                w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                                                AND
+                                                w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                                                AND
+                                                w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                                              )
+                                        WHERE  w2_FixedPurchase.valid_flg = '1'
+                                          AND  w2_FixedPurchase.next_shipping_date >= @next_shipping_date_from
+                                          AND  w2_FixedPurchase.next_shipping_date <= @next_shipping_date_to
+                                          AND  w2_FixedPurchase.fixed_purchase_status in (@@ allow_combine_fixedpurchase_status @@)
+                                          AND  w2_FixedPurchase.payment_status in (@@ allow_combine_fixedpurchase_payment_status @@)
+                                          AND  w2_FixedPurchase.subscription_box_course_id = ''
+                                          AND  NOT Exists
+                                               (
+                                                 SELECT  1
+                                                   FROM  w2_FixedPurchaseItem
+                                                         INNER JOIN w2_ProductView ON
+                                                         (
+                                                           w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                                                           AND
+                                                           w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                                                           AND
+                                                           w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                                                         )
+                                                  WHERE  w2_FixedPurchaseItem.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                                                    AND  w2_ProductView.limited_payment_ids like '%' + ParentFp.order_payment_kbn + '%'
+                                               )
+                                    ) AS CombinableChildFp
+                              WHERE  ParentFp.user_id = CombinableChildFp.user_id
+                                AND  ParentFp.shipping_type = CombinableChildFp.shipping_type
+                                AND  ParentFp.fixed_purchase_id <> CombinableChildFp.fixed_purchase_id
+                          )
+                ) AS ParentFpWithRowNum
+         WHERE  ParentFpWithRowNum.row_num >= @start_row_num
+           AND  ParentFpWithRowNum.row_num <= @end_row_num
+         ORDER BY ParentFpWithRowNum.row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="next_shipping_date_from" Type="datetime" />
+      <Input Name="next_shipping_date_to" Type="datetime" />
+      <Input Name="start_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetCombinableParentFixedPurchaseWithCondition>
+
+  <!-- 定期購入同梱可能な親定期購入件数取得-->
+  <GetCombinableParentFixedPurchaseWithConditionCount>
+    <Statement>
+      <![CDATA[
+        SELECT  Count(*)
+          FROM  (
+                  SELECT  DISTINCT
+                          w2_FixedPurchase.*,
+                          w2_ProductView.shipping_type
+                    FROM  w2_FixedPurchase
+                          INNER JOIN w2_User ON
+                          (
+                            w2_FixedPurchase.user_id = w2_user.user_id
+                          )
+                          INNER JOIN w2_FixedPurchaseItem ON
+                          (
+                            w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                          )
+                          INNER JOIN w2_ProductView ON
+                          (
+                            w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                            AND
+                            w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                            AND
+                            w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                          )
+                    WHERE  w2_FixedPurchase.valid_flg = '1'
+                      AND  w2_FixedPurchase.next_shipping_date >= @next_shipping_date_from
+                      AND  w2_FixedPurchase.next_shipping_date <= @next_shipping_date_to
+                      AND  w2_FixedPurchase.fixed_purchase_status in (@@ allow_combine_fixedpurchase_status @@)
+                      AND  w2_FixedPurchase.payment_status in (@@ allow_combine_fixedpurchase_payment_status @@)
+                      @@ user_id_condition @@
+                      @@ user_name_condition @@
+                      AND  w2_FixedPurchase.subscription_box_course_id = ''
+                ) AS ParentFp
+         WHERE  Exists
+                (
+                  SELECT  1
+                    FROM  (
+                            SELECT  DISTINCT
+                                    w2_FixedPurchase.*,
+                                    w2_ProductView.shipping_type
+                              FROM  w2_FixedPurchase
+                                    INNER JOIN w2_FixedPurchaseItem ON
+                                    (
+                                      w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                                    )
+                                    INNER JOIN w2_ProductView ON
+                                    (
+                                      w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                                      AND
+                                      w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                                      AND
+                                      w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                                    )
+                              WHERE  w2_FixedPurchase.valid_flg = '1'
+                                AND  w2_FixedPurchase.next_shipping_date >= @next_shipping_date_from
+                                AND  w2_FixedPurchase.next_shipping_date <= @next_shipping_date_to
+                                AND  w2_FixedPurchase.fixed_purchase_status in (@@ allow_combine_fixedpurchase_status @@)
+                                AND  w2_FixedPurchase.payment_status in (@@ allow_combine_fixedpurchase_payment_status @@)
+                                AND  w2_FixedPurchase.subscription_box_course_id = ''
+                                AND  NOT Exists
+                                      (
+                                        SELECT  1
+                                          FROM  w2_FixedPurchaseItem
+                                                INNER JOIN w2_ProductView ON
+                                                (
+                                                  w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                                                  AND
+                                                  w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                                                  AND
+                                                  w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                                                )
+                                        WHERE  w2_FixedPurchaseItem.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                                          AND  w2_ProductView.limited_payment_ids like '%' + ParentFp.order_payment_kbn + '%'
+                                      )
+                          ) AS CombinableChildFp
+                   WHERE  ParentFp.user_id = CombinableChildFp.user_id
+                     AND  ParentFp.shipping_type = CombinableChildFp.shipping_type
+                     AND  ParentFp.fixed_purchase_id <> CombinableChildFp.fixed_purchase_id
+                     AND  ParentFp.order_payment_kbn <> 'K70'
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="next_shipping_date_from" Type="datetime" />
+      <Input Name="next_shipping_date_to" Type="datetime" />
+    </Parameter>
+  </GetCombinableParentFixedPurchaseWithConditionCount>
+
+  <!-- 定期購入同梱可能な定期購入情報取得 -->
+  <GetCombinableFixedPurchase>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchase AS fp
+         WHERE  fp.user_id = @user_id
+           AND  fp.valid_flg = '1'
+           AND  fp.next_shipping_date >= @next_shipping_date_from
+           AND  fp.next_shipping_date <= @next_shipping_date_to
+           AND  fp.fixed_purchase_status in (@@ allow_combine_fixedpurchase_status @@)
+           AND  fp.payment_status in (@@ allow_combine_fixedpurchase_payment_status @@)
+           AND  ISNULL(fp.subscription_box_course_id, '') = ''
+           AND  Exists
+                (
+                  SELECT  1
+                    FROM  w2_FixedPurchaseItem AS fpItem
+                          INNER JOIN w2_ProductView AS pView ON
+                          (
+                            fpItem.shop_id = pView.shop_id
+                            AND
+                            fpItem.product_id = pView.product_id
+                            AND
+                            fpItem.variation_id = pView.variation_id
+                          )
+                   WHERE  fpItem.fixed_purchase_id = fp.fixed_purchase_id
+                     AND  pView.shipping_type = @shipping_type
+               )
+           AND  NOT Exists
+                (
+                  SELECT  1
+                    FROM  w2_FixedPurchaseItem
+                          INNER JOIN w2_ProductView ON
+                          (
+                            w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                            AND
+                            w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                            AND
+                            w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                          )
+                   WHERE  w2_FixedPurchaseItem.fixed_purchase_id = fp.fixed_purchase_id
+                     AND  w2_ProductView.limited_payment_ids like '%' + @order_payment_kbn + '%'
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shipping_type" Type="nvarchar" Size="10" />
+      <Input Name="next_shipping_date_from" Type="datetime" />
+      <Input Name="next_shipping_date_to" Type="datetime" />
+      <Input Name="order_payment_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetCombinableFixedPurchase>
+
+  <!-- 定期購入同梱可能な定期購入件数取得 -->
+  <GetCombinableFixedPurchaseCount>
+    <Statement>
+      <![CDATA[
+        SELECT  Count(*)
+          FROM  w2_FixedPurchase AS fp
+         WHERE  fp.user_id = @user_id
+           AND  fp.valid_flg = '1'
+           AND  fp.next_shipping_date >= @next_shipping_date_from
+           AND  fp.next_shipping_date <= @next_shipping_date_to
+           AND  fp.fixed_purchase_status in (@@ allow_combine_fixedpurchase_status @@)
+           AND  fp.payment_status in (@@ allow_combine_fixedpurchase_payment_status @@)
+           AND  Exists
+                (
+                  SELECT  1
+                    FROM  w2_FixedPurchaseItem AS fpItem
+                          INNER JOIN w2_ProductView AS pView ON
+                          (
+                            fpItem.shop_id = pView.shop_id
+                            AND
+                            fpItem.product_id = pView.product_id
+                            AND
+                            fpItem.variation_id = pView.variation_id
+                          )
+                   WHERE  fpItem.fixed_purchase_id = fp.fixed_purchase_id
+                     AND  pView.shipping_type = @shipping_type
+               )
+           AND  NOT Exists
+                (
+                  SELECT  1
+                    FROM  w2_FixedPurchaseItem
+                          INNER JOIN w2_ProductView ON
+                          (
+                            w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                            AND
+                            w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                            AND
+                            w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                          )
+                   WHERE  w2_FixedPurchaseItem.fixed_purchase_id = fp.fixed_purchase_id
+                     AND  w2_ProductView.limited_payment_ids like '%' + @order_payment_kbn + '%'
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shipping_type" Type="nvarchar" Size="10" />
+      <Input Name="next_shipping_date_from" Type="datetime" />
+      <Input Name="next_shipping_date_to" Type="datetime" />
+    </Parameter>
+  </GetCombinableFixedPurchaseCount>
+
+  <!-- 定期台帳マスタ件数取得（ワークフロー・CSV出力用） -->
+  <GetFixedPurchaseWorkflowMasterCount>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  w2_FixedPurchase.fixed_purchase_id
+          INTO  #TempTable
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                [[ FIXEDPURCHASEWORKFLOW_SEARCH_WHERE ]]
+
+        ;WITH UserList AS
+        (
+          SELECT  DISTINCT @@ fields @@
+            FROM  #TempTable
+                  INNER JOIN w2_FixedPurchase ON
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = #TempTable.fixed_purchase_id
+                  )
+                  INNER JOIN w2_FixedPurchaseShipping ON
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                  )
+                  LEFT JOIN w2_Payment ON
+                  (
+                    w2_FixedPurchase.shop_id = w2_Payment.shop_id
+                    AND
+                    w2_FixedPurchase.order_payment_kbn = w2_Payment.payment_id
+                  )
+                  LEFT JOIN w2_User ON
+                  (
+                    w2_FixedPurchase.user_id = w2_User.user_id
+                  )
+        ),
+        TempTL AS
+        (
+          SELECT  *
+            FROM  UserList
+           WHERE  UserList.del_flg = '0'
+        ),
+        TempTLAC AS
+        (
+          SELECT  COUNT(*) count
+            FROM  TempTL
+        ),
+        TempTLMC AS
+        (
+          SELECT  COUNT(*) count
+            FROM  TempTL
+           WHERE  @mail_send_both_pc_and_mobile_enabled = 'True'
+             AND  TempTL.mail_addr <> ''
+             AND  TempTL.mail_addr2 <> ''
+        )
+        SELECT  TempTLAC.count + TempTLMC.count
+          FROM  TempTLAC,
+                TempTLMC
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_send_both_pc_and_mobile_enabled" Type="nvarchar" Size="5" />
+    </Parameter>
+  </GetFixedPurchaseWorkflowMasterCount>
+
+  <!-- 定期台帳マスタ取得（ワークフロー・CSV出力用） -->
+  <GetFixedPurchaseWorkflowMaster>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  w2_FixedPurchase.fixed_purchase_id
+          INTO  #TempTable
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                [[ FIXEDPURCHASEWORKFLOW_SEARCH_WHERE ]]
+
+        SELECT  @@ fields @@
+          FROM  #TempTable
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = #TempTable.fixed_purchase_id
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                LEFT JOIN w2_Payment ON
+                (
+                  w2_FixedPurchase.shop_id = w2_Payment.shop_id
+                  AND
+                  w2_FixedPurchase.order_payment_kbn = w2_Payment.payment_id
+                )
+                LEFT JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                [[ FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+        ]]>
+    </Statement>
+  </GetFixedPurchaseWorkflowMaster>
+
+  <!-- 定期購入商品マスタ情報取得(ワークフロー・CSV出力用) -->
+  <GetFixedPurchaseItemWorkflowMaster>
+    <Statement>
+      <![CDATA[ 
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        /* 会員ランク価格や特別価格などを考慮する商品価格を取得するため */
+        SELECT  w2_FixedPurchase.fixed_purchase_id,
+                w2_FixedPurchaseItem.shop_id,
+                w2_FixedPurchaseItem.product_id,
+                w2_FixedPurchaseItem.variation_id,
+                (
+                  SELECT  ISNULL(
+                             (SELECT TOP 1 member_rank_price
+                                FROM  w2_ProductPrice 
+                                      LEFT JOIN w2_MemberRank ON
+                                      (
+                                        w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                                      )
+                               WHERE  w2_ProductPrice.shop_id = w2_FixedPurchaseItem.shop_id
+                                 AND  w2_ProductPrice.product_id = w2_FixedPurchaseItem.product_id
+                                 AND  (w2_ProductPrice.variation_id = w2_FixedPurchaseItem.variation_id OR (w2_ProductView.use_variation_flg = '0' AND w2_ProductPrice.variation_id = ''))
+                                 AND  w2_User.member_rank_id <> ''
+                                 AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = w2_User.member_rank_id AND valid_flg = 'ON')
+                                 AND  w2_MemberRank.valid_flg = 'ON'
+                            ORDER BY  w2_MemberRank.member_rank_order),
+                              ISNULL(w2_ProductView.special_price, w2_ProductView.price))
+                    FROM  w2_ProductView
+                   WHERE  w2_ProductView.shop_id = w2_FixedPurchaseItem.shop_id
+                     AND  w2_ProductView.product_id = w2_FixedPurchaseItem.product_id
+                     AND  w2_ProductView.variation_id = w2_FixedPurchaseItem.variation_id
+                ) AS price
+        INTO  #ItemPrice
+        FROM  w2_FixedPurchase
+              INNER JOIN w2_User ON
+              (
+                w2_FixedPurchase.user_id = w2_User.user_id
+              )
+              INNER JOIN w2_FixedPurchaseItem ON
+              (
+                w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+              )
+        [[ FIXEDPURCHASEWORKFLOW_SEARCH_WHERE ]]
+
+        SELECT  @@ fields @@
+          FROM  #ItemPrice
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  #ItemPrice.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  #ItemPrice.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  #ItemPrice.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                  AND
+                  #ItemPrice.product_id = w2_FixedPurchaseItem.product_id
+                  AND
+                  #ItemPrice.variation_id = w2_FixedPurchaseItem.variation_id
+                )
+                INNER JOIN w2_Product ON
+                (
+                  w2_FixedPurchaseItem.product_id = w2_Product.product_id
+                  AND
+                  w2_FixedPurchaseItem.shop_id = w2_Product.shop_id
+                )
+                [[ FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetFixedPurchaseItemWorkflowMaster>
+
+  <!-- 定期台帳一覧を取得(ワークフロー) -->
+  <GetFixedPurchaseWorkflowList>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(DISTINCT w2_FixedPurchase.fixed_purchase_id), 0)
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                )
+                INNER JOIN w2_Payment ON
+                (
+                  w2_Payment.payment_id = w2_FixedPurchase.order_payment_kbn
+                )
+                [[ FIXEDPURCHASEWORKFLOW_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_FixedPurchase.fixed_purchase_id,
+                w2_FixedPurchase.user_id,
+                w2_FixedPurchase.shop_id,
+                w2_FixedPurchase.fixed_purchase_kbn,
+                w2_FixedPurchase.order_count,
+                w2_FixedPurchase.order_payment_kbn,
+                w2_FixedPurchase.fixed_purchase_setting1,
+                w2_FixedPurchase.fixed_purchase_status,
+                w2_FixedPurchase.payment_status,
+                w2_FixedPurchase.fixed_purchase_management_memo,
+                w2_FixedPurchase.shipping_memo,
+                w2_FixedPurchase.order_kbn,
+                w2_FixedPurchase.next_shipping_date,
+                w2_FixedPurchase.next_next_shipping_date,
+                w2_FixedPurchase.fixed_purchase_date_bgn,
+                w2_FixedPurchase.last_order_date,
+                w2_FixedPurchase.order_count,
+                w2_FixedPurchase.shipped_count,
+                w2_FixedPurchase.extend_status1,
+                w2_FixedPurchase.extend_status2,
+                w2_FixedPurchase.extend_status3,
+                w2_FixedPurchase.extend_status4,
+                w2_FixedPurchase.extend_status5,
+                w2_FixedPurchase.extend_status6,
+                w2_FixedPurchase.extend_status7,
+                w2_FixedPurchase.extend_status8,
+                w2_FixedPurchase.extend_status9,
+                w2_FixedPurchase.extend_status10,
+                w2_FixedPurchase.extend_status11,
+                w2_FixedPurchase.extend_status12,
+                w2_FixedPurchase.extend_status13,
+                w2_FixedPurchase.extend_status14,
+                w2_FixedPurchase.extend_status15,
+                w2_FixedPurchase.extend_status16,
+                w2_FixedPurchase.extend_status17,
+                w2_FixedPurchase.extend_status18,
+                w2_FixedPurchase.extend_status19,
+                w2_FixedPurchase.extend_status20,
+                w2_FixedPurchase.extend_status21,
+                w2_FixedPurchase.extend_status22,
+                w2_FixedPurchase.extend_status23,
+                w2_FixedPurchase.extend_status24,
+                w2_FixedPurchase.extend_status25,
+                w2_FixedPurchase.extend_status26,
+                w2_FixedPurchase.extend_status27,
+                w2_FixedPurchase.extend_status28,
+                w2_FixedPurchase.extend_status29,
+                w2_FixedPurchase.extend_status30,
+                w2_FixedPurchase.extend_status31,
+                w2_FixedPurchase.extend_status32,
+                w2_FixedPurchase.extend_status33,
+                w2_FixedPurchase.extend_status34,
+                w2_FixedPurchase.extend_status35,
+                w2_FixedPurchase.extend_status36,
+                w2_FixedPurchase.extend_status37,
+                w2_FixedPurchase.extend_status38,
+                w2_FixedPurchase.extend_status39,
+                w2_FixedPurchase.extend_status40,
+                w2_FixedPurchase.subscription_box_order_count,
+                w2_User.name,
+                w2_User.tel1,
+                w2_User.mail_addr,
+                w2_User.user_management_level_id,
+                w2_payment.payment_name,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_FixedPurchase.fixed_purchase_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_FixedPurchase
+                          INNER JOIN w2_User ON
+                          (
+                            w2_FixedPurchase.user_id = w2_User.user_id
+                          )
+                          [[ FIXEDPURCHASEWORKFLOW_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  RowIndex.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_User.user_id = w2_FixedPurchase.user_id
+                )
+                INNER JOIN w2_Payment ON
+                (
+                  w2_Payment.payment_id = w2_FixedPurchase.order_payment_kbn
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetFixedPurchaseWorkflowList>
+  <!-- カセット表示用定期商品取得 -->
+  <GetFixedPurchaseItemsForCassette>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  w2_FixedPurchaseItem.fixed_purchase_id,
+                w2_FixedPurchaseItem.product_id,
+                w2_FixedPurchaseItem.variation_id,
+                w2_FixedPurchaseItem.item_quantity,
+                w2_ProductView.name,
+                w2_ProductView.variation_fixed_purchase_price,
+                w2_ProductView.special_price,
+                w2_ProductView.price,
+                (
+                  SELECT  TOP 1
+                          w2_ProductPrice.member_rank_price
+                    FROM  w2_ProductPrice
+                          LEFT JOIN w2_MemberRank ON
+                          (
+                            w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                          )
+                   WHERE  w2_ProductPrice.shop_id = w2_ProductView.shop_id
+                     AND  w2_ProductPrice.product_id = w2_ProductView.product_id
+                     AND  (w2_ProductPrice.variation_id = w2_ProductView.variation_id OR ((w2_ProductView.use_variation_flg = '0') AND (w2_ProductPrice.variation_id = '')))
+                     AND  w2_User.member_rank_id <> ''
+                     AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = w2_User.member_rank_id AND valid_flg = 'ON')
+                     AND  w2_MemberRank.valid_flg = 'ON'
+                  ORDER BY w2_MemberRank.member_rank_order
+                ) AS member_rank_price
+          FROM  w2_FixedPurchaseItem
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  w2_FixedPurchaseItem.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                  AND w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                  AND w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                )
+         WHERE  w2_FixedPurchaseItem.fixed_purchase_id IN (@@ params @@)
+        ORDER BY  w2_FixedPurchaseItem.fixed_purchase_id
+      ]]>
+    </Statement>
+  </GetFixedPurchaseItemsForCassette>
+
+
+</FixedPurchase>

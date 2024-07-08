@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品初期設定SQLステートメントXML(ProductDefaultSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductDefaultSetting>
+
+  <!-- 商品画面の初期設定情報を取得 -->
+  <GetProductDefaultList>
+    <Statement>
+      <![CDATA[
+          SELECT  w2_ProductDefaultSetting.shop_id,
+                  w2_ProductDefaultSetting.init_data
+            FROM  w2_ProductDefaultSetting
+           WHERE  w2_ProductDefaultSetting.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductDefaultList>
+
+  <!-- 商品画面の初期設定情報を登録&更新 -->
+  <InsertUpdateProductDefaultSetting>
+    <Statement>
+      <![CDATA[
+        DECLARE @count int
+        SELECT  @count = COUNT(shop_id)
+          FROM  w2_ProductDefaultSetting
+         WHERE  w2_ProductDefaultSetting.shop_id = @shop_id
+      
+        IF @count = 0 
+        BEGIN
+        INSERT 
+            w2_ProductDefaultSetting
+            (
+            w2_ProductDefaultSetting.shop_id, 
+            w2_ProductDefaultSetting.init_data, 
+            w2_ProductDefaultSetting.date_created, 
+            w2_ProductDefaultSetting.date_changed, 
+            w2_ProductDefaultSetting.last_changed 
+            ) 
+          VALUES
+          (
+            @shop_id, 
+            @init_data, 
+            getdate(),
+            getdate(), 
+            @last_changed
+          )        
+        END
+        
+        ELSE
+        
+        BEGIN
+        UPDATE 
+            w2_ProductDefaultSetting 
+        SET  
+            w2_ProductDefaultSetting.shop_id = @shop_id, 
+            w2_ProductDefaultSetting.init_data = @init_data, 
+            w2_ProductDefaultSetting.date_changed = getdate(), 
+            w2_ProductDefaultSetting.last_changed = @last_changed 
+        WHERE 
+            w2_ProductDefaultSetting.shop_id = @shop_id 
+        END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="init_data" Type="ntext" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertUpdateProductDefaultSetting>
+</ProductDefaultSetting>

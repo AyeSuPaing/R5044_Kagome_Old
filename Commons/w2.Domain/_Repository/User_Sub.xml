@@ -1,0 +1,280 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザマスタ系SQLサブステートメントXML (User_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<User_Sub>
+
+  <!-- ユーザー情報一覧取得用WHERE文 -->
+  <USER_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (@user_id_like_escaped = '' OR w2_User.user_id LIKE @user_id_like_escaped + '%'  ESCAPE '#')      -- ユーザーID
+                  AND
+                  (@login_id_like_escaped = '' OR w2_User.login_id LIKE @login_id_like_escaped + '%'  ESCAPE '#')   -- ユーザーログインID
+                  AND
+                  (@user_kbn = '' OR w2_User.user_kbn LIKE '%' + @user_kbn + '%'  ESCAPE '#')        -- 顧客区分
+                  AND
+                  (@name_like_escaped = '' OR w2_User.name LIKE '%' + @name_like_escaped + '%' ESCAPE '#')        -- 氏名
+                  AND
+                  (@name_kana_like_escaped = '' OR w2_User.name_kana LIKE '%' +@name_kana_like_escaped + '%' ESCAPE '#')  -- フリガナ
+                  AND
+                  (@mail_flg = '' OR w2_User.mail_flg = @mail_flg)        -- メール配信希望
+                  AND
+                  (
+                    w2_User.tel1 LIKE @tel1_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_User.tel1_1 + w2_User.tel1_2 + w2_User.tel1_3 LIKE '%' + @tel1_like_escaped + '%' ESCAPE '#'      -- 電話番号1
+                    OR
+                    w2_User.tel2 LIKE @tel1_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_User.tel2_1 + w2_User.tel2_2 + w2_User.tel2_3 LIKE '%' + @tel1_like_escaped + '%' ESCAPE '#'      -- 電話番号2
+                  )
+                  AND
+                    (
+                      @mail_addr_like_escaped = ''
+                      OR
+                      w2_User.mail_addr2 LIKE '%' + @mail_addr_like_escaped + '%' ESCAPE '#'    -- メールアドレス
+                      OR
+                      w2_User.mail_addr LIKE '%' + @mail_addr_like_escaped + '%' ESCAPE '#'    -- モバイルメールアドレス
+                    )
+                  AND
+                  (
+                    w2_User.zip LIKE '%' + @zip_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_User.zip1 + w2_User.zip2 LIKE '%' + @zip_like_escaped + '%' ESCAPE '#'          -- 郵便番号
+                  )
+                  AND
+                  (@addr_like_escaped = '' OR w2_User.addr  LIKE '%' + @addr_like_escaped + '%' ESCAPE '#')        -- 住所
+                  AND
+                  (@easy_register_flg = '' OR w2_User.easy_register_flg = @easy_register_flg)        -- かんたん会員フラグ
+                  AND
+                  (@company_name_like_escaped = '' OR w2_User.company_name  LIKE '%' + @company_name_like_escaped + '%' ESCAPE '#')  -- 企業名
+                  AND
+                  (@company_post_name_like_escaped = '' OR w2_User.company_post_name  LIKE '%' + @company_post_name_like_escaped + '%' ESCAPE '#')  -- 部署名
+                  AND  
+                  (
+                    @mall_id = ''
+                    OR 
+                    w2_User.mall_id = @mall_id
+                  )
+                  AND  
+                  (
+                    (
+                       @del_flg = ''
+                       AND
+                       w2_User.del_flg = '0'
+                    )
+                    OR 
+                    w2_User.del_flg <= @del_flg
+                  )  -- 削除フラグ（退会者）
+                  AND
+                  (
+                    @user_management_level_id = ''
+                    OR
+                    (
+                      @user_management_level_exclude = '0' AND w2_User.user_management_level_id = @user_management_level_id
+                    )
+                    OR
+                    (
+                      @user_management_level_exclude = '1' AND w2_User.user_management_level_id != @user_management_level_id
+                    )
+                  ) -- ユーザー管理レベルID
+                  AND  
+                  (
+                    (
+                       @integrated_flg = ''
+                       AND
+                       w2_User.integrated_flg = '0'
+                    )
+                    OR
+                    (
+                       @integrated_flg = '1'
+                       AND
+                       (w2_User.integrated_flg = '0' OR w2_User.integrated_flg = '1')
+                    )
+                  )  -- ユーザー統合フラグ（統合された非代表ユーザーを含む）
+                  AND
+                  (
+                      (@date_created_from IS NULL OR w2_User.date_created >= @date_created_from)
+                      AND
+                      (@date_created_to IS NULL OR w2_User.date_created < @date_created_to)
+                  ) -- 作成日
+                  AND
+                  (
+                      (@date_changed_from IS NULL OR w2_User.date_changed >= @date_changed_from)
+                      AND
+                      (@date_changed_to IS NULL OR w2_User.date_changed < @date_changed_to)
+                  ) -- 更新日
+                  AND
+                  (
+                    @user_memo = ''
+                    OR
+                    (
+                      @user_memo = '1'
+                      AND
+                      w2_User.user_memo <> ''
+                      AND
+                      (w2_User.user_memo like '%' + @user_memo_like_escaped + '%'  ESCAPE '#')
+                    )
+                    OR
+                    (
+                      @user_memo = '0'
+                      AND
+                      w2_User.user_memo = ''
+                    )
+                  )--ユーザメモ
+                  <@@hasval:user_extend_flg@@>
+                  AND
+                  (
+                    <@@val:user_extend_flg:1@@>
+                      <@@hasnoval:user_extend_like_escaped@@>
+                        (@@ user_extend_field_name @@ <> '' AND @@ user_extend_field_name @@ IS NOT NULL)
+                      </@@hasnoval:user_extend_like_escaped@@>
+                      <@@hasval:user_extend_like_escaped@@>
+                        <@@val:user_extend_type:TB@@>
+                          @@ user_extend_field_name @@ LIKE '%' + @user_extend_like_escaped + '%'  ESCAPE '#'
+                        </@@val:user_extend_type:TB@@>
+                        <@@val:user_extend_type:CB@@>
+                          (
+                            -- 1カラムに複数の値が格納されている場合にもマッチングさせる
+                            @@ user_extend_field_name @@ = @user_extend_like_escaped
+                            OR
+                            @@ user_extend_field_name @@ LIKE '%,' + @user_extend_like_escaped + ',%' ESCAPE '#'
+                            OR
+                            @@ user_extend_field_name @@ LIKE + @user_extend_like_escaped + ',%' ESCAPE '#'
+                            OR
+                            @@ user_extend_field_name @@ LIKE '%,' + @user_extend_like_escaped ESCAPE '#'
+                          )
+                        </@@val:user_extend_type:CB@@>
+                        <@@val:user_extend_type:DDL,RB@@>
+                          (
+                            @@ user_extend_field_name @@ = @user_extend_like_escaped
+                          )
+                        </@@val:user_extend_type:DDL,RB@@>
+                      </@@hasval:user_extend_like_escaped@@>
+                    </@@val:user_extend_flg:1@@>
+                    <@@val:user_extend_flg:0@@>
+                      (
+                        @@ user_extend_field_name @@ = ''
+                        OR
+                        @@ user_extend_field_name @@ IS NULL
+                      )
+                    </@@val:user_extend_flg:0@@>
+                  )--ユーザー拡張項目
+                  </@@hasval:user_extend_flg@@>
+                  AND
+                  (
+                    @fixed_purchase_member_flg = ''
+                    OR
+                    (
+                      w2_User.fixed_purchase_member_flg = @fixed_purchase_member_flg
+                    )
+                  ) -- 定期会員フラグ
+                  AND
+                  (@access_country_iso_code = '' OR w2_User.access_country_iso_code = @access_country_iso_code)  -- アクセス国ISOコード
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="login_id_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="80" />
+      <Input Name="name_kana_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="mail_addr_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="tel1_like_escaped" Type="nvarchar" Size="32" />
+      <Input Name="zip_like_escaped" Type="nvarchar" Size="16" />
+      <Input Name="addr_like_escaped" Type="nvarchar" Size="400" />
+      <Input Name="easy_register_flg" Type="nvarchar" Size="1" />
+      <Input Name="company_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="company_post_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="mail_flg" Type="nvarchar" Size="10" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="user_management_level_id" Type="nvarchar" Size="30" />
+      <Input Name="user_management_level_exclude" Type="nvarchar" Size="1" />
+      <Input Name="integrated_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_created_from" Type="datetime" />
+      <Input Name="date_created_to" Type="datetime" />
+      <Input Name="date_changed_from" Type="datetime" />
+      <Input Name="date_changed_to" Type="datetime" />
+      <Input Name="user_memo" Type="nvarchar" Size="1"/>
+      <Input Name="user_memo_like_escaped" Type="nvarchar" Size="MAX" />
+      <Input Name="user_extend_type" Type="nvarchar" Size="3" />
+      <Input Name="user_extend_like_escaped" Type="nvarchar" Size="MAX" />
+      <Input Name="user_extend_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_member_flg" Type="nvarchar" Size="1"/>
+      <Input Name="access_country_iso_code" Type="nvarchar" Size="3" />
+    </Parameter>
+  </USER_SEARCH_WHERE>
+
+  <!-- ユーザー情報一覧取得用ORDER_BY -->
+  <USER_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_User.name
+            WHEN  2 THEN w2_User.name_kana
+            WHEN  8 THEN w2_User.user_id
+            ELSE '1'
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  4 THEN w2_User.date_created
+            WHEN  6 THEN w2_User.date_changed
+            ELSE NULL
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_User.name
+            WHEN  3 THEN w2_User.name_kana
+            WHEN  9 THEN w2_User.user_id
+            ELSE '1'
+          END 
+          DESC,
+          CASE @sort_kbn
+            WHEN  5 THEN w2_User.date_created
+            WHEN  7 THEN w2_User.date_changed
+            ELSE NULL
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_User.user_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="login_id_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="80" />
+      <Input Name="name_kana_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="mail_addr_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="tel1_like_escaped" Type="nvarchar" Size="32" />
+      <Input Name="zip_like_escaped" Type="nvarchar" Size="16" />
+      <Input Name="addr_like_escaped" Type="nvarchar" Size="400" />
+      <Input Name="company_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="company_post_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="mail_flg" Type="nvarchar" Size="10" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="user_management_level_id" Type="nvarchar" Size="30" />
+      <Input Name="user_management_level_exclude" Type="nvarchar" Size="1" />
+      <Input Name="date_created_from" Type="datetime" />
+      <Input Name="date_created_to" Type="datetime" />
+      <Input Name="date_changed_from" Type="datetime" />
+      <Input Name="date_changed_to" Type="datetime" />
+      <Input Name="user_memo" Type="nvarchar" Size="1"/>
+      <Input Name="user_memo_like_escaped" Type="nvarchar" Size="MAX" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </USER_SEARCH_ORDER_BY>
+
+</User_Sub>

@@ -1,0 +1,345 @@
+﻿@*
+=========================================================================================================
+  Module      : 特集エリアタイプ詳細(パーシャルビュー)(_FeatureAreaTypeDetail.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common
+@model w2.Cms.Manager.ViewModels.FeatureAreaType.DetailViewModel
+
+<script type="text/javascript">
+	var loadCoount = 0;
+
+	$(function() {
+		height_fit.ini();
+		custom_scroll.ini();
+		tab.ini();
+		page_url_edit.ini();
+		page.ini();
+		parts.ini();
+		list.ini();
+		dropdown_toggle.ini();
+
+		init_detail();
+		display_detail(true);
+		image_file_select.ini();
+	});
+
+	/**
+	 * 初期準備
+	*/
+	function init_detail() {
+		loadCoount = 2;
+		open_detail(true);
+		open_detail(false);
+	}
+
+	/**
+	 * PCSPのページ設定
+	 */
+	function open_detail(isPc) {
+		$.ajax({
+			type: "POST",
+			url: "@(Url.Action("FeatureAreaTypeDetailContents", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA_TYPE))",
+			data: {
+				"areaTypeId" : "@(Model.Input.AreaTypeId)",
+				"isPc" : isPc
+			}
+		}).done(function (viewHtml) {
+			if (isPc == true) {
+				$("#main-content-detail-pc").html(viewHtml);
+			} else {
+				$("#main-content-detail-sp").html(viewHtml);
+			}
+		}).fail(function () {
+		}).always(function () {
+			if (--loadCoount == 0) {
+				loading_animation.end();
+			}
+		});
+	}
+
+	function display_detail(isPc) {
+		if (isPc == true) {
+			$('#main-content-detail-pc').show();
+			$('#main-content-detail-sp').hide();
+		} else {
+			$('#main-content-detail-pc').hide();
+			$('#main-content-detail-sp').show();
+		}
+	}
+
+	/**
+	* ページ詳細更新
+	*/
+	function main_content_detail_update(formData) {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("UpdateDetailPage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA_TYPE, new { ActionStatus = Model.ActionStatus })",
+			data: formData,
+			processData: false,
+			contentType: false,
+		}).done(function (errorMessage) {
+			if (errorMessage == null || errorMessage == "") {
+				list.close();
+				notification.show('特集エリアタイプを@(Model.IsActionStatusUpdate ? "更新" : "登録")しました。', 'info', 'fadeout');
+				redraw();
+			} else {
+				notification.show(errorMessage, 'warning', 'fixed');
+			}
+		}).fail(function (errorMessage) {
+			notification.show(errorMessage, 'warning', 'fixed');
+		});
+	}
+
+	/**
+	 * 複製
+	 */
+	function copy() {
+		$("#main-content-detail").html(null);
+		$('.main-content-detail-inner').hide();
+		list.open();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("FeatureAreaTypeDetail", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA_TYPE, new
+			{
+				areatypeId = Model.Input.AreaTypeId,
+				isUpdate = false
+			})"
+		}).done(function (viewHtml) {
+			notification.show('複製しました。', 'info', 'fadeout');
+			$("#main-content-detail").html(viewHtml);
+			$('.main-content-detail-inner').show();
+		}).fail(function () {
+		});
+	}
+
+	/**
+	 * 削除
+	 */
+	function delete_feature_areaType() {
+		if (confirm("特集エリアタイプを削除しますがよろしいですか？") == false) return;
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("DeleteDetailPage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA_TYPE, new { areaTypeId = Model.Input.AreaTypeId})",
+			data: get_main_content_detail_date()
+		}).done(function (errorMessage) {
+			if (errorMessage == null || errorMessage == "") {
+				list.close();
+				notification.show('特集エリアタイプを削除しました。', 'info', 'fadeout');
+				redraw();
+			} else {
+				notification.show(errorMessage, 'warning', 'fixed');
+			}
+		}).fail(function (errorMessage) {
+			notification.show(errorMessage, 'warning', 'fadeout');
+		});
+	}
+
+	/**
+	 * 詳細画面の表示
+	 */
+	function get_main_content_detail_date() {
+		var pageDate = $('#detail_form').serializeArray();
+		return pageDate;
+	}
+
+	/**
+	 * プレビュー表示
+	 */
+	function preview() {
+		loading_animation.start();
+		var url = "";
+		var windowSize = "";
+
+		if ($('.tab.is-active').data('tab-content-selector') === "#tab-pc") {
+			url = "@Url.Action("PreviewPc", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA_TYPE)";
+			windowSize = "";
+		} else {
+			url = "@Url.Action("PreviewSp", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA_TYPE)";
+			windowSize = "width=450,height=800,scrollbars=yes";
+		}
+		$.ajax({
+			type: "POST",
+			url: url,
+			data: get_main_content_detail_date()
+		}).done(function (url) {
+			open_window(url, 'preview', windowSize);
+		}).always(function () {
+			setTimeout(function () {
+					loading_animation.end();
+				},
+				1500);
+		}).fail(function () {
+		});
+	}
+</script>
+
+<style>
+	.dropArea {
+		border-radius: 10px;
+		margin: 3vmin;
+		padding: 3vmin 10%;
+		text-align: center;
+		position: relative;
+		border: 4px #4CA750 dashed;
+	}
+</style>
+
+<div class="main-content-detail-inner">
+<a class="main-content-detail-btn-close"><span class="icon icon-close"></span>閉じる</a>
+<div class="main-content-detail-caution-message" style="display: none;">
+	<p>注意・警告メッセージエリア（エラーメッセージ、同時編集回避メッセージなどを表示）</p>
+	<p>注意・警告メッセージエリア（エラーメッセージ、同時編集回避メッセージなどを表示）</p>
+</div>
+
+@using (Html.BeginForm("UpdateDetailPage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA_TYPE, new
+{
+}, FormMethod.Post, new
+{
+	Id = "detail_form"
+}))
+{
+	<div class="main-content-detail-head">
+		<div class="main-content-detail-head-title h2">
+			@Html.TextBoxFor(model => model.Input.AreaTypeName, new
+			{
+				Name = "Input.AreaTypeName",
+				Placeholder = "特集エリアタイプ名を設定してください（必須）"
+			})
+		</div>
+		<div class="main-content-detail-head-main-actions">
+			<a href="javascript:preview()" class="btn btn-txt btn-size-m">プレビュー</a>
+			<input id="featureAreaTypeUpdateButton" type="button" class="btn btn-main btn-size-l" value="@(Model.IsActionStatusUpdate ? "更新" : "登録") " >
+			<div class="dropdown">
+				<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle">
+					<span class="icon-dots"></span>
+				</a>
+				<div class="dropdown-menu">
+					@if (Model.IsActionStatusUpdate)
+					{
+						<a class="dropdown-menu-item" href="javascript:copy()">複製して新規作成する</a>
+					}
+					@if (Model.IsDeletable)
+					{
+						<a class="dropdown-menu-item" href="javascript:delete_feature_areaType()">削除する</a>
+					}
+					<a class="dropdown-menu-item" href="javascript:open_page('@Model.Input.AreaTypeId', '@Model.IsActionStatusUpdate.ToString()')">リセットする</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="main-content-detail-body">
+		<div class="form-element-group form-element-group-horizontal-grid">
+			<div class="form-element-group-title">
+				<label for="Input_AreaTypeId">ID<span class="notice">*</span></label>
+			</div>
+			<div class="form-element-group-content">
+				@if (Model.IsActionStatusUpdate)
+				{
+					@Html.TextBoxFor(model => model.Input.AreaTypeId, new
+					{
+						Name = "Input.AreaTypeId",
+						Placeholder = "特集エリアタイプID",
+						Style = "width: 300px",
+						Disabled = "disabled"
+					})
+					@Html.HiddenFor(model => model.Input.AreaTypeId, new
+					{
+						Name = "Input.AreaTypeId",
+					})
+				}
+				else
+				{
+					@Html.TextBoxFor(model => model.Input.AreaTypeId, new
+					{
+						Name = "Input.AreaTypeId",
+						Placeholder = "特集エリアタイプID",
+						Style = "width: 300px",
+					})
+				}
+			</div>
+		</div>
+		<div class="form-element-group form-element-group-horizontal-grid">
+			<div class="form-element-group-title">
+				<label for="Input_AreaTypeId">動作タイプ</label>
+			</div>
+			<div class="form-element-group-content">
+				<div class="feature-type-select">
+					@{
+						var imgIndex = 0;
+						foreach (var actionType in Model.ActionTypes)
+						{
+							imgIndex++;
+							var attributes = new Dictionary<string, object>
+							{
+								{ "id", "feature-type-" + imgIndex }
+							};
+							if (actionType.Key == Model.Input.ActionType)
+							{
+								attributes.Add("checked","checked");
+							}
+							if ((Model.IsDeletable == false) && Model.IsActionStatusUpdate)
+							{
+								attributes.Add("disabled","disabled");
+							}
+							
+							@Html.RadioButtonFor(model => model.Input.ActionType, actionType.Key, attributes)
+							<label for="feature-type-@imgIndex" class="feature-type-select-item">
+								<div class="feature-type-select-item-img">
+									<img src="~/@(Constants.PATH_FEATUREAREA_ICON_IMAGE)feature_area_type_@(actionType.Key).png" alt="@actionType.Key">
+								</div>
+								<dl class="feature-type-select-item-text">
+									<dt>@actionType.Value</dt>
+								</dl>
+							</label>
+						}
+					}
+				</div>
+				@Html.HiddenFor(model => model.Input.AreaTypeId, new
+				{
+					Name = "Input.ActionType",
+				})
+			</div>
+		</div>
+		<div class="form-element-group form-element-group-horizontal-grid">
+			<div class="form-element-group-title">
+				<label>サイト</label>
+			</div>
+			<div class="form-element-group-content">
+				<div class="tabs tabs-site-select">
+					<div class="tabs-tab" id="tab_pc">
+						<a href="javascript:void(0)" class="tab is-active" data-tab-content-selector="#tab-pc" onclick="display_detail(true)">PC</a>
+					</div>
+					<div class="tabs-tab" id="tab_sp">
+						<a href="javascript:void(0)" class="tab" data-tab-content-selector="#tab-sp" onclick="display_detail(false)">SP</a>
+					</div>
+				</div>
+			</div>
+		</div>
+		@* 領域:詳細画面PC *@
+		<div id="tab-pc" class="main-content-detail-site">
+			<div id="main-content-detail-pc" style="display: none"></div>
+		</div>
+		@* 領域:詳細画面SP *@
+		<div id="tab-sp" class="main-content-detail-site">
+			<div id="main-content-detail-sp" style="display: none"></div>
+		</div>
+		<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature">
+			<div class="form-element-group-title">
+				<label>内部用メモ</label>
+			</div>
+			<div class="form-element-group-content">
+				@Html.TextBoxFor(model => model.Input.InternalMemo, new
+				{
+					Name = "Input.InternalMemo",
+					Placeholder = "設定なし",
+					Style = "width: 500px"
+				})
+			</div>
+		</div>
+		@Html.HiddenFor(model => model.IsActionStatusUpdate)
+	</div>
+	}
+</div>

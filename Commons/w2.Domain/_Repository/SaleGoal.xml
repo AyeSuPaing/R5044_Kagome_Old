@@ -1,0 +1,180 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Sale Goal系SQLステートメントXML (SaleGoal.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<SaleGoal>
+
+  <!-- Get -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_SaleGoal.*
+          FROM  w2_SaleGoal
+         WHERE  w2_SaleGoal.year = @year
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="nvarchar" Size="4" />
+    </Parameter>
+  </Get>
+
+  <!-- Get sales revenue -->
+  <GetSalesRevenue>
+    <Statement>
+      <![CDATA[
+        -- 1. Get total order amount
+        DECLARE  @order_amount decimal(18, 3);
+         SELECT  @order_amount = ISNULL(SUM(w2_Order.order_price_total), 0)
+           FROM  w2_Order
+          WHERE  w2_Order.order_status IN ('SHP_COMP', 'DLV_COMP')
+            AND  w2_Order.return_exchange_kbn IN ('00', '10')
+            AND
+            (
+               (
+                 w2_Order.order_shipped_date IS NOT NULL
+                 AND
+                 w2_Order.order_shipped_date >= @start_date
+                 AND
+                 w2_Order.order_shipped_date <= @end_date
+               )
+               OR
+               (
+                 w2_Order.order_shipped_date IS NULL
+                 AND
+                 w2_Order.order_delivering_date >= @start_date
+                 AND
+                 w2_Order.order_delivering_date <= @end_date
+               )
+            )
+
+        -- 2. Get total return order amount
+        DECLARE  @return_amount decimal(18, 3);
+         SELECT  @return_amount = ISNULL(SUM(w2_Order.order_price_total), 0)
+           FROM  w2_Order
+          WHERE  w2_Order.order_status = ''
+            AND  w2_Order.return_exchange_kbn = '01'
+            AND  w2_Order.order_return_exchange_complete_date >= @start_date
+            AND  w2_Order.order_return_exchange_complete_date <= @end_date
+
+         -- 3. Actual revenue
+         SELECT  @order_amount + @return_amount
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="start_date" Type="datetime" />
+      <Input Name="end_date" Type="datetime" />
+    </Parameter>
+  </GetSalesRevenue>
+
+  <!-- Insert -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_SaleGoal
+                (
+                  year,
+                  annual_goal,
+                  applicable_month,
+                  monthly_goal_1,
+                  monthly_goal_2,
+                  monthly_goal_3,
+                  monthly_goal_4,
+                  monthly_goal_5,
+                  monthly_goal_6,
+                  monthly_goal_7,
+                  monthly_goal_8,
+                  monthly_goal_9,
+                  monthly_goal_10,
+                  monthly_goal_11,
+                  monthly_goal_12,
+                  last_changed
+                )
+        VALUES  (
+                  @year,
+                  @annual_goal,
+                  @applicable_month,
+                  @monthly_goal_1,
+                  @monthly_goal_2,
+                  @monthly_goal_3,
+                  @monthly_goal_4,
+                  @monthly_goal_5,
+                  @monthly_goal_6,
+                  @monthly_goal_7,
+                  @monthly_goal_8,
+                  @monthly_goal_9,
+                  @monthly_goal_10,
+                  @monthly_goal_11,
+                  @monthly_goal_12,
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="annual_goal" Type="decimal" Size="18,3" />
+      <Input Name="applicable_month" Type="int" />
+      <Input Name="monthly_goal_1" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_2" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_3" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_4" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_5" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_6" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_7" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_8" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_9" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_10" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_11" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_12" Type="decimal" Size="18,3" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- Update -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_SaleGoal
+           SET  annual_goal = @annual_goal,
+                applicable_month = @applicable_month,
+                monthly_goal_1 = @monthly_goal_1,
+                monthly_goal_2 = @monthly_goal_2,
+                monthly_goal_3 = @monthly_goal_3,
+                monthly_goal_4 = @monthly_goal_4,
+                monthly_goal_5 = @monthly_goal_5,
+                monthly_goal_6 = @monthly_goal_6,
+                monthly_goal_7 = @monthly_goal_7,
+                monthly_goal_8 = @monthly_goal_8,
+                monthly_goal_9 = @monthly_goal_9,
+                monthly_goal_10 = @monthly_goal_10,
+                monthly_goal_11 = @monthly_goal_11,
+                monthly_goal_12 = @monthly_goal_12,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  year = @year
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="annual_goal" Type="decimal" Size="18,3" />
+      <Input Name="applicable_month" Type="int" />
+      <Input Name="monthly_goal_1" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_2" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_3" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_4" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_5" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_6" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_7" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_8" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_9" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_10" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_11" Type="decimal" Size="18,3" />
+      <Input Name="monthly_goal_12" Type="decimal" Size="18,3" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+</SaleGoal>

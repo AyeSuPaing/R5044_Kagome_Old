@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 更新履歴情報系SQLサブステートメントXML (UpdateHistory_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<UpdateHistory_Sub>
+
+  <!-- 検索用WHERE文 -->
+  <UPDATEHISTORY_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (
+                    (@update_history_kbn1 = '' AND @update_history_kbn2 = '' AND @update_history_kbn3 = '')
+                    AND
+                    (w2_UpdateHistory.update_history_kbn = '')
+                  )
+                  OR
+                  (
+                    (@update_history_kbn1 <> '' AND w2_UpdateHistory.update_history_kbn = @update_history_kbn1)
+                    OR
+                    (@update_history_kbn2 <> '' AND w2_UpdateHistory.update_history_kbn = @update_history_kbn2)
+                    OR
+                    (@update_history_kbn3 <> '' AND w2_UpdateHistory.update_history_kbn = @update_history_kbn3)
+                  )
+                )
+                AND
+                (
+                  w2_UpdateHistory.update_history_kbn <> 'User' --ユーザ履歴区分は本ユーザ履歴のみ取得する
+                  OR
+                  w2_UpdateHistory.user_id = @user_id
+                )
+                AND
+                (
+                  w2_UpdateHistory.user_id = @user_id
+                  OR
+                  w2_UpdateHistory.user_id IN --統合済みのユーザIDあれば取得
+                  (
+                    SELECT  w2_UserIntegrationUser.user_id
+                      FROM  w2_UserIntegrationUser
+                            INNER JOIN
+                             (
+                               SELECT  user_integration_no
+                                 FROM  w2_UserIntegrationUser
+                                WHERE  user_id = @user_id
+                             ) AS UserIntegrationUser ON
+                            (
+                              w2_UserIntegrationUser.user_integration_no = UserIntegrationUser.user_integration_no
+                              AND
+                              w2_UserIntegrationUser.representative_flg = 0 --統合代表以外のユーザ
+                            )
+                            INNER JOIN w2_userIntegration ON
+                            (
+                              w2_userIntegration.user_integration_no = UserIntegrationUser.user_integration_no
+                              AND
+                              w2_userIntegration.status = 'DONE'
+                            )
+                  )
+                )
+                AND
+                (@master_id_like_escaped = '' OR w2_UpdateHistory.master_id LIKE @master_id_like_escaped + '%'  ESCAPE '#')
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="update_history_kbn1" Type="nvarchar" Size="30" />
+      <Input Name="update_history_kbn2" Type="nvarchar" Size="30" />
+      <Input Name="update_history_kbn3" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="master_id_like_escaped" Type="nvarchar" Size="200" />
+    </Parameter>
+  </UPDATEHISTORY_SEARCH_WHERE>
+  
+  <!-- 検索用ORDER BY -->
+  <UPDATEHISTORY_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY update_history_no DESC
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </UPDATEHISTORY_SEARCH_ORDER_BY>
+
+</UpdateHistory_Sub>

@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザーポイント出力SQLサブステートメントXML(UserPoint_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<UserPoint_Sub>
+  <!-- CTE -->
+  <TABLE_CTE>
+    <Statement>
+      <![CDATA[
+        -- 本ポイント一覧取得し、ユーザーポイントテーブル変数に格納
+        WITH UserPoint_CTE
+        AS
+        (
+          SELECT  
+              w2_UserPoint.user_id
+              , w2_UserPoint.point_exp
+              , SUM(w2_UserPoint.point) AS point
+              , 0 AS point_temp
+              , MAX(w2_UserPoint.date_changed) AS date_changed
+          FROM  dbo.w2_UserPoint
+          WHERE w2_UserPoint.point_type = '01'
+          GROUP BY w2_UserPoint.user_id, w2_UserPoint.point_type, w2_UserPoint.point_exp
+        )
+      ]]>
+    </Statement>
+  </TABLE_CTE>
+</UserPoint_Sub>

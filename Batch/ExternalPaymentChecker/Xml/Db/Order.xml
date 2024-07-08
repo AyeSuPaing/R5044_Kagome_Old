@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文系SQLステートメントXML (Order.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<Order>
+
+  <!-- 未入金の注文情報取得 -->
+  <GetNonPaymentOrders>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+        SELECT  *
+          FROM  w2_Order
+         WHERE  order_date >= @order_date_begin
+           AND  order_status NOT IN ('ODR_CNSL', 'TMP_CNSL')
+           AND  order_payment_kbn = @order_payment_kbn
+           AND  order_payment_status = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_date_begin" Type="datetime" />
+      <Input Name="order_payment_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetNonPaymentOrders>
+
+</Order>

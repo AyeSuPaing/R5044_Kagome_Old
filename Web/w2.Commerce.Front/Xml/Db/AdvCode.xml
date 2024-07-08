@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 広告コード系SQLステートメントXML(AdvCode.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2011 All Rights Reserved.
+=========================================================================================================
+-->
+<AdvCode>
+  
+  <!-- 広告コード数取得（有効無効判断に利用） -->
+  <GetAdvCodeCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(w2_AdvCode.advcode_no)
+          FROM  w2_AdvCode
+         WHERE  dept_id = @dept_id
+           AND  advertisement_code = @advertisement_code
+           AND  valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="varchar" Size="30" />
+      <Input Name="advertisement_code" Type="varchar" Size="30" />
+    </Parameter>
+  </GetAdvCodeCount>
+  
+  <!-- 広告コードログ記録 (ただし広告コードが存在した場合) -->
+  <InsertAdvCodeLog>
+    <Statement>
+      <![CDATA[
+        -- 広告コード存在チェック
+        DECLARE @advdoce_count int
+        SELECT  @advdoce_count = COUNT(advcode_no)
+          FROM  w2_AdvCode
+         WHERE  dept_id = @dept_id
+           AND  advertisement_code = @advertisement_code
+           AND  valid_flg = '1'
+   
+        IF @advdoce_count <> 0
+        BEGIN
+          INSERT  w2_AdvCodeLog
+                  (
+                    access_date,
+                    access_time,
+                    advertisement_code,
+                    career_id,
+                    mobile_uid,
+                    access_user_id
+                  )
+          VALUES  (
+                    @access_date,
+                    @access_time,
+                    @advertisement_code,
+                    @career_id,
+                    @mobile_uid,
+                    @access_user_id
+                  )
+        END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="varchar" Size="30" />
+      <Input Name="access_date" Type="varchar" Size="20" />
+      <Input Name="access_time" Type="varchar" Size="20" />
+      <Input Name="advertisement_code" Type="varchar" Size="30" />
+      <Input Name="career_id" Type="varchar" Size="10" />
+      <Input Name="mobile_uid" Type="varchar" Size="50" />
+      <Input Name="access_user_id" Type="nvarchar" Size="255" />
+    </Parameter>
+  </InsertAdvCodeLog>
+  
+</AdvCode>

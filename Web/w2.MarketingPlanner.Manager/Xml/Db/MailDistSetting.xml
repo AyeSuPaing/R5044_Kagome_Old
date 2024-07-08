@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メール配信設定系SQLステートメントXML(MailDistSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MailDistSetting>
+
+  <!-- メール配信設定取得 -->
+  <GetMailDistSettingList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_MailDistSetting.maildist_id), 0)
+          FROM  w2_MailDistSetting
+                [[ MAILDISTSETTING_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_MailDistSetting.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_MailDistSetting.dept_id,
+                          w2_MailDistSetting.maildist_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MAILDISTSETTING_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MailDistSetting
+                          [[ MAILDISTSETTING_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_MailDistSetting ON
+                (
+                  RowIndex.dept_id = w2_MailDistSetting.dept_id
+                  AND
+                  RowIndex.maildist_id = w2_MailDistSetting.maildist_id
+                )
+                LEFT JOIN w2_MailDistText ON
+                (
+                  w2_MailDistSetting.dept_id = w2_MailDistText.dept_id
+                  AND
+                  w2_MailDistSetting.mailtext_id = w2_MailDistText.mailtext_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="maildist_name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetMailDistSettingList>
+
+  <!-- メール配信設定取得（除外リストも取得） -->
+  <GetMailDistSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MailDistSetting.*,
+                ISNULL((SELECT target_name FROM w2_TargetList WHERE w2_MailDistSetting.dept_id = w2_TargetList.dept_id AND w2_MailDistSetting.target_id = w2_TargetList.target_id), '') AS target_name1,
+                ISNULL((SELECT target_name FROM w2_TargetList WHERE w2_MailDistSetting.dept_id = w2_TargetList.dept_id AND w2_MailDistSetting.target_id2 = w2_TargetList.target_id), '') AS target_name2,
+                ISNULL((SELECT target_name FROM w2_TargetList WHERE w2_MailDistSetting.dept_id = w2_TargetList.dept_id AND w2_MailDistSetting.target_id3 = w2_TargetList.target_id), '') AS target_name3,
+                ISNULL((SELECT target_name FROM w2_TargetList WHERE w2_MailDistSetting.dept_id = w2_TargetList.dept_id AND w2_MailDistSetting.target_id4 = w2_TargetList.target_id), '') AS target_name4,
+                ISNULL((SELECT target_name FROM w2_TargetList WHERE w2_MailDistSetting.dept_id = w2_TargetList.dept_id AND w2_MailDistSetting.target_id5 = w2_TargetList.target_id), '') AS target_name5,
+                ISNULL(w2_MailDistText.mailtext_name, '') AS mailtext_name
+          FROM  w2_MailDistSetting
+                LEFT JOIN w2_MailDistText ON (w2_MailDistSetting.dept_id = w2_MailDistText.dept_id) AND (w2_MailDistSetting.mailtext_id = w2_MailDistText.mailtext_id)
+         WHERE  w2_MailDistSetting.dept_id = @dept_id
+           AND  w2_MailDistSetting.maildist_id = @maildist_id
+           AND  w2_MailDistSetting.del_flg = '0'
+        
+        SELECT  *
+          FROM  w2_MailDistExceptList
+         WHERE  dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMailDistSetting>
+  
+  <!-- メール配信設定インサート -->
+  <InsertMailDistSetting>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_MailDistSetting
+                (
+                dept_id,
+                maildist_id,
+                maildist_name,
+                status,
+                target_id,
+                target_extract_flg,
+                target_id2,
+                target_extract_flg2,
+                target_id3,
+                target_extract_flg3,
+                target_id4,
+                target_extract_flg4,
+                target_id5,
+                target_extract_flg5,
+                except_error_point,
+                except_mobilemail_flg,
+                enable_deduplication,
+                last_count,
+                mailtext_id,
+                last_dist_date,
+                exec_timing,
+                schedule_kbn,
+                schedule_day_of_week,
+                schedule_year,
+                schedule_month,
+                schedule_day,
+                schedule_hour,
+                schedule_minute,
+                schedule_second,
+                valid_flg,
+                last_changed
+                )
+        VALUES  (
+                @dept_id,
+                @maildist_id,
+                @maildist_name,
+                '00',           -- 通常
+                @target_id,
+                @target_extract_flg,
+                @target_id2,
+                @target_extract_flg2,
+                @target_id3,
+                @target_extract_flg3,
+                @target_id4,
+                @target_extract_flg4,
+                @target_id5,
+                @target_extract_flg5,
+                @except_error_point,
+                @except_mobilemail_flg,
+                @enable_deduplication,
+                -1,
+                @mailtext_id,
+                NULL,
+                @exec_timing,
+                @schedule_kbn,
+                @schedule_day_of_week,
+                @schedule_year,
+                @schedule_month,
+                @schedule_day,
+                @schedule_hour,
+                @schedule_minute,
+                @schedule_second,
+                @valid_flg,
+                @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_name" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg" Type="nvarchar" Size="10" />
+      <Input Name="target_id2" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg2" Type="nvarchar" Size="10" />
+      <Input Name="target_id3" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg3" Type="nvarchar" Size="10" />
+      <Input Name="target_id4" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg4" Type="nvarchar" Size="10" />
+      <Input Name="target_id5" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg5" Type="nvarchar" Size="10" />
+      <Input Name="except_error_point" Type="int" />
+      <Input Name="except_mobilemail_flg"  Type="nvarchar" Size="10" />
+      <Input Name="enable_deduplication"  Type="nvarchar" Size="10" />
+      <Input Name="last_count" Type="bigint" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="schedule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="schedule_day_of_week" Type="nvarchar" Size="10" />
+      <Input Name="schedule_year" Type="int" />
+      <Input Name="schedule_month" Type="int" />
+      <Input Name="schedule_day" Type="int" />
+      <Input Name="schedule_hour" Type="int" />
+      <Input Name="schedule_minute" Type="int" />
+      <Input Name="schedule_second" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertMailDistSetting>
+
+  <!-- メール配信設定アップデート -->
+  <UpdateMailDistSetting>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MailDistSetting
+           SET  maildist_name = @maildist_name,
+                --status = @status,
+                target_id = @target_id,
+                target_extract_flg = @target_extract_flg,
+                target_id2 = @target_id2,
+                target_extract_flg2 = @target_extract_flg2,
+                target_id3 = @target_id3,
+                target_extract_flg3 = @target_extract_flg3,
+                target_id4 = @target_id4,
+                target_extract_flg4 = @target_extract_flg4,
+                target_id5 = @target_id5,
+                target_extract_flg5 = @target_extract_flg5,
+                except_error_point = @except_error_point,
+                except_mobilemail_flg = @except_mobilemail_flg,
+                enable_deduplication = @enable_deduplication,
+                --last_count = @last_count,
+                mailtext_id = @mailtext_id,
+                --last_dist_date = @last_dist_date,
+                exec_timing = @exec_timing,
+                schedule_kbn = @schedule_kbn,
+                schedule_day_of_week = @schedule_day_of_week,
+                schedule_year = @schedule_year,
+                schedule_month = @schedule_month,
+                schedule_day = @schedule_day,
+                schedule_hour = @schedule_hour,
+                schedule_minute = @schedule_minute,
+                schedule_second = @schedule_second,
+                valid_flg = @valid_flg,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_name" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg" Type="nvarchar" Size="10" />
+      <Input Name="target_id2" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg2" Type="nvarchar" Size="10" />
+      <Input Name="target_id3" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg3" Type="nvarchar" Size="10" />
+      <Input Name="target_id4" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg4" Type="nvarchar" Size="10" />
+      <Input Name="target_id5" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg5" Type="nvarchar" Size="10" />
+      <Input Name="except_error_point" Type="bigint" />
+      <Input Name="except_mobilemail_flg"  Type="nvarchar" Size="10" />
+      <Input Name="enable_deduplication" Type="nvarchar" Size="10" />
+      <Input Name="last_count" Type="bigint" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="schedule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="schedule_day_of_week" Type="nvarchar" Size="10" />
+      <Input Name="schedule_year" Type="int" />
+      <Input Name="schedule_month" Type="int" />
+      <Input Name="schedule_day" Type="int" />
+      <Input Name="schedule_hour" Type="int" />
+      <Input Name="schedule_minute" Type="int" />
+      <Input Name="schedule_second" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateMailDistSetting>
+
+  <!-- メール配信排除リスト挿入 -->
+  <InsertMailDistExceptList>
+    <Statement>
+      <![CDATA[
+      INSERT  w2_MailDistExceptList
+              (
+              dept_id,
+              maildist_id,
+              mail_addr
+              )
+      VALUES  (
+              @dept_id,
+              @maildist_id,
+              @mail_addr
+              )
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+    </Parameter>
+  </InsertMailDistExceptList>
+  
+  <!-- メール配信排除リスト削除 -->
+  <DeleteMailDistExceptListAll>
+    <Statement>
+      <![CDATA[
+        DELETE
+          FROM  w2_MailDistExceptList
+         WHERE  dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteMailDistExceptListAll>
+
+  <!-- メール配信設定削除フラグ更新 -->
+  <UpdateMailDistSettingDelFlg>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MailDistSetting
+           SET  del_flg = '1'
+         WHERE  dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UpdateMailDistSettingDelFlg>
+
+  <!-- メール配信文章削除前使用チェック -->
+  <CheckMailDistTextUsed>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailDistSetting
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  del_flg = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckMailDistTextUsed>
+
+  <!-- ターゲットリスト削除前使用チェック -->
+  <CheckTargetListUsed>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailDistSetting
+         WHERE  dept_id = @dept_id
+           AND
+           (
+              target_id = @target_id
+              OR
+              target_id2 = @target_id
+              OR
+              target_id3 = @target_id
+              OR
+              target_id4 = @target_id
+              OR
+              target_id5 = @target_id
+           )
+           AND  del_flg = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckTargetListUsed>
+</MailDistSetting>

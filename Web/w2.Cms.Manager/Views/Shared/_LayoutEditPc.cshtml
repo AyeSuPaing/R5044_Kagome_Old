@@ -1,0 +1,252 @@
+﻿@*
+=========================================================================================================
+  Module      : レイアウト編集PC(パーシャルビュー)(_LayoutEditPc.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.PageDesign
+@using w2.Cms.Manager.Input
+@using w2.Common.Util
+@model w2.Cms.Manager.ViewModels.Shared.LayoutEditViewModel
+@{
+	var layoutInputName = Model.LayoutEditInputBaseName + ".";
+}
+
+@* 配置パーツモデル *@
+@helper MoveParts(MovePartsModel movePartsModel)
+{
+	<div class="dd-parts-list-item" data-parts-id="@movePartsModel.PartsDesignModel.PartsId">
+		<div class="dd-parts-list-item-inner">
+			<div class="dd-parts-list-item-handle">
+				<span class="icon icon-drag"></span>
+			</div>
+			<div class="dd-parts-list-item-name">@movePartsModel.PartsDesignModel.ManagementTitle</div>
+			<div class="dd-parts-list-item-btns">
+				<div class="dd-parts-list-item-preview-btn">
+					<a href="javascript:void(0);" onclick="previewParts(@movePartsModel.PartsDesignModel.PartsId);">
+						<span class="icon icon-preview"></span>
+					</a>
+				</div>
+				<div class="dd-parts-list-item-edit-btn">
+					<a href="javascript:void(0);" onclick="open_parts(@movePartsModel.PartsDesignModel.PartsId);">
+						<span class="icon icon-pencil"></span>
+					</a>
+				</div>
+				<div class="dd-parts-list-item-edit-btn dd-parts-list-item-close-btn">
+					<a href="javascript:void(0);" onclick="placement_parts_remove(this);">
+						<span class="icon icon-close"></span>
+					</a>
+			</div>
+		</div>
+	</div>
+	</div>
+}
+
+<!-- レイアウト編集 PC -->
+<div class="layout-edit">
+	<div class="layout-edit-page" style="height: 608px;">
+		<div class="layout-edit-basic-layout-select">
+			@if (Model.IsFeaturePage == false)
+			{
+			<div class="layout-edit-basic-layout-select-item" data-layout-classname="basic-layout-type-3column" data-layout-type="@LayoutEditInput.LayoutTypeMaster.Default.ToString()">
+				<img src="~/Images/Icon/basic-layout-icon-pc-3column.png" alt="">
+			</div>
+			<div class="layout-edit-basic-layout-select-item" data-layout-classname="basic-layout-type-2column-left" data-layout-type="@LayoutEditInput.LayoutTypeMaster.Left.ToString()">
+				<img src="~/Images/Icon/basic-layout-icon-pc-2column-left.png" alt="">
+			</div>
+			<div class="layout-edit-basic-layout-select-item" data-layout-classname="basic-layout-type-2column-right" data-layout-type="@LayoutEditInput.LayoutTypeMaster.Right.ToString()">
+				<img src="~/Images/Icon/basic-layout-icon-pc-2column-right.png" alt="">
+			</div>
+			}
+			<div class="layout-edit-basic-layout-select-item" data-layout-classname="basic-layout-type-1column" data-layout-type="@LayoutEditInput.LayoutTypeMaster.NoSide.ToString()">
+				@if (Model.IsFeaturePage)
+				{
+					<div style="font-size: 11px;">ヘッダー・フッターあり</div>
+				}
+				<img src="~/Images/Icon/basic-layout-icon-pc-1column.png" alt="">
+			</div>
+			@if (Model.CanUseSimpleLayout)
+			{
+				<div class="layout-edit-basic-layout-select-item" data-layout-classname="basic-layout-type-allfree" data-layout-type="@LayoutEditInput.LayoutTypeMaster.Simple.ToString()">
+					@if (Model.IsFeaturePage)
+					{
+						<div style="font-size: 11px;">ヘッダー・フッターなし</div>
+					}
+					<img src="~/Images/Icon/basic-layout-icon-pc-allfree.png" alt="">
+				</div>
+			}
+			@Html.HiddenFor(model => model.Input.LayoutType, new
+			{
+				Class = "basic-layout-select-hidden-input-date",
+				Name = layoutInputName + "LayoutType"
+			})
+		</div>
+		<div class="layout-edit-page-droparea pc">
+			<div class="droparea-header">共通ヘッダー</div>
+			<div class="droparea-mainarea">
+				<div class="droparea-leftarea droparea-area">
+					@foreach (var modeParts in Model.Input.MovePartsLeft)
+					{
+						@MoveParts(modeParts)
+					}
+				</div>
+				<div class="droparea-centerarea">
+					<div class="droparea-centerarea-1 droparea-area">
+						@foreach (var modeParts in Model.Input.MovePartsCenterTop)
+						{
+							@MoveParts(modeParts)
+						}
+					</div>
+					<div class="droparea-contentsarea">
+						<span class="droparea-contentsarea-label">コンテンツエリア</span>
+						<span class="page-contents-area-edit-btn">
+							<a href="javascript:void(0);">
+								<span class="icon icon-pencil"></span>
+							</a>
+						</span>
+					</div>
+					<div class="droparea-centerarea-2 droparea-area">
+						@foreach (var modeParts in Model.Input.MovePartsCenterBottom)
+						{
+							@MoveParts(modeParts)
+						}
+					</div>
+				</div>
+				<div class="droparea-rightarea droparea-area">
+					@foreach (var modeParts in Model.Input.MovePartsRight)
+					{
+						@MoveParts(modeParts)
+					}
+				</div>
+			</div>
+			<div class="droparea-footer">共通フッター</div>
+		</div>
+	</div>
+	<div class="layout-edit-parts">
+		<div class="layout-edit-parts-head">
+			<div class="form-element-group">
+				<div class="form-element-group-title">
+					<label>タイプ</label>
+				</div>
+				<div class="form-element-group-content">
+					@for (var pli = 0; pli < Model.PartsParamModel.Types.Length; pli++)
+					{
+						var id = "type_parts_pc" + pli;
+						var name = "PcPartsTypes[" + pli + "].IsSelected";
+						<input class="btn-checkbox"
+								id="@id"
+								name="@name",
+								data-val="true"
+								data-val-required="IsSelected フィールドが必要です。"
+								onchange="Javascript: parts_group_list_redraw_pc();"
+								type="checkbox"
+								value="true" checked>
+						@Html.Label("type_parts_pc" + pli, Model.PartsParamModel.Types[pli].Name, new
+						{
+							Class = "btn btn-size-s"
+						})
+						@Html.HiddenFor(m => Model.PartsParamModel.Types[pli].Name, new
+						{
+							Name = "PcPartsTypes[" + pli + "].Name"
+						})
+						@Html.HiddenFor(m => Model.PartsParamModel.Types[pli].Value, new
+						{
+							Name = "PcPartsTypes[" + pli + "].Value"
+						})
+					}
+				</div>
+			</div>
+			<div class="keyword-search">
+				<form action="">
+					@Html.TextBoxFor(model => model.PartsParamModel.Keyword, new
+					{
+						Id = "search_keyword_parts_pc",
+						Name = "PartsParamPc.Keyword",
+						Class = "keyword-search-input nosave",
+						Placeholder = "キーワード(タイトル、ファイル名)"
+					})
+					<a href="javascript:parts_group_list_redraw_pc()" class="keyword-search-submit">
+						<span class="icon-search"></span>
+					</a>
+				</form>
+			</div>
+		</div>
+		<div id="layout-edit-parts-list-pc"></div>
+	</div>
+</div>
+<script type="text/javascript">
+	$(function() {
+		parts_group_list_redraw_pc();
+		add_class_for_feature_page_modal_pc();
+	});
+
+	/**
+	 * FormデータにPCパーツ配置情報をセット
+	 * param {} formData
+	 */
+	function set_pc_layout_form_data(formData) {
+		var parts_left = $('.layout-edit-page-droparea.pc > .droparea-mainarea > .droparea-leftarea');
+		if (parts_left.get(0).childElementCount !== 0) {
+			set_layout_parts_request_data(
+				formData,
+				"@layoutInputName" + "MovePartsLeftIds",
+				parts_left.sortable("toArray", { attribute: 'data-parts-id' }));
+		}
+
+		var parts_right = $('.layout-edit-page-droparea.pc > .droparea-mainarea > .droparea-rightarea');
+		if (parts_right.get(0).childElementCount !== 0) {
+			set_layout_parts_request_data(
+				formData,
+				"@layoutInputName" + "MovePartsRightIds",
+				parts_right.sortable("toArray", { attribute: 'data-parts-id' }));
+		}
+
+		var parts_top = $('.layout-edit-page-droparea.pc > .droparea-mainarea > .droparea-centerarea > .droparea-centerarea-1');
+		if (parts_top.get(0).childElementCount !== 0) {
+			parts_top.sortable();
+			set_layout_parts_request_data(
+				formData,
+				"@layoutInputName" + "MovePartsCenterTopIds",
+				parts_top.sortable("toArray", { attribute: 'data-parts-id' }));
+		}
+
+		var parts_bottom = $('.layout-edit-page-droparea.pc > .droparea-mainarea > .droparea-centerarea > .droparea-centerarea-2');
+		if (parts_bottom.get(0).childElementCount !== 0) {
+			parts_bottom.sortable();
+			set_layout_parts_request_data(
+				formData,
+				"@layoutInputName" + "MovePartsCenterBottomIds",
+				parts_bottom.sortable("toArray", { attribute: 'data-parts-id' }));
+		}
+	}
+
+	/**
+	* パーツ検索結果更新(PCレイアウト)
+	*/
+	function parts_group_list_redraw_pc() {
+		var data = $('#detail_form').serializeArray();
+		data.push({
+			name: "UseType",
+			value: "@Constants.FLG_PARTSDESIGN_USE_TYPE_PC"
+		});
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("SearchPartsListPc", Constants.CONTROLLER_W2CMS_MANAGER_PAGEPARTS_DESIGN_SUB)",
+			data: data,
+			traditional: true,
+			timeout: 5000
+		}).done(function(viewHTML) {
+			$("#layout-edit-parts-list-pc").html(viewHTML);
+		}).fail(function () {
+		});
+	}
+
+	// 特集コラムレイアウトモーダルデザイン調整
+	function adjust_design_for_feature_page_modal_layout_pc() {
+		if ("@Model.IsFeaturePage" === "True") {
+			$('.layout-edit-basic-layout-select').addClass('feature-type');
+		}
+	}
+</script>

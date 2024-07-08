@@ -1,0 +1,113 @@
+﻿@*
+=========================================================================================================
+  Module      : 画像選択パーツ(_ImageForm.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common
+@using w2.Cms.Manager.Input
+@model w2.Cms.Manager.Input.ImageInput
+@{
+	var parentName = Model.BaseName + ".";
+}
+
+@helper UploadFileName(string parent)
+{
+	var name = parent + "UploadFile";
+	@:@name
+}
+@Html.Hidden(parentName + "BaseName", Model.BaseName)
+@Html.Hidden(parentName + "FileName", Model.FileName)
+@Html.Hidden(parentName + "IsRemove", false)
+@Html.Hidden(parentName + "ImageType", Model.ImageType)
+<div>
+	<div class="image-upload-content" data-max-select-count="1">
+	<div class="image-upload-content-drag">
+		<div class="image-upload-content-block-wrapper" id='@Model.BaseName'>
+		</div>
+		<p class="image-upload-content-drag-text">画像ファイルをドラッグ&amp;ドロップするか下記から選択してください。</p>
+		<div class="image-upload-content-drag-btns">
+			<label class="btn btn-main btn-size-m" onclick="reset_image_id();">画像ファイル選択
+				<input type="file" name="upload_img" class="upload_img" style="display: none;" />
+				@Html.Hidden(parentName + "ImageId", "0")
+			</label>
+			<p class="image-upload-content-drag-btns-text">または
+				<a href="javascript:void(0)" class="btn btn-main btn-size-m" onclick="modal.open('#modal-imagelist-select','modal-size-l modal-imagelist-select');select_image_list('@parentName');">画像リストから選択</a>
+			</p>
+		</div>
+	</div>
+	</div>
+</div>
+			
+<script type="text/javascript">
+	feature_area.set_name_index();
+
+	// 画像リストから選択したときに画像IDをセットするべきフォーム
+	var imageIdInput;
+
+	$(function() {
+		var fileName = '@Model.RealFileName';
+		if (fileName !== "") {
+			// アップロード済画像を表示
+			var baseName = '@Model.BaseName';
+			var obj = $("#" + selectorEscape(baseName));
+			obj.append('<div class="image-upload-content-block"><div class="image-upload-content-block-image"><img src="'
+				+ '@Model.FileDir@Model.FileName'
+				+ '" alt=""></div><div class="image-upload-content-block-control"><dl><dt>'
+				+ fileName
+				+ '</dt><dd></dd></dl><button id="'
+				+ 0
+				+ '" type="button" class="btn btn-main btn-size-s" onclick="remove_image()">削除</button></div></div>');
+
+			obj.find('.image-upload-content-block > .image-upload-content-block-control > button').off('click').on('click',
+				function () {
+					$(this).parent().parent().remove();
+				});
+		}
+	});
+
+	function reset_image_id() {
+		$('input[name="@(parentName + "IsRemove")"]').val("False");
+		$(imageIdInput).val(0);
+	}
+
+	function selectorEscape(val) {
+		return val.replace(/[ !"#$%&'()*+,.\/:;<=>?\[\\\]^`{|}~]/g, '\\$&');
+	}
+
+	function remove_image() {
+		$('input[name="@(parentName + "IsRemove")"]').val("True");
+	}
+
+	// 画像リストから選択された画像を表示
+	function setImage(imageId, imagePath, fileName, realFileName) {
+		var obj = $(imageIdInput).parent().parent().parent().parent();
+		obj.find('.image-upload-content-block-wrapper').html(
+			'<div class="image-upload-content-block"><div class="image-upload-content-block-image"><img src="'
+			+ '@((Model.ImageType != ImageType.Normal) ? Constants.PATH_ROOT_FRONT_PC : Constants.PATH_ROOT_CMS)'
+			+ imagePath
+			+ fileName
+			+ '" alt=""></div><div class="image-upload-content-block-control"><dl><dt>'
+			+ realFileName
+			+ '</dt><dd></dd></dl><button id="'
+			+ 0
+			+ '" type="button" class="btn btn-main btn-size-s" onclick="remove_image()">削除</button></div></div>');
+
+		obj.find('.image-upload-content-block-wrapper > .image-upload-content-block > .image-upload-content-block-control > button').off('click').on('click',
+			function () {
+				$(this).parent().parent().remove();
+			});
+
+		$(imageIdInput).val(imageId);
+
+		$('.modal-bg').click();
+	}
+
+	// どこに画像IDをセットすればいいか保存
+	function select_image_list(parent) {
+		$('input[name="@(parentName + "IsRemove")"]').val("False");
+		var parentImageId = parent + "ImageId";
+		imageIdInput = $('input[name="' + parentImageId + '"]');
+	}
+</script>

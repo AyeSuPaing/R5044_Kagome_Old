@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メールエラーアドレス系SQLステートメントXML(MailErrorAddr.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MailErrorAddr>
+
+  <!-- メール配信エラーアドレス登録（更新） -->
+  <RegistMailErrorAddr>
+    <Statement>
+      <![CDATA[
+        -- 登録/更新判断用
+        DECLARE @counts int
+        SELECT  @counts = COUNT(*)
+          FROM  w2_MailErrorAddr
+         WHERE  mail_addr = @mail_addr
+        
+        IF @counts = 0
+        BEGIN
+          -- 登録
+          INSERT  w2_MailErrorAddr
+                  (
+                    mail_addr,
+                    error_point,
+                    last_changed
+                  )
+          VALUES  (
+                    @mail_addr,
+                    @error_point,
+                    'batch'
+                  )
+        END
+        ELSE
+        BEGIN
+          --更新
+          UPDATE  w2_MailErrorAddr
+             SET  error_point = error_point + @error_point
+           WHERE  mail_addr = @mail_addr
+        END
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="error_point" Type="bigint" />
+    </Parameter>
+  </RegistMailErrorAddr>
+
+</MailErrorAddr>

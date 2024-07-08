@@ -1,0 +1,300 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 新着情報マスタ系SQLステートメントXML (News.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<News>
+  <!--  Get News List Count -->
+  <GetNewsListCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(w2_News.news_id)
+          FROM  w2_News
+                [[ NEWS_LIST_WHERE ]]
+      ]]>
+    </Statement>
+  </GetNewsListCount>
+
+  <!-- Get top news list -->
+  <GetTopNewsList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_News.shop_id,
+                w2_News.news_id,
+                w2_News.display_date_from,
+                w2_News.display_date_to,
+                w2_News.news_text_kbn,
+                w2_News.news_text,
+                w2_News.news_text_kbn_mobile,
+                w2_News.news_text_mobile,
+                w2_News.disp_flg,
+                w2_News.mobile_disp_flg,
+                w2_News.display_order,
+                w2_News.valid_flg,
+                w2_News.del_flg,
+                w2_News.date_created,
+                w2_News.date_changed,
+                w2_News.last_changed,
+                w2_News.brand_id
+          FROM  w2_News
+         WHERE  ISNULL(w2_News.display_date_to, GETDATE()) >= GETDATE()
+           AND  w2_News.disp_flg IN ('0')                     -- 新着一覧、TOPページどちらも表示
+           AND  w2_News.valid_flg = '1'
+         ORDER BY w2_News.shop_id, w2_News.display_order ASC
+      ]]>
+    </Statement>
+  </GetTopNewsList>
+
+  <!-- Get news list -->
+  <GetNewsList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @is_pager bit
+        SET @is_pager = @bgn_row_num  + @end_row_num
+
+        -- 該当情報取得
+        SELECT  w2_News.shop_id,
+                w2_News.news_id,
+                w2_News.display_date_from,
+                w2_News.display_date_to,
+                w2_News.news_text_kbn,
+                w2_News.news_text,
+                w2_News.news_text_kbn_mobile,
+                w2_News.news_text_mobile,
+                w2_News.disp_flg,
+                w2_News.mobile_disp_flg,
+                w2_News.display_order,
+                w2_News.valid_flg,
+                w2_News.del_flg,
+                w2_News.date_created,
+                w2_News.date_changed,
+                w2_News.last_changed,
+                w2_News.brand_id
+          FROM  (
+                  SELECT  w2_News.shop_id,
+                          w2_News.news_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ NEWS_LIST_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_News
+                          [[ NEWS_LIST_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_News ON
+                (
+                  RowIndex.shop_id = w2_News.shop_id
+                  AND
+                  RowIndex.news_id = w2_News.news_id
+                )
+         WHERE
+               (
+                  @is_pager = 0
+               )
+               OR
+               (
+                  @is_pager <> 0
+                  AND
+                  @bgn_row_num <= RowIndex.row_num
+                  AND
+                  RowIndex.row_num <= @end_row_num
+               )
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetNewsList>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_News
+                [[ NEWS_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_News.*
+          FROM  (
+                  SELECT  w2_News.shop_id,
+                          w2_News.news_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ NEWS_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_News
+                          [[ NEWS_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_News ON
+                (
+                  RowIndex.shop_id = w2_News.shop_id
+                  AND
+                  RowIndex.news_id = w2_News.news_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_News
+         WHERE  shop_id = @shop_id
+           AND  news_id = @news_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="news_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_News
+                (
+                  shop_id
+                  ,news_id
+                  ,display_date_from
+                  ,news_text_kbn
+                  ,news_text
+                  ,news_text_kbn_mobile
+                  ,news_text_mobile
+                  ,disp_flg
+                  ,mobile_disp_flg
+                  ,valid_flg
+                  ,last_changed
+                  ,brand_id
+                  ,display_date_to
+                )
+        VALUES  (
+                  @shop_id
+                  ,@news_id
+                  ,@display_date_from
+                  ,@news_text_kbn
+                  ,@news_text
+                  ,@news_text_kbn_mobile
+                  ,@news_text_mobile
+                  ,@disp_flg
+                  ,@mobile_disp_flg
+                  ,@valid_flg
+                  ,@last_changed
+                  ,@brand_id
+                  ,@display_date_to
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="news_id" Type="nvarchar" Size="30" />
+      <Input Name="display_date_from" Type="datetime" />
+      <Input Name="news_text_kbn" Type="nvarchar" Size="1" />
+      <Input Name="news_text" Type="ntext" />
+      <Input Name="news_text_kbn_mobile" Type="nvarchar" Size="1" />
+      <Input Name="news_text_mobile" Type="ntext" />
+      <Input Name="disp_flg" Type="nvarchar" Size="1" />
+      <Input Name="mobile_disp_flg" Type="nvarchar" Size="2" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="display_date_to" Type="datetime" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_News
+           SET  display_date_from = @display_date_from
+                ,news_text_kbn = @news_text_kbn
+                ,news_text = @news_text
+                ,news_text_kbn_mobile = @news_text_kbn_mobile
+                ,news_text_mobile = @news_text_mobile
+                ,disp_flg = @disp_flg
+                ,mobile_disp_flg = @mobile_disp_flg
+                ,display_order = @display_order
+                ,valid_flg = @valid_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,brand_id = @brand_id
+                ,display_date_to = @display_date_to
+         WHERE  shop_id = @shop_id
+           AND  news_id = @news_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="news_id" Type="nvarchar" Size="30" />
+      <Input Name="display_date_from" Type="datetime" />
+      <Input Name="news_text_kbn" Type="nvarchar" Size="1" />
+      <Input Name="news_text" Type="ntext" />
+      <Input Name="news_text_kbn_mobile" Type="nvarchar" Size="1" />
+      <Input Name="news_text_mobile" Type="ntext" />
+      <Input Name="disp_flg" Type="nvarchar" Size="1" />
+      <Input Name="mobile_disp_flg" Type="nvarchar" Size="2" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="display_date_to" Type="datetime" />
+    </Parameter>
+  </Update>
+
+  <!-- 新着情報表示順更新 -->
+  <UpdateDisplayOrder>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_News
+           SET  w2_News.display_order = w2_News.display_order + 1
+         WHERE  w2_News.shop_id = @shop_id
+           AND  w2_News.news_id <> @news_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="news_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UpdateDisplayOrder>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_News
+         WHERE  shop_id = @shop_id
+           AND  news_id = @news_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="news_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+</News>

@@ -1,0 +1,465 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 決済カード連携マスタ系SQLステートメントXML (UserCreditCard.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<UserCreditCard>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserCreditCard
+         WHERE  user_id = @user_id
+           AND  branch_no = @branch_no
+         ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="branch_no" Type="int" />
+    </Parameter>
+  </Get>
+
+  <!-- ユーザーIDで取得 -->
+  <GetByUserId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserCreditCard
+         WHERE  user_id = @user_id
+         ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetByUserId>
+
+  <!-- 連携ID1から取得 -->
+  <GetByCooperationId1>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserCreditCard
+         WHERE  cooperation_id = @cooperation_id
+       ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cooperation_id" Type="nvarchar" Size="100" />
+    </Parameter>
+  </GetByCooperationId1>
+
+  <!-- 連携ID1から取得 -->
+  <GetByUserIdAndCooperationId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserCreditCard
+         WHERE  user_id = @user_id
+                AND
+                cooperation_id = @cooperation_id
+       ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id" Type="nvarchar" Size="100" />
+    </Parameter>
+  </GetByUserIdAndCooperationId>
+
+  <!-- 利用可能かユーザークレカ未登録のものを取得（管理画面で利用） -->
+  <GetUsableOrUnregisterd>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserCreditCard
+         WHERE  user_id = @user_id
+           AND  (
+                  -- 登録済み
+                  disp_flg = '1'
+                  OR
+                  register_action_kbn = 'UCC_REG'
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="disp_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetUsableOrUnregisterd>
+
+  <!-- 利用可能か枝番から取得（管理画面で利用） -->
+  <GetUsableOrByBranchno>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserCreditCard
+         WHERE  user_id = @user_id
+           AND  (
+                 disp_flg = '1'
+                 OR
+                 branch_no = @branch_no
+                )
+         ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="disp_flg" Type="nvarchar" Size="1" />
+      <Input Name="branch_no" Type="int" />
+    </Parameter>
+  </GetUsableOrByBranchno>
+
+  <!-- 利用可能なもの取得 -->
+  <GetUsable>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserCreditCard
+         WHERE  user_id = @user_id
+           AND  disp_flg = '1'
+         ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="disp_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetUsable>
+
+  <!-- 枝番の最大値取得 -->
+  <GetMaxBranchNo>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MAX(branch_no), 0)
+          FROM  w2_UserCreditCard
+         WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMaxBranchNo>
+
+  <!-- e-SCOTTの会員削除対象を取得 -->
+  <GetDeleteMemberByEScott>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserCreditCard  
+         WHERE  w2_UserCreditCard.user_id IN (@@ user_ids @@)
+                AND
+                w2_UserCreditCard.disp_flg = '0'
+                AND
+                -- 指定日よりも前に削除対象がある
+                EXISTS
+                (
+                  SELECT  w2_Order.*
+                    FROM  w2_Order
+                   WHERE  w2_Order.order_payment_kbn = 'K10'
+                          AND
+                          w2_Order.external_payment_auth_date <= @auth_date_to
+                          AND
+                          w2_Order.external_payment_auth_date >= @auth_date_from
+                          AND
+                          w2_Order.order_status IN ('SHP_COMP', 'DLV_COMP', 'ODR_CNSL', 'TMP_CNSL')
+                          AND
+                          w2_Order.card_tran_id LIKE w2_UserCreditCard.cooperation_id + '%'
+                )
+                AND
+                -- 指定日よりも前に削除対象外がない
+                NOT EXISTS
+                (
+                  SELECT  w2_Order.*
+                    FROM  w2_Order
+                   WHERE  w2_Order.order_payment_kbn = 'K10'
+                          AND
+                          w2_Order.external_payment_auth_date <= @auth_date_to
+                          AND
+                          w2_Order.external_payment_auth_date >= @auth_date_from
+                          AND
+                          w2_Order.order_status NOT IN ('SHP_COMP', 'DLV_COMP', 'ODR_CNSL', 'TMP_CNSL')
+                          AND
+                          w2_Order.card_tran_id LIKE w2_UserCreditCard.cooperation_id + '%'
+                )
+                AND
+                -- 指定日よりも最近に受注がない
+                NOT EXISTS
+                (
+                  SELECT  w2_Order.*
+                    FROM  w2_Order
+                   WHERE  w2_Order.order_payment_kbn = 'K10'
+                          AND
+                          w2_Order.external_payment_auth_date > @auth_date_to
+                          AND
+                          w2_Order.card_tran_id LIKE w2_UserCreditCard.cooperation_id + '%'
+                )
+                AND
+                -- 利用している定期台帳がない
+                NOT EXISTS
+                (
+                  SELECT  w2_FixedPurchase.*
+                    FROM  w2_FixedPurchase
+                   WHERE  w2_FixedPurchase.user_id = w2_UserCreditCard.user_id
+                          AND
+                          w2_FixedPurchase.credit_branch_no = w2_UserCreditCard.branch_no
+                          AND
+                          w2_FixedPurchase.fixed_purchase_status <> '30'  -- 定期台帳がキャンセルではない
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="auth_date_to" Type="datetime" />
+      <Input Name="auth_date_from" Type="datetime" />
+    </Parameter>
+  </GetDeleteMemberByEScott>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_UserCreditCard
+                (
+                  user_id
+                  ,branch_no
+                  ,cooperation_id
+                  ,card_disp_name
+                  ,last_four_digit
+                  ,expiration_month
+                  ,expiration_year
+                  ,author_name
+                  ,disp_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,company_code
+                  ,cooperation_id2
+                  ,register_action_kbn
+                  ,register_status
+                  ,register_target_id
+                  ,before_order_status
+                  ,cooperation_type
+                )
+        VALUES  (
+                  @user_id
+                  ,@branch_no
+                  ,@cooperation_id
+                  ,@card_disp_name
+                  ,@last_four_digit
+                  ,@expiration_month
+                  ,@expiration_year
+                  ,@author_name
+                  ,@disp_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@company_code
+                  ,@cooperation_id2
+                  ,@register_action_kbn
+                  ,@register_status
+                  ,@register_target_id
+                  ,@before_order_status
+                  ,@cooperation_type
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="cooperation_id" Type="nvarchar" Size="100" />
+      <Input Name="card_disp_name" Type="nvarchar" Size="100" />
+      <Input Name="last_four_digit" Type="nvarchar" Size="10" />
+      <Input Name="expiration_month" Type="nvarchar" Size="2" />
+      <Input Name="expiration_year" Type="nvarchar" Size="4" />
+      <Input Name="author_name" Type="nvarchar" Size="50" />
+      <Input Name="disp_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="company_code" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id2" Type="nvarchar" Size="100" />
+      <Input Name="register_action_kbn" Type="nvarchar" Size="10" />
+      <Input Name="register_status" Type="nvarchar" Size="10" />
+      <Input Name="register_target_id" Type="nvarchar" Size="30" />
+      <Input Name="before_order_status" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_type" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserCreditCard
+           SET  cooperation_id = @cooperation_id
+                ,card_disp_name = @card_disp_name
+                ,last_four_digit = @last_four_digit
+                ,expiration_month = @expiration_month
+                ,expiration_year = @expiration_year
+                ,author_name = @author_name
+                ,disp_flg = @disp_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,company_code = @company_code
+                ,cooperation_id2 = @cooperation_id2
+                ,register_action_kbn = @register_action_kbn
+                ,register_status = @register_status
+                ,register_target_id = @register_target_id
+                ,before_order_status = @before_order_status
+                ,cooperation_type = @cooperation_type
+         WHERE  user_id = @user_id
+           AND  branch_no = @branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="cooperation_id" Type="nvarchar" Size="100" />
+      <Input Name="card_disp_name" Type="nvarchar" Size="100" />
+      <Input Name="last_four_digit" Type="nvarchar" Size="10" />
+      <Input Name="expiration_month" Type="nvarchar" Size="2" />
+      <Input Name="expiration_year" Type="nvarchar" Size="4" />
+      <Input Name="author_name" Type="nvarchar" Size="50" />
+      <Input Name="disp_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="company_code" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id2" Type="nvarchar" Size="100" />
+      <Input Name="register_action_kbn" Type="nvarchar" Size="10" />
+      <Input Name="register_status" Type="nvarchar" Size="10" />
+      <Input Name="register_target_id" Type="nvarchar" Size="30" />
+      <Input Name="before_order_status" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_type" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Update>
+
+  <!-- 連携ID2のみ更新 -->
+  <UpdateCooperationId2>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserCreditCard
+           SET  cooperation_id2 = @cooperation_id2
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  user_id = @user_id
+           AND  branch_no = @branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="cooperation_id2" Type="nvarchar" Size="100" />
+    </Parameter>
+  </UpdateCooperationId2>
+
+  <!-- カード名の更新 -->
+  <UpdateCardDisplayName>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserCreditCard
+           SET  card_disp_name = @card_disp_name
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  user_id = @user_id
+           AND  branch_no = @branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="card_disp_name" Type="nvarchar" Size="100" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateCardDisplayName>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserCreditCard
+         WHERE  user_id = @user_id
+           AND  branch_no = @branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="branch_no" Type="int" />
+    </Parameter>
+  </Delete>
+
+  <!-- Get Max Branch No By User Id And Cooperation Type -->
+  <GetMaxBranchNoByUserIdAndCooperationType>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MAX(w2_UserCreditCard.branch_no), 0)
+          FROM  w2_UserCreditCard
+         WHERE  w2_UserCreditCard.user_id = @user_id
+           AND  w2_UserCreditCard.cooperation_type = @cooperation_type
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_type" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMaxBranchNoByUserIdAndCooperationType>
+
+  <!-- Get User Credit Card Expired For Payment Paidys -->
+  <GetUserCreditCardExpiredForPaymentPaidys>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserCreditCard.*
+          FROM  w2_UserCreditCard
+         WHERE  w2_UserCreditCard.cooperation_type = @cooperation_type
+           AND  w2_UserCreditCard.cooperation_id <> @mask_string
+           AND  NOT EXISTS
+                (
+                  SELECT  w2_Order.order_id
+                    FROM  w2_Order
+                   WHERE  w2_Order.user_id = w2_UserCreditCard.user_id
+                     AND  w2_Order.credit_branch_no IS NOT NULL
+                     AND  w2_Order.credit_branch_no = w2_UserCreditCard.branch_no
+                     AND  (
+                            (
+                              w2_Order.order_shipped_date IS NULL
+                              AND
+                              w2_Order.order_delivering_date IS NULL
+                              AND
+                              w2_Order.order_status IN ('TMP', 'ODR', 'ODR_RECG', 'STK_RSVD', 'SHP_ARGD')
+                            )
+                            OR
+                            (
+                              w2_Order.order_shipped_date IS NOT NULL
+                              AND
+                              w2_Order.order_status = 'SHP_COMP'
+                              AND
+                              -- Get all orders shipment completed when order_shipped_date is in-period time to keep token alive
+                              CONVERT(DATE, w2_Order.order_shipped_date) >= CONVERT(DATE, @target_date)
+                            )
+                            OR
+                            (
+                              w2_Order.order_delivering_date IS NOT NULL
+                              AND
+                              w2_Order.order_status = 'DLV_COMP'
+                              AND
+                              -- Get all orders delivery completed when order_delivering_date is in-period time to keep token alive
+                              CONVERT(DATE, w2_Order.order_delivering_date) >= CONVERT(DATE, @target_date)
+                            )
+                          )
+                   )
+           AND  NOT EXISTS
+                (
+                  SELECT  w2_FixedPurchase.fixed_purchase_id
+                    FROM  w2_FixedPurchase
+                   WHERE  w2_FixedPurchase.fixed_purchase_status <> '30'
+                     AND  w2_FixedPurchase.user_id = w2_UserCreditCard.user_id
+                     AND  w2_FixedPurchase.credit_branch_no IS NOT NULL
+                     AND  w2_FixedPurchase.credit_branch_no = w2_UserCreditCard.branch_no
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="target_date" Type="datetime" />
+      <Input Name="cooperation_type" Type="nvarchar" Size="10" />
+      <Input Name="mask_string" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetUserCreditCardExpiredForPaymentPaidys>
+
+</UserCreditCard>

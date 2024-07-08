@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : リアル店舗商品在庫SQLサブステートメントXML(RealShopProductStock_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<RealShopProductStock_Sub>
+  <!-- リアル店舗商品在庫情報一覧取得用WHERE文 -->
+  <REALSHOPPRODUCTSTOCK_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (@real_shop_id_like_escaped = '' OR w2_RealShopProductStock.real_shop_id LIKE @real_shop_id_like_escaped + '%'  ESCAPE '#')      -- リアル店舗ID
+                  AND
+                  (@real_shop_name_like_escaped = '' OR w2_RealShop.name LIKE '%' + @real_shop_name_like_escaped + '%' ESCAPE '#')        -- 店舗名
+                  AND
+                  (@product_name_like_escaped = '' OR w2_ProductView.name LIKE '%' +@product_name_like_escaped + '%' ESCAPE '#')  -- 商品氏名
+                  AND
+                  (@product_id_like_escaped = '' OR w2_RealShopProductStock.product_id LIKE @product_id_like_escaped + '%'  ESCAPE '#') -- 商品ID
+                  AND
+                  (@variation_id_like_escaped = '' OR w2_RealShopProductStock.variation_id LIKE @variation_id_like_escaped + '%'  ESCAPE '#') -- 商品バリエーションID
+                  AND
+                  (@real_shop_stock = '' 
+                     OR (@real_shop_stock_type = '1' AND w2_RealShopProductStock.real_shop_stock >= @real_shop_stock)
+                     OR (@real_shop_stock_type = '0' AND w2_RealShopProductStock.real_shop_stock = @real_shop_stock)
+                     OR (@real_shop_stock_type = '2' AND w2_RealShopProductStock.real_shop_stock <= @real_shop_stock)
+                  )
+                )
+      ]]>
+    </Statement>
+  </REALSHOPPRODUCTSTOCK_SEARCH_WHERE>
+
+  <!-- リアル店舗商品在庫情報一覧取得用ORDER_BY -->
+  <REALSHOPPRODUCTSTOCK_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  3 THEN w2_ProductView.name
+            WHEN  5 THEN w2_ProductView.name_kana
+            WHEN  1 THEN w2_RealShopProductStock.product_id
+            ELSE '1'
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  4 THEN w2_ProductView.name
+            WHEN  6 THEN w2_ProductView.name_kana
+            WHEN  2 THEN w2_RealShopProductStock.product_id
+            ELSE '1'
+          END 
+          DESC,
+          CASE @sort_kbn
+            WHEN  7 THEN w2_RealShopProductStock.date_created
+            WHEN  9 THEN w2_RealShopProductStock.date_changed
+            ELSE NULL
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  8 THEN w2_RealShopProductStock.date_created
+            WHEN  10 THEN w2_RealShopProductStock.date_changed
+            ELSE NULL
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、表示順（昇順）ソート
+          w2_RealShopProductStock.real_shop_id ASC,
+          w2_RealShopProductStock.product_id ASC,
+          w2_RealShopProductStock.variation_id ASC
+      ]]>
+    </Statement>
+  </REALSHOPPRODUCTSTOCK_SEARCH_ORDER_BY>
+</RealShopProductStock_Sub>

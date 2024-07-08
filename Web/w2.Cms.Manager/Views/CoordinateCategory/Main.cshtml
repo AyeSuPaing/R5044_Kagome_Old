@@ -1,0 +1,458 @@
+﻿@*
+=========================================================================================================
+  Module      : コーディネートカテゴリ設定(Main.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2020 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.ViewModels.ShortUrl
+
+@model w2.Cms.Manager.ViewModels.CoordinateCategory.CoordinateCategoryViewModel
+@{
+	ViewBag.Title = "コーディネートカテゴリ設定";
+	Layout = Model.ParamModel.PageLayout;
+}
+
+@helper TopButtomControls()
+{
+	if (this.Model.IsActionStatusDetail)
+	{
+		<div class="action_part_bottom">
+			<input type="submit" name="Edit" value="  編集する  " class="btn btn-main" />
+			<input type="submit" name="ParentRegistration" value="  最上位カテゴリの登録  "  class="btn btn-main"/>
+		</div>
+		<div class="action_part_bottom">
+			<input type="submit" name="Delete" value="  削除する  " onclick="return confirm('削除してもよろしいですか？子カテゴリも削除されます。');" class="btn btn-main" />
+			<!--▽ カテゴリIDが30文字以上の場合表示しない ▽-->
+			@if (this.Model.CoordinateCategoryId.Length < 30)
+			{
+				<input type="submit" name="Register" value="  子カテゴリを登録  " class="btn btn-main"/>
+			}
+
+		</div>
+		@Html.Hidden("coordinateCategoryId", @Model.CoordinateCategoryId)
+		@Html.Hidden("coordinateParentCategoryId", @Model.CoordinateCategoryId)
+	}
+	else
+	{
+		<div class="action_part_bottom">
+			<input type="button" value="  戻る  " onclick="javascript: history.back();" class="btn btn-main"/>
+			@Html.Hidden("isUpdate", this.Model.ParamModel.IsUpdate)
+			@if (this.Model.IsActionStatusUpdate || this.Model.IsActionStatusInsert)
+			{
+				<input type="button" value="  確認する  " class="btn btn-main" onclick="return validate('confirm');">
+				<input type="submit" name="Confirm" id="confirm" style="display: none;">
+			}
+			@if (this.Model.IsActionStatusConfirm && this.Model.ParamModel.IsUpdate)
+			{
+				<input type="submit" name="InsertUpdate" value="  更新する  " class="btn btn-main">
+			}
+			else if (this.Model.IsActionStatusConfirm && (this.Model.ParamModel.IsUpdate == false))
+			{
+				<input type="submit" name="InsertUpdate" value="  登録する  " class="btn btn-main">
+			}
+		</div>
+	}
+}
+
+@using (Html.BeginForm(
+	"Main",
+	Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_CATEGORY,
+	new { ActionStatus = this.Model.ActionStatus },
+	FormMethod.Post,
+	new { name = "searchForm" , Id="input_form"}))
+{
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr>
+		<td><h1 class="page-title">コーディネートカテゴリ設定</h1></td>
+	</tr>
+	@LayoutHelper.PaddingTr(10)
+	<tr>
+		@if (this.Model.IsActionStatusList || this.Model.IsActionStatusDetail)
+		{
+			<td><h2 class="cmn-hed-h2">コーディネートカテゴリ設定一覧</h2></td>
+		}
+		@if (this.Model.IsActionStatusInsert)
+		{
+			<td><h2 class="cmn-hed-h2">コーディネートカテゴリ情報登録</h2></td>
+		}
+		@if (this.Model.IsActionStatusUpdate)
+		{
+			<td><h2 class="cmn-hed-h2">コーディネートカテゴリ情報編集</h2></td>
+		}
+		@if (this.Model.IsActionStatusConfirm)
+		{
+			<td><h2 class="cmn-hed-h2">コーディネートカテゴリ入力確認</h2></td>
+		}
+	</tr>
+	<!--▽ 検索 ▽-->
+	<tr>
+	<td colspan="2">
+	<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+	<tr>
+	<td class="search_box_bg">
+	<table cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+	<table cellspacing="0" cellpadding="0" border="0">
+	@LayoutHelper.PaddingTr(10)
+	<tr>
+	<td class="search_table">
+	<table cellspacing="1" cellpadding="2" width="758" border="0">
+	<tr>
+		@Html.Hidden("pagerNo", this.Model.ParamModel.PagerNo)
+		@Html.Hidden("selectedIndex", this.Model.ParamModel.SelectedIndex)
+		<td class="search_title_bg" width="90">最上位カテゴリ名</td>
+		<td class="search_item_bg" width="135">@Html.DropDownList("searchCoordinateParentCategoryId", this.Model.TopCoordinateCategoryNameList, new { style = "width:125px", onchange = "SelectedIndexChanged()" })</td>
+		<td class="search_title_bg" width="90">カテゴリID</td>
+		<td class="search_item_bg" width="135"><input type="text" name="searchCoordinateCategoryId" value="@this.Model.ParamModel.SearchCoordinateCategoryId" width="125"/></td>
+		<td class="search_btn_bg" width="83">
+			<div class="search_btn_main">
+				<input type="submit" id="Search" name="Search" value="  検索  " class="btn btn-main"/>
+			</div>
+			<div class="search_btn_sub">
+				@Html.ActionLink("クリア", "Main", Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_CATEGORY)&nbsp;
+				<a href="javascript:document.searchForm.reset();">リセット</a>
+			</div>
+		</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<tr>
+		@LayoutHelper.PaddingTr(10)
+		<td class="search_table">
+			<table cellspacing="1" cellpadding="2" width="758" border="0">
+				<tr>
+					<td class="search_title_bg" width="115">データ出力</td>
+					<td class="search_item_bg">
+						@Html.DropDownListFor(model => model.ParamModel.DataExportType, new SelectList(Model.ExportFiles, "Value", "Text"), "", new {
+							Name = "DataExportType",
+							style = "width: 600px;"
+						})
+						<input type="button" value="  出力  " class="btn btn-main" onclick="return validate_coordinate_category('export');">
+						<input type="submit" name="Export" id="export" style="display: none;" formmethod="post">
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	</table>
+	</td>
+	<td>
+		@LayoutHelper.PaddingTr(6)
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 検索 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+<!--▽ 一覧・詳細 ▽-->
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr>
+	<td valign="top">
+	<table class="box_border" cellspacing="1" cellpadding="0" width="365" border="0">
+	<tr>
+	<td>
+	<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+	<table cellspacing="0" cellpadding="0" border="0">
+	@LayoutHelper.PaddingTr(6)
+	<tr>
+	<!-- ページング -->
+	<td class="list_pager">
+		@Html.Raw(this.Model.PagerHtml)
+	</td>
+	</tr>
+	@LayoutHelper.PaddingTr(4)
+	<tr>
+	<td>
+	<table class="list_table" cellspacing="1" cellpadding="3" width="375" border="0">
+		<tr class="list_title_bg">
+			<td align="center" width="20%">カテゴリID</td>
+			<td align="center" width="70%">カテゴリ名</td>
+		</tr>
+		@{ var lineNo = 1; }
+		@foreach (var s in this.Model.List)
+		{
+			lineNo = ((lineNo + 1) % 2);
+			var listItemBgClass = "list_item_bg" + (lineNo + 1);
+			var listSelectMoutClass = string.Format("listselect_mout{0}(this)", +lineNo + 1);
+			<tr class="@listItemBgClass" onmouseover="listselect_mover(this)" onmouseout="@listSelectMoutClass" onmousedown="listselect_mdown(this)"onclick="listselect_mclick(this, '@Url.Action("Main", new { ActionStatus = ActionStatus.Detail, coordinateCategoryId = s.CoordinateCategoryId, searchCoordinateCategoryId = @Model.ParamModel.SearchCoordinateCategoryId, searchCoordinateParentCategoryId = @Model.ParamModel.SearchCoordinateParentCategoryId, PagerNo = @Model.ParamModel.PagerNo, SelectedIndex = @Model.ParamModel.SelectedIndex , PageLayout = @Model.ParamModel.PageLayout})')">
+				<td align="left">@s.CoordinateCategoryId</td>
+				<td align="left"><div style="margin-left: @((@s.CoordinateCategoryId.Length / Constants.CONST_CATEGORY_ID_LENGTH - 1) * 10)px;">@s.CoordinateCategoryName</td>
+			</tr>
+		}
+		@if (string.IsNullOrEmpty(this.Model.ErrorMessage) == false)
+		{
+			<tr class="list_alert"><td colspan="4">@this.Model.ErrorMessage</td></tr>
+		}
+	</table>
+	</td>
+	</tr>
+	@LayoutHelper.PaddingTr(10)
+	</table>
+	</td>
+	<td>@LayoutHelper.Padding(6)</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	@if (this.Model.IsActionStatusList)
+	{
+	<td valign="top">
+	<table class="box_border" cellspacing="1" cellpadding="3" width="375" border="0">
+	<tr>
+	<td>
+	<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+	<table cellspacing="0" cellpadding="0" border="0">
+	@LayoutHelper.PaddingTr(10)
+	<tr width="370">
+		<td><img style="width : 6px" height="6" alt="" src="~/Images/Common/sp.gif" border="0"/></td>
+		<td>
+			<table class="edit_table" cellspacing="1" cellpadding="3" width="370" border="0">
+				<tr>
+					<td class="edit_item_bg">
+						<div>カテゴリ情報の編集及び子カテゴリの登録には、左の「コーディネートカテゴリ一覧」より、カテゴリを選択してから実施してください。<br/><br/>また、新規登録は、下の「最上位カテゴリの登録」ボタンより実施してください。<br/><br/><br/></div>
+					</td>
+				</tr>
+			</table>
+			<div class="action_part_bottom"><input type="submit" name="ParentRegistration" value="  最上位カテゴリの登録  "  class="btn btn-main"/></div>
+			@Html.Hidden("coordinateParentCategoryId", @Model.CoordinateCategoryId)
+		</td>
+		<td>@LayoutHelper.Padding(6)</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	}
+	@if (this.Model.IsActionStatusInsert || this.Model.IsActionStatusUpdate)
+	{
+	<td valign="top">
+	<table class="box_border" cellspacing="1" cellpadding="3" width="375" border="0">
+	<tr>
+	<td>
+	<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+	<table cellspacing="0" cellpadding="0" border="0">
+	@LayoutHelper.PaddingTr(10)
+	<tr>
+	<td><img style="width : 6px" height="6" alt="" src="~/Images/Common/sp.gif" border="0"/></td>
+	<td>
+	<table class="edit_table" cellspacing="1" cellpadding="3" width="370" border="0">
+		<tr>
+			<td class="edit_title_bg" align="left" width="35%">親カテゴリID</td>
+			<td class="edit_item_bg" align="left">@this.Model.CoordinateParentCategoryId</td>
+			@Html.Hidden("coordinateCategoryId", this.Model.CoordinateCategoryId)
+			@Html.Hidden("coordinateParentCategoryId", this.Model.CoordinateParentCategoryId)
+		</tr>
+		<tr>
+			<td class="edit_title_bg" align="left">カテゴリID<span class="notice">*</span></td>
+			<td class="edit_item_bg" align="left">
+				@if (this.Model.CoordinateParentCategoryId != Constants.FLG_COORDINATECATEGORY_ROOT)
+				{
+					<input type ="text" disabled value="@this.Model.CoordinateParentCategoryId" style="width:233px" />
+				}
+
+				@if (this.Model.IsActionStatusInsert)
+				{
+					@Html.TextBox("formattedCoordinateCategoryId", this.Model.FormattedCoordinateCategoryId, new { maxlength = "3", style = "width: 180px" })
+				}else
+				{
+					<input type ="text" value="@this.Model.FormattedCoordinateCategoryId" maxlength="3" width="180px" disabled/>
+					@Html.Hidden("formattedCoordinateCategoryId", this.Model.FormattedCoordinateCategoryId)
+				}
+			</td>
+		</tr>
+		<tr>
+			<td class="edit_title_bg" align="left">カテゴリ名<span class="notice">*</span></td>
+			<td class="edit_item_bg" align="left">
+				@Html.TextBox("coordinateCategoryName", this.Model.CoordinateCategoryName, new { maxlength = "40", style = "width: 180px" })
+			</td>
+		</tr>
+		<tr>
+			<td class="edit_title_bg" align="left">表示順<span class="notice">*</span></td>
+			<td class="edit_item_bg" align="left">
+				@Html.TextBox("displayOrder", this.Model.DisplayOrder, new { maxlength = "8", style = "width: 180px"})
+			</td>
+		</tr>
+		<tr>
+			<td class="edit_title_bg" align="left">SEOキーワード</td>
+			<td class="edit_item_bg" align="left">
+				@Html.TextBox("seoKeywords", this.Model.SeoKeywords, new { maxlength = "200", style = "width: 180px" })
+			</td>
+		</tr>
+		<tr>
+			<td class="edit_title_bg" align="left">有効フラグ</td>
+			<td class="edit_item_bg" align="left">
+				@Html.CheckBox("validFlg", this.Model.IsValid)
+				@Html.Label("validFlg", "有効")
+			</td>
+		</tr>
+	</table>
+	<div class="action_part_bottom">
+		@TopButtomControls()
+	</div>
+	</td>
+	<td>@LayoutHelper.Padding(6)</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	}
+	@if (this.Model.IsActionStatusConfirm || this.Model.IsActionStatusDetail)
+	{
+	<td valign="top">
+	<table class="box_border" cellspacing="1" cellpadding="3" width="375" border="0">
+	<tr>
+	<td>
+	<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+	<table cellspacing="0" cellpadding="0" border="0">
+		@LayoutHelper.PaddingTr(10)
+		<tr>
+			<td><img style="width : 6px" height="6" alt="" src="~/Images/Common/sp.gif" border="0"/></td>
+			<td>
+			<table class="edit_table" cellspacing="1" cellpadding="3" width="370" border="0">
+				<tr>
+					<td class="edit_title_bg" align="left" width="35%">親カテゴリID</td>
+					<td class="edit_item_bg" align="left">
+						@if(this.Model.CoordinateParentCategoryId == Constants.FLG_COORDINATECATEGORY_ROOT)
+						{
+							@:親カテゴリなし
+						}
+						else
+						{
+							@Model.CoordinateParentCategoryId
+						}
+					</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg" align="left">カテゴリID<span class="notice">*</span></td>
+					<td class="edit_item_bg" align="left">@this.Model.CoordinateCategoryId</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg" align="left">カテゴリ名<span class="notice">*</span></td>
+					<td class="edit_item_bg" align="left">@this.Model.CoordinateCategoryName</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg" align="left">表示順</td>
+					<td class="edit_item_bg" align="left">@this.Model.DisplayOrder</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg" align="left">SEOキーワード</td>
+					<td class="edit_item_bg" align="left">@this.Model.SeoKeywords</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg" align="left">有効フラグ</td>
+					<td class="edit_item_bg" align="left">@this.Model.ValidFlg</td>
+				</tr>
+				@if (this.Model.IsActionStatusDetail)
+				{
+					<tr id="trDateCreated">
+						<td align="left" class="detail_title_bg" width="30%">作成日</td>
+						<td align="left" class="detail_item_bg">@this.Model.DateCreated</td>
+					</tr>
+					<tr id="trDateChanged">
+						<td align="left" class="detail_title_bg" width="30%">更新日</td>
+						<td align="left" class="detail_item_bg">@this.Model.DateChanged</td>
+					</tr>
+					<tr id="trLastChanged">
+						<td align="left" class="detail_title_bg" width="30%">最終更新者</td>
+						<td align="left" class="detail_item_bg">@this.Model.LastChanged</td>
+					</tr>
+				}
+			</table>
+			@TopButtomControls()
+			</td>
+			<td>@LayoutHelper.Padding(6)</td>
+		</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	}
+	</tr>
+	@LayoutHelper.PaddingTr(10)
+</table>
+@Html.Hidden("pageLayout", @Model.ParamModel.PageLayout)
+}
+
+@section JavaScript
+{
+	<script type="text/javascript">
+
+		function GetSelectedIndex() {
+			var index = document.getElementById("searchCoordinateParentCategoryId").selectedIndex;
+			return index;
+		}
+
+		function SelectedIndexChanged() {
+			document.getElementById('selectedIndex').value = GetSelectedIndex();
+		}
+
+		function SetSelectedIndex() {
+			document.getElementById('searchCoordinateParentCategoryId').selectedIndex =
+				'@this.Model.ParamModel.SelectedIndex';
+		}
+
+		SetSelectedIndex();
+
+		// 入力確認
+		function validate_coordinate_category(name) {
+			loading_animation.start();
+			var formData = get_input_date();
+			var url = '@Url.Action("ValidateExport", new
+				    {
+					    this.Model.ParamModel
+				    })';
+
+			$.ajax({
+				type: "POST",
+				url: url,
+				data: formData
+			}).done(function (errorMessage) {
+				setTimeout(function () { loading_animation.end(); }, 200);
+				// 警告表示を削除
+				$('.notification-message-warning').remove();
+				if (errorMessage !== "") {
+					notification.show(errorMessage, 'warning', 'fixed');
+				} else {
+					$('#' + name).click();
+				}
+				return false;
+			});
+		}
+
+		// エンターキーによるsubmit禁止
+		prohibit_submission("searchCoordinateCategoryId");
+	</script>
+}

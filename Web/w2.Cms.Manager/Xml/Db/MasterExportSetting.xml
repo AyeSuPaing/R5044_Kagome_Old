@@ -1,0 +1,207 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : マスタ出力定義系SQLステートメントXML(MasterExportSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MasterExportSetting>
+
+  <!-- マスタ出力定義情報 -->
+  <GetMasterExportSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MasterExportSetting
+         WHERE  w2_MasterExportSetting.shop_id = @shop_id 
+           AND  w2_MasterExportSetting.master_kbn = @master_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMasterExportSetting>
+
+  <!-- マスタ出力定義情報追加 -->
+  <InsertMasterExportSetting>
+    <Statement>
+      <![CDATA[
+        -- 最大設定ID取得
+       DECLARE  @setting_id nvarchar (10)
+        SELECT  @setting_id = RIGHT('00' + CONVERT(nvarchar, COUNT(w2_MasterExportSetting.setting_id) + 1), 3) FROM w2_MasterExportSetting WHERE w2_MasterExportSetting.shop_id = @shop_id AND w2_MasterExportSetting.master_kbn = @master_kbn
+        
+        INSERT  w2_MasterExportSetting
+                (
+                  w2_MasterExportSetting.shop_id,
+                  w2_MasterExportSetting.master_kbn,
+                  w2_MasterExportSetting.setting_id,
+                  w2_MasterExportSetting.setting_name,
+                  w2_MasterExportSetting.fields,
+                  w2_MasterExportSetting.date_created,
+                  w2_MasterExportSetting.date_changed,
+                  w2_MasterExportSetting.last_changed,
+                  w2_MasterExportSetting.export_file_type
+                )
+        VALUES  (
+                  @shop_id,
+                  @master_kbn,
+                  @setting_id,
+                  @setting_name,
+                  @fields,
+                  getdate(),
+                  getdate(),
+                  @last_changed,
+                  @export_file_type
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_name" Type="nvarchar" Size="30" />
+      <Input Name="fields" Type="ntext" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="export_file_type" Type="nvarchar" Size="10" />
+    </Parameter>
+  </InsertMasterExportSetting>
+
+  <!-- マスタ出力定義情報更新 -->
+  <UpdateMasterExportSetting>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MasterExportSetting
+           SET  w2_MasterExportSetting.fields = @fields,
+                w2_MasterExportSetting.date_changed = getdate(),
+                w2_MasterExportSetting.last_changed = @last_changed,
+                w2_MasterExportSetting.export_file_type = @export_file_type
+         WHERE  w2_MasterExportSetting.shop_id = @shop_id 
+           AND  w2_MasterExportSetting.master_kbn = @master_kbn
+           AND  w2_MasterExportSetting.setting_id = @setting_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_id" Type="nvarchar" Size="10" />
+      <Input Name="fields" Type="ntext" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="export_file_type" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateMasterExportSetting>
+
+  <!-- マスター出力設定削除 -->
+  <DeleteMasterExportSetting>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MasterExportSetting
+         WHERE  w2_MasterExportSetting.shop_id = @shop_id
+           AND  w2_MasterExportSetting.master_kbn = @master_kbn
+           AND  w2_MasterExportSetting.setting_id = @setting_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteMasterExportSetting>
+
+  <!-- マスタ出力設定ID更新 -->
+  <UpdateMasterExportSettingId>
+    <Statement>
+      <![CDATA[
+        -- 設定IDリフレッシュ
+        UPDATE  w2_MasterExportSetting
+           SET  w2_MasterExportSetting.setting_id = RIGHT('00' + CONVERT(nvarchar, w2_MasterExportSetting.setting_id -1), 3)
+         WHERE  CONVERT(int, w2_MasterExportSetting.setting_id) > CONVERT(int, @setting_id)
+           AND  w2_MasterExportSetting.shop_id = @shop_id 
+           AND  w2_MasterExportSetting.master_kbn = @master_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateMasterExportSettingId>
+
+  <!--マスター出力設定名の重複かどうかチェック-->
+  <CheckDuplicationMasterSettingName>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(w2_MasterExportSetting.master_kbn) AS count
+          FROM  w2_MasterExportSetting
+         WHERE  w2_MasterExportSetting.shop_id = @shop_id 
+           AND  w2_MasterExportSetting.master_kbn = @master_kbn
+           AND  w2_MasterExportSetting.setting_name  = @setting_name
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_name" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationMasterSettingName>
+
+  <!-- ショートURLマスタフィールドチェック -->
+  <CheckShortUrlFields>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  w2_ShortUrl
+         WHERE  w2_ShortUrl.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckShortUrlFields>
+
+  <!-- コーディネートマスタフィールドチェック -->
+  <CheckCoordinateFields>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  w2_Coordinate
+      ]]>
+    </Statement>
+  </CheckCoordinateFields>
+
+  <!-- コーディネートアイテムマスタフィールドチェック -->
+  <CheckCoordinateItemFields>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  w2_CoordinateItem
+      ]]>
+    </Statement>
+  </CheckCoordinateItemFields>
+
+  <!-- コーディネートカテゴリマスタフィールドチェック -->
+  <CheckCoordinateCategoryFields>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  w2_CoordinateCategory
+      ]]>
+    </Statement>
+  </CheckCoordinateCategoryFields>
+
+  <!-- スタッフマスタフィールドチェック -->
+  <CheckStaffFields>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  w2_Staff
+      ]]>
+    </Statement>
+  </CheckStaffFields>
+
+</MasterExportSetting>

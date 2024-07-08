@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 会員ランク変更履歴系SQLステートメントXML(UserMemberRank.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<UserMemberRank>
+  
+  <!-- 会員ランク更新履歴一覧を取得する -->
+  <GetMemberRankHistoryList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserMemberRankHistory.*,
+                BeforeRank.member_rank_name AS before_rank_name,
+                AfterRank.member_rank_name AS after_rank_name
+          FROM  w2_UserMemberRankHistory
+                -- 更新前ランク名取得用(ランクが存在しない場合を考慮)
+                LEFT JOIN w2_MemberRank AS BeforeRank ON
+                (
+                  w2_UserMemberRankHistory.before_rank_id = BeforeRank.member_rank_id
+                )
+                -- 更新後ランク名取得用(ランクが存在しない場合を考慮)
+                LEFT OUTER JOIN w2_MemberRank AS AfterRank ON
+                (
+                  w2_UserMemberRankHistory.after_rank_id = AfterRank.member_rank_id
+                )
+         WHERE  w2_UserMemberRankHistory.user_id = @user_id
+         ORDER BY
+            w2_UserMemberRankHistory.date_created DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMemberRankHistoryList>
+
+  <!-- 会員ランク変更履歴を追加 -->
+  <InsertUserMemberRankHistory>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_UserMemberRankHistory
+                (
+                user_id,
+                before_rank_id,
+                after_rank_id,
+                mail_id,
+                changed_by
+			          )
+	      VALUES  (
+                @user_id,
+                @before_rank_id,
+                @after_rank_id,
+                @mail_id,
+                @changed_by
+                )
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="before_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="after_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="changed_by" Type="nvarchar" Size="100" />
+    </Parameter>
+  </InsertUserMemberRankHistory>
+  
+</UserMemberRank>

@@ -1,0 +1,527 @@
+﻿@*
+=========================================================================================================
+  Module      : 特集エリア詳細(パーシャルビュー)(_FeatureAreaDetail.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Input
+@using w2.Cms.Manager.WorkerServices
+@model w2.Cms.Manager.ViewModels.FeatureArea.DetailViewModel
+@{
+	var typeIndex = 0;
+	var count = 0;
+	foreach (var areaType in Model.AreaTypes)
+	{
+		if (areaType.AreaTypeId == Model.Input.AreaTypeId)
+		{
+			typeIndex = count;
+			break;
+		}
+		count++;
+	}
+}
+
+<script type="text/javascript">
+	$(function() {
+		// バナーの並び順を整理
+		$('.Index').each(function(index, element) {
+			$(element).val(index);
+		});
+
+		height_fit.ini();
+		custom_scroll.ini();
+		page_url_edit.ini();
+		list.ini();
+		dropdown_toggle.ini();
+
+		feature_area.ini();
+		slide_check.ini();
+		var areaId = "@this.Model.Input.AreaId";
+		history.replaceState("", "", "#" + areaId);
+
+		@if (Model.IsActionStatusUpdate)
+		{
+			@Html.Raw("unCheckAreaType();")
+		}
+	});
+
+	/**
+	 * チェックしていないエリアタイプの無効化
+	 */
+	function unCheckAreaType() {
+		$('.feature-type-select input').each(function() {
+			if ($(this).prop('checked') == false) {
+				$(this).prop("disabled", true);
+				var label = $("label[for='" + $(this).attr('id') + "']");
+				label.css("opacity", "0.7");
+				label.css("cursor", "auto");
+			}
+		});
+	}
+
+	/**
+	 * プレビュー表示
+	 */
+	function previewFeatureArea(formData) {
+		loading_animation.start();
+		var url = "@Url.Action("Preview", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA)";
+		$.ajax({
+			type: "POST",
+			url: url,
+			data: formData,
+			processData: false,
+			contentType: false,
+		}).done(function(url) {
+			setTimeout(function() {
+					loading_animation.end();
+					open_window(url, 'preview', "");
+				},
+				1500);
+		}).fail(function() {
+		});
+	}
+
+	/**
+	 * 詳細設定
+	 */
+	function open_detail() {
+		$.ajax({
+			type: "POST",
+			url: "@(Url.Action("FeatureAreaDetailContents", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA))"
+		}).done(function(viewHtml) {
+			$("#main-content-areaDetail").html(viewHtml);
+		}).fail(function(errorMessage) {
+			notification.show(errorMessage, 'warning', 'fixed');
+		});
+	}
+
+	/**
+	* 詳細更新
+	*/
+	function main_content_detail_update(formData) {
+		loading_animation.start();
+		var bannerIndexs = $(".feature-area-banners").sortable("toArray", { attribute: 'data-id' });
+		for (var i = 0; i < bannerIndexs.length; i++) {
+			formData.append(bannerIndexs[i] + "Index", i);
+		}
+
+		$.ajax({
+			type: "POST",
+			url:
+				"@Url.Action("UpdateDetailPage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA, new
+				 {
+					 actionStatus = Model.ActionStatus
+				 })",
+			data: formData,
+			processData: false,
+			contentType: false,
+		}).done(function (data) {
+			if (data.data[1] === '') {
+				redraw(true, false);
+				open_page(data.data[0], '@ActionStatus.Update');
+				notification.show('特集エリアタイプを@(Model.IsActionStatusUpdate ? "更新" : "登録")しました。', 'info', 'fadeout');
+			} else {
+				loading_animation.end();
+				// 警告表示を削除
+				$('.notification-message-warning').remove();
+				notification.show(data.data[1], 'warning', 'fixed');
+			}
+		}).fail(function() {
+		});
+	}
+
+	/**
+	 * 新規登録画面の表示
+	 */
+	function copy(id, actionStatus) {
+		$("#main-content-detail").html(null);
+		$('.main-content-detail-inner').hide();
+		list.open();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("FeatureAreaDetail", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA)",
+			data: {
+				'areaId': id,
+				'actionStatus': actionStatus
+			}
+		}).done(function (viewHtml) {
+			// 警告表示を削除
+			$('.notification-message-warning').remove();
+			notification.show('複製しました。', 'info', 'fadeout');
+			$("#main-content-detail").html(viewHtml);
+			$('.main-content-detail-inner').show();
+		}).fail(function () {
+		});
+	}
+
+	/**
+	 * 削除
+	 */
+	function delete_feature_area() {
+		if (confirm("特集エリアタイプを削除しますがよろしいですか？") == false) return;
+		loading_animation.start();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("DeleteDetailPage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA, new { areaId = Model.Input.AreaId})",
+			data: get_main_content_detail_date()
+		}).done(function (errorMessage) {
+			loading_animation.end();
+			if (errorMessage === "") {
+				// 警告表示を削除
+				$('.notification-message-warning').remove();
+				list.close();
+				notification.show('特集エリアタイプを削除しました。', 'info', 'fadeout');
+				redraw(true, true);
+			} else {
+				notification.show(errorMessage, 'warning', 'fixed');
+			}
+		}).fail(function () {
+			notification.show('特集エリアタイプの削除に失敗しました。', 'warning', 'fadeout');
+		});
+	}
+
+	/**
+	 * 情報取得
+	 */
+	function get_main_content_detail_date() {
+		var pageDate = $('#detail_form').serializeArray();
+		return pageDate;
+	}
+
+	/**
+	 * 個別プロパティ表示制御
+	 */
+	function display_prop(areaTypeId, actionType) {
+		$('#actionType').val(actionType);
+		$('#main-content-areaDetail').show();
+		if (areaTypeId == 'SIDE') {
+			$('#prop').show();
+			$('#side-prop').show();
+			$('#slider-prop').hide();
+		} else if (areaTypeId == 'SLIDER') {
+			$('#prop').show();
+			$('#side-prop').hide();
+			$('#slider-prop').show();
+		} else {
+			$('#prop').hide();
+		}
+	}
+
+	var banner_index = @Model.Input.BannerInput.Length;
+	/**
+	 * バナー削除
+	 */
+	function delete_banner(deleteBannerIndex) {
+		$(".feature-area-banner[data-id='" + deleteBannerIndex + "']").remove();
+		image_file_select.ini();
+	}
+
+	/**
+	 * 特集エリア選択
+	 */
+	function select_area_type(areaTypeId, actionType) {
+		display_prop(areaTypeId, actionType);
+	}
+
+</script>
+
+<style>
+	.dropArea {
+		border-radius: 10px;
+		margin: 3vmin;
+		padding: 3vmin 10%;
+		text-align: center;
+		position: relative;
+		border: 4px #4CA750 dashed;
+	}
+</style>
+
+<div class="main-content-detail-inner">
+<a class="main-content-detail-btn-close"><span class="icon icon-close"></span>閉じる</a>
+@using (Html.BeginForm("UpdateDetailPage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA, new
+{
+}, FormMethod.Post, new
+{
+	Id = "detail_form"
+}))
+{
+	<div class="main-content-detail-head">
+		<div class="main-content-detail-head-title h2">
+			@Html.TextBoxFor(model => model.Input.AreaName, new
+			{
+				Name = "Input.AreaName",
+				Placeholder = "特集エリア名を設定してください（必須）"
+			})
+		</div>
+		<div>
+		@if (Model.CanUsePartsDesign)
+		{
+			var anchor = "#parts" + Model.PartsId;
+			<a href="@Url.Action("Main", Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)@anchor" target="_blank">
+				<button class="btn btn-size-m btn-main" type="button" onclick="return confirm('編集内容は更新されていません。よろしいですか？')">パーツを開く</button>
+			</a>
+		}
+		</div>
+		<div class="main-content-detail-head-main-actions">
+			<a id="featureAreaPreviewButton" href="javascript:void(0)" class="btn btn-txt btn-size-m">プレビュー</a>
+			<input id="featureAreaUpdateButton" type="button" class="btn btn-main btn-size-l" value="@(Model.IsActionStatusUpdate ? "更新" : "登録") " >
+			<div class="dropdown">
+				<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle">
+					<span class="icon-dots"></span>
+				</a>
+				<div class="dropdown-menu">
+					@if (Model.IsActionStatusUpdate)
+					{
+						<a class="dropdown-menu-item" href="javascript:copy('@Model.Input.AreaId', '@ActionStatus.CopyInsert')">複製して新規作成する</a>
+						<a class="dropdown-menu-item" href="javascript:delete_feature_area()">削除する</a>
+					}
+					<a class="dropdown-menu-item" href="javascript:open_page('@Model.Input.AreaId', '@Model.ActionStatus')">リセットする</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="areaDetail" class="main-content-detail-body">
+		@if (Model.IsActionStatusUpdate)
+		{
+			<p class="main-content-detail-body-update ta-right">更新日：@Model.Input.DisplayDateChanged</p>
+		}
+		<div class="form-element-group form-element-group-horizontal-grid">
+			<div class="form-element-group-title">
+				<label for="Input_UseType">サイト</label><span class="notice">*</span>
+			</div>
+			<div class="form-element-group-content">
+				@if (Model.IsActionStatusInsert)
+				{
+					@Html.DropDownListFor(model => model.Input.UseType, new SelectList(Model.UseTypeList, "Value", "Text"), "", new
+					{
+						Name = "Input.UseType"
+					})
+				}
+				else
+				{
+					@Html.TextBoxFor(model => model.UseTypeForDisp, new
+					{
+						Name = "Input.UseType",
+						Class = "w20",
+						Disabled = "disabled"
+					})
+					@Html.HiddenFor(model => model.Input.UseType, new
+					{
+						Name = "Input.UseType",
+					})
+				}
+			</div>
+		</div>
+		@if (Model.IsActionStatusUpdate)
+		{
+		<div class="form-element-group form-element-group-horizontal-grid">
+			<div class="form-element-group-title">
+				<label for="Input_AreaId">ID</label>
+			</div>
+			<div class="form-element-group-content">
+					@Html.TextBoxFor(model => model.Input.AreaId, new
+					{
+						Name = "Input.AreaId",
+						Placeholder = "特集エリアID",
+						Class = "w20",
+						Disabled = "disabled"
+					})
+					@Html.HiddenFor(model => model.Input.AreaId, new
+					{
+						Name = "Input.AreaId",
+					})
+			</div>
+		</div>
+		}
+		<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature">
+			<div class="form-element-group-title">
+				<label for="Input_InternalMemo">内部用メモ</label>
+			</div>
+			<div class="form-element-group-content">
+				@Html.TextBoxFor(model => model.Input.InternalMemo, new
+				{
+					Name = "Input.InternalMemo",
+					Placeholder = "設定なし",
+					Class = "w100"
+				})
+			</div>
+		</div>
+		<div class="form-element-group form-element-group-horizontal-grid">
+			<div class="form-element-group-title">
+				<label for="Input_AreaTypeId">タイプ</label>
+			</div>
+			<div class="form-element-group-content">
+				<div class="feature-type-select">
+					@{
+						var imgIndex = 0;
+						foreach (var areaType in Model.AreaTypes)
+						{
+							imgIndex++;
+
+							var attributes = new Dictionary<string, object>
+							{
+								{ "id", "feature-type-" + imgIndex },
+								{ "onchange", "select_area_type('" + areaType.AreaTypeId + "', '" + areaType.ActionType + "')" }
+							};
+
+							@Html.RadioButtonFor(model => model.Input.AreaTypeId, areaType.AreaTypeId, attributes)
+							<label for="feature-type-@imgIndex" class="feature-type-select-item">
+								<div class="feature-type-select-item-img">
+									<img src="~/@FeatureAreaTypeWorkerService.GetThumbnailByActionType(areaType.ActionType)" alt="@areaType.ActionType">
+								</div>
+								<dl class="feature-type-select-item-text">
+									<dt>@areaType.AreaTypeName</dt>
+								</dl>
+							</label>
+						}
+					}
+					@Html.HiddenFor(model => model.Input.ActionType, new
+					{
+						Name = "Input.ActionType",
+						Id = "actionType"
+					})
+				</div>
+
+				<div class="feature-area-banners-setting">
+					@* 領域:詳細画面 *@
+					<!-- 個別プロパティ SIDE -->
+					<div id="prop" class="feature-area-banners-basic-setting" style="display: @(Model.IsPropValid ? "block" : "none")">
+						<div id="side-prop" style="display: @(Model.IsAreaTypeSide ? "block" : "none")">
+							<div class="feature-area-banner-content">
+								<div class="form-element-group form-element-group-horizontal-grid">
+								<div class="form-element-group-content">
+									<label for="Input_SideMaxCount">横に最大</label>
+									@Html.DropDownListFor(model => model.Input.SideMaxCount, new SelectList(Model.SideMaxCounts, "Value", "Text", "Selected"), new
+									{
+										Name = "Input.SideMaxCount"
+									})
+									<label>個並べる</label>
+								</div>
+								</div>
+							</div>
+							<div class="feature-area-banner-content">
+								<div class="form-element-group form-element-group-horizontal-grid">
+								<div class="form-element-group-content">
+									<label for="Input_SideTurn">超えた場合は</label>
+									@Html.DropDownListFor(model => model.Input.SideTurn, new SelectList(Model.SideTurns, "Value", "Text", "Selected"), new
+									{
+										Name = "Input.SideTurn"
+									})
+								</div>
+								</div>
+							</div>
+						</div>
+						<!-- 個別プロパティ SLIDER -->
+						<div id="slider-prop" style="display: @(Model.IsAreaTypeSlider ? "block" : "none")">
+							<div class="feature-area-banner-content">
+								<div class="form-element-group form-element-group-horizontal-grid">
+								<div class="form-element-group-title">
+									<label for="Input_SliderCount">表示するスライド数</label>
+								</div>
+								<div class="form-element-group-content">
+									@Html.DropDownListFor(model => model.Input.SliderCount, new SelectList(Model.SliderCounts, "Value", "Text", "Selected"), new
+									{
+										Name = "Input.SliderCount"
+									})
+									<label>個</label>
+								</div>
+								</div>
+							</div>
+							<div class="feature-area-banner-content">
+								<div class="form-element-group form-element-group-horizontal-grid">
+								<div class="form-element-group-title">
+									<label for="Input_SliderScrollCount">スライドするスライド数</label>
+								</div>
+								<div class="form-element-group-content">
+									@Html.DropDownListFor(model => model.Input.SliderScrollCount, new SelectList(Model.SliderScrollCounts, "Value", "Text", "Selected"), new
+									{
+										Name = "Input.SliderScrollCount"
+									})
+									<label>個</label>
+								</div>
+								</div>
+							</div>
+							<div class="feature-area-banner-content">
+								<div class="form-element-group form-element-group-horizontal-grid">
+								<div class="form-element-group-title">
+									<label for="Input_SliderScrollAuto">自動スクロール</label>
+								</div>
+								<div class="form-element-group-content">
+									@Html.DropDownListFor(model => model.Input.SliderScrollAuto, new SelectList(Model.SliderScrollAutos, "Value", "Text", "Selected"), new
+									{
+										Name = "Input.SliderScrollAuto"
+									})
+									<label> </label>
+								</div>
+								</div>
+							</div>
+							<div class="feature-area-banner-content">
+								<div class="form-element-group form-element-group-horizontal-grid">
+								<div class="form-element-group-title">
+									<label for="Input_SliderScrollInterval">自動スクロールの間隔</label>
+								</div>
+								<div class="form-element-group-content">
+									@Html.DropDownListFor(model => model.Input.SliderScrollInterval, new SelectList(Model.SliderScrollIntervals, "Value", "Text", "Selected"), new
+									{
+										Name = "Input.SliderScrollInterval"
+									})
+									<label>秒</label>
+								</div>
+								</div>
+							</div>
+							<div class="feature-area-banner-content">
+								<div class="form-element-group form-element-group-horizontal-grid">
+								<div class="form-element-group-title">
+									<label for="Input_SliderArrow">左右矢印の表示</label>
+								</div>
+								<div class="form-element-group-content">
+									@Html.DropDownListFor(model => model.Input.SliderArrow, new SelectList(Model.SliderArrows, "Value", "Text", "Selected"), new
+									{
+										Name = "Input.SliderArrow"
+									})
+									<label> </label>
+								</div>
+								</div>
+							</div>
+							<div class="feature-area-banner-content">
+								<div class="form-element-group form-element-group-horizontal-grid">
+								<div class="form-element-group-title">
+									<label for="Input_SliderDot">下部のドット表示</label>
+								</div>
+								<div class="form-element-group-content">
+									@Html.DropDownListFor(model => model.Input.SliderDot, new SelectList(Model.SliderDots, "Value", "Text", "Selected"), new
+									{
+										Name = "Input.SliderDot"
+									})
+									<label> </label>
+								</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div id="main-content-areaDetail" class="feature-area-banners-wrapper">
+						<div id="banner-area" class="feature-area-banners sortable ui-sortable">
+							@foreach (var banner in Model.Input.BannerInput)
+							{
+								@Html.Partial("_FeatureAreaBanner", banner)
+							}
+						</div>
+					</div>
+					<div class="feature-area-banners-add-btn">
+						<a href="javascript:void(0);" class="btn btn-main btn-size-m">
+							<span class="icon icon-plus"></span>
+							<span>バナーを追加する</span>
+						</a>
+						<div class="feature-area-banners-add-element-template">
+							@Html.Partial("_FeatureAreaBanner", new FeatureAreaBannerInput{ Publish = true})
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	@Html.Partial("_ImageListModal", Model.ImageModalViewModel)
+}
+</div>

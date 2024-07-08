@@ -1,0 +1,291 @@
+﻿@*
+=========================================================================================================
+  Module      : 特集エリア情報ページ(FeatureArea.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+
+@model w2.Cms.Manager.ViewModels.FeatureArea.ListViewModel
+@{
+	ViewBag.Title = "特集エリア情報";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		$(function () {
+			// 一覧読み込み
+			redraw(true, true);
+
+			var urlHash = location.hash;
+			if (urlHash) {
+				open_page(urlHash.replace("#",""), '@ActionStatus.Update');
+			}
+		});
+
+		$('#search_keyword').keypress(function (e) {
+			if (e.which === 13) {
+				redraw(true, true);
+			}
+		});
+
+		$('.update-date-input-search').change(function () {
+			redraw(true, true);
+		});
+
+		/**
+		 * 登録画面の表示
+		 */
+		function open_page(id, actionStatus) {
+			$('.main-content-detail-inner').hide();
+			$(".selected-low").removeClass("selected-low");
+			list.open();
+			loading_animation.start();
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("FeatureAreaDetail", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA)",
+				data: {
+					'areaId': id,
+					'actionStatus': actionStatus
+				}
+			}).done(function (viewHtml) {
+				// 警告表示を削除
+				$('.notification-message-warning').remove();
+				if (actionStatus !== "Insert") {
+					$("#" + id).addClass("selected-low");
+				}
+				$("#search_keyword").addClass("placeholder-display-none");
+
+				$("#main-content-detail").html(viewHtml);
+				$('.main-content-detail-inner').show();
+			}).fail(function (errorMessage) {
+				notification.show(errorMessage, 'warning', 'fixed');
+			}).always(function () {
+				setTimeout(function () {
+						loading_animation.end();
+					},
+					1000);
+			});
+		}
+
+		// 表示件数
+		var displayCount = @Constants.CONST_DISP_CONTENTS_DEFAULT_LIST;
+
+		/**
+		 * 再描画
+		 * pagerInit ページャを初期位置に戻すかどうか
+		 */
+		function redraw(pagerInit, loadingAnimation) {
+			if (loadingAnimation) {
+				loading_animation.start();
+			}
+			if (pagerInit) {
+				$("#pagerNo").val(1);
+			}
+
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("GetList", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA)",
+				data: $('#search_form').serializeArray(),
+				traditional: true
+			}).done(function (viewHtml) {
+				$("#list-content").html(viewHtml);
+
+				if (pagerInit) {
+					var total = $("#hideHitCount").val();
+					$("#totalHitCount").val(total);
+					$("#previous,#next").hide();
+					$("#total").html("/" + total);
+					$("#pagerNo").val(1);
+					$('#previous').addClass('disabled');
+
+					if (total > displayCount) {
+						$("#pager").html(1 + '-' + displayCount);
+						$('#next').removeClass('disabled');
+						$("#previous,#next").show();
+					} else {
+						$("#pager").html(1 + '-' + total);
+						$('#next').addClass('disabled');
+					}
+				}
+
+				if (loadingAnimation) {
+					loading_animation.end();
+				}
+			}).done(function() {
+				var urlHash = location.hash;
+				if (urlHash) {
+					$("#" + urlHash.replace("#", "")).addClass("selected-low");
+					$("#search_keyword").addClass("placeholder-display-none");
+				}}).fail(function () {
+			});
+		}
+
+		// ページャー数を増やす
+		function add_pager_no() {
+			if ($("#next").hasClass('disabled')) return;
+			var nextPagerNo = parseInt($("#pagerNo").val()) + parseInt(1);
+			var totalHitCount = $("#totalHitCount").val();
+			var max = nextPagerNo * displayCount;
+
+			if (max >= totalHitCount) {
+				max = totalHitCount;
+				$('#next').addClass('disabled');
+			}
+
+			$("#pagerNo").val(nextPagerNo);
+			redraw(false, true);
+			change_pager(nextPagerNo, max);
+		}
+
+		// ページャー数を減らす
+		function reduce_pager_no() {
+			if ($("#previous").hasClass('disabled')) return;
+
+			var nextPagerNo = parseInt($("#pagerNo").val()) - parseInt(1);
+			var max = nextPagerNo * displayCount;
+
+			$("#pagerNo").val(nextPagerNo);
+			redraw(false, true);
+			change_pager(nextPagerNo, max);
+			$('#next').removeClass('disabled');
+		}
+
+		// ページャー変更
+		function change_pager(nextPagerNo, max) {
+			$("#pager").html(1 + (nextPagerNo - 1) * displayCount + '-' + max);
+			if ($("#pagerNo").val() === '1') {
+				$('#previous').addClass('disabled');
+			} else {
+				$('#previous').removeClass('disabled');
+			}
+		}
+
+	</script>
+}
+<h1 class="page-title">特集エリア情報</h1>
+<div class="main-content-frame">
+	<a href="javascript:void(0)" class="list-menu-btn"><span class="icon icon-menu"></span></a>
+	<div class="main-content-list">
+		@using (Html.BeginForm("", "", new
+		{
+		}, FormMethod.Post, new
+		{
+			Id = "search_form",
+			Onsubmit = "return false;"
+		}))
+		{
+			<div class="list-tools">
+				<div class="list-tools-row">
+					<div class="list-tools-col ta-left">
+						<div class="keyword-search">
+							@Html.TextBoxFor(model => model.ParamModel.FreeWord, new
+							{
+								Id = "search_keyword",
+								Name = "FreeWord",
+								Class = "keyword-search-input",
+								Placeholder = "特集エリア名, ID, 内部メモ",
+							})
+							<a href="javascript:redraw(true, true)" class="keyword-search-submit"><span class="icon-search"></span></a>
+						</div>
+						<a class="btn-toggle" data-toggle-content-selector=".list-tools-detailed-search"></a>
+					</div>
+
+					<div class="list-tools-col ta-right">
+						<div class="pager-content">
+							<p class="pager-content-info hide-list-detail"><span id="pager"></span><span id="total"></span></p>
+							@Html.Hidden("PagerNo", 1, new { id = "pagerNo" })
+							@Html.Hidden("totalHitCount", new{ id= "totalHitCount" })
+							<span id="previous" class="pager-content-previous icon-arrow-left" onclick="reduce_pager_no();"></span>
+							<span id="next" class="pager-content-next icon-arrow-right" onclick="add_pager_no();"></span>
+						</div>
+						<button class="btn btn-main btn-size-m" type="button" onclick="open_page('', '@ActionStatus.Insert')"><span class="icon icon-plus"></span><span class="hide-list-detail">新規作成</span></button>
+					</div>
+				</div>
+				<div class="list-tools-detailed-search">
+					<div class="list-tools-row">
+					<div class="list-tools-col">
+					<div class="form-element-group form-element-group-horizontal">
+						<div class="form-element-group-title">
+							<label>公開日</label>
+						</div>
+						<div class="form-element-group form-element-group-horizontal">
+							<div class="form-element-group-content">
+								@Html.DropDownListFor(model => model.ParamModel.PublicDateKbn, new SelectList(Model.PublicDateKbns, "Value", "Text"), "", new
+								{
+									Name = "PublicDateKbn",
+									onchange = "redraw(true, true)"
+								})
+							</div>
+						</div>
+					</div>
+					<div class="form-element-group form-element-group-horizontal">
+						<div class="form-element-group-title">
+							<label>タイプ</label>
+						</div>
+						<div class="form-element-group form-element-group-horizontal">
+							<div class="form-element-group-content">
+								@Html.DropDownListFor(model => model.ParamModel.AreaType, new SelectList(Model.AreaTypes, "Value", "Text"), "", new
+								{
+									Id = "AreaType",
+									Name = "AreaType",
+									onchange = "redraw(true, true)"
+								})
+							</div>
+						</div>
+					</div>
+						<div class="form-element-group form-element-group-horizontal">
+							<div class="form-element-group-title">
+								<label>サイト</label>
+							</div>
+							<div class="form-element-group form-element-group-horizontal">
+								<div class="form-element-group-content">
+									@Html.DropDownListFor(model => model.ParamModel.UseType, Model.UseTypes, "", new
+									{
+										Name = "UseType",
+										onchange = "redraw(true, true)"
+									})
+								</div>
+							</div>
+						</div>
+					</div>
+					</div>
+				</div>
+			</div>
+		}
+		<div class="list">
+			<div class="list-head">
+			<div class="list-head-row">
+				<div class="list-head-col hide-list-detail w10">
+				</div>
+				<div class="list-head-col ta-left">
+					<p>特集エリア名</p>
+				</div>
+				<div class="list-head-col hide-list-detail w20">
+					<p>タイプ</p>
+				</div>
+				<div class="list-head-col hide-list-detail w10">
+					<p>サイト</p>
+				</div>
+				<div class="list-head-col hide-list-detail w20">
+					<p>更新日時<span>▼</span>
+					</p>
+				</div>
+			</div>
+			</div>
+			@* 領域:ページ一覧表示 *@
+			<div id="list-content">
+			</div>
+		</div>
+	</div>
+	
+	@* 領域:詳細画面 *@
+	<div id="main-content-detail" class="main-content-detail"></div>
+
+	@* モーダルウィンドウ: 拡大画像 *@
+	@Html.Partial("_EnlargedImageModal")
+
+</div>

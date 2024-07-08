@@ -1,0 +1,122 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+--------------------
+-- ユーザ拡張項目 --
+--------------------
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_UserExtend]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_UserExtend]
+GO
+
+CREATE TABLE [dbo].[w2_UserExtend] (
+	[user_id] [nvarchar] (30) NOT NULL,
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_UserExtend] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_UserExtend] PRIMARY KEY  CLUSTERED
+	(
+		[user_id]
+	) ON [PRIMARY]
+GO
+
+
+----------------------------
+-- ユーザ拡張項目(ワーク) --
+----------------------------
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_WorkUserExtend]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_WorkUserExtend]
+GO
+/*
+=========================================================================================================
+  Module      : ユーザ拡張項目ワークテーブル(w2_WorkUserExtend.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_WorkUserExtend] (
+	[user_id] [nvarchar] (30) NOT NULL,
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_WorkUserExtend] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkUserExtend] PRIMARY KEY  CLUSTERED
+	(
+		[user_id]
+	) ON [PRIMARY]
+GO
+
+------------------------
+-- ユーザ拡張項目設定 --
+------------------------
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_UserExtendSetting]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_UserExtendSetting]
+GO
+
+CREATE TABLE [dbo].[w2_UserExtendSetting] (
+	[setting_id] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[setting_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[outline_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'TEXT'),
+	[outline] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[sort_order] [int] NOT NULL DEFAULT (1),
+	[input_type] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[input_default] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[init_only_flg] [nvarchar] (30) NOT NULL DEFAULT (N'UPDATABLE'),
+	[display_kbn] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_UserExtendSetting] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_UserExtendSetting] PRIMARY KEY  CLUSTERED
+	(
+		[setting_id]
+	) ON [PRIMARY]
+GO
+
+
+
+-----------------------------------
+-- w2_UserExtendにユーザIDを追加 --
+-----------------------------------
+INSERT INTO w2_UserExtend
+(
+  user_id,
+  date_created,
+  date_changed,
+  last_changed
+)
+SELECT  w2_User.user_id,
+        GETDATE(),
+        GETDATE(),
+        'vup5.5to5.6'
+   FROM w2_User
+  WHERE 
+        w2_User.mall_id = 'OWN_SITE'
+   AND  w2_User.del_flg = '0'
+   AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER')
+   -- 以下、念のための処理（必ず新規にテーブルが作成されるなら必要無い）
+   AND  w2_User.user_id NOT IN (
+                                 SELECT w2_UserExtend.user_id 
+                                 FROM  w2_UserExtend
+                               )
+GO
+
+
+
+
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

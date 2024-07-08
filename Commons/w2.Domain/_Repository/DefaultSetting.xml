@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Default Setting XML (DefaultSetting.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<DefaultSetting>
+
+  <!-- Get -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_DefaultSetting.shop_id,
+                w2_DefaultSetting.classification,
+                w2_DefaultSetting.init_data
+          FROM  w2_DefaultSetting
+         WHERE  w2_DefaultSetting.shop_id = @shop_id
+           AND  w2_DefaultSetting.classification = @classification
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="classification" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- Upsert default setting -->
+  <UpsertDefaultSetting>
+    <Statement>
+      <![CDATA[
+        DECLARE  @count int
+
+        SELECT  @count = COUNT(shop_id)
+          FROM  w2_DefaultSetting
+         WHERE  w2_DefaultSetting.shop_id = @shop_id
+           AND  w2_DefaultSetting.classification = @classification
+
+        IF (@count = 0)
+          BEGIN
+            INSERT  w2_DefaultSetting
+                    (
+                      w2_DefaultSetting.shop_id,
+                      w2_DefaultSetting.classification,
+                      w2_DefaultSetting.init_data,
+                      w2_DefaultSetting.date_created,
+                      w2_DefaultSetting.date_changed,
+                      w2_DefaultSetting.last_changed
+                    )
+                    VALUES
+                    (
+                      @shop_id,
+                      @classification,
+                      @init_data,
+                      GETDATE(),
+                      GETDATE(),
+                      @last_changed
+                    )
+          END
+        ELSE
+          BEGIN
+            UPDATE  w2_DefaultSetting
+               SET  w2_DefaultSetting.shop_id = @shop_id,
+                    w2_DefaultSetting.init_data = @init_data,
+                    w2_DefaultSetting.date_changed = GETDATE(),
+                    w2_DefaultSetting.last_changed = @last_changed
+             WHERE  w2_DefaultSetting.shop_id = @shop_id
+               AND  w2_DefaultSetting.classification = @classification
+          END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="classification" Type="nvarchar" Size="30" />
+      <Input Name="init_data" Type="nvarchar"  Size="MAX" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpsertDefaultSetting>
+
+</DefaultSetting>

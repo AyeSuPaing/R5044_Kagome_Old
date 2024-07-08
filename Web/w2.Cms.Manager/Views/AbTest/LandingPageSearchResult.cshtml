@@ -1,0 +1,65 @@
+﻿@*
+=========================================================================================================
+  Module      : LP検索結果パーツ(LandingPageSearchResult.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*@
+@model w2.Cms.Manager.ViewModels.AbTest.LandingPageSearchResultModel[]
+<p class="mb10">絞り込み条件に一致するLP一覧</p>
+<div class="pager-content">
+	<p class="pager-content-info hide-list-detail">@((Model.Any()) ? Model[0].CountHtml : string.Empty)</p>
+	<span id="previous" class="pager-content-previous icon-arrow-left" onclick="before_page();"></span>
+	<span id="next" class="pager-content-next icon-arrow-right" onclick="next_page();"></span>
+</div>
+<div class="item-search-result-head">
+	<div class="w10 ta-left" style="padding-left: 10px;">
+		<input type="checkbox" id="all"><label for="all">全て</label>
+	</div>
+	<div class="w15 ta-left">ページID</div>
+	<div class="w30 ta-left">管理用ページ名</div>
+	<div class="w30 ta-left">ファイル名</div>
+	<div class="w15 ta-center">作成日</div>
+</div>
+<div class="item-search-result-contents custom-scroll-area">
+	@foreach (var landingPage in Model)
+	{
+		<div class="item-search-result-content">
+			<div class="w10 ta-center"><input type="checkbox" name="productId" id="@landingPage.PageId" value="@landingPage.ToJson()" onclick="productClick(this)"></div>
+			<div class="w15 ta-left">@landingPage.PageId</div>
+			<div class="w30 ta-left">@landingPage.PageTitle</div>
+			<div class="w30 ta-left">@landingPage.PageUrl</div>
+			<div class="w15 ta-center">@landingPage.DateCreated</div>
+		</div>
+	}
+</div>
+<style>
+	.break-word {
+		word-wrap: break-word;
+	}
+</style>
+<script type="text/javascript">
+	$(function () {
+		custom_scroll.ini();
+	});
+	$('#all').on('change',
+		function () {
+			$('input[name=productId]').prop('checked', this.checked);
+
+			var productIds = $('input[name=productId]')
+				.prop('checked', this.checked)
+				.map(function () { return $(this).attr('id'); })
+				.get();
+
+			$.each(productIds,
+				function (i, value) {
+					//二重挿入防止の為、入れる時も一度リストから削除しようとする。
+					var removedDelimiter = ($('#productIdsHidden').val().split(',').length === 1) ? "\"" : "\",";
+					$('#productIdsHidden').val($('#productIdsHidden').val().replace("\"" + value + removedDelimiter, ""));
+					if ($('input[name=productId]').prop("checked")) {
+						var addedDelimiter = ($('#productIdsHidden').val().length === 0) ? "\"" : ",\"";
+						$('#productIdsHidden').val($('#productIdsHidden').val() + addedDelimiter + value + "\"");
+					}
+				});
+		});
+</script>

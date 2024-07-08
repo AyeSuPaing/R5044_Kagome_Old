@@ -1,0 +1,390 @@
+﻿@*
+=========================================================================================================
+  Module      : ABテスト分析レポートモーダル(AbTestAnalysisReportModal.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*@
+@using Newtonsoft.Json
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.AbTest.AnalysisReportViewModel
+<input type="hidden" id="modal-no"/>
+<input type="hidden" id="base-name"/>
+<input type="hidden" id="abTestIdsHidden"/>
+<p class="modal-inner-ttl under-text">ABテスト分析レポート</p>
+<div id="abTestAnalysisModal">
+	<table>
+		<tr class="list-head">
+			<td class="list-head-col w5" style="border: lightgray solid 1px;">
+				対象ABテスト
+			</td>
+			<td class="list-head-col w5" style="background-color: white; border: lightgray solid 1px;">
+				<span data-bind="text: DispPageName"></span>
+			</td>
+		</tr>
+		<tr>
+			<td style="padding: 5px; background-color: white; border: lightgray solid 1px; width: 200px;">
+				<!-- ▽カレンダ▽ -->
+				<div class="list-col w5" >表示期間</div>
+				<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature" style="margin: 0 10px; padding: 0;">
+					<div class="access-authority-setting-period-start-input">
+						<div class="access-authority-setting-period-start-input-date" style="border-radius: 5px">
+							@Html.Label("access-authority-setting-period-start-input-date", "開始日")
+							<input type="text" id="startDate" class="access-authority-setting-period-start-input-date-value input-datepicker" data-bind="value: StartDate" />
+						</div>
+						～
+						<div class="access-authority-setting-period-end-input-date">
+							@Html.Label("access-authority-setting-period-end-input-date", "終了日")
+							<input type="text" id="endDate" class="access-authority-setting-period-end-input-date-value input-datepicker" data-bind="value: EndDate" />
+						</div>
+					</div>
+				</div>
+				<!-- △カレンダ△ -->
+				<!-- ▽表示ボタン▽ -->
+				<div style="width: 100%; text-align: center; margin: 10px 0;">
+					<input type="button" id="Display" class="btn btn-main btn-size-m" value="表示" style="position: relative;" />
+				</div>
+				<!-- △表示ボタン△ -->
+				<!-- ▽ラジオボタン▽ -->
+				<div style="padding: 5px; border: silver solid 1px;">
+					<form id="ReportTypes" data-bind="foreach: TypeItemNames">
+						<input type="radio" name="ReportType" data-bind="value: $data.Key, attr: { id: $data.Key}" /><span data-bind="	text: $data.Value"></span><br/>
+					</form>
+				</div>
+				<!-- △ラジオボタン△ -->
+			</td>
+			<!-- ▽チャートグラフ▽ -->
+			<td style="width: 100%; background-color: white; border: lightgray solid 1px;">
+				<canvas id="abTestAnalysisGraph" style="height: 320px;"></canvas>
+			</td>
+			<!-- △チャートグラフ△ -->
+		</tr>
+	</table>
+	<table style="margin-top: 30px; background-color: white">
+	<!--▽ 一覧 ▽-->
+		<tr>
+			<td>
+				<h2 class="cmn-hed-h2">レポート表示</h2>
+			</td>
+		</tr>
+		<tr style="display: block">
+			<td>
+				<table class="box_border" cellpadding="0" width="100%" border="0">
+					<tr>
+						<td class="list_box_bg">
+							<table cellpadding="0" width="100%" border="0">
+								<tr>
+									<td align="center">
+										<div class="search_btn_sub_rt" style="text-align: right;">
+											<a class="LinkButton" data-bind="click: download_csv" id="reportExport">CSVダウンロード</a>
+										</div>
+										<table  cellspacing="0" cellpadding="0" border="0">
+											<tr>
+												<td data-bind="foreach: { data: TypeItemNames, as: '$TypeItemName' }">
+													<div style="position: relative; overflow-x: auto; white-space: nowrap; width: 960px;">
+														<table class="list_table" style="margin: 10px 0;" style="display: inline-block; text-align: center; ">
+															<!-- タイトル -->
+															<tr class="list_title_bg">
+																<td colspan="100%">
+																	<span data-bind="text: $root.ReportItems.TypeNames[$TypeItemName.Key]"></span>
+																</td>
+															</tr>
+															<!-- 日付 -->
+															<tr data-bind="foreach: { data: $root.ReportItems.Dates, as: '$Date' }">
+																<!-- ko if:$root.is_first_column($index()) -->
+																<td data-bind="text: $root.get_formatted_month_day($Date)"></td>
+																<!-- /ko -->
+																<!-- ko ifnot:$root.is_first_column($index()) -->
+																<!-- ko if:$root.is_sunday($Date) -->
+																<td class="Sunday" data-bind="style: { width: 20 }, text: $root.get_formatted_month_day($Date)"></td>
+																<!-- /ko -->
+																<!-- ko if:$root.is_saturday($Date) -->
+																<td class="Saturday" data-bind="style: { width: 20 }, text: $root.get_formatted_month_day($Date)"></td>
+																<!-- /ko -->
+																<!-- ko ifnot: ($root.is_saturday($Date) || $root.is_sunday($Date)) -->
+																<td data-bind="style: { width: 20 }, text: $root.get_formatted_month_day($Date)"></td>
+																<!-- /ko -->
+																<!-- /ko -->
+															</tr>
+															<!-- データ -->
+															<tbody data-bind="foreach: { data: $root.ReportItems.LpPageIds, as: '$LpPageIds' }">
+															<tr data-bind="foreach: { data: $root.ReportItems.Datas[$TypeItemName.Key][$LpPageIds], as: '$Data' }">
+																<!-- ko if:$root.is_first_column($index()) -->
+																<td data-bind="text: $Data"></td>
+																<!-- /ko -->
+																<!-- ko ifnot:$root.is_first_column($index()) -->
+																<td data-bind="style: { width: 20 }, text: $Data"></td>
+																<!-- /ko -->
+															</tr>
+															</tbody>
+														</table>
+													</div>
+												</td>
+											</tr>
+										</table>
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	<!--△ 一覧 △-->
+	<!-- 備考 -->
+@*	<img height="30" alt="" src="../../Images/Common/sp.gif" width="100%" border="0"/>*@
+	<table class="info_table" width="758" border="0" cellspacing="1" cellpadding="3" style="margin-top: 20px;">
+		<tr class="info_item_bg">
+			<td align="left">
+				<table>
+					<tr>
+						<td>■対象</td>
+					</tr>
+					<tr>
+						<td>すべての項目はPCサイトおよびスマフォサイトが対象となります。</td>
+					</tr>
+				</table>
+				<br/>
+				<table>
+					<tr>
+						<td colspan="2">■項目説明</td>
+					</tr>
+					<tr>
+						<td class="w27">ページビュー数</td>
+						<td>
+							ユーザーがページを閲覧した回数（PV数）<br/>
+							※ページビュー数は再訪時にもカウントされるため、各LPページのページビュー数の比率は振り分け比率通りにならない可能性があります。
+						</td>
+					</tr>
+					<tr>
+						<td class="w27">コンバージョン数（注文実行時点）</td>
+						<td>ユーザーがそのページの商品を注文しようとした回数（CV数）</td>
+					</tr>
+					<tr>
+						<td class="w27">コンバージョン数（注文完了時点）</td>
+						<td>ユーザーがそのページの商品を注文し、完了した回数（CV数）</td>
+					</tr>
+					<tr>
+						<td class="w27">CVR（注文実行時点）</td>
+						<td>コンバージョン数（注文実行時点） / ページビュー数 × 100</td>
+					</tr>
+					<tr>
+						<td class="w27">CVR（注文完了時点）</td>
+						<td>コンバージョン数（注文完了時点） / ページビュー数 × 100</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+	</table>
+</div>
+<input type="hidden" id="AbTestId" value=@Model.PageId/>
+<input type="hidden" id="StartDate" value=@Model.StartDate/>
+<input type="hidden" id="EndDate" value=@Model.EndDate/>
+<style>
+	.Saturday {
+		background-color: #c9dbe6;
+	}
+
+	.Sunday {
+		background-color: #fde0e0;
+	}
+
+	.LinkButton {
+		text-align:center;
+		margin-top:3px;
+		margin-bottom:1px;
+		font-size: 11px;
+		text-decoration: underline;
+		cursor: pointer;
+	}
+</style>
+
+<script type="text/javascript">
+	var vm;
+	$(function() {
+		input_datepicker.ini();
+		initializeVm();
+
+		// バインド
+		ko.applyBindings(vm, $('#abTestAnalysisModal').get(0));
+
+		// ラジオボタン初期選択
+		$("input[value='PV']").attr("checked", true);
+
+		// レポート初期化
+		var report = new initializeReport();
+
+		// イベント設定
+		$("#Display").click(function() { updateChartData(); });
+		$('[name="ReportType"]:radio').change(function() { updateChartData(); });
+
+		// 入力値でグラフのデータを更新
+		function updateChartData(){
+			loading_animation.start();
+			var url = "@Url.Action("GetAnalysisActionResult", Constants.CONTROLLER_W2CMS_MANAGER_AB_TEST)";
+			var postData = {
+				"abTestId": $('#abTestIdsHidden').val(),
+				"startDate": $('#startDate').val(),
+				"endDate": $('#endDate').val()
+			};
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: JSON.stringify(postData),
+				dataType: 'json',
+				contentType: 'application/json'
+			}).done(function(json) {
+				setChartData(json);
+				updateVm(json);
+				loading_animation.end();
+			});
+		}
+
+		function initializeVm() {
+			var dates = @Html.Raw(Json.Encode(Model.TypeItems.Values.FirstOrDefault().DetailItems.Values.FirstOrDefault().DailyItems.Keys.ToArray()));
+			dates.unshift('');
+			var pageId = @Html.Raw(Json.Encode(Model.PageId));
+			var dispPageName = @Html.Raw(Json.Encode(Model.PageName)) + " ( " + @Html.Raw(Json.Encode(Model.PageId)) + " )";
+			var typeItems = @Html.Raw(Json.Encode(Model.TypeItems.ToArray()));
+			var typeNames = @Html.Raw(Json.Encode(Model.TypeItemNames.ToArray()));
+			var startDate = @Html.Raw(Json.Encode(Model.StartDate));
+			var endDate = @Html.Raw(Json.Encode(Model.EndDate));
+			var lpPageIds = @Html.Raw(Json.Encode(Model.TypeItems.Values.FirstOrDefault().DetailItems.Keys.ToArray()));
+			vm = {
+				AbTestId: ko.observable(pageId),
+				DispPageName: ko.observable(dispPageName),
+				StartDate: ko.observable(startDate),
+				EndDate: ko.observable(endDate),
+				TypeItemNames: ko.observableArray(typeNames),
+				ReportItems: {
+					TypeNames: {}, 
+					LpPageIds: ko.observableArray(lpPageIds), 
+					Dates: ko.observableArray(dates),
+					Datas:{}
+				},
+				get_formatted_month_day : function(strDate) {
+					if(!strDate)return '';
+					var date = new Date(strDate);
+					var m = (date.getMonth()+1);
+					var d = date.getDate();
+					return (m + '/' + d);
+				},
+				is_first_column : function(index) {
+					return (index == 0);
+				},
+				is_sunday : function(date) {
+					var dayOfWeek = new Date(date).getDay();
+					return (dayOfWeek == 0);
+				},
+				is_saturday : function(date) {
+					var dayOfWeek = new Date(date).getDay();
+					return (dayOfWeek == 6);
+				},
+				download_csv : function() {
+					location.href = 'DownloadCsv?abTestId=' + this.AbTestId() + '&strStartDate=' + this.StartDate() + '&strEndDate=' + this.EndDate();
+				}
+			}
+
+			// 一覧表示用の分析種別名作成
+			for (var i = 0; i < typeNames.length; i++) {
+				var reportTypeName = getFormattedDate(new Date(startDate)) + " ～ " + getFormattedDate(new Date(endDate)) + "　" + typeNames[i].Value;
+				vm["ReportItems"]["TypeNames"][typeNames[i].Key] = ko.observable(reportTypeName);
+			}
+
+			// 日次分析データ作成
+			var lpPageNamePairs = typeItems[0].Value.DetailItemNames;
+			for (var type = 0; type < typeItems.length; type++) {
+				vm["ReportItems"]["Datas"][typeItems[type].Key] = {};
+				var detailItem = typeItems[type].Value.DetailItems;
+
+				for (var key in detailItem) {
+					var dailyItems = Object.values(detailItem[key].DailyItems);
+					dailyItems.unshift(lpPageNamePairs[key]);
+					vm["ReportItems"]["Datas"][typeItems[type].Key][key] = ko.observableArray(dailyItems);
+				}
+			}
+		}
+
+		function updateVm(json) {
+			var startDate = json.StartDate.valueOf();
+			var endDate = json.EndDate.valueOf();
+			vm.StartDate(startDate);
+			vm.EndDate(endDate);
+
+			var typeItems = [];
+			var typeItemsEntries = Object.entries(json.TypeItems);
+			for(var i = 0; i< typeItemsEntries.length; i++) {
+				var obj = { Key: typeItemsEntries[i][0], Value: typeItemsEntries[i][1]}
+				typeItems.push(obj);
+			};
+
+			// 日付データをセット
+			var details = Object.values(typeItems[0].Value.DetailItems);
+			var dates = Object.keys(details[0].DailyItems);
+			dates.unshift('');
+			vm.ReportItems.Dates(dates);
+
+			// 一覧表示用の分析種別名をセット
+			var typeNames = [];
+			var typeNameEntries = Object.entries(json.TypeItemNames);
+			for(var i = 0; i< typeNameEntries.length; i++) {
+				var obj = { Key: typeNameEntries[i][0], Value: typeNameEntries[i][1]}
+				typeNames.push(obj);
+			};
+			for (var i = 0; i < typeNames.length; i++) {
+				var reportTypeName = getFormattedDate(new Date(startDate)) + " ～ " + getFormattedDate(new Date(endDate)) + "　" + typeNames[i].Value;
+				vm.ReportItems.TypeNames[typeNames[i].Key](reportTypeName);
+			}
+
+			// 日次分析データをセット
+			var lpPageNamePairs = typeItems[0].Value.DetailItemNames;
+			for (var type = 0; type < typeItems.length; type++) {
+				var detailItem = typeItems[type].Value.DetailItems;
+
+				for (var key in detailItem) {
+					var dailyItems = Object.values(detailItem[key].DailyItems);
+					dailyItems.unshift(lpPageNamePairs[key]);
+					vm.ReportItems.Datas[typeItems[type].Key][key](dailyItems);
+				}
+			}
+		}
+
+		// 選択されたレポート区分を取得
+		function getSelectedValueFromRadioButton() {
+			var reportTypes = document.getElementById('ReportTypes');
+			var selectedType = reportTypes.elements['ReportType'];
+			return selectedType;
+		}
+
+		// グラフのデータを設定
+		function setChartData(data) {
+			var selectedType = getSelectedValueFromRadioButton();
+			if (selectedType === void 0) return;
+
+			var chartData = data.TypeItems[selectedType.value].ReportCharts;
+			var chartTitle = data.TypeItemNames[selectedType.value];
+			report.Chart.data = chartData;
+			report.Chart.options.title.text = chartTitle;
+			report.Chart.update();
+		}
+
+		// レポート初期化
+		function initializeReport() {
+			var model = @Html.Raw(JsonConvert.SerializeObject(Model));
+			var selectedType = getSelectedValueFromRadioButton();
+			var data = model.TypeItems[selectedType.value].ReportCharts;
+			var title = model.TypeItemNames[selectedType.value];
+			var ctx = $("#abTestAnalysisGraph").get(0).getContext("2d");
+			this.Chart = CreateChart(ctx, "line", data, title);
+		}
+
+		// 日付をYYYY年MM月DD日のフォーマットに変換
+		function getFormattedDate(dt) {
+			var y = dt.getFullYear();
+			var m = ('00' + (dt.getMonth()+1)).slice(-2);
+			var d = ('00' + dt.getDate()).slice(-2);
+			return (y + '年' + m + '月' + d + '日');;
+		}
+	});
+</script>

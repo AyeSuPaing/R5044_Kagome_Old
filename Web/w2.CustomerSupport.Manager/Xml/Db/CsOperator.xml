@@ -1,0 +1,240 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : CSオペレータ系SQLステートメントXML(CsOperator.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsOperator>
+
+  <!-- 取得 -->
+  <Get>
+  <Statement>
+    <![CDATA[
+        SELECT  w2_CsOperator.*,
+                w2_ShopOperator.name,
+                w2_ShopOperator.valid_flg,
+                w2_CsOperatorAuthority.*
+          FROM  w2_CsOperator
+                INNER JOIN w2_ShopOperator ON
+                (
+                  w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT JOIN w2_CsOperatorAuthority ON
+                (
+                  w2_CsOperator.dept_id = w2_CsOperatorAuthority.dept_id
+                  AND
+                  w2_CsOperator.operator_authority_id = w2_CsOperatorAuthority.operator_authority_id
+                )
+         WHERE  w2_CsOperator.dept_id = @dept_id
+           AND  w2_CsOperator.operator_id = @operator_id
+      ]]>
+  </Statement>
+  <Parameter>
+    <Input Name="dept_id" Type="nvarchar" Size="30" />
+    <Input Name="operator_id" Type="nvarchar" Size="20" />
+  </Parameter>
+  </Get>
+  
+  <!-- 全件取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsOperator.*,
+                w2_ShopOperator.name,
+                w2_ShopOperator.valid_flg
+          FROM  w2_CsOperator
+                INNER JOIN w2_ShopOperator ON
+                (
+                  w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                )
+         WHERE  w2_CsOperator.dept_id = @dept_id
+      ORDER BY  w2_CsOperator.display_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAll>
+
+  <!-- 承認可能で有効なオペレータすべて取得 -->
+  <GetApprovalValidAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsOperator.*,
+                w2_ShopOperator.name,
+                w2_ShopOperator.valid_flg
+          FROM  w2_CsOperator
+                INNER JOIN w2_ShopOperator ON
+                (
+                  w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT JOIN w2_CsOperatorAuthority ON
+                (
+                  w2_CsOperator.dept_id = w2_CsOperatorAuthority.dept_id
+                  AND
+                  w2_CsOperator.operator_authority_id = w2_CsOperatorAuthority.operator_authority_id
+                )
+         WHERE  w2_CsOperator.dept_id = @dept_id
+           AND  w2_CsOperatorAuthority.permit_approval_flg = '1'
+           AND  w2_ShopOperator.valid_flg = '1'
+      ORDER BY  w2_CsOperator.display_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetApprovalValidAll>
+
+  <!-- メール送信可能で有効なオペレータすべて取得 -->
+  <GetMailSendableValidAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsOperator.*,
+                w2_ShopOperator.name,
+                w2_ShopOperator.valid_flg
+          FROM  w2_CsOperator
+                INNER JOIN w2_ShopOperator ON
+                (
+                  w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT JOIN w2_CsOperatorAuthority ON
+                (
+                  w2_CsOperator.dept_id = w2_CsOperatorAuthority.dept_id
+                  AND
+                  w2_CsOperator.operator_authority_id = w2_CsOperatorAuthority.operator_authority_id
+                )
+         WHERE  w2_CsOperator.dept_id = @dept_id
+           AND  w2_CsOperatorAuthority.permit_mail_send_flg = '1'
+           AND  w2_ShopOperator.valid_flg = '1'
+      ORDER BY  w2_CsOperator.display_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMailSendableValidAll>
+  
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CsOperator
+             (  
+                dept_id,
+                operator_id,
+                operator_authority_id,
+                mail_from_id,
+                notify_info_flg,
+                notify_warn_flg,
+                mail_addr,
+                display_order,
+                date_created,
+                date_changed,
+                last_changed
+              )
+              VALUES
+              (
+                @dept_id,
+                @operator_id,
+                @operator_authority_id,
+                @mail_from_id,
+                @notify_info_flg,
+                @notify_warn_flg,
+                @mail_addr,
+                @display_order,
+                getdate(),
+                getdate(),
+                @last_changed
+              )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="operator_authority_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_from_id" Type="nvarchar" Size="10" />
+      <Input Name="notify_info_flg" Type="nvarchar" Size="1" />
+      <Input Name="notify_warn_flg" Type="nvarchar" Size="1" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsOperator
+           SET  operator_authority_id = @operator_authority_id,
+                mail_from_id = @mail_from_id,
+                notify_info_flg = @notify_info_flg,
+                notify_warn_flg = @notify_warn_flg,
+                mail_addr = @mail_addr,
+                display_order = @display_order,
+                date_changed = getdate(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="operator_authority_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_from_id" Type="nvarchar" Size="10" />
+      <Input Name="notify_info_flg" Type="nvarchar" Size="1" />
+      <Input Name="notify_warn_flg" Type="nvarchar" Size="1" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE
+          FROM  w2_CsOperator
+         WHERE  w2_CsOperator.dept_id = @dept_id
+           AND  w2_CsOperator.operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Delete>
+
+  <!-- オペレータ情報を削除する前のチェック -->
+  <DeleteCheck>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsOperator.operator_id
+          FROM  w2_CsOperator
+                INNER JOIN  w2_CsIncident ON
+                (
+                  w2_CsOperator.operator_id = w2_CsIncident.operator_id
+                )
+         WHERE  w2_CsOperator.dept_id = @dept_id
+           AND  w2_CsOperator.operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </DeleteCheck>
+
+</CsOperator>

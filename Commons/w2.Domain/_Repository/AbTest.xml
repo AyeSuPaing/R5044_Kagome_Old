@@ -1,0 +1,176 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ABテスト系SQLステートメントXML (AbTest.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<AbTest>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_AbTest.*
+          FROM  w2_AbTest
+         WHERE  1 = 1
+                <@@hasval:search_word@@>
+                 AND  (
+                        w2_AbTest.ab_test_id LIKE '%' + @search_word + '%'
+                        OR
+                        w2_AbTest.ab_test_title LIKE '%' + @search_word + '%'
+                      )
+                </@@hasval:search_word@@>
+        ORDER BY w2_AbTest.date_changed DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="search_word" Type="nvarchar" Size="256" />
+    </Parameter>
+  </Search>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_AbTest
+         WHERE  ab_test_id = @ab_test_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="ab_test_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- ABテストアイテム取得 -->
+  <GetAllItemByAbTestId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_AbTestItem
+         WHERE  ab_test_id = @ab_test_id
+        ORDER BY page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="ab_test_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllItemByAbTestId>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_AbTest
+                (
+                  ab_test_id
+                  ,ab_test_title
+                  ,public_status
+                  ,public_start_datetime
+                  ,public_end_datetime
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @ab_test_id
+                  ,@ab_test_title
+                  ,@public_status
+                  ,@public_start_datetime
+                  ,@public_end_datetime
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="ab_test_id" Type="nvarchar" Size="30" />
+      <Input Name="ab_test_title" Type="nvarchar" Size="256" />
+      <Input Name="public_status" Type="nvarchar" Size="20" />
+      <Input Name="public_start_datetime" Type="datetime" />
+      <Input Name="public_end_datetime" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- ABテストアイテム登録 -->
+  <InsertItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_AbTestItem
+                (
+                  ab_test_id
+                  ,item_no
+                  ,page_id
+                  ,distribution_rate
+                )
+        VALUES  (
+                  @ab_test_id
+                  ,@item_no
+                  ,@page_id
+                  ,@distribution_rate
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="ab_test_id" Type="nvarchar" Size="30" />
+      <Input Name="item_no" Type="nvarchar" Size="30" />
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="distribution_rate" Type="int" />
+    </Parameter>
+  </InsertItem>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_AbTest
+           SET  ab_test_title = @ab_test_title
+                ,public_status = @public_status
+                ,public_start_datetime = @public_start_datetime
+                ,public_end_datetime = @public_end_datetime
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  ab_test_id = @ab_test_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="ab_test_id" Type="nvarchar" Size="30" />
+      <Input Name="ab_test_title" Type="nvarchar" Size="256" />
+      <Input Name="public_status" Type="nvarchar" Size="20" />
+      <Input Name="public_start_datetime" Type="datetime" />
+      <Input Name="public_end_datetime" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_AbTest
+         WHERE  ab_test_id = @ab_test_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="ab_test_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- ABテストアイテム削除 -->
+  <DeleteAllItemByAbTestId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_AbTestItem
+         WHERE  ab_test_id = @ab_test_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="ab_test_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteAllItemByAbTestId>
+
+</AbTest>

@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+INSERT w2_MailTemplate
+(
+shop_id,
+mail_id,
+mail_name,
+mail_from,
+mail_subject,
+mail_body,
+mail_subject_mobile,
+mail_body_mobile,
+del_flg,
+last_changed
+)
+VALUES
+(
+'0',
+'10000060',
+'ユーザー統合情報作成バッチメール【管理者向け】',
+'pkg@w2solution.co.jp',
+'ユーザー統合情報作成バッチメール【管理者向け】',
+'注意：当メール本文に内容を記述しても、システムによって上書きします。',
+'',
+'',
+'0',
+'Insert'
+);
+
+ALTER TABLE [w2_User] ADD [integrated_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+
+ALTER TABLE [w2_WorkUser] ADD [integrated_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_UserIntegration]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_UserIntegration]
+GO
+/*
+=========================================================================================================
+  Module      : ユーザー統合情報 (w2_UserIntegration.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_UserIntegration] (
+	[user_integration_no] [bigint] IDENTITY (1, 1) NOT NULL,
+	[status] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_UserIntegration] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_UserIntegration] PRIMARY KEY  CLUSTERED
+	(
+		[user_integration_no]
+	) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_UserIntegration_1] ON [dbo].[w2_UserIntegration]([status]) ON [PRIMARY]
+GO
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_UserIntegrationHistory]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_UserIntegrationHistory]
+GO
+/*
+=========================================================================================================
+  Module      : ユーザー統合履歴情報 (w2_UserIntegrationHistory.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_UserIntegrationHistory] (
+	[user_integration_no] [bigint] NOT NULL,
+	[user_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[branch_no] [int] NOT NULL DEFAULT (1),
+	[table_name] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[primary_key1] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[primary_key2] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[primary_key3] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[primary_key4] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[primary_key5] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_UserIntegrationHistory] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_UserIntegrationHistory] PRIMARY KEY  CLUSTERED
+	(
+		[user_integration_no],
+		[user_id],
+		[branch_no]
+	) ON [PRIMARY]
+GO
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_UserIntegrationUser]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_UserIntegrationUser]
+GO
+/*
+=========================================================================================================
+  Module      : ユーザー統合ユーザー情報 (w2_UserIntegrationUser.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_UserIntegrationUser] (
+	[user_integration_no] [bigint] NOT NULL,
+	[user_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[representative_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_UserIntegrationUser] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_UserIntegrationUser] PRIMARY KEY  CLUSTERED
+	(
+		[user_integration_no],
+		[user_id]
+	) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_UserIntegrationUser_1] ON [dbo].[w2_UserIntegrationUser]([user_id]) ON [PRIMARY]
+GO
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

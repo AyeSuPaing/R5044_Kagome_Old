@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : リアル店舗系SQLステートメントXML(RealShop.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<RealShop>
+
+  <!-- リアル店舗商品在庫一覧取得 -->
+  <GetRealShopList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_RealShop.*,
+                    w2_RealShopProductStock.product_id,
+                    w2_RealShopProductStock.variation_id,
+                    w2_RealShopProductStock.real_shop_stock,
+                    w2_RealShopProductStock.date_changed AS date_changed_real_stock
+          FROM  w2_RealShop
+                    INNER JOIN  w2_RealShopProductStock ON
+                    (
+                      w2_RealShop.real_shop_id = w2_RealShopProductStock.real_shop_id
+                    )
+                    INNER JOIN  w2_ProductView ON
+                    (
+                      w2_ProductView.shop_id = @shop_id
+                      AND
+                      w2_RealShopProductStock.product_id = w2_ProductView.product_id
+                      AND
+                      w2_RealShopProductStock.variation_id = w2_ProductView.variation_id
+                    )
+          [[ REALSHOP_SEARCH_WHERE ]]
+          [[ REALSHOP_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="in_stock" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetRealShopList>
+
+</RealShop>

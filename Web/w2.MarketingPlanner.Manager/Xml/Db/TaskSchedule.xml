@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : タスクスケジュール系SQLステートメントXML(TaskSchedule.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<TaskSchedule>
+
+  <!-- タスクスケジュール取得 -->
+  <GetTaskSchedule>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_TaskSchedule.*,
+                w2_MailDistSetting.last_errorexcept_count,
+                w2_MailDistSetting.last_mobilemailexcept_count,
+                w2_MailDistSetting.last_duplicate_except_count
+          FROM  w2_TaskSchedule
+                LEFT JOIN w2_MailDistSetting ON
+                (
+                  w2_TaskSchedule.dept_id = w2_MailDistSetting.dept_id
+                  AND
+                  w2_TaskSchedule.action_master_id = w2_MailDistSetting.maildist_id
+                )
+         WHERE  w2_TaskSchedule.dept_id = @dept_id
+           AND  w2_TaskSchedule.action_kbn = @action_kbn
+           AND  w2_TaskSchedule.action_master_id = @action_master_id
+           AND  w2_TaskSchedule.action_no = @action_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+    </Parameter>
+  </GetTaskSchedule>
+
+  <!-- タスクスケジュール停止 -->
+  <SetTaskScheduleStopped>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_TaskSchedule
+           SET  stop_flg = '1',
+                last_changed = @last_changed
+         WHERE  schedule_date <= getdate()
+           AND  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           AND  execute_status <> '10'     -- 完了してないもの全て停止
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </SetTaskScheduleStopped>
+
+  <!-- タスクスケジュール削除 -->
+  <DeleteTaskSchedule>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_TaskSchedule
+         WHERE  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           --残ってしまうと次回新タスク登録時に一意制約違反となりそうなため全削除としておく★
+           --AND  execute_status IN ('00', '10')
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteTaskSchedule>
+
+  <!-- 未実行タスクスケジュール削除 -->
+  <DeleteTaskScheduleUnexecuted>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_TaskSchedule
+         WHERE  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           AND  execute_status = '00'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteTaskScheduleUnexecuted>
+
+  <!-- 初回タスクスケジュール作成 -->
+  <InsertFirstTaskSchedule>
+    <Statement>
+      <![CDATA[
+        DECLARE @schedule_date datetime
+      
+        -- スケジュール実行？
+        IF @exec_timing = '02'
+        BEGIN
+          -------------------------------------------
+          -- 毎日？
+          -------------------------------------------
+          IF @schedule_kbn = '01'
+          BEGIN
+            -- とりあえず今日のスケジュールを格納
+            SET @schedule_date = CONVERT(datetime, DATENAME(yy, GETDATE()) + '/' + DATENAME(mm, GETDATE()) + '/' + DATENAME(dd, GETDATE()) + ' ' + CONVERT(nvarchar, @schedule_hour) + ':' + CONVERT(nvarchar, @schedule_minute) + ':' + CONVERT(nvarchar, @schedule_second))
+          
+            -- それがもし過去なら明日にする
+            IF GETDATE() > @schedule_date
+            BEGIN
+              SET @schedule_date = DATEADD(dd, 1, @schedule_date)
+            END
+          END
+          
+          -------------------------------------------
+          -- 毎週？
+          -------------------------------------------
+          IF @schedule_kbn = '02'
+          BEGIN
+            -- とりあえず今日のスケジュールを格納
+            SET @schedule_date = CONVERT(datetime, DATENAME(yy, GETDATE()) + '/' + DATENAME(mm, GETDATE()) + '/' + DATENAME(dd, GETDATE()) + ' ' + CONVERT(nvarchar, @schedule_hour) + ':' + CONVERT(nvarchar, @schedule_minute) + ':' + CONVERT(nvarchar, @schedule_second))
+            
+            -- 対象日付セット
+            SET @schedule_date = 
+              CASE
+                WHEN @schedule_day_of_week = 'Sunday' THEN DATEADD(dd,  - DATEPART(weekday, @schedule_date) + 1 , @schedule_date)
+                WHEN @schedule_day_of_week = 'Monday' THEN DATEADD(dd, - DATEPART(weekday, @schedule_date) + 2, @schedule_date)
+                WHEN @schedule_day_of_week = 'Tuesday' THEN DATEADD(dd, - DATEPART(weekday, @schedule_date) + 3, @schedule_date)
+                WHEN @schedule_day_of_week = 'Wednesday' THEN DATEADD(dd, - DATEPART(weekday, @schedule_date) + 4, @schedule_date)
+                WHEN @schedule_day_of_week = 'Thursday' THEN DATEADD(dd, - DATEPART(weekday, @schedule_date) + 5, @schedule_date)
+                WHEN @schedule_day_of_week = 'Friday' THEN DATEADD(dd, - DATEPART(weekday, @schedule_date) + 6, @schedule_date)
+                WHEN @schedule_day_of_week = 'Saturday' THEN DATEADD(dd, - DATEPART(weekday, @schedule_date) + 7, @schedule_date)
+              END
+            
+            -- それがもし過去なら来週にする
+            IF GETDATE() >@schedule_date
+            BEGIN
+              SET @schedule_date = DATEADD(dd, 7, @schedule_date)
+            END
+          END
+          
+          -------------------------------------------
+          -- 毎月？
+          -------------------------------------------
+          IF @schedule_kbn = '03'
+          BEGIN
+            -- とりあえず今月のスケジュールを格納
+            SET @schedule_date = CONVERT(datetime, DATENAME(yy, GETDATE()) + '/' + DATENAME(mm, GETDATE()) + '/' + CONVERT(nvarchar, @schedule_day) + ' ' + CONVERT(nvarchar, @schedule_hour) + ':' + CONVERT(nvarchar, @schedule_minute) + ':' + CONVERT(nvarchar, @schedule_second))
+            
+            -- それがもし過去なら来月にする
+            IF GETDATE() >@schedule_date
+            BEGIN
+              SET @schedule_date = DATEADD(mm, 1, @schedule_date)
+            END
+          END
+          
+          -------------------------------------------
+          -- 一回のみ？
+          -------------------------------------------
+          IF @schedule_kbn = '05'
+          BEGIN
+            -- スケジュールを格納
+            SET @schedule_date = CONVERT(datetime, CONVERT(nvarchar, @schedule_year) + '/' + CONVERT(nvarchar, @schedule_month) + '/' + CONVERT(nvarchar, @schedule_day) + ' ' + CONVERT(nvarchar, @schedule_hour) + ':' + CONVERT(nvarchar, @schedule_minute) + ':' + CONVERT(nvarchar, @schedule_second))
+          END
+          
+          -------------------------------------------
+          -- マスタNO発行
+          -------------------------------------------
+          DECLARE @ACTION_NO int
+          SELECT  @ACTION_NO = ISNULL(MAX(action_no), 0) + 1
+            FROM  w2_TaskSchedule
+           WHERE  dept_id = @dept_id
+             AND  action_kbn = @action_kbn
+             AND  action_master_id = @action_master_id
+          
+          -------------------------------------------
+          -- インサート
+          -------------------------------------------
+          INSERT  w2_TaskSchedule
+                  (
+                  schedule_date,
+                  dept_id,
+                  action_kbn,
+                  action_master_id,
+                  action_no,
+                  execute_status,
+                  last_changed
+                  )
+          VALUES  (
+                  @schedule_date,
+                  @dept_id,
+                  @action_kbn,
+                  @action_master_id,
+                  @ACTION_NO,
+                  '00',         -- 初期状態
+                  @last_changed
+                  )
+        END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="10" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="schedule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="schedule_day_of_week" Type="nvarchar" Size="10" />
+      <Input Name="schedule_year" Type="int" />
+      <Input Name="schedule_month" Type="int" />
+      <Input Name="schedule_day" Type="int" />
+      <Input Name="schedule_hour" Type="int" />
+      <Input Name="schedule_minute" Type="int" />
+      <Input Name="schedule_second" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+    </Parameter>
+  </InsertFirstTaskSchedule>
+
+  <!-- 即時実行用タスクスケジュールインサート -->
+  <InsertTaskScheduleForExecute>
+    <Statement>
+      <![CDATA[
+        DECLARE @ACTION_NO int
+        
+        -- マスタNO発行          
+        SELECT  @ACTION_NO = ISNULL(MAX(action_no), 0) + 1
+          FROM  w2_TaskSchedule
+         WHERE  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+        
+        -- 未登録であれば登録
+        INSERT  w2_TaskSchedule
+                (
+                schedule_date,
+                dept_id,
+                action_kbn,
+                action_master_id,
+                action_no,
+                execute_status,
+                last_changed
+                )
+        VALUES  (
+                GETDATE(),
+                @dept_id,
+                @action_kbn,
+                @action_master_id,
+                @ACTION_NO,
+                '00',
+                @last_changed
+                )
+                
+        -- action_noを受け取りたいためw2_TaskScheduleを返す
+        SELECT  *
+          FROM  w2_TaskSchedule
+         WHERE  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           AND  action_no = @ACTION_NO
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertTaskScheduleForExecute>
+
+  <!-- 最終配信件数取得 -->
+  <GetTaskScheduleLastProgress>
+    <Statement>
+      <![CDATA[           
+        SELECT TOP 1
+                w2_TaskSchedule.progress
+          FROM  w2_TaskSchedule
+         WHERE  w2_TaskSchedule.dept_id = @dept_id
+           AND  w2_TaskSchedule.action_kbn = @action_kbn
+           AND  w2_TaskSchedule.action_master_id = @action_master_id
+           AND  (
+                  w2_TaskSchedule.execute_status = '10'
+                  OR
+                  w2_TaskSchedule.execute_status = '05'
+                )
+        ORDER BY w2_TaskSchedule.schedule_date DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetTaskScheduleLastProgress>
+  
+</TaskSchedule>

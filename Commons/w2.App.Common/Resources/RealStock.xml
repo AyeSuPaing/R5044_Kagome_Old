@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : リアル店舗在庫処理SQLステートメントXML(RealStock.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2014 All Rights Reserved.
+=========================================================================================================
+-->
+<RealStock>
+
+  <!-- リアル店舗在庫情報取得 -->
+  <GetRealProductStock>
+    <Statement>
+      <![CDATA[
+          SELECT  w2_RealShopProductStock.*
+            FROM  w2_RealShopProductStock
+           WHERE  w2_RealShopProductStock.real_shop_id = @real_shop_id
+             AND  w2_RealShopProductStock.product_id = @product_id
+             AND  w2_RealShopProductStock.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetRealProductStock>
+
+  <!-- リアル店舗在庫情報追加 -->
+  <InsertRealProductStock>
+    <Statement>
+      <![CDATA[
+          INSERT  w2_RealShopProductStock
+                  (
+                    real_shop_id,
+                    product_id,
+                    variation_id,
+                    real_shop_stock,
+                    last_changed
+                  )
+          VALUES  (
+                    @real_shop_id,
+                    @product_id,
+                    @variation_id,
+                    @real_shop_stock,
+                    @last_changed
+                  )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="real_shop_stock" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertRealProductStock>
+
+  <!-- リアル店舗在庫情報更新 -->
+  <UpdateRealProductStock>
+    <Statement>
+      <![CDATA[
+          UPDATE  w2_RealShopProductStock
+             SET  w2_RealShopProductStock.real_shop_stock = @real_shop_stock,
+                  w2_RealShopProductStock.date_changed = GETDATE(),
+                  w2_RealShopProductStock.last_changed = @last_changed
+           WHERE  w2_RealShopProductStock.real_shop_id = @real_shop_id
+             AND  w2_RealShopProductStock.product_id = @product_id
+             AND  w2_RealShopProductStock.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="real_shop_stock" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateRealProductStock>  
+
+  <!-- リアル店舗在庫情報削除（指定日時以前のデータを削除） -->
+  <DeleteRealProductStockBeforeTime>
+    <Statement>
+      <![CDATA[
+          DELETE  w2_RealShopProductStock
+           WHERE  w2_RealShopProductStock.date_changed <= @beforetime
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="beforetime" Type="datetime" />
+    </Parameter>
+  </DeleteRealProductStockBeforeTime>
+  
+</RealStock>

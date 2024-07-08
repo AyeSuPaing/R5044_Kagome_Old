@@ -1,0 +1,397 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : リアル店舗系SQLステートメントXML(RealShop.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<RealShop>
+  <!-- リアル店舗一覧取得 -->
+  <GetRealShopList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_RealShop.*
+          FROM  (
+                  SELECT  w2_RealShop.real_shop_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ REALSHOP_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_RealShop
+                          [[ REALSHOP_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_RealShop ON
+                (
+                  RowIndex.real_shop_id = w2_RealShop.real_shop_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="name_kana_like_escaped" Type="nvarchar" Size="400" />
+      <Input Name="tel_like_escaped" Type="nvarchar" Size="32" />
+      <Input Name="mail_addr_like_escaped" Type="nvarchar" Size="512" />      
+      <Input Name="zip_like_escaped" Type="nvarchar" Size="16" />
+      <Input Name="addr_like_escaped" Type="nvarchar" Size="800" />
+      <Input Name="fax_like_escaped" Type="nvarchar" Size="32" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetRealShopList>
+
+  <!-- リアル店舗情報該当件数取得 -->
+  <GetRealShopCount>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(COUNT(w2_RealShop.real_shop_id), 0) AS row_count
+          FROM  w2_RealShop
+                [[ REALSHOP_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="name_kana_like_escaped" Type="nvarchar" Size="400" />
+      <Input Name="tel_like_escaped" Type="nvarchar" Size="32" />
+      <Input Name="mail_addr_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="zip_like_escaped" Type="nvarchar" Size="16" />
+      <Input Name="addr_like_escaped" Type="nvarchar" Size="800" />
+      <Input Name="fax_like_escaped" Type="nvarchar" Size="32" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetRealShopCount>
+
+  <!-- リアル店舗情報マスタ取得 -->
+  <GetRealShopMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_RealShop
+                [[ REALSHOP_SEARCH_WHERE ]]
+                [[ REALSHOP_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="name_kana_like_escaped" Type="nvarchar" Size="400" />
+      <Input Name="tel_like_escaped" Type="nvarchar" Size="32" />
+      <Input Name="mail_addr_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="zip_like_escaped" Type="nvarchar" Size="16" />
+      <Input Name="addr_like_escaped" Type="nvarchar" Size="800" />
+      <Input Name="fax_like_escaped" Type="nvarchar" Size="32" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetRealShopMaster>
+
+  <!-- リアル店舗情報マスタ取得 -->
+  <GetRealShopAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_RealShop.*
+          FROM  w2_RealShop
+         WHERE  w2_RealShop.valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetRealShopAll>
+
+  <!-- リアル店舗情報を取得 -->
+  <GetRealShopInfoByRealShopId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_RealShop.*
+          FROM  w2_RealShop
+         WHERE  w2_RealShop.real_shop_id = @real_shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetRealShopInfoByRealShopId>
+
+  <!-- リアル店舗情報登録 -->
+  <InsertRealShop>
+    <Statement>
+      <![CDATA[
+          INSERT INTO w2_RealShop (
+          w2_RealShop.real_shop_id,
+          w2_RealShop.name,
+          w2_RealShop.name_kana,
+          w2_RealShop.desc1_kbn_pc,
+          w2_RealShop.desc1_pc,
+          w2_RealShop.desc2_kbn_pc,
+          w2_RealShop.desc2_pc,
+          w2_RealShop.desc1_kbn_sp,
+          w2_RealShop.desc1_sp,
+          w2_RealShop.desc2_kbn_sp,
+          w2_RealShop.desc2_sp,
+          w2_RealShop.zip,
+          w2_RealShop.zip1,
+          w2_RealShop.zip2,
+          w2_RealShop.addr,
+          w2_RealShop.addr1,
+          w2_RealShop.addr2,
+          w2_RealShop.addr3,
+          w2_RealShop.addr4,
+          w2_RealShop.tel,
+          w2_RealShop.tel_1,
+          w2_RealShop.tel_2,
+          w2_RealShop.tel_3,
+          w2_RealShop.fax,
+          w2_RealShop.fax_1,
+          w2_RealShop.fax_2,
+          w2_RealShop.fax_3,
+          w2_RealShop.url,
+          w2_RealShop.mail_addr,
+          w2_RealShop.opening_hours,
+          w2_RealShop.display_order,
+          w2_RealShop.valid_flg,
+          w2_RealShop.del_flg,
+          w2_RealShop.date_created,
+          w2_RealShop.date_changed,
+          w2_RealShop.last_changed,
+          w2_RealShop.country_iso_code,
+          w2_RealShop.country_name,
+          w2_RealShop.addr5,
+          w2_RealShop.area_id,
+          w2_RealShop.brand_id,
+          w2_RealShop.longitude,
+          w2_RealShop.latitude
+          )
+        VALUES (
+          @real_shop_id,
+           @name,
+           @name_kana,
+           @desc1_kbn_pc,
+           @desc1_pc,
+           @desc2_kbn_pc,
+           @desc2_pc,
+           @desc1_kbn_sp,
+           @desc1_sp,
+           @desc2_kbn_sp,
+           @desc2_sp,
+           @zip,
+           @zip1,
+           @zip2,
+           @addr,
+           @addr1,
+           @addr2,
+           @addr3,
+           @addr4,
+           @tel,
+           @tel_1,
+           @tel_2,
+           @tel_3,
+           @fax,
+           @fax_1,
+           @fax_2,
+           @fax_3,
+           @url,
+           @mail_addr,
+           @opening_hours,
+           @display_order,
+           @valid_flg,
+           0,
+           GETDATE(),
+           GETDATE(),
+           '',
+           @country_iso_code,
+           @country_name,
+           @addr5,
+           @area_id,
+           @brand_id,
+           @longitude,
+           @latitude
+           )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="name" Type="nvarchar" Size="100" />
+      <Input Name="name_kana" Type="nvarchar" Size="200" />
+      <Input Name="desc1_kbn_pc" Type="nvarchar" Size="1" />
+      <Input Name="desc1_pc" Type="nvarchar" Size="MAX" />
+      <Input Name="desc2_kbn_pc" Type="nvarchar" Size="1" />
+      <Input Name="desc2_pc" Type="nvarchar" Size="MAX" />
+      <Input Name="desc1_kbn_sp" Type="nvarchar" Size="1" />
+      <Input Name="desc1_sp" Type="nvarchar" Size="MAX" />
+      <Input Name="desc2_kbn_sp" Type="nvarchar" Size="1" />
+      <Input Name="desc2_sp" Type="nvarchar" Size="MAX" />
+      <Input Name="zip" Type="nvarchar" Size="8" />
+      <Input Name="zip1" Type="nvarchar" Size="3" />
+      <Input Name="zip2" Type="nvarchar" Size="4" />
+      <Input Name="addr" Type="nvarchar" Size="400" />
+      <Input Name="addr1" Type="nvarchar" Size="100" />
+      <Input Name="addr2" Type="nvarchar" Size="100" />
+      <Input Name="addr3" Type="nvarchar" Size="100" />
+      <Input Name="addr4" Type="nvarchar" Size="100" />
+      <Input Name="tel" Type="nvarchar" Size="16" />
+      <Input Name="tel_1" Type="nvarchar" Size="6" />
+      <Input Name="tel_2" Type="nvarchar" Size="4" />
+      <Input Name="tel_3" Type="nvarchar" Size="4" />
+      <Input Name="fax" Type="nvarchar" Size="16" />
+      <Input Name="fax_1" Type="nvarchar" Size="6" />
+      <Input Name="fax_2" Type="nvarchar" Size="4" />
+      <Input Name="fax_3" Type="nvarchar" Size="4" />
+      <Input Name="url" Type="nvarchar" Size="MAX" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="opening_hours" Type="nvarchar" Size="MAX" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="country_iso_code" Type="nvarchar" Size="3" />
+      <Input Name="country_name" Type="nvarchar" Size="100" />
+      <Input Name="addr5" Type="nvarchar" Size="100" />
+      <Input Name="area_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="longitude" Type="decimal" />
+      <Input Name="latitude" Type="decimal" />
+    </Parameter>
+  </InsertRealShop>
+  
+  <!-- リアル店舗情報を更新 -->
+  <UpdateRealShop>
+    <Statement>
+      <![CDATA[
+          UPDATE w2_RealShop SET 
+                w2_RealShop.name = @name,
+                w2_RealShop.name_kana= @name_kana,
+                w2_RealShop.desc1_kbn_pc = @desc1_kbn_pc,
+                w2_RealShop.desc1_pc = @desc1_pc,
+                w2_RealShop.desc2_kbn_pc = @desc2_kbn_pc,
+                w2_RealShop.desc2_pc = @desc2_pc,
+                w2_RealShop.desc1_kbn_sp = @desc1_kbn_sp,
+                w2_RealShop.desc1_sp = @desc1_sp,
+                w2_RealShop.desc2_kbn_sp = @desc2_kbn_sp,
+                w2_RealShop.desc2_sp = @desc2_sp,
+                w2_RealShop.zip= @zip,
+                w2_RealShop.zip1 = @zip1,
+                w2_RealShop.zip2 = @zip2,
+                w2_RealShop.addr = @addr,
+                w2_RealShop.addr1= @addr1,
+                w2_RealShop.addr2= @addr2,
+                w2_RealShop.addr3= @addr3,
+                w2_RealShop.addr4= @addr4,
+                w2_RealShop.tel= @tel,
+                w2_RealShop.tel_1= @tel_1,
+                w2_RealShop.tel_2= @tel_2,
+                w2_RealShop.tel_3= @tel_3,
+                w2_RealShop.fax= @fax,
+                w2_RealShop.fax_1= @fax_1,
+                w2_RealShop.fax_2= @fax_2,
+                w2_RealShop.fax_3= @fax_3,
+                w2_RealShop.url= @url,
+                w2_RealShop.mail_addr= @mail_addr,
+                w2_RealShop.opening_hours = @opening_hours,
+                w2_RealShop.display_order = @display_order,
+                w2_RealShop.valid_flg= @valid_flg,
+                w2_RealShop.date_changed = GETDATE(),
+                w2_RealShop.last_changed = @last_changed,
+                w2_RealShop.country_iso_code = @country_iso_code,
+                w2_RealShop.country_name = @country_name,
+                w2_RealShop.addr5 = @addr5,
+                w2_RealShop.area_id = @area_id,
+                w2_RealShop.brand_id = @brand_id,
+                w2_RealShop.longitude = @longitude,
+                w2_RealShop.latitude = @latitude
+          WHERE w2_RealShop.real_shop_id= @real_shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="name" Type="nvarchar" Size="100" />
+      <Input Name="name_kana" Type="nvarchar" Size="200" />
+      <Input Name="desc1_kbn_pc" Type="nvarchar" Size="1" />
+      <Input Name="desc1_pc" Type="nvarchar" Size="MAX" />
+      <Input Name="desc2_kbn_pc" Type="nvarchar" Size="1" />
+      <Input Name="desc2_pc" Type="nvarchar" Size="MAX" />
+      <Input Name="desc1_kbn_sp" Type="nvarchar" Size="1" />
+      <Input Name="desc1_sp" Type="nvarchar" Size="MAX" />
+      <Input Name="desc2_kbn_sp" Type="nvarchar" Size="1" />
+      <Input Name="desc2_sp" Type="nvarchar" Size="MAX" />
+      <Input Name="zip" Type="nvarchar" Size="8" />
+      <Input Name="zip1" Type="nvarchar" Size="3" />
+      <Input Name="zip2" Type="nvarchar" Size="4" />
+      <Input Name="addr" Type="nvarchar" Size="400" />
+      <Input Name="addr1" Type="nvarchar" Size="100" />
+      <Input Name="addr2" Type="nvarchar" Size="100" />
+      <Input Name="addr3" Type="nvarchar" Size="100" />
+      <Input Name="addr4" Type="nvarchar" Size="100" />
+      <Input Name="tel" Type="nvarchar" Size="16" />
+      <Input Name="tel_1" Type="nvarchar" Size="6" />
+      <Input Name="tel_2" Type="nvarchar" Size="4" />
+      <Input Name="tel_3" Type="nvarchar" Size="4" />
+      <Input Name="fax" Type="nvarchar" Size="16" />
+      <Input Name="fax_1" Type="nvarchar" Size="6" />
+      <Input Name="fax_2" Type="nvarchar" Size="4" />
+      <Input Name="fax_3" Type="nvarchar" Size="4" />
+      <Input Name="url" Type="nvarchar" Size="MAX" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="opening_hours" Type="nvarchar" Size="MAX" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="country_iso_code" Type="nvarchar" Size="3" />
+      <Input Name="country_name" Type="nvarchar" Size="100" />
+      <Input Name="addr5" Type="nvarchar" Size="100" />
+      <Input Name="area_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="longitude" Type="decimal" />
+      <Input Name="latitude" Type="decimal" />
+    </Parameter>
+  </UpdateRealShop>
+
+  <!-- リアル店舗情報削除 -->
+  <DeleteRealShop>
+    <Statement>
+      <![CDATA[
+          DELETE w2_RealShop 
+           WHERE w2_RealShop.real_shop_id= @real_shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteRealShop>
+
+  <!-- 重複チェック（リアル店舗情報登録時）-->
+  <CheckDuplicationInsertRealShopId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(w2_RealShop.real_shop_id) AS real_shop_id_count 
+          FROM  w2_RealShop 
+         WHERE  w2_RealShop.real_shop_id = @real_shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationInsertRealShopId>
+
+  <!--リアル店舗ID存在かどうかチェックする -->
+  <CheckValidRealShopId>
+    <Statement>
+      <![CDATA[
+      SELECT  COUNT(*) AS count_row
+        FROM  w2_RealShop
+       WHERE  w2_RealShop.real_shop_id = @real_shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckValidRealShopId>
+</RealShop>

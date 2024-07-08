@@ -1,0 +1,220 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品在庫履歴マスタ系SQLステートメントXML (ProductStockHistory.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductStockHistory>
+
+  <!-- 検索ヒット件数取得 -->
+  <!--GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_ProductStockHistory
+                [[ PRODUCTSTOCKHISTORY_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount-->
+  
+  <!-- 検索 -->
+  <!--Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductStockHistory.*
+          FROM  (
+                  SELECT  w2_ProductStockHistory.history_no,
+                          w2_ProductStockHistory.shop_id,
+                          w2_ProductStockHistory.product_id,
+                          w2_ProductStockHistory.variation_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCTSTOCKHISTORY_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductStockHistory
+                          [[ PRODUCTSTOCKHISTORY_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductStockHistory ON
+                (
+                  RowIndex.history_no = w2_ProductStockHistory.history_no
+                  AND
+                  RowIndex.shop_id = w2_ProductStockHistory.shop_id
+                  AND
+                  RowIndex.product_id = w2_ProductStockHistory.product_id
+                  AND
+                  RowIndex.variation_id = w2_ProductStockHistory.variation_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search-->
+  
+  <!-- 取得 -->
+  <!--Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductStockHistory
+         WHERE  history_no = @history_no
+           AND  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="history_no" Type="bigint" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </Get-->
+  
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductStockHistory
+                (
+                  order_id
+                  ,shop_id
+                  ,product_id
+                  ,variation_id
+                  ,action_status
+                  ,add_stock
+                  ,add_realstock
+                  ,add_realstock_b
+                  ,add_realstock_c
+                  ,add_realstock_reserved
+                  ,update_stock
+                  ,update_realstock
+                  ,update_realstock_b
+                  ,update_realstock_c
+                  ,update_realstock_reserved
+                  ,update_memo
+                  ,date_created
+                  ,last_changed
+                  ,sync_flg
+                )
+        VALUES  (
+                  @order_id
+                  ,@shop_id
+                  ,@product_id
+                  ,@variation_id
+                  ,@action_status
+                  ,@add_stock
+                  ,@add_realstock
+                  ,@add_realstock_b
+                  ,@add_realstock_c
+                  ,@add_realstock_reserved
+                  ,@update_stock
+                  ,@update_realstock
+                  ,@update_realstock_b
+                  ,@update_realstock_c
+                  ,@update_realstock_reserved
+                  ,@update_memo
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@sync_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="action_status" Type="nvarchar" Size="10" />
+      <Input Name="add_stock" Type="int" />
+      <Input Name="add_realstock" Type="int" />
+      <Input Name="add_realstock_b" Type="int" />
+      <Input Name="add_realstock_c" Type="int" />
+      <Input Name="add_realstock_reserved" Type="int" />
+      <Input Name="update_stock" Type="int" />
+      <Input Name="update_realstock" Type="int" />
+      <Input Name="update_realstock_b" Type="int" />
+      <Input Name="update_realstock_c" Type="int" />
+      <Input Name="update_realstock_reserved" Type="int" />
+      <Input Name="update_memo" Type="nvarchar" Size="200" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="sync_flg" Type="bit" />
+    </Parameter>
+  </Insert>
+  
+  <!-- 更新 -->
+  <!--Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductStockHistory
+           SET  order_id = @order_id
+                ,action_status = @action_status
+                ,add_stock = @add_stock
+                ,add_realstock = @add_realstock
+                ,add_realstock_b = @add_realstock_b
+                ,add_realstock_c = @add_realstock_c
+                ,add_realstock_reserved = @add_realstock_reserved
+                ,update_stock = @update_stock
+                ,update_realstock = @update_realstock
+                ,update_realstock_b = @update_realstock_b
+                ,update_realstock_c = @update_realstock_c
+                ,update_realstock_reserved = @update_realstock_reserved
+                ,update_memo = @update_memo
+                ,last_changed = @last_changed
+                ,sync_flg = @sync_flg
+         WHERE  history_no = @history_no
+           AND  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="history_no" Type="bigint" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="action_status" Type="nvarchar" Size="10" />
+      <Input Name="add_stock" Type="int" />
+      <Input Name="add_realstock" Type="int" />
+      <Input Name="add_realstock_b" Type="int" />
+      <Input Name="add_realstock_c" Type="int" />
+      <Input Name="add_realstock_reserved" Type="int" />
+      <Input Name="update_stock" Type="int" />
+      <Input Name="update_realstock" Type="int" />
+      <Input Name="update_realstock_b" Type="int" />
+      <Input Name="update_realstock_c" Type="int" />
+      <Input Name="update_realstock_reserved" Type="int" />
+      <Input Name="update_memo" Type="nvarchar" Size="200" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="sync_flg" Type="bit" />
+    </Parameter>
+  </Update-->
+  
+  <!-- 削除 -->
+  <!--Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductStockHistory
+         WHERE  history_no = @history_no
+           AND  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="history_no" Type="bigint" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </Delete-->
+
+</ProductStockHistory>

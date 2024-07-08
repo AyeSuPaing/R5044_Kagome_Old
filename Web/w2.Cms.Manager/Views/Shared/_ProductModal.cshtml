@@ -1,0 +1,448 @@
+﻿@*
+=========================================================================================================
+  Module      : 商品入力モーダル(_ProductModal.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using System.Web.Mvc.Html
+@using w2.Cms.Manager.Codes
+@using w2.Common.Util
+@model w2.Cms.Manager.ViewModels.Shared.ProductSettingModalModel
+<div id="@Model.DivId">
+<input type="hidden" id="modal-no"/>
+<input type="hidden" id="base-name"/>
+<input type="hidden" id="productIdsHidden"/>
+<input type="hidden" id="productVariationHidden"/>
+<input type="hidden" id="featurePageProductHidden"/>
+<input type="hidden" id="featurePageFlg"/>
+<p class="modal-inner-ttl under-text">商品一覧を設定する</p>
+<p class="modal-inner-ttl-under-text">商品一覧に表示する商品を設定してください。</p>
+<div class="tabs">
+
+	@if (@Model.UseGroupSelectTab) {
+	<div class="tabs-tab"><a href="javascript:void(0)" class="tab is-active" data-tab-content-selector="#tab-content-itemlist">商品グループを選択する</a></div>
+		<div class="tabs-tab"><a href="javascript:void(0)" class="tab" data-tab-content-selector="#tab-content-item">任意の商品を選択する</a></div>
+		if(Model.UseProductListInputTab) {
+	<div class="tabs-tab"><a href="javascript:void(0)" class="tab" data-tab-content-selector="#tab-content-itemidlist">商品IDリストで選択する</a></div>
+	}
+	} else {
+		<div class="tabs-tab"><a href="javascript:void(0)" class="tab is-active" data-tab-content-selector="#tab-content-item">任意の商品を選択する</a></div>
+		if(Model.UseProductListInputTab) {
+			<div class="tabs-tab"><a href="javascript:void(0)" class="tab" data-tab-content-selector="#tab-content-itemidlist">商品IDリストで選択する</a></div>
+		}
+	}
+</div>
+<div class="tab-contents">
+@if (@Model.UseGroupSelectTab)
+{
+<div class="tab-content" id="tab-content-itemlist">
+	<p class="mb20">選択した商品グループに含まれる商品を表示</p>
+	<div class="item-group-list-select">
+		<div class="item-group-list-select-head">
+			<div class="item-group-list-select-head-name">商品グループ</div>
+			<div class="item-group-list-select-head-id">商品グループID</div>
+			<div class="item-group-list-select-head-edit-date">編集日</div>
+			<div class="item-group-list-select-head-btn"><a href="javascript:open_product_group_insert()" class="btn btn-sub btn-size-s">商品グループを作成する</a></div>
+		</div>
+		<div class="item-group-list-select-body custom-scroll-area">
+			@foreach (var group in Model.ProductGroup)
+			{
+				<div class="item-group-list-select-list">
+					<div class="item-group-list-select-list-name">@group.ProductGroupName</div>
+					<div class="item-group-list-select-list-id">@group.ProductGroupId</div>
+					<div class="item-group-list-select-list-edit-date">@group.DateChanged.ToString("yyyy/MM/dd")</div>
+					<div class="item-group-list-select-list-edit"><a href="javascript: open_product_group_edit('@group.ProductGroupId')">編集</a></div>
+					<div class="item-group-list-select-list-btn"><a href="#" class="btn btn-main btn-size-s" onclick='product_group_click("@group.ProductGroupId")'>設定する</a></div>
+				</div>
+			}
+		</div>
+	</div>
+</div>
+}
+<div class="tab-content" id="tab-content-item">
+<div class="item-search">
+@using (Html.BeginForm("", "", new { }, FormMethod.Post, new { Id = "product_search_form" + Model.ExtraId, Onsubmit = "return false;" }))
+{
+	<table class="search_table cmn-form" cellspacing="1" cellpadding="2" width="100%" border="0">
+		<tr>
+			<td class="search_title_bg" width="95">
+				<img alt="" class="search_title_arrow" src="~/Images/Common/arrow_01.gif"/>
+				商品ID
+			</td>
+			<td class="search_item_bg" width="130">
+				@Html.TextBoxFor(m => Model.ParamModel.ProductId , new{ @class = "product-search-textbox"})
+			</td>
+			<td class="search_title_bg" width="95">
+				<img alt="" class="search_title_arrow" src="~/Images/Common/arrow_01.gif"/>
+				商品名
+			</td>
+			<td class="search_item_bg" width="130">
+				@Html.TextBoxFor(m => Model.ParamModel.ProductName , new{ @class = "product-search-textbox"})
+			</td>
+			<td class="search_title_bg" width="105">
+				通常/定期購入可否
+			</td>
+			<td class="search_item_bg" width="110">
+				@Html.DropDownListFor(
+					m => Model.ParamModel.FixedPurchaseFlg,
+					new SelectList(ValueText.GetValueItemList(Constants.TABLE_PRODUCT, Constants.LIST_KEY_FIXED_PURCHASE), "Value", "Text"),
+					"",
+					new{ @class = "product-search-textbox"} )
+			</td>
+			<td class="search_btn_bg" width="83">
+				<div class="search_btn_main">
+					<input type="button" class="btn btn-main btn-size-m" value="検索" onclick="ini_search_click();">
+				</div>
+			</td>
+		</tr>
+	</table>
+	<div class="item-search-result">
+
+	</div>
+	<div class="item-search-result-swap" style="display: none;">
+		<input id="item-search-result-swap-check" type="checkbox" name="swap" checked value="true"><label for="item-search-result-swap-check">登録済みの商品と入れ替える</label>
+	</div>
+	<div class="modal-footer-action">
+		<input id="btn-add-product" type="button" class="btn btn-main btn-size-m" value="追加する" onclick="add_product_click()">
+		<input id="btn-replace-product" type="button" class="btn btn-main btn-size-m" value="入れ替える" onclick="replace_product_click();">
+	</div>
+}
+	<input type="button" style="float: right;" class="btn btn-main btn-size-m" value="閉じる" onclick="modal.close();">
+</div>
+
+</div>
+	@if(this.Model.UseProductListInputTab){
+<div class="tab-content" id="tab-content-itemidlist">
+	<p class="mb10">商品IDリストで一括指定</p>
+	<div class="item-list-select-id-list">
+		<textarea id="item-id-text-area"></textarea>
+	</div>
+	<p class="mb10">※改行区切りで入力してください</p>
+	<div class="modal-footer-action">
+		<input type="button" class="btn btn-main btn-size-m" value="設定する" onclick="item_id_list_click();">
+	</div>
+</div>
+	 }
+</div>
+</div>
+<script type="text/javascript">
+	$(function () {
+		toggle.ini();
+		input_datepicker.ini();
+	});
+
+	// 商品IDリストで選択するの設定するボタンクリック
+	function item_id_list_click() {
+		var input = $('#item-id-text-area').val();
+		var baseName = $('#base-name').val();
+		var modelNo = $('#modal-no').val();
+
+		var productIds = input.split(/\r\n|\r|\n/);
+		var regex = new RegExp(/^(product_search_error)/);
+		var url;
+		url = "@Url.Action(this.Model.SetProductControllerActionName, Model.Controller)";
+		$.ajax({
+			url: url,
+			type: "POST",
+			data: {
+				'productIds': productIds,
+				'modelNo': modelNo,
+				'baseName': baseName,
+			},
+			traditional: true,
+		}).done(function(viewHtml) {
+			if (viewHtml.match(regex)) {
+				eval(viewHtml);
+				return;
+			}
+			set_product_view_html(viewHtml);
+		});
+	}
+
+	// 追加するボタンをクリック
+	function add_product_click() {
+		$('input[name="swap"]').prop('checked', false);
+		any_product_click();
+	}
+
+	// 入れ替えるボタンをクリック
+	function replace_product_click() {
+		$('input[name="swap"]').prop('checked', true);
+		any_product_click();
+	}
+
+	function any_product_click() {
+		@if (this.Model.IsVariationList){
+			<text>any_product_click_variationlist();</text>
+		} else {
+			<text>any_product_click_productlist();</text>
+		}
+	}
+
+	// 任意の商品を選択するの設定するボタンをクリック（商品単位）
+	function any_product_click_productlist() {
+		var productIdsHidden = $('#productIdsHidden').val();
+		if (productIdsHidden.length === 0) {
+			notification.show('最低一つは商品にチェックを入れてください', 'warning', 'fadeout');
+			return;
+		}
+
+		var productIds = get_selected_productIds(productIdsHidden);
+		@if (this.Model.Controller == Constants.CONTROLLER_W2CMS_MANAGER_LANDING_PAGE){
+			<text>
+				if(productIds.length > 10) {
+					notification.show('対象商品は11種類以上設定できません', 'warning', 'fadeout');
+					return;
+				}
+			</text>
+		}
+
+		var featurePageFlg = $('#featurePageFlg').val();
+		if (featurePageFlg === '') {
+			var selectedItemListTarget = $(".feature-selected-item-list-body");
+
+			var selectedItemListUniqueTarget = $('.selected-item-list-body-id-' + $('#modal-no').val());
+			if (selectedItemListUniqueTarget.length) {
+				selectedItemListTarget = selectedItemListUniqueTarget;
+			}
+
+			if ($('input[name="swap"]').prop('checked') === false) {
+				if (selectedItemListTarget.sortable("toArray", { attribute: 'data-list-id' }).length > 0) {
+					productIds = $.merge(selectedItemListTarget.sortable("toArray", { attribute: 'data-list-id' }),
+						productIds);
+				}
+			}
+		}
+
+		var baseName = $('#base-name').val();
+		var modelNo = $('#modal-no').val();
+		var url = "@Url.Action(this.Model.SetProductControllerActionName, Model.Controller)";
+		$.ajax({
+			url: url,
+			type: "POST",
+			data: {
+				'productIds': productIds,
+				'modelNo': modelNo,
+				'baseName': baseName,
+			},
+			traditional: true,
+		}).done(function (viewHtml) {
+			set_product_view_html(viewHtml);
+		});
+	}
+
+	// 任意の商品を選択するの設定するボタンをクリック（バリエーション単位）
+	function any_product_click_variationlist() {
+		var productVariationHidden = $('#productVariationHidden').val();
+
+		if (productVariationHidden.length === 0) {
+			notification.show('最低一つは商品にチェックを入れてください', 'warning', 'fadeout');
+			return;
+		}
+
+		var productVariationIds = get_selected_productIds(productVariationHidden);
+		@if (this.Model.Controller == Constants.CONTROLLER_W2CMS_MANAGER_LANDING_PAGE)
+		{
+			<text>
+				if (productVariationIds.length > 10) {
+					notification.show('対象商品は11種類以上設定できません', 'warning', 'fadeout');
+					return;
+				}
+			</text>
+		}
+
+		var products = new Array();
+		productVariationIds.forEach(function (val) {
+			var productAndVariation = val.split("|");
+			var obj = { ProductId: productAndVariation[0], VariationId: productAndVariation[1] };
+			products.push(obj);
+		});
+
+		var url = "@Url.Action(this.Model.SetProductControllerActionName, Model.Controller)";
+			$.ajax({
+				url: url,
+				type: "POST",
+				data: JSON.stringify(products),
+				dataType: 'json',
+				contentType: 'application/json',
+				traditional: true,
+			}).done(function (viewHtml) {
+				set_product_view_html(viewHtml);
+			});
+		}
+
+		// テキストボックスエンター
+		$('.product-search-textbox').on('keydown',
+			function (e) {
+				if (e.keyCode === 13) ini_search_click();
+			});
+
+		var product_pager_no = 1;
+
+		function ini_search_click() {
+			product_pager_no = 1;
+			search_click('ini_search_click');
+	};
+
+	// 任意の商品を選択するの絞り込み検索をクリック
+	function search_click(mode) {
+		if (mode === "ini_search_click") {
+			@if (this.Model.IsVariationList){
+			<text>$('#productVariationHidden').val("");</text>
+		} else {
+			<text>$('#productIdsHidden').val("");</text>
+		}
+		}
+
+		loading_animation.start();
+		var extraId = "@Model.ExtraId";
+		var formData = $('#product_search_form' + extraId).serializeArray();
+		formData.push({ name: 'ParamModel.PagerNo', value: product_pager_no });
+
+		$.ajax({
+			type: "POST",
+			url: "ProductSearch",
+			data: formData
+		}).done(function (viewHTML) {
+			setTimeout(function () {
+				$(".item-search-result").html(viewHTML);
+				@if (this.Model.IsVariationList){
+					<text>select_all_checkbox($('#productVariationHidden').val());</text>
+				} else {
+					<text>select_all_checkbox($('#productIdsHidden').val());</text>
+				}
+				loading_animation.end();
+			
+			}, 500);
+		}).fail(function () {
+		});
+	}
+
+	//指定されたチェックボックスをチェック状態になる
+	function select_all_checkbox(hiddenIds) {
+		if (hiddenIds.length !== 0) {
+			var productIds = get_selected_productIds(hiddenIds);
+			productIds.forEach(function (val) {
+				if ($(document.getElementById(val)).length > 0) {
+					$(document.getElementById(val)).prop("checked", true);
+				}
+			});
+		}
+	}
+
+	// 商品選択一覧チェックボックスのonclickイベント
+	function productClick(object) {
+		if (object.checked) {
+			var addedDelimiter = ($('#productIdsHidden').val().length === 0) ? "\"" : ",\"";
+			$('#productIdsHidden').val($('#productIdsHidden').val() + addedDelimiter + object.id + "\"");
+		} else {
+			var products = $('#productIdsHidden').val().split(',');
+			var targetIndex = products.indexOf("\"" + object.id + "\"");
+			if (targetIndex !== -1) products.splice(targetIndex, 1);
+			$('#productIdsHidden').val(products.join(','));
+		}
+	}
+	
+	// 商品バリエーション選択一覧チェックボックスのonclickイベント
+	function productVariationClick(object) {
+		if (object.checked) {
+			var addedDelimiter = ($('#productVariationHidden').val().length === 0) ? "\"" : ",\"";
+			(JSON.parse(object.value).Controller == 'ScoringSale')
+				? $('#productVariationHidden').val(object.id)
+				: $('#productVariationHidden').val($('#productVariationHidden').val() + addedDelimiter + object.id + "\"");
+		} else {
+			var products = $('#productVariationHidden').val().split(',');
+			var targetIndex = products.indexOf("\"" + object.id + "\"");
+			if (targetIndex !== -1) products.splice(targetIndex, 1);
+			$('#productVariationHidden').val(products.join(','));
+		}
+	}
+
+	// 次のページ
+	function next_page() {
+		var extraId = "@Model.ExtraId";
+		var array = $('#product_search_form' + extraId).serializeArray();
+		array.push({ name: 'ParamModel.PagerNo', value: product_pager_no });
+
+		$.ajax({
+			type: "POST",
+			url: "GetSearchHitCountOnCms",
+			data: array
+		}).done(function (count) {
+			if (count > product_pager_no * '@Constants.CONST_DISP_CONTENTS_DEFAULT_LIST') {
+				product_pager_no++;
+				search_click();
+			}
+		}).fail(function () {
+		});
+	}
+
+	// 前のページ
+	function before_page() {
+		if (product_pager_no > 1) {
+			product_pager_no--;
+			search_click();
+		}
+	}
+
+	// 商品グループの設定するボタンをクリック
+	function product_group_click(groupId) {
+		var baseName = $('#base-name').val();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("SetProductGroup", Model.Controller)",
+			data: {
+				'baseName': baseName,
+				'groupId': groupId,
+			},
+		}).done(function (viewHtml) {
+			set_product_view_html(viewHtml);
+		});
+	}
+
+	// 商品グループを作成する
+	function open_product_group_insert() {
+		var link = '@Url.Action("Edit", Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_GROUP,
+	new {
+		actionStatus = ActionStatus.Insert, PageLayout = Constants.POPUP_LAYOUT_PATH_DEFAULT
+	})';
+		open_window(link.replace(/&amp;/g, "&"), '',
+			'width=1350,height=900,top=50,left=200,status=yes,scrollbars=yes');
+	}
+
+	// 商品検索エラー
+	function product_search_error(productId) {
+		notification.show('商品ID:' + productId + 'は存在しません', 'warning', 'fadeout');
+	}
+
+	// 日付検索フォームクリア
+	function period_input_clear(obj) {
+		var prev = $(obj).prev();
+		prev.find('input').val('');
+		$(prev).prev().find('input').val('');
+	}
+
+	// 選択された商品リスト取得
+	function get_selected_productIds(hiddenStr) {
+		var productIds = hiddenStr.replace(new RegExp("\"", "g"), "")
+			.split(",");
+		return productIds;
+	}
+
+	// 選択済み商品にチェックを入れる
+	function check_products() {
+		var featurePageProductHidden = $('#featurePageProductHidden').val();
+		$('#productIdsHidden').val('');
+		$('#productIdsHidden').val(featurePageProductHidden);
+		$("input[name='productId']").prop("checked", false);
+		if (featurePageProductHidden.length !== 0) {
+			var productIds = get_selected_productIds(featurePageProductHidden);
+			productIds.forEach(function (val) {
+				if ($(document.getElementById(val)).length > 0) {
+					$(document.getElementById(val)).prop("checked", true);
+				}
+			});
+		}
+	}
+</script>

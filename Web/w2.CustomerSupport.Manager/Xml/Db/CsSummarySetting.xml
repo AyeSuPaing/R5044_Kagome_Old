@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 集計区分系SQLステートメントXML(CsSummarySetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsSummarySetting>
+  
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT	w2_CsSummarySetting.*,
+                (
+                  SELECT  COUNT(1)
+                    FROM  w2_CsSummarySettingItem
+                   WHERE  w2_CsSummarySettingItem.dept_id = w2_CsSummarySetting.dept_id
+                     AND  w2_CsSummarySettingItem.summary_setting_no = w2_CsSummarySetting.summary_setting_no
+                ) item_count
+          FROM	w2_CsSummarySetting
+         WHERE	w2_CsSummarySetting.dept_id = @dept_id
+      ORDER BY  w2_CsSummarySetting.display_order, w2_CsSummarySetting.summary_setting_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Search>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT	* 
+          FROM	w2_CsSummarySetting 
+         WHERE	w2_CsSummarySetting.dept_id = @dept_id 
+           AND	w2_CsSummarySetting.summary_setting_no = @summary_setting_no 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_setting_no" Type="int" />
+    </Parameter>
+  </Get>
+
+  <!-- 全て取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CsSummarySetting
+         WHERE  w2_CsSummarySetting.dept_id = @dept_id
+      ORDER BY  w2_CsSummarySetting.display_order, w2_CsSummarySetting.summary_setting_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAll>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT	w2_CsSummarySetting
+                (
+                  dept_id,
+                  summary_setting_no,
+                  summary_setting_title,
+                  summary_setting_type,
+                  display_order,
+                  valid_flg,
+                  date_created, 
+                  date_changed, 
+                  last_changed
+                )
+        VALUES  (
+                  @dept_id, 
+                  @summary_setting_no, 
+                  @summary_setting_title, 
+                  @summary_setting_type, 
+                  @display_order, 
+                  @valid_flg, 
+                  getdate(), 
+                  getdate(), 
+                  @last_changed 
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_setting_no" Type="int" />
+      <Input Name="summary_setting_title" Type="nvarchar" Size="30" />
+      <Input Name="summary_setting_type" Type="nvarchar" Size="10" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsSummarySetting 
+           SET  w2_CsSummarySetting.summary_setting_title = @summary_setting_title, 
+                w2_CsSummarySetting.summary_setting_type = @summary_setting_type, 
+                w2_CsSummarySetting.display_order = @display_order, 
+                w2_CsSummarySetting.valid_flg = @valid_flg, 
+                w2_CsSummarySetting.date_changed = getdate(), 
+                w2_CsSummarySetting.last_changed = @last_changed 
+         WHERE  w2_CsSummarySetting.dept_id = @dept_id 
+           AND  w2_CsSummarySetting.summary_setting_no = @summary_setting_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_setting_no" Type="int" />
+      <Input Name="summary_setting_title" Type="nvarchar" Size="30" />
+      <Input Name="summary_setting_type" Type="nvarchar" Size="10" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+</CsSummarySetting>

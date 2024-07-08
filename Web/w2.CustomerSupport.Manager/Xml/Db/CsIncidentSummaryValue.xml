@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      :インシデント集計区分値マスタ系SQLステートメントXML(CsIncidentSummaryValue.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsIncidentSummaryValue>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CsIncidentSummaryValue
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+           AND  summary_no = @summary_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_no" Type="int" />
+    </Parameter>
+  </Get>
+  
+  <!-- リスト取得 -->
+  <GetList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsIncidentSummaryValue.*,
+                ISNULL(w2_CsSummarySettingItem.summary_setting_item_text, w2_CsIncidentSummaryValue.value) AS EX_Text
+          FROM  w2_CsIncidentSummaryValue
+                LEFT JOIN w2_CsSummarySettingItem ON
+                (
+                  w2_CsIncidentSummaryValue.dept_id = w2_CsSummarySettingItem.dept_id
+                  AND
+                  w2_CsIncidentSummaryValue.summary_no = w2_CsSummarySettingItem.summary_setting_no
+                  AND
+                  w2_CsIncidentSummaryValue.value = w2_CsSummarySettingItem.summary_setting_item_id
+                )
+         WHERE  w2_CsIncidentSummaryValue.dept_id = @dept_id
+           AND  w2_CsIncidentSummaryValue.incident_id = @incident_id
+        ORDER BY summary_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetList>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CsIncidentSummaryValue
+                (
+                  dept_id,
+                  incident_id,
+                  summary_no,
+                  value,
+                  last_changed
+                )
+        VALUES  (
+                  @dept_id,
+                  @incident_id,
+                  @summary_no,
+                  @value,
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_no" Type="int" />
+      <Input Name="value" Type="nvarchar" Size="50" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsIncidentSummaryValue
+           SET  dept_id = @dept_id,
+                incident_id = @incident_id,
+                summary_no = @summary_no,
+                value = @value,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+           AND  summary_no = @summary_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_no" Type="int" />
+      <Input Name="value" Type="nvarchar" Size="50" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 全て削除 -->
+  <DeleteAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CsIncidentSummaryValue
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteAll>
+
+</CsIncidentSummaryValue>

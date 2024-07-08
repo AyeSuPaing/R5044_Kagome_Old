@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+ALTER TABLE [w2_Order] ADD [last_order_point_use] [decimal] NOT NULL DEFAULT (0);
+ALTER TABLE [w2_Order] ADD [last_order_point_use_yen] [decimal] NOT NULL DEFAULT (0);
+GO
+
+UPDATE  w2_Order
+   SET  last_order_point_use = order_point_use,
+        last_order_point_use_yen = order_point_use_yen
+ WHERE  return_exchange_kbn = '00'
+
+UPDATE  w2_Order
+   SET  w2_Order.last_order_point_use = OrderOrg.last_order_point_use,
+        w2_Order.last_order_point_use_yen = OrderOrg.last_order_point_use_yen
+  FROM  w2_Order
+        INNER JOIN w2_Order OrderOrg ON
+        (
+          w2_Order.order_id_org = OrderOrg.order_id
+        )
+ WHERE  w2_Order.order_id_org <> ''
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

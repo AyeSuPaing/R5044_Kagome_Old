@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 休日系SQLステートメントXML (Holiday.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<Holiday>
+
+  <!-- 年月単位で休日情報を取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_Holidays.*
+          FROM  w2_Holidays
+         WHERE  year_month = @year_month
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year_month" Type="nvarchar" Size="6" />
+    </Parameter>
+  </Get>
+
+  <!-- 指定期間で休日情報取得 -->
+  <GetByPeriod>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_Holidays.*
+          FROM  w2_Holidays
+         WHERE  year_month >= @year_month_begin
+           AND  year_month <= @year_month_end
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year_month_begin" Type="nvarchar" Size="6" />
+      <Input Name="year_month_end" Type="nvarchar" Size="6" />
+    </Parameter>
+  </GetByPeriod>
+
+  <!-- 年単位で休日情報取得 -->
+  <GetByYear>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_Holidays.*
+          FROM  w2_Holidays
+         WHERE  LEFT(year_month, 4) = @year
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="nvarchar" Size="4" />
+    </Parameter>
+  </GetByYear>
+
+  <!-- 全ての休日情報取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_Holidays.*
+          FROM  w2_Holidays
+        ORDER BY year_month DESC
+      ]]>
+    </Statement>
+  </GetAll>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_Holidays
+                (
+                  year_month,
+                  days,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @year_month,
+                  @days,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year_month" Type="nvarchar" Size="6" />
+      <Input Name="days" Type="nvarchar" Size="100" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_Holidays
+         WHERE  LEFT(year_month, 4) = @year
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="nvarchar" Size="4" />
+    </Parameter>
+  </Delete>
+
+</Holiday>

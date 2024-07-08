@@ -1,0 +1,209 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 店舗管理者マスタ系SQLサブステートメントXML (ShopOperator_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<ShopOperator_Sub>
+
+  <!-- オペレータ情報一覧取得用WHERE文 -->
+  <SHOPOPERATOR_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+                -- スーパーユーザ以外はスーパーユーザを表示しない
+           <@@hasval:login_operator_menu_access_level1@@>
+           AND  (
+                  @login_operator_menu_access_level1 = 0
+                  OR
+                  w2_ShopOperator.menu_access_level1 IS NULL
+                  OR
+                  w2_ShopOperator.menu_access_level1 <> 0
+                )
+           </@@hasval:login_operator_menu_access_level1@@>
+           <@@hasval:login_operator_menu_access_level2@@>
+           AND  (
+                  @login_operator_menu_access_level2 = 0
+                  OR
+                  w2_ShopOperator.menu_access_level2 IS NULL
+                  OR
+                  w2_ShopOperator.menu_access_level2 <> 0
+                )
+           </@@hasval:login_operator_menu_access_level2@@>
+           <@@hasval:login_operator_menu_access_level3@@>
+           AND  (
+                  @login_operator_menu_access_level3 = 0
+                  OR
+                  w2_ShopOperator.menu_access_level3 IS NULL
+                  OR
+                  w2_ShopOperator.menu_access_level3 <> 0
+                )
+           </@@hasval:login_operator_menu_access_level3@@>
+           <@@hasval:login_operator_menu_access_level4@@>
+           AND  (
+                  @login_operator_menu_access_level4 = 0
+                  OR
+                  w2_ShopOperator.menu_access_level4 IS NULL
+                  OR
+                  w2_ShopOperator.menu_access_level4 <> 0
+                )
+           </@@hasval:login_operator_menu_access_level4@@>
+           <@@hasval:operator_id_like_escaped@@>
+           AND  w2_ShopOperator.operator_id LIKE '%' + @operator_id_like_escaped + '%' ESCAPE '#'
+           </@@hasval:operator_id_like_escaped@@>
+           <@@hasval:name_like_escaped@@>
+           AND  w2_ShopOperator.name LIKE '%' + @name_like_escaped + '%' ESCAPE '#'
+           </@@hasval:name_like_escaped@@>
+           <@@hasval:valid_flg@@>
+           AND  (
+                  @valid_flg = ''
+                  OR
+                  w2_ShopOperator.valid_flg = @valid_flg
+                )
+           </@@hasval:valid_flg@@>
+           <@@hasval:condition_menu_access_level@@>
+           AND  (
+                  @condition_menu_access_level IS NULL
+                  OR
+                  ISNULL(w2_ShopOperator.menu_access_level4,'999999') = Convert(int,@condition_menu_access_level)
+                )
+           </@@hasval:condition_menu_access_level@@>
+           <@@hasval:menu_access_level1@@>
+           AND  w2_ShopOperator.menu_access_level1 = @menu_access_level1
+           </@@hasval:menu_access_level1@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="pkg_kbn" Type="nvarchar" Size="10" />
+      <Input Name="operator_id_like_escaped" Type="nvarchar" Size="30" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="30" />
+      <Input Name="login_operator_menu_access_level1" Type="int" />
+      <Input Name="login_operator_menu_access_level2" Type="int" />
+      <Input Name="login_operator_menu_access_level3" Type="int" />
+      <Input Name="login_operator_menu_access_level4" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="condition_menu_access_level" Type="nvarchar" Size="10" />
+      <Input Name="menu_access_level1" Type="int" />
+    </Parameter>
+  </SHOPOPERATOR_SEARCH_WHERE>
+
+  <!-- ECオペレータ情報一覧取得用WHERE文 -->
+  <EC_SHOPOPERATOR_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+           AND  (
+                  @menu_access_level1 = 0
+                  OR
+                  w2_ShopOperator.menu_access_level1 IS NULL
+                  OR
+                  w2_ShopOperator.menu_access_level1 <> 0
+                )
+           AND  (
+                  (
+                    @operator_id_like_escaped = ''
+                    OR
+                    w2_ShopOperator.operator_id LIKE @operator_id_like_escaped + '%'  ESCAPE '#'
+                  )
+                  AND
+                  (
+                    @name_like_escaped = ''
+                    OR
+                    w2_ShopOperator.name LIKE + '%' + @name_like_escaped + '%'  ESCAPE '#'
+                  )
+                  AND
+                  (
+                    @valid_flg = ''
+                    OR
+                    w2_ShopOperator.valid_flg = @valid_flg
+                  )
+                  AND
+                  (
+                    @condition_menu_access_level = ''
+                    OR
+                    ISNULL(w2_ShopOperator.menu_access_level1,'999999') = Convert(int,@condition_menu_access_level)
+                  )
+               )
+      ]]>
+    </Statement>
+  </EC_SHOPOPERATOR_SEARCH_WHERE>
+
+  <!-- MPオペレータ情報一覧取得用WHERE文 -->
+  <MP_SHOPOPERATOR_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+           AND  (
+                  @menu_access_level2 = 0
+                  OR
+                  w2_ShopOperator.menu_access_level2 IS NULL
+                  OR
+                  w2_ShopOperator.menu_access_level2 <> 0
+                )
+           AND  (
+                  (
+                    @operator_id_like_escaped = ''
+                    OR
+                    w2_ShopOperator.operator_id LIKE @operator_id_like_escaped + '%'  ESCAPE '#'
+                  )
+                  AND
+                  (
+                    @name_like_escaped = ''
+                    OR
+                    w2_ShopOperator.name LIKE + '%' + @name_like_escaped + '%'  ESCAPE '#'
+                  )
+                  AND
+                  (
+                    @valid_flg = ''
+                    OR
+                    w2_ShopOperator.valid_flg = @valid_flg
+                  )
+                  AND
+                  (
+                    @condition_menu_access_level = ''
+                    OR
+                    ISNULL(w2_ShopOperator.menu_access_level2,'999999') = Convert(int,@condition_menu_access_level)
+                  )
+               )
+      ]]>
+    </Statement>
+  </MP_SHOPOPERATOR_SEARCH_WHERE>
+
+  <!-- タグ閲覧権限のオペレータ情報一覧取得用ORDER_BY -->
+  <TAG_AUTHORITY_SHOPOPERATOR_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          w2_ShopOperator.operator_id DESC,
+          w2_ShopOperator.shop_id ASC
+      ]]>
+    </Statement>
+  </TAG_AUTHORITY_SHOPOPERATOR_SEARCH_ORDER_BY>
+
+  <!-- オペレータ情報画面のオペレーター情報一覧取得用ORDER_BY -->
+  <SHOPOPERATOR_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_ShopOperator.operator_id
+            WHEN  2 THEN w2_ShopOperator.name
+            ELSE '1'
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_ShopOperator.operator_id
+            WHEN  3 THEN w2_ShopOperator.name
+            ELSE '1'
+          END
+          DESC,
+          w2_ShopOperator.operator_id DESC,
+          w2_ShopOperator.shop_id ASC
+      ]]>
+    </Statement>
+  </SHOPOPERATOR_SEARCH_ORDER_BY>
+
+</ShopOperator_Sub>

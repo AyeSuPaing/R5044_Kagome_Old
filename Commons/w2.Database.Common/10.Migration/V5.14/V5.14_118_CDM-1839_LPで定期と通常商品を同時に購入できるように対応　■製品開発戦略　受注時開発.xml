@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : CDM-1839_LPで定期と通常商品を同時に購入できるように対応　■製品開発戦略　受注時開発 (V5.14_仮_CDM-1839 CDM-1839_LPで定期と通常商品を同時に購入できるように対応　■製品開発戦略　受注時開発.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+		/* 確認用クエリ */
+		 --SELECT * FROM w2_LandingPageProductset ps INNER JOIN w2_LandingPageProduct p ON ps.page_id = p.page_id AND ps.branch_no = p.branch_no
+
+		-- w2_LandingPageProduct に buy_type 列を追加
+		IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_LandingPageProduct' AND COLUMN_NAME = 'buy_type' )
+		BEGIN
+		  ALTER TABLE [dbo].[w2_LandingPageProduct] ADD [buy_type] NVARCHAR (20) DEFAULT (N'NORMAL') NOT NULL
+		END
+
+		IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_LandingPageProduct' AND COLUMN_NAME = 'buy_type')
+		BEGIN
+			IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_LandingPageProductSet' AND COLUMN_NAME = 'buy_type')
+			BEGIN
+				-- w2_LandingPageProductSet.buy_type の値を w2_LandingPageProduct.buy_type に入れる
+				DECLARE @sql NVARCHAR (2048) = '
+					UPDATE  w2_LandingPageProduct
+					   SET  buy_type = ps.buy_type
+					  FROM  w2_LandingPageProductset ps INNER JOIN w2_LandingPageProduct p ON
+							(
+							  ps.page_id = p.page_id
+							  AND
+							  ps.branch_no = p.branch_no
+							)'
+				EXEC sys.sp_executesql @sql;
+			END
+		END
+		GO
+
+		-- w2_LandingPageProductSet の buy_type 列を削除
+		IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_LandingPageProductSet' AND COLUMN_NAME = 'buy_type' )
+		BEGIN
+			DECLARE @ConstraintName nvarchar (100)
+			SELECT @ConstraintName = obj.name FROM sys.objects AS obj
+			JOIN sys.columns AS clm ON obj.object_id = clm.default_object_id
+			WHERE obj.type = 'D' AND obj.parent_object_id = OBJECT_ID('w2_LandingPageProductSet') AND clm.name = 'buy_type'
+
+			IF @ConstraintName IS NOT NULL
+			EXEC('ALTER TABLE w2_LandingPageProductSet DROP CONSTRAINT ' + @ConstraintName)
+			ALTER TABLE w2_LandingPageProductSet DROP COLUMN buy_type
+		END
+		GO
+		/* 確認用クエリ */
+		--SELECT  * FROM w2_LandingPageProductset ps INNER JOIN w2_LandingPageProduct p ON ps.page_id = p.page_id AND ps.branch_no = p.branch_no
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

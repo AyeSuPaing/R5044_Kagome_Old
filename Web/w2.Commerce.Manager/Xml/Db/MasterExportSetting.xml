@@ -1,0 +1,867 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : マスタ出力定義系SQLステートメントXML(MasterExportSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MasterExportSetting>
+  <!-- マスタ出力定義情報 -->
+  <GetMasterExportSetting>
+    <Statement>
+      <![CDATA[
+        SELECT 
+            * 
+        FROM 
+            w2_MasterExportSetting
+        WHERE 
+            w2_MasterExportSetting.shop_id = @shop_id 
+        AND  
+            w2_MasterExportSetting.master_kbn = @master_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMasterExportSetting>
+
+  <!-- マスタ出力定義情報追加 -->
+  <InsertMasterExportSetting>
+    <Statement>
+      <![CDATA[
+        -- 最大設定ID取得
+
+        DECLARE @setting_id nvarchar (10)
+        SELECT @setting_id = RIGHT('00' + CONVERT(nvarchar, COUNT(w2_MasterExportSetting.setting_id) + 1), 3) FROM w2_MasterExportSetting WHERE w2_MasterExportSetting.shop_id = @shop_id AND w2_MasterExportSetting.master_kbn = @master_kbn
+        
+        INSERT 
+          w2_MasterExportSetting
+          (
+            w2_MasterExportSetting.shop_id, 
+            w2_MasterExportSetting.master_kbn, 
+            w2_MasterExportSetting.setting_id, 
+            w2_MasterExportSetting.setting_name, 
+            w2_MasterExportSetting.fields, 
+            w2_MasterExportSetting.date_created, 
+            w2_MasterExportSetting.date_changed, 
+            w2_MasterExportSetting.last_changed,
+            w2_MasterExportSetting.export_file_type
+          ) 
+          VALUES
+          (
+            @shop_id, 
+            @master_kbn, 
+            @setting_id, 
+            @setting_name, 
+            @fields, 
+            getdate(),
+            getdate(), 
+            @last_changed,
+            @export_file_type
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_name" Type="nvarchar" Size="30" />
+      <Input Name="fields" Type="ntext" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="export_file_type" Type="nvarchar" Size="10" />
+    </Parameter>
+  </InsertMasterExportSetting>
+
+  <!-- マスタ出力定義情報更新 -->
+  <UpdateMasterExportSetting>
+    <Statement>
+      <![CDATA[
+        UPDATE 
+            w2_MasterExportSetting 
+        SET  
+            w2_MasterExportSetting.fields = @fields, 
+            w2_MasterExportSetting.date_changed = getdate(), 
+            w2_MasterExportSetting.last_changed = @last_changed,
+            w2_MasterExportSetting.export_file_type = @export_file_type
+        WHERE 
+            w2_MasterExportSetting.shop_id = @shop_id 
+        AND
+            w2_MasterExportSetting.master_kbn = @master_kbn
+        AND  
+            w2_MasterExportSetting.setting_id = @setting_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_id" Type="nvarchar" Size="10" />
+      <Input Name="fields" Type="ntext" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="export_file_type" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateMasterExportSetting>
+
+  <!-- マスター出力設定削除 -->
+  <DeleteMasterExportSetting>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MasterExportSetting
+         WHERE  w2_MasterExportSetting.shop_id = @shop_id
+           AND  w2_MasterExportSetting.master_kbn = @master_kbn
+           AND  w2_MasterExportSetting.setting_id = @setting_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteMasterExportSetting>
+
+  <!-- マスタ出力設定ID更新 -->
+  <UpdateMasterExportSettingId>
+    <Statement>
+      <![CDATA[
+        -- 設定IDリフレッシュ
+        UPDATE  w2_MasterExportSetting
+           SET  w2_MasterExportSetting.setting_id = RIGHT('00' + CONVERT(nvarchar, w2_MasterExportSetting.setting_id -1), 3)
+         WHERE  CONVERT(int, w2_MasterExportSetting.setting_id) > CONVERT(int, @setting_id)
+           AND  w2_MasterExportSetting.shop_id = @shop_id 
+           AND  w2_MasterExportSetting.master_kbn = @master_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateMasterExportSettingId>
+
+  <!--マスター出力設定名の重複かどうかチェック-->
+  <CheckDuplicationMasterSettingName>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(w2_MasterExportSetting.master_kbn) AS count
+          FROM  w2_MasterExportSetting
+         WHERE  w2_MasterExportSetting.shop_id = @shop_id 
+           AND  w2_MasterExportSetting.master_kbn = @master_kbn
+           AND  w2_MasterExportSetting.setting_name  = @setting_name
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_name" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationMasterSettingName>
+
+  <!-- ユーザーマスタフィールドチェック -->
+  <CheckUserFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_User
+                  LEFT JOIN  w2_UserExtend ON
+                  (
+                    w2_User.user_id = w2_UserExtend.user_id
+                  )
+                  LEFT JOIN  w2_UserAttribute ON
+                  (
+                    w2_User.user_id = w2_UserAttribute.user_id
+                  )
+      ]]>
+    </Statement>
+  </CheckUserFields>
+
+  <!-- 注文マスタフィールドチェック -->
+  <CheckOrderFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_Order
+                  INNER JOIN w2_OrderOwner ON
+                  (
+                    w2_Order.order_id = w2_OrderOwner.order_id
+                  )
+                  INNER JOIN w2_OrderShipping ON
+                  (
+                    w2_Order.order_id = w2_OrderShipping.order_id 
+                  )
+                  LEFT JOIN w2_OrderCoupon ON
+                  (
+                    w2_Order.order_id = w2_OrderCoupon.order_id
+                  )
+                  LEFT JOIN w2_Payment ON
+                  (
+                    w2_Order.shop_id = w2_Payment.shop_id
+                    AND
+                    w2_Order.order_payment_kbn = w2_Payment.payment_id
+                  )
+                  LEFT JOIN w2_ShopShipping ON
+                  (
+                    w2_Order.shop_id = w2_ShopShipping.shop_id
+                    AND
+                    w2_Order.shipping_id = w2_ShopShipping.shipping_id
+                  )
+                  LEFT JOIN w2_FixedPurchase ON
+                  (
+                    w2_Order.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                  )
+                  LEFT JOIN w2_User ON
+                  (
+                    w2_Order.user_id = w2_User.user_id
+                  )
+                  LEFT JOIN w2_TwOrderInvoice ON
+                  (
+                    w2_Order.order_id = w2_TwOrderInvoice.order_id
+                  )
+                  INNER JOIN
+                  (
+                    SELECT  order_id,
+                            SUM(return_price_correction_by_rate) as correction_price_total
+                      FROM  w2_OrderPriceByTaxRate
+                  GROUP BY  order_id
+                  ) AS CorrectionPriceInfo
+                  ON
+                  (
+                    w2_Order.order_id = CorrectionPriceInfo.order_id
+                  )
+                  WHERE  w2_Order.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckOrderFields>
+
+  <!-- 注文商品マスタフィールドチェック -->
+  <CheckOrderItemFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_Order
+                  INNER JOIN w2_OrderOwner ON
+                  (
+                    w2_Order.order_id = w2_OrderOwner.order_id
+                  )
+                  INNER JOIN w2_OrderShipping ON
+                  (
+                    w2_Order.order_id = w2_OrderShipping.order_id
+                  )
+                  INNER JOIN w2_OrderItem ON
+                  (
+                    w2_Order.order_id = w2_OrderItem.order_id
+                  )
+                  LEFT JOIN w2_OrderCoupon ON
+                  (
+                    w2_Order.order_id = w2_OrderCoupon.order_id
+                  )
+                  LEFT JOIN w2_Payment ON
+                  (
+                    w2_Order.order_payment_kbn = w2_Payment.payment_id
+                  )
+                  LEFT JOIN w2_ShopShipping ON
+                  (
+                    w2_Order.shipping_id = w2_ShopShipping.shipping_id
+                  )
+                  LEFT JOIN w2_FixedPurchase ON
+                  (
+                    w2_Order.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                  )
+                  LEFT JOIN w2_OrderSetPromotion ON
+                  (
+                    w2_OrderItem.order_id = w2_OrderSetPromotion.order_id
+                    AND
+                    w2_OrderItem.order_setpromotion_no = w2_OrderSetPromotion.order_setpromotion_no
+                  )
+                  LEFT JOIN w2_User ON
+                  (
+                    w2_Order.user_id = w2_User.user_id
+                  )
+                  LEFT JOIN w2_TwOrderInvoice ON
+                  (
+                    w2_OrderItem.order_id = w2_TwOrderInvoice.order_id
+                  )
+                  INNER JOIN
+                  (
+                    SELECT  order_id,
+                            SUM(return_price_correction_by_rate) as correction_price_total
+                      FROM  w2_OrderPriceByTaxRate
+                  GROUP BY  order_id
+                  ) AS CorrectionPriceInfo
+                  ON
+                  (
+                    w2_Order.order_id = CorrectionPriceInfo.order_id
+                  )
+            WHERE  w2_Order.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckOrderItemFields>
+
+  <!-- 注文セットプロモーションマスタフィールドチェック -->
+  <CheckOrderSetPromotionFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_Order
+                  INNER JOIN w2_OrderOwner ON
+                  (
+                    w2_Order.order_id = w2_OrderOwner.order_id
+                  )
+                  LEFT JOIN w2_OrderSetPromotion ON
+                  (
+                    w2_Order.order_id = w2_OrderSetPromotion.order_id
+                  )
+           WHERE  w2_Order.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckOrderSetPromotionFields>
+
+  <!-- 商品マスタフィールドチェック -->
+  <CheckProductFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_Product
+           WHERE  w2_Product.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductFields>
+
+  <!-- 商品バリエーションマスタフィールドチェック -->
+  <CheckProductVariationFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ProductVariation
+           WHERE  w2_ProductVariation.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductVariationFields>
+
+  <!-- 会員ランク価格マスタフィールドチェック -->
+  <CheckProductPriceFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ProductPrice
+           WHERE  w2_ProductPrice.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductPriceFields>
+
+  <!-- 商品タグマスタフィールドチェック -->
+  <CheckProductTagFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_Product
+                  LEFT JOIN  w2_ProductTag ON
+                  (
+                    w2_Product.product_id = w2_ProductTag.product_id
+                  )
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </CheckProductTagFields>
+
+  <!-- 商品拡張項目マスタフィールドチェック -->
+  <CheckProductExtendFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_Product
+       LEFT JOIN  w2_ProductExtend ON
+                  (
+                    w2_Product.shop_id = w2_ProductExtend.shop_id
+                    AND
+                    w2_Product.product_id = w2_ProductExtend.product_id
+                  )
+           WHERE  w2_Product.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductExtendFields>
+
+  <!-- 商品在庫マスタフィールドチェック -->
+  <CheckProductStockFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ProductStock
+           WHERE  w2_ProductStock.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductStockFields>
+
+  <!-- 商品カテゴリマスタフィールドチェック -->
+  <CheckProductCategoryFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ProductCategory
+           WHERE  w2_ProductCategory.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductCategoryFields>
+
+  <!-- 発注マスタフィールドチェック -->
+  <CheckStockOrderFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_StockOrder
+           WHERE  w2_StockOrder.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckStockOrderFields>
+
+  <!-- 発注商品マスタフィールドチェック -->
+  <CheckStockOrderItemFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_StockOrder,
+                  w2_StockOrderItem
+           WHERE  w2_StockOrder.shop_id = @shop_id 
+             AND  w2_StockOrder.shop_id = w2_StockOrderItem.shop_id
+             AND  w2_StockOrder.stock_order_id = w2_StockOrderItem.stock_order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckStockOrderItemFields>
+
+  <!-- モール出品設定マスタフィールドチェック -->
+  <CheckMallExhibitsConfigFields>
+    <Statement>
+      <![CDATA[
+          -- 一時テーブル作成
+          CREATE TABLE #temp_table (
+            row_num int IDENTITY(1, 1) PRIMARY KEY,
+            shop_id nvarchar (10) NOT NULL,
+            product_id nvarchar (30) NOT NULL
+          )
+      
+          -- 一時テーブルに挿入
+          INSERT
+            INTO  #temp_table (
+                    shop_id,
+                    product_id
+                  )
+          SELECT TOP 1 
+                  w2_Product.shop_id,
+                  w2_Product.product_id
+            FROM  w2_Product
+           WHERE  w2_Product.shop_id = @shop_id 
+
+          SELECT TOP 1
+                  @@ fields @@
+            FROM  #temp_table LEFT JOIN w2_MallExhibitsConfig ON
+                  (#temp_table.shop_id = w2_MallExhibitsConfig.shop_id
+                  AND
+                  #temp_table.product_id = w2_MallExhibitsConfig.product_id)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckMallExhibitsConfigFields>
+
+  <!-- 入荷通知メールマスタフィールドチェック（サマリー） -->
+  <CheckUserProductArrivalMailFields>
+    <Statement>
+      <![CDATA[
+        -- 一時テーブル作成
+        DECLARE @arrival_mail_count TABLE(
+          shop_id nvarchar(10),
+          product_id nvarchar(30),
+          variation_id nvarchar(60),
+          arrival_mail_count int,
+          release_mail_count int,
+          resale_mail_count int
+          )
+        
+        INSERT INTO @arrival_mail_count
+          (
+            shop_id,
+            product_id,
+            variation_id,
+            arrival_mail_count,
+            release_mail_count,
+            resale_mail_count
+           )
+        SELECT  TOP 1
+                w2_UserProductArrivalMail.shop_id,
+                w2_UserProductArrivalMail.product_id,
+                w2_UserProductArrivalMail.variation_id,
+                0,
+                0,
+                0
+          FROM  w2_UserProductArrivalMail
+         WHERE  w2_UserProductArrivalMail.shop_id = @shop_id 
+      
+        -- 商品毎の送信先メールアドレス取得
+        DECLARE @arrival_mail_addr TABLE(
+          shop_id nvarchar(10),
+          product_id nvarchar(30),
+          variation_id nvarchar(60)
+          )
+
+        INSERT INTO @arrival_mail_addr
+          (
+            shop_id,
+            product_id,
+            variation_id
+           )
+        SELECT  TOP 1
+                w2_UserProductArrivalMail.shop_id,
+                w2_UserProductArrivalMail.product_id,
+                w2_UserProductArrivalMail.variation_id
+          FROM  w2_UserProductArrivalMail
+         WHERE  w2_UserProductArrivalMail.shop_id = @shop_id
+         
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  @arrival_mail_count ArrivalMailCount
+                INNER JOIN 
+                w2_ProductView ON
+                (
+                  ArrivalMailCount.shop_id = w2_ProductView.shop_id
+                  AND
+                  ArrivalMailCount.product_id = w2_ProductView.product_id
+                  AND
+                  ArrivalMailCount.variation_id = w2_ProductView.variation_id
+                )
+                INNER JOIN @arrival_mail_addr AS ArrivalMailAddr ON
+                (
+                  ArrivalMailCount.shop_id = ArrivalMailAddr.shop_id
+                  AND
+                  ArrivalMailCount.product_id = ArrivalMailAddr.product_id
+                  AND
+                  ArrivalMailCount.variation_id = ArrivalMailAddr.variation_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckUserProductArrivalMailFields>
+
+  <!-- 入荷通知メールマスタフィールドチェック（明細） -->
+  <CheckUserProductArrivalMailDetailFields>
+    <Statement>
+      <![CDATA[
+        -- 一時テーブル作成
+        DECLARE @arrival_mail_count TABLE(
+          shop_id nvarchar(10),
+          product_id nvarchar(30),
+          variation_id nvarchar(60),
+          arrival_mail_count int,
+          release_mail_count int,
+          resale_mail_count int
+          )
+        
+        INSERT INTO @arrival_mail_count
+          (
+            shop_id,
+            product_id,
+            variation_id,
+            arrival_mail_count,
+            release_mail_count,
+            resale_mail_count
+           )
+        SELECT  TOP 1
+                w2_UserProductArrivalMail.shop_id,
+                w2_UserProductArrivalMail.product_id,
+                w2_UserProductArrivalMail.variation_id,
+                0,
+                0,
+                0
+          FROM  w2_UserProductArrivalMail
+         WHERE  w2_UserProductArrivalMail.shop_id = @shop_id 
+      
+        -- 商品毎の送信先メールアドレス取得
+        DECLARE @arrival_mail_addr TABLE(
+          shop_id nvarchar(10),
+          product_id nvarchar(30),
+          variation_id nvarchar(60),
+          user_id nvarchar(30),
+          pcmobile_kbn nvarchar(10),
+          arrival_mail_kbn nvarchar(10),
+          date_created datetime,
+          date_changed datetime,
+          last_changed nvarchar(20),
+          date_expired datetime,
+          send_mail_addr nvarchar(256)
+          )
+
+        INSERT INTO @arrival_mail_addr
+          (
+            shop_id,
+            product_id,
+            variation_id,
+            user_id,
+            pcmobile_kbn,
+            arrival_mail_kbn,
+            date_created,
+            date_changed,
+            last_changed,
+            date_expired,
+            send_mail_addr
+           )
+        SELECT  TOP 1
+                w2_UserProductArrivalMail.shop_id,
+                w2_UserProductArrivalMail.product_id,
+                w2_UserProductArrivalMail.variation_id,
+                w2_UserProductArrivalMail.user_id,
+                w2_UserProductArrivalMail.pcmobile_kbn,
+                w2_UserProductArrivalMail.arrival_mail_kbn,
+                w2_UserProductArrivalMail.date_created,
+                w2_UserProductArrivalMail.date_changed,
+                w2_UserProductArrivalMail.last_changed,
+                w2_UserProductArrivalMail.date_expired,
+                ''
+          FROM  w2_UserProductArrivalMail
+         WHERE  w2_UserProductArrivalMail.shop_id = @shop_id
+         
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  @arrival_mail_count ArrivalMailCount
+                INNER JOIN 
+                w2_ProductView ON
+                (
+                  ArrivalMailCount.shop_id = w2_ProductView.shop_id
+                  AND
+                  ArrivalMailCount.product_id = w2_ProductView.product_id
+                  AND
+                  ArrivalMailCount.variation_id = w2_ProductView.variation_id
+                )
+                INNER JOIN @arrival_mail_addr AS ArrivalMailAddr ON
+                (
+                  ArrivalMailCount.shop_id = ArrivalMailAddr.shop_id
+                  AND
+                  ArrivalMailCount.product_id = ArrivalMailAddr.product_id
+                  AND
+                  ArrivalMailCount.variation_id = ArrivalMailAddr.variation_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckUserProductArrivalMailDetailFields>
+
+  <!-- 商品レビューマスタフィールドチェック -->
+  <CheckProductReviewFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ProductReview
+           WHERE  w2_ProductReview.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductReviewFields>
+
+  <!-- 商品セール価格マスタフィールドチェック -->
+  <CheckProductSalePriceFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ProductSalePrice
+           WHERE  w2_ProductSalePrice.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductSalePriceFields>
+
+  <!-- ショートURLマスタフィールドチェック -->
+  <CheckShortUrlFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ShortUrl
+           WHERE  w2_ShortUrl.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckShortUrlFields>
+
+  <!-- 定期購入マスタフィールドチェック -->
+  <CheckFixedPurchaseFields>
+    <Statement>
+      <![CDATA[
+
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_FixedPurchase
+                  INNER JOIN w2_FixedPurchaseShipping ON
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                  )
+                  INNER JOIN w2_TwFixedPurchaseInvoice ON
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = w2_TwFixedPurchaseInvoice.fixed_purchase_id
+                  )
+            WHERE  w2_FixedPurchase.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckFixedPurchaseFields>
+
+  <!-- 定期購入商品マスタフィールドチェック -->
+  <CheckFixedPurchaseItemFields>
+    <Statement>
+      <![CDATA[
+           /* ダーティリードを許可して共有ロックを掛けなくする */
+          SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+          /* 明細金額（小計）項目の該当的をチェックするため */
+          CREATE TABLE #ItemPrice (product_id nvarchar(30), price decimal(18,3))
+          
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_FixedPurchase
+                  INNER JOIN w2_FixedPurchaseShipping ON
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                  )
+                  LEFT JOIN w2_FixedPurchaseItem ON
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                  )
+                  LEFT JOIN #ItemPrice ON
+                  (
+                    w2_FixedPurchaseItem.product_id = #ItemPrice.product_id
+                  )
+                  INNER JOIN w2_Product ON
+                  (
+                    w2_FixedPurchaseItem.product_id = w2_Product.product_id
+                  )
+            WHERE  w2_FixedPurchase.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckFixedPurchaseItemFields>
+
+  <!-- シリアルキーマスタフィールドチェック -->
+  <CheckSerialKeyFields>
+    <Statement>
+      <![CDATA[
+            SELECT  TOP 1
+                    @@ fields @@
+              FROM  w2_SerialKey
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </CheckSerialKeyFields>
+
+  <!-- リアル店舗キーマスタフィールドチェック -->
+  <CheckRealShopFields>
+    <Statement>
+      <![CDATA[
+            SELECT  TOP 1
+                    @@ fields @@
+              FROM  w2_RealShop
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </CheckRealShopFields>
+
+  <!-- リアル店舗商品在庫キーマスタフィールドチェック -->
+  <CheckRealShopProductStockFields>
+    <Statement>
+      <![CDATA[
+         SELECT  TOP 1
+                 @@ fields @@
+           FROM  w2_RealShopProductStock
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </CheckRealShopProductStockFields>
+
+  <!-- ユーザ配送先マスタフィールドチェック -->
+  <CheckUserShippingFields>
+    <Statement>
+      <![CDATA[
+         SELECT  TOP 1
+                 @@ fields @@
+           FROM  w2_UserShipping
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </CheckUserShippingFields>
+
+  <!-- ユーザー電子発票管理マスタフィールドチェック -->
+  <CheckUserInvoiceFields>
+    <Statement>
+      <![CDATA[
+         SELECT  TOP 1
+                 @@ fields @@
+           FROM  w2_TwUserInvoice
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </CheckUserInvoiceFields>
+</MasterExportSetting>

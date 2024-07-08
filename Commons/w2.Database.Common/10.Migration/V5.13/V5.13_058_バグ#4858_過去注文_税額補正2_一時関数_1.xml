@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+      -- 税額を抽出する関数
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_GetTaxPrice]') and OBJECTPROPERTY(id, N'IsScalarFunction') = 1)
+drop function [dbo].[w2_GetTaxPrice]
+GO
+CREATE FUNCTION dbo.w2_GetTaxPrice(
+	@price decimal(18,3), -- 金額
+	@taxRate decimal(18,0), -- 税率(%)
+	@taxExcludedFractionRounding varchar(10), -- 税率丸め方法(ROUNDUP:切り上げ ROUNDDOWN:切り捨て ROUNDOFF:四捨五入)
+	@priceTaxExcludedFlag varchar(1) -- 税込み金額フラグ（1:金額が税込み 0:金額が税抜き）
+	)
+RETURNS decimal(18,3) AS
+BEGIN  
+	DECLARE @taxPrice decimal(18,3); -- 税額
+	DECLARE @resultPrice decimal(18,3); -- 税額(端数処理済み)
+	-- 税額計算
+	IF (@priceTaxExcludedFlag = '1')
+		-- 税込金額から税額を算出
+		BEGIN
+			SET @taxPrice = @price - (@price / (1 + (@taxRate / 100)))
+		END
+	ELSE
+		-- 税抜金額から税額を算出
+		BEGIN
+			SET @taxPrice = @price * (@taxRate / 100)
+		END
+
+		-- 端数計算
+	IF (@taxExcludedFractionRounding = 'ROUNDUP')
+		-- 端数切り上げ
+		BEGIN
+			SET @resultPrice = CEILING(@taxPrice)
+		END
+
+	IF (@taxExcludedFractionRounding = 'ROUNDDOWN')
+		-- 端数切り捨て
+		BEGIN
+			SET @resultPrice = FLOOR(@taxPrice)
+		END
+
+	IF (@taxExcludedFractionRounding = 'ROUNDOFF')
+		-- 端数四捨五入
+		BEGIN
+			SET @resultPrice = ROUND(@taxPrice, 0)
+		END
+	IF (@resultPrice IS NUll)
+	SET @resultPrice = 0
+  RETURN @resultPrice;
+END;
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

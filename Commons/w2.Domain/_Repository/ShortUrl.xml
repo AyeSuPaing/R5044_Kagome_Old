@@ -1,0 +1,202 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ショートURLマスタ系SQLステートメントXML (ShortUrl.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<ShortUrl>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_ShortUrl
+                [[ SHORTURL_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="30" />
+      <Input Name="short_url_like_escaped" Type="nvarchar" Size="510" />
+      <Input Name="long_url_like_escaped" Type="nvarchar" Size="4000" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="10" />
+      <Input Name="protocol_and_domain" Type="nvarchar" Size="33" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetSearchHitCount>
+
+  <!-- 
+    ショートURL情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetShortUrlMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_ShortUrl
+                [[ SHORTURL_SEARCH_WHERE ]]
+                [[ SHORTURL_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="30" />
+      <Input Name="short_url_like_escaped" Type="nvarchar" Size="510" />
+      <Input Name="long_url_like_escaped" Type="nvarchar" Size="4000" />
+      <Input Name="protocol_and_domain" Type="nvarchar" Size="33" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetShortUrlMaster>
+
+  <!-- ▽マスタアップロードバッチ用▽ -->
+  <!-- ショートURL重複ショートURL情報取得（※ワークテーブル参照） -->
+  <GetShortUrlForDuplicationShortUrl>
+    <Statement>
+      <![CDATA[
+        SELECT  short_url,
+                COUNT(short_url) count
+          FROM  w2_WorkShortUrl
+        GROUP BY short_url
+        HAVING  COUNT(short_url) > 1
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetShortUrlForDuplicationShortUrl>
+  <!-- △マスタアップロードバッチ用△ -->
+
+  <!-- ショートURLマスタフィールドチェック -->
+  <CheckShortUrlFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ShortUrl
+           WHERE  w2_ShortUrl.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckShortUrlFields>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ShortUrl.*
+          FROM  (
+                  SELECT  w2_ShortUrl.surl_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ SHORTURL_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ShortUrl
+                          [[ SHORTURL_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ShortUrl ON
+                (
+                  RowIndex.surl_no = w2_ShortUrl.surl_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="30" />
+      <Input Name="short_url_like_escaped" Type="nvarchar" Size="510" />
+      <Input Name="long_url_like_escaped" Type="nvarchar" Size="4000" />
+      <Input Name="protocol_and_domain" Type="nvarchar" Size="33" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 取得（全て） -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  *
+          FROM  w2_ShortUrl
+         WHERE  shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAll>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ShortUrl
+                (
+                  shop_id
+                  ,short_url
+                  ,long_url
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @shop_id
+                  ,@short_url
+                  ,@long_url
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="short_url" Type="nvarchar" Size="255" />
+      <Input Name="long_url" Type="nvarchar" Size="2000" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+  
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ShortUrl
+           SET  shop_id = @shop_id
+                ,short_url = @short_url
+                ,long_url = @long_url
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  surl_no = @surl_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="surl_no" Type="bigint" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="short_url" Type="nvarchar" Size="255" />
+      <Input Name="long_url" Type="nvarchar" Size="2000" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ShortUrl
+         WHERE  surl_no = @surl_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="surl_no" Type="bigint" />
+    </Parameter>
+  </Delete>
+
+</ShortUrl>

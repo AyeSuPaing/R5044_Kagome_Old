@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_SetPromotion]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_SetPromotion]
+GO
+
+CREATE TABLE [dbo].[w2_SetPromotion] (
+	[setpromotion_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[setpromotion_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[setpromotion_disp_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[setpromotion_disp_name_mobile] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[product_discount_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[shipping_charge_free_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[payment_charge_free_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[product_discount_kbn] [nvarchar] (1) NOT NULL DEFAULT (N''),
+	[product_discount_setting] [decimal] NULL,
+	[description_kbn] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[description] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[description_kbn_mobile] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[description_mobile] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[begin_date] [datetime] NOT NULL DEFAULT (getdate()),
+	[end_date] [datetime] NULL,
+	[target_member_rank] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[target_order_kbn] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[url] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[url_mobile] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[valid_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_SetPromotion] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_SetPromotion] PRIMARY KEY  CLUSTERED
+	(
+		[setpromotion_id]
+	) ON [PRIMARY]
+GO
+
+
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_SetPromotionItem]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_SetPromotionItem]
+GO
+
+CREATE TABLE [dbo].[w2_SetPromotionItem] (
+	[setpromotion_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[setpromotion_item_no] [int] NOT NULL DEFAULT (1),
+	[setpromotion_item_kbn] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[setpromotion_items] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[setpromotion_item_quantity] [int] NOT NULL DEFAULT (1)
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_SetPromotionItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_SetPromotionItem] PRIMARY KEY  CLUSTERED
+	(
+		[setpromotion_id],
+		[setpromotion_item_no]
+	) ON [PRIMARY]
+GO
+
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_OrderSetPromotion]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_OrderSetPromotion]
+GO
+
+CREATE TABLE [dbo].[w2_OrderSetPromotion] (
+	[order_id] [nvarchar] (30) NOT NULL,
+	[order_setpromotion_no] [int] NOT NULL DEFAULT (1),
+	[setpromotion_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[setpromotion_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[setpromotion_disp_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[undiscounted_product_subtotal] [decimal] NOT NULL DEFAULT (0),
+	[product_discount_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[product_discount_amount] [decimal] NOT NULL DEFAULT (0),
+	[shipping_charge_free_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[shipping_charge_discount_amount] [decimal] NOT NULL DEFAULT (0),
+	[payment_charge_free_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[payment_charge_discount_amount] [decimal] NOT NULL DEFAULT (0)
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_OrderSetPromotion] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_OrderSetPromotion] PRIMARY KEY  CLUSTERED
+	(
+		[order_id],
+		[order_setpromotion_no]
+	) ON [PRIMARY]
+GO
+
+
+ALTER TABLE [w2_Order] ADD [setpromotion_product_discount_amount] [decimal] NOT NULL DEFAULT (0)
+ALTER TABLE [w2_Order] ADD [setpromotion_shipping_charge_discount_amount] [decimal] NOT NULL DEFAULT (0)
+ALTER TABLE [w2_Order] ADD [setpromotion_payment_charge_discount_amount] [decimal] NOT NULL DEFAULT (0)
+GO
+
+ALTER TABLE [w2_OrderItem] ADD [order_setpromotion_no] [int]
+ALTER TABLE [w2_OrderItem] ADD [order_setpromotion_item_no] [int]
+GO
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

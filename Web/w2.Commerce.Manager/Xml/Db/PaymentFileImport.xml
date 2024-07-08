@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 入金データ取込SQLステートメントXML(PaymentFileImport.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<PaymentFileImport>
+
+  <!-- 入金処理対象データ取得 -->
+  <GetOrderShipping>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_OrderShipping.shipping_check_no,
+                w2_OrderShipping.order_id,
+                w2_User.name,
+                w2_Order.order_price_subtotal,
+                w2_Order.order_date,
+                w2_Order.order_payment_status
+                @@ select @@
+          FROM  w2_Order
+                INNER JOIN w2_OrderShipping ON 
+                (
+                  w2_OrderShipping.order_id = w2_Order.order_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_Order.user_id = w2_User.user_id
+                )
+         WHERE  w2_OrderShipping.shipping_check_no <> ''
+           AND  w2_Order.order_date >= @order_date_from
+                @@ where @@
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_date_from" Type="datetime" />
+    </Parameter>
+  </GetOrderShipping>
+
+</PaymentFileImport>

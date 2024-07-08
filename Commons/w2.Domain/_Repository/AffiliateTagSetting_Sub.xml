@@ -1,0 +1,133 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : アフィリエイトタグ設定マスタ系SQLサブステートメントXML (AffiliateTagSetting_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<AffiliateTagSetting_Sub>
+
+  <!-- ============================= w2_AffiliateTagSetting系 ============================= -->
+  <!-- 検索用WHERE文 -->
+  <AFFILIATETAGSETTING_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  <@@hasval:affiliate_name_like_escaped@@>
+                w2_AffiliateTagSetting.affiliate_name LIKE '%' + @affiliate_name_like_escaped + '%'  ESCAPE '#'   -- アフィリエイト名
+                </@@hasval:affiliate_name_like_escaped@@>
+                <@@hasnoval:affiliate_name_like_escaped@@>
+                1 = 1
+                </@@hasnoval:affiliate_name_like_escaped@@>
+
+           <@@hasval:affiliate_kbn@@>
+           AND  w2_AffiliateTagSetting.affiliate_kbn = @affiliate_kbn   -- アフィリエイト区分
+           </@@hasval:affiliate_kbn@@>
+
+           <@@hasval:valid_flg@@>
+           AND  w2_AffiliateTagSetting.valid_flg = @valid_flg   -- 有効フラグ
+           </@@hasval:valid_flg@@>
+
+           -- 閲覧可能なタグID
+           @@ where_affiliate_id @@
+
+           AND  EXISTS
+                (
+                  SELECT  *
+                    FROM  w2_AffiliateTagCondition
+                   WHERE  w2_AffiliateTagCondition.affiliate_id = w2_AffiliateTagSetting.affiliate_id
+                     AND  w2_AffiliateTagCondition.condition_type = 'PAGE'
+                     <@@hasval:page@@>
+                     AND  w2_AffiliateTagCondition.condition_value = @page
+                     </@@hasval:page@@>
+
+                     -- 閲覧可能な設置個所
+                     @@ where_location @@
+                )
+
+           AND  EXISTS
+                (
+                  SELECT  *
+                    FROM  w2_AffiliateTagCondition
+                   WHERE  w2_AffiliateTagCondition.affiliate_id = w2_AffiliateTagSetting.affiliate_id
+                     AND  w2_AffiliateTagCondition.condition_type = 'ADCODE_MEDIA_TYPE'
+                     <@@hasval:media_type_id@@>
+                     AND  w2_AffiliateTagCondition.condition_value = @advcode_media_type_id
+                     </@@hasval:media_type_id@@>
+
+                     -- 閲覧可能な広告媒体区分
+                     @@ where_media_type_id @@
+                )
+
+           <@@hasval:advertisement_code_like_escaped@@>
+           AND  EXISTS
+                (
+                  SELECT  *
+                    FROM  w2_AffiliateTagCondition
+                   WHERE  w2_AffiliateTagCondition.affiliate_id = w2_AffiliateTagSetting.affiliate_id
+                     AND  w2_AffiliateTagCondition.condition_type = 'ADVERTISEMENT_CODE'
+                     AND  w2_AffiliateTagCondition.condition_value LIKE '%' + @advertisement_code_like_escaped + '%'  ESCAPE '#'
+                )
+           </@@hasval:advertisement_code_like_escaped@@>
+
+           <@@hasval:product_id_like_escaped@@>
+           AND  EXISTS
+                (
+                  SELECT  *
+                    FROM  w2_AffiliateTagCondition
+                   WHERE  w2_AffiliateTagCondition.affiliate_id = w2_AffiliateTagSetting.affiliate_id
+                     AND  w2_AffiliateTagCondition.condition_type = 'PRODUCT_ID'
+                     AND  w2_AffiliateTagCondition.condition_value LIKE '%' + @product_id_like_escaped + '%'  ESCAPE '#'
+                )
+           </@@hasval:product_id_like_escaped@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="affiliate_kbn" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="50" />
+      <Input Name="page" Type="nvarchar" Size="100" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="advertisement_code_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="advcode_media_type_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </AFFILIATETAGSETTING_SEARCH_WHERE>
+  
+  <!-- 検索用ORDER BY -->
+  <AFFILIATETAGSETTING_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY  w2_AffiliateTagSetting.display_order ASC, w2_AffiliateTagSetting.affiliate_id DESC
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </AFFILIATETAGSETTING_SEARCH_ORDER_BY>
+
+
+
+  <!-- ============================= AffiliateProductTagSetting系 ============================= -->
+  <!-- 検索用WHERE文 -->
+  <AFFILIATEPRODUCTTAGSETTING_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE  (@tag_name_like_escaped = '' OR w2_AffiliateProductTagSetting.tag_name LIKE '%' + @tag_name_like_escaped + '%'  ESCAPE '#')      -- アフィリエイト商品タグ名
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tag_name_like_escaped" Type="nvarchar" Size="200" />
+    </Parameter>
+  </AFFILIATEPRODUCTTAGSETTING_SEARCH_WHERE>
+
+  <!-- 検索用ORDER BY -->
+  <AFFILIATEPRODUCTTAGSETTING_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+         ORDER BY affiliate_product_tag_id DESC
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </AFFILIATEPRODUCTTAGSETTING_SEARCH_ORDER_BY>
+
+</AffiliateTagSetting_Sub>

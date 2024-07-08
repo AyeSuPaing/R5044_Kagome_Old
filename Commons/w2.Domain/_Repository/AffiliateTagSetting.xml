@@ -1,0 +1,464 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : アフィリエイトタグ設定マスタ系SQLステートメントXML (AffiliateTagSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<AffiliateTagSetting>
+
+  <!-- ============================= w2_AffiliateTagSetting系 ============================= -->
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_AffiliateTagSetting
+                [[ AFFILIATETAGSETTING_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+  
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  REPLACE((SELECT w2_AffiliateTagCondition.condition_value AS [data()] FROM w2_AffiliateTagCondition WHERE w2_AffiliateTagCondition.affiliate_id =  RowIndex.affiliate_id AND w2_AffiliateTagCondition.condition_type = 'PAGE'  FOR XML PATH ('')), ' ', NCHAR(13) + NCHAR(10)) AS PAGE,
+                REPLACE((SELECT w2_AffiliateTagCondition.condition_value AS [data()] FROM w2_AffiliateTagCondition WHERE w2_AffiliateTagCondition.affiliate_id =  RowIndex.affiliate_id AND w2_AffiliateTagCondition.condition_type = 'ADCODE_MEDIA_TYPE'  FOR XML PATH ('')), ' ', NCHAR(13) + NCHAR(10)) AS ADCODE_MEDIA_TYPE,
+                REPLACE((SELECT w2_AffiliateTagCondition.condition_value AS [data()] FROM w2_AffiliateTagCondition WHERE w2_AffiliateTagCondition.affiliate_id =  RowIndex.affiliate_id AND w2_AffiliateTagCondition.condition_type = 'ADVERTISEMENT_CODE'  FOR XML PATH ('')), ' ', NCHAR(13) + NCHAR(10)) AS ADVERTISEMENT_CODE,
+                REPLACE((SELECT w2_AffiliateTagCondition.condition_value AS [data()] FROM w2_AffiliateTagCondition WHERE w2_AffiliateTagCondition.affiliate_id =  RowIndex.affiliate_id AND w2_AffiliateTagCondition.condition_type = 'PRODUCT_ID'  FOR XML PATH ('')), ' ', NCHAR(13) + NCHAR(10)) AS PRODUCT_ID,
+                w2_AffiliateProductTagSetting.*,
+                w2_AffiliateTagSetting.*
+          FROM  (
+                  SELECT  w2_AffiliateTagSetting.affiliate_id,
+                          w2_AffiliateTagSetting.affiliate_product_tag_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ AFFILIATETAGSETTING_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_AffiliateTagSetting
+                    [[ AFFILIATETAGSETTING_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_AffiliateTagSetting ON
+                (
+                  RowIndex.affiliate_id = w2_AffiliateTagSetting.affiliate_id
+                )
+                LEFT JOIN w2_AffiliateProductTagSetting ON
+                (
+                  RowIndex.affiliate_product_tag_id = w2_AffiliateProductTagSetting.affiliate_product_tag_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- キーワード検索 -->
+  <SearchByKeyword>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_AffiliateTagSetting.*
+          FROM  w2_AffiliateTagSetting
+         <@@hasval:search_word@@>
+         WHERE  w2_AffiliateTagSetting.affiliate_id = @affiliate_id
+            OR  w2_AffiliateTagSetting.affiliate_name LIKE '%' + @search_word + '%'  ESCAPE '#'
+         </@@hasval:search_word@@>
+      ORDER BY  w2_AffiliateTagSetting.affiliate_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_id" Type="int" />
+      <Input Name="search_word" Type="nvarchar" Size="MAX" />
+    </Parameter>
+  </SearchByKeyword>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_AffiliateTagSetting
+         WHERE  affiliate_id = @affiliate_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_id" Type="int" />
+    </Parameter>
+  </Get>
+
+  <!-- 出力条件管理を考慮して取得 -->
+  <GetConsiderationCondition>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_AffiliateTagSetting
+          WHERE  affiliate_id IN
+               (
+                  SELECT  affiliate_id
+                    FROM  w2_AffiliateTagCondition
+               )
+         AND (@affiliate_id = 0 OR affiliate_id = @affiliate_id)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_id" Type="int" />
+    </Parameter>
+  </GetConsiderationCondition>
+
+  <!-- 全取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_AffiliateTagSetting
+      ]]>
+    </Statement>
+  </GetAll>
+  
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_AffiliateTagSetting
+                (
+                  affiliate_name
+                  ,affiliate_kbn
+                  ,session_name1
+                  ,session_name2
+                  ,user_agent_coop_kbn
+                  ,display_order
+                  ,affiliate_tag1
+                  ,affiliate_tag2
+                  ,affiliate_tag3
+                  ,affiliate_tag4
+                  ,affiliate_tag5
+                  ,affiliate_tag6
+                  ,affiliate_tag7
+                  ,affiliate_tag8
+                  ,affiliate_tag9
+                  ,affiliate_tag10
+                  ,valid_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,affiliate_product_tag_id
+                  ,output_location
+                )
+        VALUES  (
+                  @affiliate_name
+                  ,@affiliate_kbn
+                  ,@session_name1
+                  ,@session_name2
+                  ,@user_agent_coop_kbn
+                  ,@display_order
+                  ,@affiliate_tag1
+                  ,@affiliate_tag2
+                  ,@affiliate_tag3
+                  ,@affiliate_tag4
+                  ,@affiliate_tag5
+                  ,@affiliate_tag6
+                  ,@affiliate_tag7
+                  ,@affiliate_tag8
+                  ,@affiliate_tag9
+                  ,@affiliate_tag10
+                  ,@valid_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@affiliate_product_tag_id
+                  ,@output_location
+                )
+                
+        SELECT  SCOPE_IDENTITY() AS affiliate_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_name" Type="nvarchar" Size="100" />
+      <Input Name="affiliate_kbn" Type="nvarchar" Size="10" />
+      <Input Name="session_name1" Type="nvarchar" Size="50" />
+      <Input Name="session_name2" Type="nvarchar" Size="50" />
+      <Input Name="user_agent_coop_kbn" Type="nvarchar" Size="10" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="affiliate_tag1" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag2" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag3" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag4" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag5" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag6" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag7" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag8" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag9" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag10" Type="nvarchar" Size="MAX" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="affiliate_product_tag_id" Type="int" />
+      <Input Name="output_location" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+  
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_AffiliateTagSetting
+           SET  affiliate_name = @affiliate_name
+                ,affiliate_kbn = @affiliate_kbn
+                ,session_name1 = @session_name1
+                ,session_name2 = @session_name2
+                ,user_agent_coop_kbn = @user_agent_coop_kbn
+                ,display_order = @display_order
+                ,affiliate_tag1 = @affiliate_tag1
+                ,affiliate_tag2 = @affiliate_tag2
+                ,affiliate_tag3 = @affiliate_tag3
+                ,affiliate_tag4 = @affiliate_tag4
+                ,affiliate_tag5 = @affiliate_tag5
+                ,affiliate_tag6 = @affiliate_tag6
+                ,affiliate_tag7 = @affiliate_tag7
+                ,affiliate_tag8 = @affiliate_tag8
+                ,affiliate_tag9 = @affiliate_tag9
+                ,affiliate_tag10 = @affiliate_tag10
+                ,valid_flg = @valid_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,affiliate_product_tag_id = @affiliate_product_tag_id
+                ,output_location = @output_location
+         WHERE  affiliate_id = @affiliate_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_id" Type="int" />
+      <Input Name="affiliate_name" Type="nvarchar" Size="100" />
+      <Input Name="affiliate_kbn" Type="nvarchar" Size="10" />
+      <Input Name="session_name1" Type="nvarchar" Size="50" />
+      <Input Name="session_name2" Type="nvarchar" Size="50" />
+      <Input Name="user_agent_coop_kbn" Type="nvarchar" Size="10" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="affiliate_tag1" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag2" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag3" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag4" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag5" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag6" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag7" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag8" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag9" Type="nvarchar" Size="MAX" />
+      <Input Name="affiliate_tag10" Type="nvarchar" Size="MAX" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="affiliate_product_tag_id" Type="int" />
+      <Input Name="output_location" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_AffiliateTagSetting
+         WHERE  affiliate_id = @affiliate_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_id" Type="int" />
+    </Parameter>
+  </Delete>
+
+  <!-- ============================= AffiliateTagCondition系 ============================= -->
+  <!-- 取得 -->
+  <AffiliateTagConditionGetAllByAffiliateId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_AffiliateTagCondition
+         WHERE  affiliate_id = @affiliate_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_id" Type="int" />
+    </Parameter>
+  </AffiliateTagConditionGetAllByAffiliateId>
+
+  <!-- 登録 -->
+  <AffiliateTagConditionInsert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_AffiliateTagCondition
+                (
+                  affiliate_id
+                  ,condition_type
+                  ,condition_sort_no
+                  ,condition_value
+                  ,match_type
+                )
+        VALUES  (
+                  @affiliate_id
+                  ,@condition_type
+                  ,@condition_sort_no
+                  ,@condition_value
+                  ,@match_type
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_id" Type="int" />
+      <Input Name="condition_type" Type="nvarchar" Size="30" />
+      <Input Name="condition_sort_no" Type="int" />
+      <Input Name="condition_value" Type="nvarchar" Size="100" />
+      <Input Name="match_type" Type="nvarchar" Size="20" />
+    </Parameter>
+  </AffiliateTagConditionInsert>
+
+  <!-- 削除 -->
+  <AffiliateTagConditionDeleteAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_AffiliateTagCondition
+         WHERE  affiliate_id = @affiliate_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_id" Type="int" />
+    </Parameter>
+  </AffiliateTagConditionDeleteAll>
+
+
+  <!-- ============================= AffiliateProductTagSetting系 ============================= -->
+  <!-- 検索ヒット件数取得 -->
+  <AffiliateProductTagSettingGetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_AffiliateProductTagSetting
+                [[ AFFILIATEPRODUCTTAGSETTING_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </AffiliateProductTagSettingGetSearchHitCount>
+
+  <!-- 検索 -->
+  <AffiliateProductTagSettingSearch>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_AffiliateProductTagSetting.*
+          FROM  (
+                  SELECT  w2_AffiliateProductTagSetting.affiliate_product_tag_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ AFFILIATEPRODUCTTAGSETTING_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_AffiliateProductTagSetting
+                          [[ AFFILIATEPRODUCTTAGSETTING_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_AffiliateProductTagSetting ON
+                (
+                  RowIndex.affiliate_product_tag_id = w2_AffiliateProductTagSetting.affiliate_product_tag_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </AffiliateProductTagSettingSearch>
+
+  <!-- 取得 -->
+  <AffiliateProductTagSettingGet>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_AffiliateProductTagSetting
+         WHERE  affiliate_product_tag_id = @affiliate_product_tag_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_product_tag_id" Type="int" />
+    </Parameter>
+  </AffiliateProductTagSettingGet>
+
+  <!-- 全取得 -->
+  <AffiliateProductTagSettingGetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_AffiliateProductTagSetting
+      ]]>
+    </Statement>
+  </AffiliateProductTagSettingGetAll>
+
+  <!-- 登録 -->
+  <AffiliateProductTagSettingInsert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_AffiliateProductTagSetting
+                (
+                  tag_name
+                  ,tag_content
+                  ,tag_delimiter
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @tag_name
+                  ,@tag_content
+                  ,@tag_delimiter
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tag_name" Type="nvarchar" Size="200" />
+      <Input Name="tag_content" Type="nvarchar" Size="MAX" />
+      <Input Name="tag_delimiter" Type="nvarchar" Size="100" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </AffiliateProductTagSettingInsert>
+
+  <!-- 更新 -->
+  <AffiliateProductTagSettingUpdate>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_AffiliateProductTagSetting
+           SET  tag_name = @tag_name
+                ,tag_content = @tag_content
+                ,tag_delimiter = @tag_delimiter
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  affiliate_product_tag_id = @affiliate_product_tag_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_product_tag_id" Type="int" />
+      <Input Name="tag_name" Type="nvarchar" Size="200" />
+      <Input Name="tag_content" Type="nvarchar" Size="MAX" />
+      <Input Name="tag_delimiter" Type="nvarchar" Size="100" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </AffiliateProductTagSettingUpdate>
+
+  <!-- 削除 -->
+  <AffiliateProductTagSettingDelete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_AffiliateProductTagSetting
+         WHERE  affiliate_product_tag_id = @affiliate_product_tag_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_product_tag_id" Type="int" />
+    </Parameter>
+  </AffiliateProductTagSettingDelete>
+
+</AffiliateTagSetting>

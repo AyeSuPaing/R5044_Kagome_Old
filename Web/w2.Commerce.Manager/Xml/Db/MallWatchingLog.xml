@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 監視ログ系SQLステートメントXML(MallWatchingLog.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MallWatchingLog>
+  
+  <!-- 監視ログ情報一覧取得 -->
+  <GetMallWatchingLogList>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  RowIndex.*
+          FROM  (
+                  SELECT  w2_MallWatchingLog.*,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MALLWATCHINGLOG_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MallWatchingLog
+                          [[ MALLWATCHINGLOG_SEARCH_WHERE ]]
+                ) AS RowIndex
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="log_no" Type="bigint" />
+      <Input Name="watching_date" Type="varchar" Size="20" />
+      <Input Name="watching_time" Type="varchar" Size="20" />
+      <Input Name="batch_id" Type="nvarchar" Size="50" />
+      <Input Name="mall_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="log_kbn" Type="nvarchar" Size="10" />
+      <Input Name="log_message_like_escaped" Type="ntext" />
+      <Input Name="log_content1" Type="ntext" />
+      <Input Name="log_content2" Type="ntext" />
+      <Input Name="log_content3" Type="ntext" />
+      <Input Name="log_content4" Type="ntext" />
+      <Input Name="log_content5" Type="ntext" />
+      <Input Name="watching_date_from" Type="varchar" Size="20" />
+      <Input Name="watching_date_to" Type="varchar" Size="20" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetMallWatchingLogList>
+
+  <!-- 監視ログ情報件数取得 -->
+  <GetMallWatchingLogListCount>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(COUNT(w2_MallWatchingLog.log_no), 0)
+          FROM  w2_MallWatchingLog
+                [[ MALLWATCHINGLOG_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="log_no" Type="bigint" />
+      <Input Name="watching_date" Type="varchar" Size="20" />
+      <Input Name="watching_time" Type="varchar" Size="20" />
+      <Input Name="batch_id" Type="nvarchar" Size="50" />
+      <Input Name="mall_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="log_kbn" Type="nvarchar" Size="10" />
+      <Input Name="log_message_like_escaped" Type="ntext" />
+      <Input Name="log_content1" Type="ntext" />
+      <Input Name="log_content2" Type="ntext" />
+      <Input Name="log_content3" Type="ntext" />
+      <Input Name="log_content4" Type="ntext" />
+      <Input Name="log_content5" Type="ntext" />
+      <Input Name="watching_date_from" Type="varchar" Size="20" />
+      <Input Name="watching_date_to" Type="varchar" Size="20" />
+    </Parameter>
+  </GetMallWatchingLogListCount>
+
+  <!-- 監視ログ情報取得（ログNoから） -->
+  <GetMallWatchingLogFromLogNo>
+    <Statement>
+      <![CDATA[
+          -- 監視ログ取得
+          SELECT  w2_MallWatchingLog.*
+            FROM  w2_MallWatchingLog
+           WHERE  w2_MallWatchingLog.log_no = @log_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="log_no" Type="bigint" />
+    </Parameter>
+  </GetMallWatchingLogFromLogNo>
+  
+</MallWatchingLog>

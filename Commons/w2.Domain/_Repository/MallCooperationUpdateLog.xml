@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モール連携更新ログ系SQLステートメントXML (MallCooperationUpdateLog.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<MallCooperationUpdateLog>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallCooperationUpdateLog
+           SET  shop_id = @shop_id
+                ,mall_id = @mall_id
+                ,product_id = @product_id
+                ,variation_id = @variation_id
+                ,master_kbn = @master_kbn
+                ,action_kbn = @action_kbn
+                ,action_status = @action_status
+                ,date_changed = GETDATE()
+         WHERE  log_no = @log_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="log_no" Type="bigint" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="2" />
+      <Input Name="action_status" Type="nvarchar" Size="2" />
+    </Parameter>
+  </Update>
+  
+  <!-- 在庫連携処理対象外更新 -->
+  <UpdateExcludedStockUpdate>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallCooperationUpdateLog
+           SET  action_status = '99'
+         WHERE  w2_MallCooperationUpdateLog.shop_id = @shop_id
+           AND  w2_MallCooperationUpdateLog.mall_id = @mall_id
+           AND  w2_MallCooperationUpdateLog.action_status = '00'  -- 未処理
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UpdateExcludedStockUpdate>
+
+</MallCooperationUpdateLog>

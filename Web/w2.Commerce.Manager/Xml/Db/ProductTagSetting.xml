@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品タグ設定系SQLステートメントXML(ProductTagSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2011 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductTagSetting>
+
+  <!-- 商品タグ設定取得 -->
+  <GetTagSettingList>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductTagSetting
+      ORDER BY  tag_no
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetTagSettingList>
+
+  <!-- Get product tag setting -->
+  <GetProductTagSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductTagSetting
+         WHERE  tag_valid_flg = 1
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetProductTagSetting>
+
+  <!-- 商品タグ設定INSERT -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductTagSetting
+                (
+                tag_id,
+                tag_name,
+                tag_valid_flg,
+                last_changed
+                )
+        VALUES  (
+                @tag_id,
+                @tag_name,
+                @tag_valid_flg,
+                @last_changed
+                )
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tag_no" Type="bigint" />
+      <Input Name="tag_id" Type="nvarchar" Size="50" />
+      <Input Name="tag_name" Type="nvarchar" Size="50" />
+      <Input Name="tag_valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 商品タグ設定UPDATE -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductTagSetting
+           SET  tag_name = @tag_name,
+                tag_valid_flg = @tag_valid_flg,
+                date_changed = getdate(),
+                last_changed = @last_changed
+         WHERE  tag_no = @tag_no
+           AND  tag_id = @tag_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tag_no" Type="bigint" />
+      <Input Name="tag_id" Type="nvarchar" Size="50" />
+      <Input Name="tag_name" Type="nvarchar" Size="50" />
+      <Input Name="tag_valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 商品タグ設定DELETE -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE
+          FROM  w2_ProductTagSetting
+         WHERE  tag_no = @tag_no
+           AND  tag_id = @tag_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tag_no" Type="bigint" />
+      <Input Name="tag_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </Delete>
+  
+  <!-- 商品タグ 再定義：コピーテーブル作成 -->
+  <TableCopy>
+    <Statement>
+      <![CDATA[
+        SELECT * INTO [w2_ProductTag_tmp] FROM [w2_ProductTag]
+        SELECT * INTO [w2_WorkProductTag_tmp] FROM [w2_WorkProductTag]
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </TableCopy>
+
+  <!-- 商品タグ  再定義：(コピーテーブルに対して)列の削除 -->
+  <RemoveColumn>
+    <Statement>
+      <![CDATA[
+        DECLARE  @CONSTRAINT_NAME nvarchar (50)
+        DECLARE  @SCRIPT VARCHAR(500)
+
+        -- 制約名称を取得
+        SET  @CONSTRAINT_NAME = 
+              (
+               SELECT  sys.objects.name
+                 FROM  sys.objects, sys.columns
+                WHERE  sys.columns.name = '@@ field @@'
+                  AND  sys.columns.column_id = object_id(N'[dbo].[w2_ProductTag_tmp]')
+                  AND  sys.objects.object_id = sys.columns.object_id
+              )
+        IF @CONSTRAINT_NAME IS NOT NULL
+          BEGIN
+            -- 制約名・列の削除スクリプト作成
+            SET  @SCRIPT = 'ALTER TABLE [w2_ProductTag_tmp] DROP CONSTRAINT ' + @CONSTRAINT_NAME + ';'
+            SET  @SCRIPT = @SCRIPT + 'ALTER TABLE [w2_ProductTag_tmp] DROP COLUMN [@@ field @@];'
+            -- 制約名削除後、列を削除
+            EXEC(@SCRIPT)
+          END
+        ELSE
+          BEGIN
+            ALTER TABLE [w2_ProductTag_tmp] DROP COLUMN [@@ field @@]
+          END
+
+
+        -- (ワークテーブルで同様の処理)
+        SET  @CONSTRAINT_NAME = 
+              (
+               SELECT  sys.objects.name
+                 FROM  sys.objects, sys.columns
+                WHERE  sys.columns.name = '@@ field @@'
+                  AND  sys.columns.column_id = object_id(N'[dbo].[w2_WorkProductTag_tmp]')
+                  AND  sys.objects.object_id = sys.columns.object_id
+              )
+        IF @CONSTRAINT_NAME IS NOT NULL
+          BEGIN
+            SET  @SCRIPT = 'ALTER TABLE [w2_WorkProductTag_tmp] DROP CONSTRAINT ' + @CONSTRAINT_NAME + ';'
+            SET  @SCRIPT = @SCRIPT + 'ALTER TABLE [w2_WorkProductTag_tmp] DROP COLUMN [@@ field @@];'
+            EXEC(@SCRIPT)
+          END
+        ELSE
+          BEGIN
+            ALTER TABLE [w2_WorkProductTag_tmp] DROP COLUMN [@@ field @@]
+          END
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </RemoveColumn>
+
+  <!-- 商品タグ 再定義：(コピーテーブルに対して)列の追加 -->
+  <AddColumn>
+    <Statement>
+      <![CDATA[
+        ALTER TABLE [w2_ProductTag_tmp] ADD [@@ field @@] [nvarchar] (100) NOT NULL DEFAULT (N'');
+        ALTER TABLE [w2_WorkProductTag_tmp] ADD [@@ field @@] [nvarchar] (100) NOT NULL DEFAULT (N'');
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </AddColumn>
+
+  <!-- 商品タグ 再定義：(コピーテーブルに対して)制約を再定義 -->
+  <ReDefinitionColumn>
+    <Statement>
+      <![CDATA[
+        -- SELECT INTOは制約条件が引き継がれない為、(可変の)既存カラムの制約を追加
+        ALTER TABLE [w2_ProductTag_tmp] ADD DEFAULT (N'') FOR [@@ field @@];
+        ALTER TABLE [w2_WorkProductTag_tmp] ADD DEFAULT (N'') FOR [@@ field @@];
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </ReDefinitionColumn>
+
+  <!-- 商品タグ 再定義：元テーブルのDROP、固定カラムに制約を追加、コピーテーブルを元テーブルにリネーム -->
+  <ReDefinition>
+    <Statement>
+      <![CDATA[
+        -- 元テーブルをDROP
+        DROP TABLE [w2_ProductTag]
+        
+        -- SELECT INTOは制約条件が引き継がれない為、固定カラムの制約を追加
+        ALTER TABLE [w2_ProductTag_tmp] ADD DEFAULT (N'') FOR product_id;
+        ALTER TABLE [w2_ProductTag_tmp] ADD DEFAULT (getdate()) FOR date_created;
+        ALTER TABLE [w2_ProductTag_tmp] ADD DEFAULT (getdate()) FOR date_changed;
+        ALTER TABLE [w2_ProductTag_tmp] ADD DEFAULT (N'') FOR last_changed;
+        ALTER TABLE [w2_ProductTag_tmp] WITH NOCHECK ADD
+	        CONSTRAINT [PK_w2_ProductTag] PRIMARY KEY  CLUSTERED ([product_id]) ON [PRIMARY]
+        CREATE INDEX [IX_w2_ProductTag_1] ON [dbo].[w2_ProductTag_tmp]([product_id]) ON [PRIMARY]
+        -- コピーテーブルを元テーブルにリネーム
+        DECLARE  @SCRIPT VARCHAR(500)
+            SET  @SCRIPT = 'sp_rename [w2_ProductTag_tmp],[w2_ProductTag];'
+        EXEC(@SCRIPT)
+
+
+        -- 元テーブルをDROP(ワーク)
+        DROP TABLE [w2_WorkProductTag]
+        
+        ALTER TABLE [w2_WorkProductTag_tmp] ADD DEFAULT (N'') FOR product_id;
+        ALTER TABLE [w2_WorkProductTag_tmp] ADD DEFAULT (getdate()) FOR date_created;
+        ALTER TABLE [w2_WorkProductTag_tmp] ADD DEFAULT (getdate()) FOR date_changed;
+        ALTER TABLE [w2_WorkProductTag_tmp] ADD DEFAULT (N'') for last_changed;
+        
+        ALTER TABLE [w2_WorkProductTag_tmp] WITH NOCHECK ADD
+	        CONSTRAINT [PK_w2_WorkProductTag] PRIMARY KEY  CLUSTERED ([product_id]) ON [PRIMARY]
+        CREATE INDEX [IX_w2_WorkProductTag_1] ON [dbo].[w2_WorkProductTag_tmp]([product_id]) ON [PRIMARY]
+        
+        SET  @SCRIPT = 'sp_rename [w2_WorkProductTag_tmp],[w2_WorkProductTag];'
+        EXEC(@SCRIPT)
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </ReDefinition>
+
+  </ProductTagSetting>

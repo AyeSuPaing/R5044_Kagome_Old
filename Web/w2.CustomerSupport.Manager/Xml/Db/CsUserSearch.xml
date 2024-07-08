@@ -1,0 +1,291 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : CS顧客検索SQLステートメントXML(CsUserSearch.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsUserSearch>
+
+  <!-- ユーザー検索（件数取得） -->
+  <SearchUserCount>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  COUNT(*)
+          FROM  w2_User
+        [[ SearchUserCount_Where ]]
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </SearchUserCount>
+
+  <!-- ユーザー検索 -->
+  <SearchUser>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  TOP @@ count_max @@
+                w2_User.user_id,
+                w2_User.user_kbn,
+                w2_User.name,
+                w2_User.company_name,
+                w2_User.company_post_name,
+                w2_User.mail_addr,
+                w2_User.mail_addr2,
+                w2_User.tel1,
+                w2_User.tel2,
+                w2_User.addr,
+                w2_User.user_management_level_id,
+                w2_User.date_created,
+                REPLACE(
+                  REPLACE(
+                    REPLACE((LTRIM(RTRIM(w2_User.mail_addr)) + LTRIM(RTRIM(w2_User.mail_addr2))),
+                    CHAR(9), ''),
+                  CHAR(10), ''),
+                CHAR(13), '') AS mail_addr_mail_addr2,
+                w2_UserManagementLevel.user_management_level_name
+          FROM  w2_User
+                LEFT JOIN w2_UserManagementLevel ON
+                (
+                  w2_User.user_management_level_id = w2_UserManagementLevel.user_management_level_id
+                )
+        [[ SearchUserCount_Where ]]
+        ORDER BY user_id
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </SearchUser>
+
+  <!-- ユーザー注文情報取得 -->
+  <GetUserOrderInfo>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- 初回購入系
+        SELECT  TOP 1
+                order_date
+          FROM  w2_Order
+         WHERE  user_id = @user_id
+           AND  order_status NOT IN ('ODR_CNSL','TMP_CNSL')
+           AND  return_exchange_kbn = '00'
+        ORDER BY order_date
+        
+        -- 最終購入系
+        SELECT  TOP 1
+                order_date,
+                order_price_total
+          FROM  w2_Order
+         WHERE  user_id = @user_id
+           AND  order_status NOT IN ('ODR_CNSL','TMP_CNSL')
+           AND  return_exchange_kbn = '00'
+        ORDER BY order_date DESC
+        
+        -- 購入回数
+        SELECT  COUNT(order_id)
+          FROM  w2_Order
+         WHERE  user_id = @user_id
+           AND  order_status NOT IN ('ODR_CNSL','TMP_CNSL')
+           AND  return_exchange_kbn = '00'
+          
+        -- 年間購買累計金額
+        SELECT  ISNULL(SUM(order_price_total), 0)
+          FROM  w2_Order
+         WHERE  user_id = @user_id
+           AND  DATEADD(yyyy, -1, GETDATE()) < order_date
+           AND  order_status NOT IN ('ODR_CNSL','TMP_CNSL')
+           AND  (
+                  return_exchange_kbn = '00'
+                  OR
+                  order_return_exchange_status = '03'
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserOrderInfo>
+
+  <!-- ユーザー定期注文情報取得 -->
+  <GetUserOrderFixedPurchaseInfo>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- 初回購入系
+        SELECT  TOP 1
+                order_date
+          FROM  w2_Order
+         WHERE  user_id = @user_id
+           AND  order_status NOT IN ('ODR_CNSL','TMP_CNSL')
+           AND  return_exchange_kbn = '00'
+           AND  fixed_purchase_id <> ''
+        ORDER BY order_date
+        
+        -- 最終購入系
+        SELECT  TOP 1
+                order_date,
+                order_price_total
+          FROM  w2_Order
+         WHERE  user_id = @user_id
+           AND  order_status NOT IN ('ODR_CNSL','TMP_CNSL')
+           AND  return_exchange_kbn = '00'
+           AND  fixed_purchase_id <> ''
+        ORDER BY order_date DESC
+        
+        -- 購入回数
+        SELECT  COUNT(order_id)
+          FROM  w2_Order
+         WHERE  user_id = @user_id
+           AND  order_status NOT IN ('ODR_CNSL','TMP_CNSL')
+           AND  return_exchange_kbn = '00'
+           AND  fixed_purchase_id <> ''
+          
+        -- 年間購買累計金額
+        SELECT  ISNULL(SUM(order_price_total), 0)
+          FROM  w2_Order
+         WHERE  user_id = @user_id
+           AND  DATEADD(yyyy, -1, GETDATE()) < order_date
+           AND  order_status NOT IN ('ODR_CNSL','TMP_CNSL')
+           AND  return_exchange_kbn = '00'
+           AND  fixed_purchase_id <> ''
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserOrderFixedPurchaseInfo>
+
+  <!-- ユーザー注文履歴情報取得 -->
+  <GetUserHistoryOrders>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  w2_Order.order_id,
+                w2_Order.order_date,
+                w2_Order.order_status,
+                w2_Order.order_payment_status,
+                w2_Order.order_item_count,
+                w2_Order.order_price_total,
+                w2_Order.return_exchange_kbn,
+                w2_Order.storepickup_status,
+                w2_OrderItem.product_id,
+                w2_OrderItem.product_name,
+                w2_OrderItem.item_quantity,
+                w2_OrderShipping.order_shipping_no,
+                w2_OrderShipping.scheduled_shipping_date
+          FROM  w2_Order
+                LEFT JOIN w2_OrderShipping ON
+                (
+                  w2_Order.order_id = w2_OrderShipping.order_id
+                )
+                LEFT JOIN w2_OrderItem ON
+                (
+                  w2_OrderItem.order_shipping_no = w2_OrderShipping.order_shipping_no
+                  AND w2_OrderItem.order_id = w2_OrderShipping.order_id
+                )
+         WHERE  user_id = @user_id
+           AND  order_date IS NOT NULL -- 返品交換以外
+        ORDER BY order_date DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserHistoryOrders>
+
+  <!-- ユーザーインシデント情報取得 -->
+  <GetUserHistoryIncidents>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsIncident.incident_id,
+                w2_CsIncident.incident_title,
+                w2_CsMessage.message_no,
+                w2_CsMessage.media_kbn,
+                w2_CsMessage.direction_kbn,
+                w2_CsMessage.message_status,
+                w2_CsMessage.inquiry_reply_date,
+                w2_CsMessage.inquiry_title,
+                w2_CsMessage.message_status,
+                w2_CsMessage.date_changed
+          FROM  w2_CsIncident
+                INNER JOIN w2_CsMessage ON
+                (
+                  w2_CsIncident.dept_id = w2_CsMessage.dept_id
+                  AND
+                  w2_CsIncident.incident_id = w2_CsMessage.incident_id
+                )
+         WHERE  w2_CsIncident.user_id = @user_id
+           AND  (
+                  w2_CsMessage.message_no >= ALL -- 最大取得
+                  (
+                    SELECT  message_no
+                      FROM  w2_CsMessage iq
+                     WHERE  iq.dept_id = w2_CsMessage.dept_id
+                       AND  iq.incident_id = w2_CsMessage.incident_id
+                  )
+                  OR
+                  w2_CsMessage.message_no <= ALL -- 最小取得
+                  (
+                    SELECT  message_no
+                      FROM  w2_CsMessage iq
+                     WHERE  iq.dept_id = w2_CsMessage.dept_id
+                       AND  iq.incident_id = w2_CsMessage.incident_id
+                  )
+                )
+        ORDER BY w2_CsIncident.date_created DESC, message_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserHistoryIncidents>
+
+  <!-- ユーザーメッセージ情報取得 -->
+  <GetUserHistoryMessages>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMessage.*,
+                w2_ShopOperator.name,
+                w2_CsMessageRequest.urgency_flg
+          FROM  w2_CsIncident
+                INNER JOIN w2_CsMessage ON
+                (
+                  w2_CsIncident.dept_id = w2_CsMessage.dept_id
+                  AND
+                  w2_CsIncident.incident_id = w2_CsMessage.incident_id
+                )
+                LEFT JOIN w2_ShopOperator ON
+                (
+                  w2_CsMessage.operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT JOIN w2_CsMessageRequest ON
+                (
+                  w2_CsMessageRequest.dept_id = w2_CsMessage.dept_id
+                  AND
+                  w2_CsMessageRequest.incident_id = w2_CsMessage.incident_id
+                  AND
+                  w2_CsMessageRequest.message_no = w2_CsMessage.message_no
+                )
+         WHERE  w2_CsIncident.user_id = @user_id
+        ORDER BY w2_CsMessage.date_created DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserHistoryMessages>
+
+</CsUserSearch>

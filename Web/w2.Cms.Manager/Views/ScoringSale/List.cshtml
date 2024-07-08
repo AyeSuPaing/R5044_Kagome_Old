@@ -1,0 +1,2481 @@
+﻿@*
+=========================================================================================================
+  Module      : List (List.cshtml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.Common
+@using w2.Cms.Manager.Codes.Util
+@using w2.Cms.Manager.ViewModels.ScoringSale
+@using w2.Cms.Manager.ViewModels.Shared
+@using w2.App.Common.Web.Page
+@using w2.Domain.ScoringSale
+@using w2.App.Common.Design
+@{
+	var sessionWrapper = new SessionWrapper(Session);
+	var shortUrlLink = Url.Action("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_SHORT_URL, new
+	{
+		PageLayout = Constants.POPUP_LAYOUT_PATH_DEFAULT
+	});
+}
+@Html.Hidden("controller", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_SCORING_SALE)
+
+@* Area for Scoring Sale List *@
+
+@helper ScoringSaleListArea()
+{
+	<!-- Scoring sle list -->
+	<div class="list">
+		<div class="list-head">
+			<div class="list-head-row">
+				<div class="list-style-switch">
+					<div class="list-style-switch-inner">
+						<input type="radio" name="list-style" id="list-style-2" value="thumb" checked="">
+						<label for="list-style-2" class="btn-switch">
+							<span class="icon icon-thumbnail"></span><span class="label hide-list-detail">@CommonPage.ReplaceTag("@@ScoringSale.thumbnail_text.name@@")</span>
+						</label>
+						<input type="radio" name="list-style" id="list-style-1" value="list">
+						<label for="list-style-1" class="btn-switch">
+							<span class="icon icon-list"></span><span class="label hide-list-detail">@CommonPage.ReplaceTag("@@ScoringSale.list_text.name@@")</span>
+						</label>
+					</div>
+				</div>
+				<div class="list-head-col hide-list-detail w15">
+					<p>@CommonPage.ReplaceTag("@@ScoringSale.publish_status.title.name@@")</p>
+				</div>
+				<div class="list-head-col hide-list-detail w15">
+					<p>@CommonPage.ReplaceTag("@@ScoringSale.publish_status.total_text.name@@")</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="list-content custom-scroll-area is-list-style-thumb" data-simplebar="init" style="height: 328px;">
+			<div class="simplebar-wrapper" style="margin: 0px;">
+				<div class="simplebar-height-auto-observer-wrapper">
+					<div class="simplebar-height-auto-observer"></div>
+				</div>
+				<div class="simplebar-mask">
+					<div class="simplebar-offset" style="right: -17px; bottom: 0px;">
+						<div class="simplebar-content-wrapper" style="height: 100%; overflow: hidden scroll;">
+							<div class="simplebar-content" style="padding: 0px;">
+								<!-- Items in the list -->
+								<!-- ko foreach: PageList -->
+								<div class="list-row" data-list-id="1-1" data-bind="attr: { id: $data.ScoringSaleId }">
+									<div class="list-col list-col-thumb w10 hide-style-list">
+										<div class="list-col-inner">
+											<figure>
+												<img data-bind="attr: { src: $data.ThumbnailUrlPc, onclick : 'javascript:imageModal(\'' + ThumbnailUrlPc + '\')' }" alt="@CommonPage.ReplaceTag("@@ScoringSale.make_text.name@@")">
+											</figure>
+											@if (DesignCommon.UseSmartPhone)
+											{
+												<figure>
+													<img data-bind="attr: { src: $data.ThumbnailUrlSp, onclick : 'javascript:imageModal(\'' + ThumbnailUrlSp + '\', \'sp\')' }" alt="@CommonPage.ReplaceTag("@@ScoringSale.make_text.name@@")">
+												</figure>
+											}
+										</div>
+									</div>
+									<div class="list-col">
+										<div class="list-col-inner-row">
+											<div class="list-col-title" style="max-width: 60%;">
+												<div class="list-col-inner">
+													<p class="list-col-title-label line-clamp ta-left">
+														<a data-bind="attr: { href: 'javascript:scoring_sale_list_page.set_detail_datas(\'' + $data.ScoringSaleId + '\')' }, text: $data.ScoringSaleTitle" class="list-col-title-a"></a>
+													</p>
+												</div>
+											</div>
+										</div>
+										<div class="list-col-inner-row hide-list-detail hide-style-list">
+											<div class="list-col-url">
+												<a data-bind="attr: { href: $data.PageUrl }, text: $data.ScoringSaleId" target="_blank"></a>
+											</div>
+										</div>
+										<div class="list-col-inner-row hide-list-detail hide-style-list">
+											<div class="list-col-url">
+												<a href="#" data-bind="text: $data.Memo"></a>
+											</div>
+										</div>
+									</div>
+
+									<div class="list-col w15 hide-list-detail">
+										<p data-bind="visible: $data.PublishStatus == '@Constants.FLG_SCORINGSALE_PUBLISH_STATUS_PUBLISHED'">
+											<span class="icon-status icon-status-open">@CommonPage.ReplaceTag("@@ScoringSale.publish_status.release_text.name@@")</span>
+										</p>
+										<p data-bind="visible: $data.PublishStatus == '@Constants.FLG_SCORINGSALE_PUBLISH_STATUS_UNPUBLISHED'">
+											<span class="icon-status icon-status-close">@CommonPage.ReplaceTag("@@ScoringSale.publish_status.private_text.name@@")</span>
+										</p>
+										<p data-bind="visible: $data.UsePublicRange">
+											<span class="icon-status icon-status-limited">@CommonPage.ReplaceTag("@@ScoringSale.publish_status.disclosure_range_text.name@@")</span>
+										</p>
+									</div>
+									<div class="list-col w15 hide-list-detail ta-left">
+										<a data-bind="attr: { href: 'javascript:scoring_sale_list_page.set_analysis_modal(\'' + $data.ScoringSaleId + '\');' }" style="text-decoration: none; color: black">
+									<div data-popover-message="クリックでレポート表示" class="list-col-recent-status">
+											<dl class="list-col-recent-status-item">
+												<dt>@CommonPage.ReplaceTag("@@ScoringSale.view_text.name@@")</dt>
+												<dd><span class="list-col-recent-status-value" data-bind="text: $data.ViewCount"></span>@CommonPage.ReplaceTag("@@ScoringSale.subject_text.name@@")</dd>
+											</dl>
+											<dl class="list-col-recent-status-item">
+												<dt>@CommonPage.ReplaceTag("@@ScoringSale.count_view_text.name@@")</dt>
+												<dd>
+													<span class="list-col-recent-status-row">
+														<span class="list-col-recent-status-value" data-bind="text: $data.Count"></span>@CommonPage.ReplaceTag("@@ScoringSale.subject_text.name@@")
+													</span>
+													<span class="list-col-recent-status-row">
+														<span class="list-col-recent-status-note" data-bind="text: $data.Price + '@CommonPage.ReplaceTag("@@ScoringSale.unit_text.name@@")'"></span>
+													</span>
+												</dd>
+											</dl>
+											<dl class="list-col-recent-status-item">
+												<dt>@CommonPage.ReplaceTag("@@ScoringSale.count_view_rate_text.name@@")</dt>
+												<dd><span class="list-col-recent-status-value" data-bind="text: $data.CVR"></span>%</dd>
+											</dl>
+										</div>
+									</a>
+									</div>
+								</div>
+								<!-- /ko -->
+								<br>
+								<!-- Items in the list -->
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="simplebar-placeholder" style="width: auto; height: 5826px;"></div>
+			</div>
+			<div class="simplebar-track simplebar-horizontal" style="visibility: hidden;">
+				<div class="simplebar-scrollbar" style="transform: translate3d(0px, 0px, 0px); display: none; width: 31px;"></div>
+			</div>
+			<div class="simplebar-track simplebar-vertical" style="visibility: visible;">
+				<div class="simplebar-scrollbar" style="transform: translate3d(0px, 0px, 0px); display: block; height: 25px;"></div>
+			</div>
+		</div>
+	</div>
+}
+
+@* Tool area for Scoring Sale List *@
+
+@helper ScoringSaleListToolArea()
+{
+	<!-- Scoring sale list tool -->
+	<div class="list-tools">
+		<div class="list-tools-row">
+			<div class="list-tools-col ta-left">
+				<div class="keyword-search">
+					<input name="" id="search_keyword" type="text" placeholder="@CommonPage.ReplaceTag("@@ScoringSale.management_name_text.name@@")" class="keyword-search-input" data-bind="value: SearchWord">
+					<a href="javascript:scoring_sale_list_page.get_page_list()" class="keyword-search-submit">
+						<span class="icon-search"></span>
+					</a>
+				</div>
+				<a class="btn-toggle" data-toggle-content-selector=".list-tools-detailed-search"><span class="toggle-state-icon icon-arrow-down"></span></a>
+			</div>
+			<div class="list-tools-col ta-right">
+				<button id="lp-new-register" class="btn btn-main btn-size-m" type="button" onclick="scoring_sale_list_page.open_new_page();">
+					<span class="icon icon-plus"></span>
+					<span class="hide-list-detail">@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.create.name@@")</span>
+				</button>
+			</div>
+		</div>
+		<div class="list-tools-detailed-search">
+			<div class="list-tools-row">
+				<div class="list-tools-col">
+					<div class="form-element-group form-element-group-horizontal">
+						<div class="form-element-group-title">
+							<label for="form-select-005">@CommonPage.ReplaceTag("@@ScoringSale.release_date_text.name@@")</label>
+						</div>
+						<div class="form-element-group-content">
+							<select name="" id="form-select-005" data-bind="options: SearchDateChangeList, optionsText: 'text', optionsValue: 'value', value: SearchPublicDateKbn">
+							</select>
+						</div>
+					</div>
+					<div class="form-element-group form-element-group-horizontal">
+						<div class="form-element-group-title">
+							<label for="form-select-005">@CommonPage.ReplaceTag("@@ScoringSale.publish_status.title.name@@")</label>
+						</div>
+						<div class="form-element-group-content">
+							<select name="" id="form-select-006" data-bind="options: SearchPublishStatusList, optionsText: 'text', optionsValue: 'value', value: SearchPublishStatus">
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Scoring sale list tool -->
+}
+
+@* Scoring sale detail area *@
+
+@helper ScoringSaleDetailArea()
+{
+	<div class="main-content-detail-inner">
+		<a class="main-content-detail-btn-close">
+			<span class="icon icon-close"></span>
+			@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.close.name@@")
+		</a>
+		<!-- Content detail header -->
+		<div class="main-content-detail-head">
+			<div class="main-content-detail-head-title h2">
+				<input name="input.ScoringSaleTitle" data-bind="value: ScoringSaleTitle" type="text" placeholder="@CommonPage.ReplaceTag("@@ScoringSale.set_management_page_name_text.name@@")">
+				<input type="hidden" class="scoringSaleId" name="input.ScoringSaleId" data-bind="value: ScoringSaleId" />
+			</div>
+			<div class="main-content-detail-head-main-actions">
+				<div class="form-element-group form-element-group-horizontal">
+					<div class="form-element-group-title">
+						<label for="form-select-page-status">@CommonPage.ReplaceTag("@@ScoringSale.situation_text.name@@")</label>
+					</div>
+					<div class="form-element-group-content">
+						<select id="form-select-page-status" data-bind="options: PublishStatusList, optionsText: 'text', optionsValue: 'value', value: PublishStatus">
+						</select>
+					</div>
+				</div>
+				<input type="button" name="Update" onclick="javascript: scoring_sale_list_page.upd()" class="btn btn-main btn-size-l" data-bind=" visible: IsModify" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.update.name@@")" />
+				<input type="button" name="Update" onclick="javascript: scoring_sale_list_page.regi()" class="btn btn-main btn-size-l" data-bind=" visible: IsRegister" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.register.name@@")" />
+				<div class="dropdown" data-bind="visible: IsModify">
+					<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle">
+						<span class="icon-dots"></span>
+					</a>
+					<div class="dropdown-menu">
+						<a id="lp-copy-new-register" class="dropdown-menu-item" href="javascript:scoring_sale_list_page.copy_new()">@CommonPage.ReplaceTag("@@ScoringSale.duplicate_create_scoring_sale_text.name@@")</a>
+						<a class="dropdown-menu-item" href="javascript: scoring_sale_list_page.delete_scoring_sale()">@CommonPage.ReplaceTag("@@ScoringSale.delete_scoring_sale_text.name@@")</a>
+						<a class="dropdown-menu-item" href="javascript: scoring_sale_list_page.reset()">@CommonPage.ReplaceTag("@@ScoringSale.reset_scoring_sale_text.name@@")</a>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- Content detail header -->
+
+		<!-- Content detail body -->
+		<div class="main-content-detail-body simplebar-is-scroll" data-simplebar="init" style="height: 307px;">
+			<div class="simplebar-wrapper" style="margin: -6px -30px 0px;">
+				<div class="simplebar-height-auto-observer-wrapper">
+					<div class="simplebar-height-auto-observer"></div>
+				</div>
+				<div class="simplebar-mask">
+					<div class="simplebar-offset" style="right: -17px; bottom: 0px;">
+						<div class="simplebar-content-wrapper" style="height: 100%; overflow: hidden scroll;">
+							<div class="simplebar-content" style="padding: 6px 30px 0px;">
+								<div class="feature-page-element-head" style="justify-content: flex-start; border-bottom: none; padding-bottom: 0; padding-left: 0;">
+									<h3 style="margin: 0;">@CommonPage.ReplaceTag("@@ScoringSale.basic_setting_text.name@@")</h3>
+								</div>
+								<div class="form-element-group form-element-group-horizontal" style="margin-top: 20px; padding-left: 20px;" data-bind="visible: IsModify">
+									<div class="form-element-group-title">
+										<label for="form-input-002">@CommonPage.ReplaceTag("@@ScoringSale.url_text.name@@")</label>
+									</div>
+									<div class="form-element-group-content">
+										<div class="page-url" style="font-size:14px;">
+											<span class="page-url-value">
+												<span class="page-url-value-filename" data-bind="text: CreateUrl()"></span>
+											</span>
+											<span class="page-url-btns">
+												<button class="btn btn-sub btn-size-s" id="url-copy-btn" type="button">@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.copy.name@@")</button>
+											</span>
+										</div>
+									</div>
+								</div>
+								<div style="padding-left: 20px;">
+									@Html.Partial("_ReleaseRangeSetting", new w2.Cms.Manager.Input.ReleaseRangeSettingInput
+									{
+										UseDate = true,
+										UseMemberRank = false,
+										UseTargetList = false
+									})
+								</div>
+								<div class="form-element-group form-element-group-horizontal-grid" style="display: flex; align-items: center;">
+									<div class="form-element-group-title" style="padding-top: 5px; padding-left: 20px;">
+										<label>@CommonPage.ReplaceTag("@@ScoringSaleQuestion.list_head.score_axis_title.name@@")<span class="notice">*</span></label>
+									</div>
+									<div class="form-element-group-content">
+										<div class="access-authority-setting-period-info" style="margin-bottom: 0px;">
+											<div style="margin-top: 5px; word-break: break-all;" data-bind="html: ScoreAxisTitle()"></div>
+											<a href="javascript:void(0);" data-bind="class: scoring_sale_list_page.score_axis_button_class(ScoreAxisTitle()), visible: IsRegister" style="margin: 5px 0 0 10px;">
+												<div onclick="javascript: scoring_sale_list_page.open_modal_score_axis()" data-bind="html: scoring_sale_list_page.score_axis_button_text(ScoreAxisTitle())"></div>
+											</a>
+										</div>
+									</div>
+								</div>
+								<div class="form-element-group form-element-group-horizontal-grid" style="padding-left: 20px;">
+									<div class="form-element-group-title">
+										<label>@CommonPage.ReplaceTag("@@ScoringSale.theme_color_text.name@@")<span class="notice">*</span></label>
+									</div>
+									<div class="list-style-switch-inner" style="width: 100%" data-bind="foreach: { data: $data.ThemeColorList, as: 'ListThemeColor' }">
+										<input type="radio" data-bind="value: ListThemeColor.value, attr: {id: 'themas-' + ($index() + 1), style: ($index() > 0) ? 'margin-left: 10px; -ms-zoom: 1;' : '-ms-zoom: 1;' }, checked: $parent.ThemeColor">
+										<label data-bind="attr: {for: 'themas-' + ($index() + 1)}" class="btn-switch">
+											<div class="sp-replacer sp-light">
+												<div class="sp-preview">
+													<div class="sp-preview-inner" data-bind="attr : { style : 'background-color:' + ListThemeColor.value + '; width: 25px; height: 25px;'}"></div>
+												</div>
+											</div>
+										</label>
+									</div>
+								</div>
+								<div class="form-element-group form-element-group-horizontal-grid" style="padding-left: 20px;">
+									<div class="form-element-group-content" style="width: 100%;">
+										<div class="access-authority-setting-period-info">
+											<img data-bind="visible: (ThemeColor() != ''), attr:{src : scoring_sale_list_page.image_path_text(ThemeColor())}" alt="" />
+										</div>
+									</div>
+								</div>
+								<h3 data-bind="visible: IsModify">@CommonPage.ReplaceTag("@@ScoringSale.preview_text.name@@")</h3>
+								<div class="form-element-group form-element-group-horizontal-grid" data-bind="visible: IsModify" style="width: 20%; padding-left: 20px;">
+									@if (DesignCommon.UseResponsive)
+									{
+										<div class="form-element-group-content">
+											<div class="access-authority-setting-period-info-value-value">
+												<input type="button" class="btn btn-sub btn-size-s" onclick="javascript: scoring_sale_list_page.open_preview_page('PC');" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.preview_responsive.name@@")">
+												<input type="hidden" name="scoringSaleId" data-bind="value: ScoringSaleId">
+											</div>
+										</div>
+									}
+									else
+									{
+										<div class="form-element-group-content">
+											<div class="access-authority-setting-period-info-value-value">
+												<input type="button" class="btn btn-sub btn-size-s" onclick="javascript: scoring_sale_list_page.open_preview_page('PC');" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.preview_front.name@@")">
+												<input type="hidden" name="scoringSaleId" data-bind="value: ScoringSaleId">
+											</div>
+										</div>
+										<div class="form-element-group-content">
+											<div class="access-authority-setting-period-info-value-value">
+												<input type="button" class="btn btn-sub btn-size-s" onclick="javascript: scoring_sale_list_page.open_preview_page('SP');" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.preview_smartphone.name@@")">
+												<input type="hidden" name="scoringSaleId" data-bind="value: ScoringSaleId">
+											</div>
+										</div>
+									}
+								</div>
+								<h3>@CommonPage.ReplaceTag("@@ScoringSale.page_setup_text.name@@")</h3>
+								<div class="feature-page-element-head" style="padding: 10px 10px 10px 0; border-bottom: none; justify-content: left;">
+									<div class="page-layout-template-active-selector">
+										<input id="TopPageUseFlg" type="checkbox" value="true" data-bind="checked: TopPageUseFlg">
+										<label for="TopPageUseFlg">@CommonPage.ReplaceTag("@@ScoringSale.use_the_top_page_text.name@@")</label>
+									</div>
+								</div>
+								<div class="feature-page-elements" style="background-color: white;">
+									<div class="feature-page-element" data-bind="visible : TopPageUseFlg()">
+										<div class="feature-page-element-head" style="padding: 5px 10px; border-bottom: none;">
+											<div class="feature-page-element-head-left" style="width: 100%;">
+												<div class="feature-page-element-title" style="width: 100%; font-size: 15px; padding-top: 5px; display: flex; font-size: 20px;">
+													<span>@CommonPage.ReplaceTag("@@ScoringSale.top_page_text.name@@")</span>
+													<div style="width: 75%;"></div>
+												</div>
+											</div>
+										</div>
+										<div class="feature-page-elements" style="background-color: white; margin: 15px;">
+											<div class="form-element-group form-element-group-horizontal-grid">
+												<div class="form-element-group-title" style="padding-left: 10px; padding-top: 10px; width: 120px;">
+													<label>@CommonPage.ReplaceTag("@@ScoringSale.page_title.name@@")<span class="notice">*</span></label>
+												</div>
+												<div class="form-element-group-content">
+													<input style="width: 90%;" type="text" data-bind="value: TopPageTitle">
+												</div>
+											</div>
+											<div class="form-element-group form-element-group-horizontal-grid">
+												<div class="form-element-group-title" style="padding-left: 10px; padding-top: 10px; width: 120px;">
+													<label>@CommonPage.ReplaceTag("@@ScoringSale.page_subtitle.name@@")<span class="notice">*</span></label>
+												</div>
+												<div class="form-element-group-content">
+													<input style="width: 90%;" type="text" data-bind="value: TopPageSubTitle">
+												</div>
+											</div>
+											<div class="form-element-group form-element-group-horizontal-grid">
+												<div class="form-element-group-title" style="padding-left: 10px; width: 120px;">
+													<label for="internalMemo">@CommonPage.ReplaceTag("@@ScoringSale.body_text.name@@")<span class="notice">*</span></label>
+												</div>
+												<div class="form-element-group-content">
+													<textarea name="input.InternalMemo" cols="20" id="topPageBody" rows="2" style="width: 90%; height: 150px;" data-bind="value: TopPageBody"></textarea>
+												</div>
+											</div>
+										</div>
+										<div class="form-element-group form-element-group-horizontal-grid">
+											<div class="form-element-group-title" style="margin-left: 27px; width: 120px;">
+												<label>@CommonPage.ReplaceTag("@@ScoringSale.image_text.name@@")</label>
+											</div>
+											<div class="form-element-group-content">
+												<div style="max-width: 89%; min-width: 460px">
+													<div class="image-upload-content" data-bind="fileDrop: { drop: DropFile, isdrop: IsDropFile }">
+														<div class="image-upload-content-drag">
+															<div class="image-upload-content-block-wrapper" data-bind="visible: $data.ImageSrc() != ''">
+																<div class="image-upload-content-block">
+																	<div class="image-upload-content-block-image">
+																		<img data-bind="attr: { src: ImageSrc }" alt="ScoringSaleImage" class="existing_img">
+																	</div>
+																	<div class="image-upload-content-block-control">
+																		<dl>
+																			<dt data-bind="text: scoring_sale_list_page.get_file_name_image($data)"></dt>
+																		</dl>
+																		<button type="button" class="btn btn-main btn-size-s" data-bind="click: function (data, event) { scoring_sale_list_page.remove_image(data); }">削除</button>
+																	</div>
+																</div>
+															</div>
+															<div id="uploadedImage"></div>
+															<p class="image-upload-content-drag-text">@CommonPage.ReplaceTag("@@ScoringSale.drag_image_file_text.name@@")&amp;@CommonPage.ReplaceTag("@@ScoringSale.drop_or_select_image_text.name@@")</p>
+															<div class="image-upload-content-drag-btns">
+																<label class="btn btn-main btn-size-m">
+																	@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.select_image.name@@")
+																	<input type="file" name="upload_img" class="upload_img" style="display: none;" data-bind="fileUpload: { upload: UploadFile, isdrop: IsDropFile }" />
+																</label>
+																<p class="image-upload-content-drag-btns-text">
+																	@CommonPage.ReplaceTag("@@ScoringSale.or_text.name@@")
+																	<a href="javascript:void(0)" class="btn btn-main btn-size-m" data-bind="click: function (data, event) { scoring_sale_list_page.show_image_list_modal(data); }">@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.select_image_from_list.name@@")</a>
+																</p>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+
+										<div style="width: 30%; text-align: left; margin-top: 20px;">
+											<h4 style="margin: 0 0 0 23px">@CommonPage.ReplaceTag("@@ScoringSale.button_setting_text.name@@")</h4>
+										</div>
+										<div class="feature-page-element-head" style="justify-content: flex-start; border: none; padding-left: 32px; padding-top: 0px;">
+											<div class="feature-page-element-head-left set_name" style="padding-right: 5px;">
+												<div class="form-element-group-title" style="width: 108px;">
+													<label>@CommonPage.ReplaceTag("@@ScoringSale.next_page_text.name@@")<span class="notice">*</span></label>
+												</div>
+												<div class="form-element-group-content" style="padding-left: 10px">
+													<input style="width: 200px;" type="text" data-bind="value: TopPageBtnCaption">
+												</div>
+											</div>
+										</div>
+									</div>
+									@* Modal window: Scoring sale question page *@
+									@Html.Partial("_ScoringSaleQuestionPage")
+									<div class="feature-page-elements" style="background-color: white; margin-top: 100px;">
+										<div class="feature-page-element">
+											<div class="feature-page-element-head" style="padding: 5px 10px; border-bottom: none;">
+												<div class="feature-page-element-head-left" style="width: 100%;">
+													<div class="feature-page-element-title" style="width: 100%; padding-top: 5px; display: flex; font-size: 20px;">
+														<span>@CommonPage.ReplaceTag("@@ScoringSale.result_page_text.name@@")</span>
+														<div style="width: 75%;"></div>
+													</div>
+												</div>
+											</div>
+											<div class="feature-page-elements" style="background-color: white; margin: 15px;">
+												<div class="form-element-group form-element-group-horizontal-grid">
+													<div class="form-element-group-title" style="padding-left: 10px; padding-top: 10px; width: 150px;">
+														<label>@CommonPage.ReplaceTag("@@ScoringSale.page_title.name@@")<span class="notice">*</span></label>
+													</div>
+													<div class="form-element-group-content">
+														<input style="width: 90%;" type="text" data-bind="value: ResultPageTitle">
+													</div>
+												</div>
+											</div>
+											<div style="width: 30%; text-align: left;">
+												<h4 style="margin-left: 15px;">@CommonPage.ReplaceTag("@@ScoringSale.body_settings_text.name@@")</h4>
+											</div>
+											<div class="form-element-group form-element-group-horizontal-grid" style="margin: 0 0 5px 160px;">
+												<input type="button" id="btnInsertableReplacementTagList" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.list_of_replaceable_tags.name@@")" class="btn btn-sub btn-size-m" style="margin-left: 15px;">
+											</div>
+											<div class="feature-page-elements" style="background-color: white; margin: 15px;">
+												<div class="form-element-group form-element-group-horizontal-grid" style="margin: 23px 0 5px 0;">
+													<div class="form-element-group-title" style="padding-left: 10px; width: 150px; margin-top: 7px;">
+														<label for="internalMemo">@CommonPage.ReplaceTag("@@ScoringSale.html_up_text.name@@")</label>
+													</div>
+													<input type="button" onclick="javascript:open_wysiwyg('tbHtmlUp');" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.html_editor.name@@")" class="btn btn-main btn-size-m"><br>
+												</div>
+												<div class="form-element-group form-element-group-horizontal-grid" style="padding-left: 160px;">
+													<textarea id="tbHtmlUp" data-bind="value: ResultPageBodyAbove" rows="4" cols="20" style="width: 90%; height: 100px; outline: none;" onfocus ="textAreaId = document.getElementById(this.id);" />
+												</div>
+											</div>
+											<div class="feature-page-elements" style="background-color: white; margin: 15px;">
+												<div class="form-element-group form-element-group-horizontal-grid" style="margin: 23px 0 5px 0;">
+													<div class="form-element-group-title" style="padding-left: 10px; width: 150px; margin-top: 7px;">
+														<label for="internalMemo">@CommonPage.ReplaceTag("@@ScoringSale.html_down_text.name@@")</label>
+													</div>
+													<input type="button" onclick="javascript:open_wysiwyg('tbHtmlDown');" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.html_editor.name@@")" class="btn btn-main btn-size-m"><br>
+												</div>
+												<div class="form-element-group form-element-group-horizontal-grid" style="padding-left: 160px;">
+													<textarea id="tbHtmlDown" data-bind="value: ResultPageBodyBelow" rows="4" cols="20" style="width: 90%; height: 100px; outline: none;" onfocus="textAreaId = document.getElementById(this.id);" />
+												</div>
+											</div>
+											<div class="feature-page-elements" style="background-color: white; margin: 15px;">
+												<div style="width: 30%; text-align: left; margin-top: 20px;">
+													<h4 style="margin: 0">@CommonPage.ReplaceTag("@@ScoringSale.button_setting_text.name@@")</h4>
+												</div>
+												<div class="feature-page-element-head" style="justify-content: flex-start; border: none; padding-left: 15px; padding-top: 10px;">
+													<div class="feature-page-element-head-left set_name" style="padding-right: 5px;">
+														<div class="form-element-group-title" style="width: 138px;">
+															<label>@CommonPage.ReplaceTag("@@ScoringSale.product_detail_link_text.name@@")<span class="notice">*</span></label>
+														</div>
+														<div class="form-element-group-content" style="padding-left: 7px">
+															<input style="width: 200px;" type="text" data-bind="value: ResultPageBtnCaption">
+														</div>
+													</div>
+												</div>
+											</div>
+											<div style="width: 30%; text-align: left;">
+												<h4 style="margin-left: 15px;">@CommonPage.ReplaceTag("@@ScoringSale.radar_chart_settings_text.name@@")</h4>
+											</div>
+											<div class="feature-page-element-head" style="padding: 0px 10px 10px 25px; border-bottom: none; justify-content: left;">
+												<div class="page-layout-template-active-selector">
+													<input id="RadarChartUseFlg" type="checkbox" value="true" data-bind="checked: RadarChartUseFlg">
+													<label for="RadarChartUseFlg">@CommonPage.ReplaceTag("@@ScoringSale.use_radar_chart_text.name@@")</label>
+												</div>
+											</div>
+											<div class="feature-page-elements" style="background-color: white; margin: 15px;" data-bind="visible : RadarChartUseFlg()">
+												<div class="form-element-group form-element-group-horizontal-grid">
+													<div class="form-element-group-title" style="padding-left: 10px; padding-top: 10px; width: 150px;">
+														<label>@CommonPage.ReplaceTag("@@ScoringSale.page_title.name@@")<span class="notice">*</span></label>
+													</div>
+													<div class="form-element-group-content">
+														<input style="width: 90%;" type="text" data-bind="value: RadarChartTitle">
+													</div>
+												</div>
+											</div>
+											<!-- Recommend product condition settings -->
+											<div style="margin: 0; width: 98%;">
+												<div style="width: 40%; text-align: left;">
+													<h4 style="margin-left: 15px;">@CommonPage.ReplaceTag("@@ScoringSale.recommended_product_condition_setting_text.name@@")</h4>
+												</div>
+												@* Scoring sale product recommend setting *@
+												@Html.Partial("_ScoringSaleProductRecommendSettings")
+											</div>
+											<!-- Recommend product condition settings -->
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="simplebar-placeholder" style="width: auto; height: 5826px;"></div>
+			</div>
+			<div class="simplebar-track simplebar-horizontal" style="visibility: hidden;">
+				<div class="simplebar-scrollbar" style="transform: translate3d(0px, 0px, 0px); display: none;"></div>
+			</div>
+			<div class="simplebar-track simplebar-vertical" style="visibility: visible;">
+				<div class="simplebar-scrollbar" style="transform: translate3d(0px, 222px, 0px); display: block; height: 36px;"></div>
+			</div>
+		</div>
+		<!-- Content detail body -->
+	</div>
+}
+
+<!-- Score axis modal -->
+@Html.Partial("_ScoreAxisModal")
+
+@Html.Partial("_ScoringSaleQuestionModal")
+
+@helper ProductModal(SessionWrapper sessionWrapper)
+{
+	<div class="modal-content-hide">
+		@Html.Partial("_ProductModal", new ProductSettingModalModel(sessionWrapper.LoginShopId, Constants.CONTROLLER_W2CMS_MANAGER_SCORING_SALE)
+		{
+			UseGroupSelectTab = false,
+			UseProductListInputTab = false,
+			IsVariationList = true,
+			SetProductControllerActionName = "SetProductVariation",
+			ExtraId = "-product-recommend"
+		})
+	</div>
+}
+
+<!-- Scoring sale list image modal -->
+@helper ScoringSaleListImageModal()
+{
+	<div class="modal-content-hide">
+		@Html.Partial(Constants.CMS_PARTIALVIEWNAME_SCORING_SALE_IMAGE_LIST_MODAL)
+	</div>
+}
+
+<!-- 分析表示用のモーダル -->
+@helper AbTestAnalysisModal(SessionWrapper sessionWrapper)
+{
+	<div class="modal-content-hide">
+		<div id="modal-analysis"></div>
+	</div>
+}
+
+<a href="javascript:void(0)" class="list-menu-btn">
+	<span class="icon icon-menu"></span>
+</a>
+<div class="main-content-list">
+	<!-- Scoring sale list tool area -->
+	@ScoringSaleListToolArea()
+	<!-- Scoring sale list tool area -->
+
+	<!-- Scoring sale list area -->
+	@ScoringSaleListArea()
+	<!-- Scoring sale list area -->
+</div>
+
+<div class="main-content-detail" id="lpDetailBody">
+	<!-- Scoring sale detail area -->
+	@ScoringSaleDetailArea()
+	<!-- Scoring sale detail area -->	
+</div>
+
+<!-- Modal: Product settings -->
+@ProductModal(sessionWrapper)
+<!-- Modal: Product settings -->
+
+<!-- Scoring sale list of replacement tag -->
+@Html.Partial("_ReplacementTag")
+<!-- Scoring sale list of replacement tag -->
+
+<!-- Scoring sale list image modal -->
+@ScoringSaleListImageModal()
+
+<!-- モーダル：分析表示 -->
+@AbTestAnalysisModal(sessionWrapper)
+
+<script type="text/javascript">
+	var imageIdInput;
+	var ltimer;
+	var view_model;
+	var scoringSaleQuestionPageTemplate;
+	var productRecommendTemplate;
+	var score_axis_temp;
+
+	// Initialization page
+	$(function () {
+		list.ini();
+		page_url_edit.ini();
+		dropdown_toggle.ini();
+		input_datepicker.ini();
+		toggle.ini();
+		access_authority_setting.ini();
+	});
+
+	// Initialization scoring sale list page
+	var scoring_sale_list_page = (function () {
+		var clipboard = new ClipboardJS(
+			'#url-copy-btn',
+			{
+				text: function (trigger) {
+					if (view_model.IsModify() == false) {
+						return false;
+					}
+
+					return clipboard_url_copy(trigger);
+				}
+			});
+
+		// Dragover for event
+		function dragover(_e) {
+			var e = _e;
+			if (_e.originalEvent) {
+				e = _e.originalEvent;
+			}
+			e.preventDefault();
+		}
+
+		// Set image when dropping the file
+		function setImage(_e, obj) {
+			var e = _e;
+			if (_e.originalEvent) {
+				e = _e.originalEvent;
+			}
+			e.preventDefault();
+
+			if (canUploadImage(e.dataTransfer.files[0]) === false) {
+				obj.isdrop(false);
+				return;
+			}
+
+			obj.isdrop(true);
+			obj.drop(e.dataTransfer.files[0]);
+		}
+
+		// Check format and size of upload image
+		function canUploadImage(file) {
+			if (!file
+				|| (file.type.indexOf('image/jpeg') < 0
+					&& file.type.indexOf('image/gif') < 0
+					&& file.type.indexOf('image/png') < 0
+					&& file.type.indexOf('image/bmp') < 0
+					&& file.type.indexOf('image/svg') < 0
+					&& file.type.indexOf('image/tiff') < 0)) {
+				notification.show(disptext_file_format_message.replace('@@ 1 @@', 'JPEG / GIF / PNG / BMP / SVG / TIFF'), 'warning', 'fadeout');
+				return false;
+			} else if (file.size > max_file_size) {
+				notification.show(disptext_file_size_message.replace('@@ 1 @@', max_file_size / 1024), 'warning', 'fadeout');
+				return false;
+			}
+
+			return true;
+		}
+
+		var scoringSaleQuestionPageTemplate;
+		var selectedProductSet;
+
+		return {
+			ini: function () {
+				view_model = {
+					ScoringSaleId: ko.observable(),
+					ScoringSaleTitle: ko.observable(),
+					PublicStartDatetime: ko.observable(),
+					RangeStartDate: ko.observable(),
+					RangeStartTime: ko.observable(),
+					RangeEndDate: ko.observable(),
+					RangeEndTime: ko.observable(),
+					PublishStatus: ko.observable(),
+					PublishStatusList: ko.observableArray(
+						@Html.Raw(ValueTextForCms.ConvertValueTextListToArrayStringNotEmpty(Constants.TABLE_SCORINGSALE, Constants.FIELD_SCORINGSALE_PUBLISH_STATUS))),
+					SearchWord: ko.observable(),
+					SearchPublishStatus: ko.observable(),
+					SearchPublishStatusList: ko.observableArray(
+						@Html.Raw(ValueTextForCms.ConvertValueTextToArrayString(Constants.TABLE_SCORINGSALE, Constants.FIELD_SCORINGSALE_PUBLISH_STATUS))),
+					PageList: ko.observableArray([]),
+					SearchPublicDateKbn: ko.observable(),
+					SearchDateChangeList: ko.observableArray(
+						@Html.Raw(ValueTextForCms.ConvertValueTextToArrayString(Constants.TABLE_SCORINGSALE, Constants.VALUETEXT_PARAM_PUBLIC_DATE_KBN))),
+					ThemeColor: ko.observable(),
+					ThemeColorList: ko.observableArray(
+						@Html.Raw(ValueTextForCms.ConvertValueTextToArrayString(Constants.TABLE_SCORINGSALE, Constants.FIELD_SCORINGSALE_THEME_COLOR))),
+					DownKeys: '',
+					IsModify: ko.observable(),
+					IsRegister: ko.observable(),
+					TopPageUseFlg: ko.observable(),
+					TopPageTitle: ko.observable(),
+					TopPageSubTitle: ko.observable(),
+					TopPageBody: ko.observable(),
+					TopPageImgPath: ko.observable(),
+					TopPageBtnCaption: ko.observable(),
+					ResultPageTitle: ko.observable(),
+					ResultPageBtnCaption: ko.observable(),
+					ResultPageImgPath: ko.observable(),
+					ResultPageBodyAbove: ko.observable(),
+					ResultPageBodyBelow: ko.observable(),
+					RadarChartUseFlg: ko.observable(),
+					RadarChartTitle: ko.observable(),
+					ReplacementTagList: ko.observableArray([]),
+					ScoreAxisId: ko.observable(),
+					ScoreAxisTitle: ko.observable(),
+					ScoreAxisList: ko.observableArray([]),
+					ScoreAxisAxisNoList: ko.observableArray([]),
+					ScoreAxisCountHtml: ko.observable(''),
+					ScoringSaleQuestions: ko.observableArray([]),
+					ScoringSaleQuestionCountHtml: ko.observable(''),
+					ScoringSaleQuestionPages: ko.observableArray([]),
+					ScoringSaleQuestionPagesLength: ko.observable(0),
+					ProductRecommend: ko.observable({}),
+					ProductRecommendConditions: ko.observableArray([]),
+					ProductRecommendConditionsLength: ko.observable(0),
+					ConditionType: ko.observableArray(
+						@Html.Raw(ValueTextForCms.ConvertValueTextToArrayString(
+							Constants.TABLE_SCORINGSALE,
+							Constants.VALUETEXT_SCORINGSALE_PRODUCT_RECOMMEND_CONDITION_TYPE))),
+					ValueType: ko.observableArray(
+						@Html.Raw(ValueTextForCms.ConvertValueTextToArrayString(
+							Constants.TABLE_SCORINGSALE,
+							Constants.VALUETEXT_SCORINGSALE_PRODUCT_RECOMMEND_CONDITION_VALUE))),
+					SelectedValueType: ko.observable(),
+					CreateUrl: function () {
+						var page = (this.TopPageUseFlg())
+							? '@Constants.PAGE_FRONT_SCORINGSALE_TOP_PAGE'
+							: '@Constants.PAGE_FRONT_SCORINGSALE_QUESTION_PAGE';
+
+						return '@(Constants.PROTOCOL_HTTPS + Constants.SITE_DOMAIN + Constants.PATH_ROOT_FRONT_PC)' + page + '@('?' + Constants.REQUEST_KEY_SCORINGSALE_ID + '=')' + this.ScoringSaleId();
+					},
+					IsCopyImage: ko.observable(false),
+					UploadFile: ko.observable(),
+					ImageSrc: ko.observable(''),
+					FileName: ko.observable(''),
+					TopPageImgPath: ko.observable(''),
+					DropFile: ko.observable(),
+					IsDropFile: ko.observable(false),
+				}
+
+				// Product set Valid checkbox Label setting
+				ko.bindingHandlers.validIdAttribute = {
+					init: function (element, valueAccessor, allBindings) {
+						var param = valueAccessor();
+						element.id = 'validIdAttribute_' + param;
+					}
+				};
+
+				// Product set valid checkbox label setting
+				ko.bindingHandlers.validForAttribute = {
+					init: function (element, valueAccessor, allBindings) {
+						var param = valueAccessor();
+						element.htmlFor = 'validIdAttribute_' + param;
+					}
+				};
+
+				// File upload event
+				ko.bindingHandlers.fileUpload = {
+					init: function (element, valueAccessor) {
+						var options = valueAccessor();
+						$(element).change(function () {
+							if (canUploadImage(element.files[0]) === false) {
+								options.isdrop(false);
+								return;
+							}
+
+							options.isdrop(false);
+							options.upload(element.files[0]);
+						});
+					},
+					update: function (element, valueAccessor) {
+						if (ko.unwrap(valueAccessor()) === null) {
+							$(element).wrap('<form>').closest('form').get(0).reset();
+							$(element).unwrap();
+						}
+					}
+				};
+
+				// File drop event
+				ko.bindingHandlers.fileDrop = {
+					init: function (element, valueAccessor) {
+						var options = valueAccessor();
+						var block = $(element);
+						var drag_area = block.find('.image-upload-content-drag');
+						var switch_active = {
+							on : function(){
+								if(!drag_area.hasClass('active')){
+									drag_area.css({
+										'height' : drag_area.outerHeight()+'px',
+										'padding' : 0,
+										'line-height' : drag_area.outerHeight()+'px'
+									}).addClass('active');
+								}
+							},
+							off : function(){
+								drag_area.css({
+									'height' : '',
+									'padding' : '',
+									'line-height' : ''
+								}).removeClass('active');
+							}
+						}
+
+						if (browser == 'firefox') {
+							$('body').off('dragover drop').on('dragover drop', function(event) {
+								dragover(event);
+							});
+
+							drag_area.off('dragover').on('dragover', function(event) {
+								switch_active.on();
+							});
+
+							drag_area.off('dragleave').on('dragleave', function(event) {
+								switch_active.off();
+							});
+
+							drag_area.off('drop').on('drop', function(event) {
+								switch_active.off();
+								setImage(event, options);
+							});
+						} else {
+							$('body').off('dragover drop').on('dragover drop', function() {
+								dragover(event);
+							});
+
+							drag_area.off('dragenter').on('dragenter', function () {}, false);
+
+							drag_area.off('dragover').on('dragover', function() {
+								switch_active.on();
+							});
+
+							drag_area.off('dragleave').on('dragleave', function() {
+								switch_active.off();
+							});
+
+							drag_area.off('drop').on('drop', function() {
+								switch_active.off();
+								setImage(event, options);
+							});
+						}
+					},
+					update: function (element, valueAccessor) {
+						if (ko.unwrap(valueAccessor()) === null) {
+							$(element).wrap('<form>').closest('form').get(0).reset();
+							$(element).unwrap();
+						}
+					}
+				};
+
+				// View model bind
+				ko.applyBindings(view_model);
+				var openDetailId = '@Model.OpenDetailScoringSaleId';
+
+				// If the ID is specified, open the details.
+				if (openDetailId != '') {
+					set_detail_datas(openDetailId);
+					list.open();
+				}
+
+				var urlHash = location.hash;
+				if (urlHash) {
+					var scoringSaleId = urlHash.replace("#page", "");
+					$.ajax({
+						type: "POST",
+						url: "@Url.Action("ExistPage")",
+						data: { 'scoringSaleId': scoringSaleId }
+					}).done(function (data) {
+						if (data.result === "true") {
+							set_detail_datas(scoringSaleId);
+						} else {
+							setTimeout(function () { notification.show('@WebMessages.FailedOpenPageError', 'warning', 'fadeout'); }, 200);
+						}
+					});
+				}
+
+				// Get page list
+				get_page_list();
+
+				clipboard.off('success').on(
+					'success',
+					function (e) {
+						notification.show("「" + e.text + "」@WebMessages.CopyToClipboardMessage", 'info', 'fadeout');
+						e.clearSelection();
+					}
+				);
+
+				// Drag window
+				$("#draggable_floatWindow").draggable();
+				$("#resizable_floatWindow").resizable({
+					minHeight: 110,
+					minWidth: 400
+				});
+				$(".replacementtag-close").click(function () {
+					$("#draggable_floatWindow").hide();
+					return false;
+				});
+
+				// Get replacement tag list
+				$("#btnInsertableReplacementTagList").click(function () {
+					var url = '@Url.Action("GetReplacementTag")';
+					$.ajax({
+						url: url,
+						type: 'POST',
+						dataType: 'json',
+						contentType: 'application/json'
+					}).then(
+						function(data) {
+							view_model.ReplacementTagList(data);
+						}
+					);
+					$("#draggable_floatWindow").show();
+					$("#replacementtag thead th:first-child").css('width', $("#replacementtag tbody td:first-child").width() + 1);
+					$("#replacementtag thead th:nth-child(2)").css('width', $("#replacementtag tbody td:nth-child(2)").width() + 1);
+					return false;
+				});
+
+				// Resize
+				$(function () {
+					$("#resizable_floatWindow").resize(function () {
+						$("#draggable_floatWindow").height($("#resizable_floatWindow").height());
+						$("#draggable_floatWindow").width($("#resizable_floatWindow").width());
+						$("#replacementtag tbody").css('max-height', $("#resizable_floatWindow").height() - 77);
+						$("#replacementtag tbody td").css('width', ($("#resizable_floatWindow").width() - 10) / 2);
+						$("#replacementtag thead th:first-child").css('width', $("#replacementtag tbody td:first-child").width() + 1);
+						$("#replacementtag thead th:nth-child(2)").css('width', $("#replacementtag tbody td:nth-child(2)").width() + 1);
+					});
+				});
+			},
+			get_page_list: function () {
+				get_page_list();
+			},
+			open_preview_page: function (designType) {
+				var input = create_post_input();
+				var url = '@Url.Action("CreatePreviewFileListPage")';
+				var post_data = { input: input, designType: designType };
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: JSON.stringify(post_data),
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function (data) { compaction(data.topUseFlg, data.previewKey, designType, data.scoringSaleId) },
+					function () { to_error() }
+				);
+			},
+			reset: function () {
+				this.set_detail_datas(view_model.ScoringSaleId());
+				setTimeout(function () {
+					view_model.RangeStartDate('');
+					view_model.RangeStartTime('');
+					view_model.RangeEndDate('');
+					view_model.RangeEndTime('');
+					view_model.ThemeColor('');
+					set_period_input();
+				}, 600);
+			},
+			set_detail_datas: function (id) {
+				set_detail_datas(id);
+			},
+			open_new_page: function () {
+				var url = '@Url.Action("GetDefaultScoringSaleDetailViewModel")';
+				$.ajax({
+					url: url,
+					type: 'POST',
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function (data) {
+						view_model.ScoringSaleId(''),
+						view_model.ScoringSaleTitle(''),
+						view_model.PublishStatus('@Constants.FLG_SCORINGSALE_PUBLISH_STATUS_UNPUBLISHED'),
+						view_model.RangeStartDate('');
+						view_model.RangeStartTime('');
+						view_model.RangeEndDate('');
+						view_model.RangeEndTime('');
+						view_model.ScoreAxisId(''),
+						view_model.ScoreAxisTitle(''),
+						view_model.ThemeColor(''),
+						view_model.TopPageTitle(''),
+						view_model.TopPageSubTitle(''),
+						view_model.TopPageBody(''),
+						view_model.TopPageImgPath(''),
+						view_model.TopPageBtnCaption('@CommonPage.ReplaceTag("@@ScoringSale.next_text.name@@")'),
+						view_model.ResultPageTitle(''),
+						view_model.ResultPageBodyAbove(''),
+						view_model.ResultPageBodyBelow(''),
+						view_model.RadarChartTitle(''),
+						view_model.ResultPageImgPath(''),
+						view_model.ResultPageBtnCaption('@CommonPage.ReplaceTag("@@ScoringSale.product_detail_text.name@@")'),
+						view_model.IsModify(false);
+						view_model.IsRegister(true);
+						view_model.TopPageUseFlg(true);
+						view_model.RadarChartUseFlg(true);
+						view_model.ScoringSaleQuestionPages.splice(view_model.ScoringSaleQuestionPages.length);
+						view_model.ScoreAxisAxisNoList.splice(view_model.ScoreAxisAxisNoList.length);
+						view_model.IsCopyImage(false);
+						view_model.IsDropFile(false);
+						view_model.UploadFile(null);
+						view_model.DropFile(null);
+						view_model.ImageSrc('');
+						view_model.TopPageImgPath(null);
+
+						// Set default period
+						set_period_input();
+
+						var clone = $.extend(true, {}, scoringSaleQuestionPageTemplate);
+						clone.PageName = ko.observable('');
+						clone.PreviousPageBtnCaption = ko.observable('@CommonPage.ReplaceTag("@@ScoringSale.previous_text.name@@")');
+						clone.NextPageBtnCaption = ko.observable('@CommonPage.ReplaceTag("@@ScoringSale.next_text.name@@")');
+						clone.ScoringSaleQuestionItemIds = ko.observable('');
+						clone.ScoringSaleQuestionItems = ko.observableArray([]);
+						clone.IsSameAsFirstPage = ko.observable(false);
+						clone.Id = getUniqueId();
+						view_model.ScoringSaleQuestionPages.push(clone);
+						view_model.ScoringSaleQuestionPagesLength(view_model.ScoringSaleQuestionPages.length);
+						view_model.ProductRecommend({}),
+						view_model.ProductRecommendConditions([]),
+
+						productRecommendTemplate = {};
+						for(var index = 0; index < data.ProductRecommendConditions.length; index++)
+						{
+							for (var item = 0; item < data.ProductRecommendConditions[index].Conditions.length; item++) {
+								data.ProductRecommendConditions[index].Conditions[item].IsGroupChecked = ko.observable(false);
+								data.ProductRecommendConditions[index].Conditions[item].ValueCondition = ko.observable(data.ProductRecommendConditions[index].ValueCondition);
+								data.ProductRecommendConditions[index].Conditions[item].Condition = ko.observable(data.ProductRecommendConditions[index].Conditions[item].Condition);
+							}
+							var conditions = ko.observableArray(data.ProductRecommendConditions[index].Conditions);
+							data.ProductRecommendConditions[index].Conditions = conditions;
+							data.ProductRecommendConditions[index].ProductGroupChecksList = ko.observableArray([]);
+							productRecommendTemplate.ConditionTypeGroup = ko.observable(data.ProductRecommendConditions[index].ConditionTypeGroup);
+							productRecommendTemplate.ConditionTypeNonGroup = ko.observable(data.ProductRecommendConditions[index].ConditionTypeNonGroup);
+						}
+						productRecommendConditionsTemplate = data.ProductRecommendConditions;
+						list.open();
+					}
+				);
+			},
+			regi: function() {
+				loading_animation.start();
+				var url = '@Url.Action("Register")';
+				var post_data = create_post_input();
+				var form_data = object_to_form_data(post_data);
+
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: form_data,
+					processData: false,
+					contentType: false
+				}).then(
+					// The first is a callback when communication is successful.
+					function(data) { regi_success(data); },
+					// The second is a callback when communication fails.
+					function() { to_error(); });
+			},
+			upd: function() {
+				checkOtherOperatorFileOpening('lScoringSaleId' + view_model.ScoringSaleId()).done(function(result) {
+					if (result !== "") {
+						notification.show(result, 'warning', 'fixed');
+						return;
+					} else {
+						loading_animation.start();
+						var url = '@Url.Action("Update")';
+						var post_data = create_post_input();
+						var form_data = object_to_form_data(post_data);
+
+						$.ajax({
+							url: url,
+							type: 'POST',
+							data: form_data,
+							processData: false,
+							contentType: false
+						}).then(
+							function(data) { upd_success(data); },
+							function() { to_error(); }
+						);
+					}
+				});
+			},
+			copy_new: function() {
+				var url = '@Url.Action("GetScoringSaleDetailViewModel")';
+				var post_data = { scoringSaleId: view_model.ScoringSaleId() };
+				set_detail_datas(view_model.ScoringSaleId());
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: JSON.stringify(post_data),
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function(data) {
+						change_copy_view_model(data);
+					},
+					function() { to_error(); }
+				);
+			},
+			open_modal_score_axis: function () {
+				modal.open('#modal-score-axis-list', 'modal-size-m modal-item-list');
+				get_score_axis_list();
+			},
+			set_score_axis_list: function (data) {
+				view_model.ScoreAxisList([]);
+				data.forEach(function (item) {
+					view_model.ScoreAxisList.push(item);
+				});
+			},
+			add_score_axis: function (id, title) {
+				if(view_model.ScoreAxisTitle() != "") {
+					if (confirm('スコア軸を変更すると、質問ページに紐づいている質問が解除されますがよろしいですか？')) {
+						view_model.ScoringSaleQuestionPages().forEach(function (page) { page.ScoringSaleQuestionItems([]); })
+					}
+					else {
+						return;
+					}
+				};
+				view_model.ScoreAxisId(id);
+				view_model.ScoreAxisTitle(title);
+
+				var url = '@Url.Action("GetScoreAxisAxisNoList")';
+				var post_data = { scoreAxisId: id };
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: JSON.stringify(post_data),
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function(data) {
+						view_model.ScoreAxisAxisNoList(data);
+					}
+				);
+
+				modal.close();
+			},
+			score_axis_button_text: function(value){
+				var result = ko.pureComputed(function()
+				{
+					if (value) return '@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.change.name@@")';
+					return '@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.select.name@@")';
+				});
+				return result;
+			},
+			score_axis_button_class: function(value){
+				var result = ko.pureComputed(function ()
+				{
+					if (value) return 'btn btn-sub btn-size-m';
+					return 'btn btn-main btn-size-m';
+				});
+				return result;
+			},
+			image_path_text: function(value){
+				if ((value === '') || (value === undefined)) return "";
+				var result = ko.pureComputed(function()
+				{
+					var imageName = '';
+					$(view_model.ThemeColorList()).each(function (index, item) {
+						if (item.value === value) {
+							imageName = item.text;
+							return false;
+						}
+					});
+					return '@(Constants.PATH_ROOT_CMS + Constants.PATH_SCORINGSALE_IMG_COLOR_THEME)' + imageName.toLowerCase() + '.png';
+				});
+				return result;
+			},
+			open_question_list: function (id) {
+				var scoreAxistId = view_model.ScoreAxisId() || '';
+				$('#scoringSaleQuestionIds').val("");
+				$('#scoringSaleQuestionPageId').val(id.toString());
+				$('#scoreAxisId').val(scoreAxistId);
+
+				if(scoreAxistId == '')
+				{
+					notification.show('スコア軸が設定されていません。', 'warning', 'fadeout');
+					return;
+				}
+
+				modal.open('#modal-content-scoring-sale-question', 'modal-size-m modal-item-list');
+				$('#btnAddQuestions').show();
+				selected_questions = [];
+				get_scoring_sale_question_list();
+			},
+			set_scoring_sale_question_list : function (data) {
+				view_model.ScoringSaleQuestions([]);
+
+				for (var index = 0; index < data.List.length; index++) {
+					view_model.ScoringSaleQuestions.push(data.List[index]);
+				}
+				view_model.ScoringSaleQuestionCountHtml(data.CountHtml);
+			},
+			add_scoring_sale_questions : function () {
+				var pageId = $("#scoringSaleQuestionPageId").val();
+				var currentQuestionItems = [];
+				$(view_model.ScoringSaleQuestionPages()).each(function (index, item) {
+					if (item.Id === pageId) {
+						currentQuestionItems = item.ScoringSaleQuestionItems();
+						return false;
+					}
+				});
+
+				var questionIdsOld = [];
+				if (currentQuestionItems.length > 0) {
+					questionIdsOld = currentQuestionItems.map(function (item) { return item.QuestionId; });
+				}
+				for (var index = 0; index < selected_questions.length; index++)
+				{
+					// Check question id already exists
+					if ((questionIdsOld.length > 0)
+						&& (questionIdsOld.indexOf(selected_questions[index].QuestionId) > -1)) {
+						continue;
+					}
+
+					currentQuestionItems.push(selected_questions[index]);
+				}
+
+				var scoringSaleQuestionItemsCount = 0;
+				$(view_model.ScoringSaleQuestionPages()).each(function (index, item) {
+					if (item.Id === pageId) {
+						item.ScoringSaleQuestionItems(currentQuestionItems);
+						scoringSaleQuestionItemsCount = item.ScoringSaleQuestionItems().length;
+						return false;
+					}
+				});
+
+				disabled_button_by_max_number_limit(
+					pageId,
+					scoringSaleQuestionItemsCount,
+					@Constants.FLG_SCORINGSALE_QUESTION_PAGE_ITEM_MAX_NUMBER_QUESTIONS_DISPLAY);
+
+				modal.close();
+			},
+			remove_scoring_sale_question: function (data, pageId) {
+				var currentQuestionPage;
+				$(view_model.ScoringSaleQuestionPages()).each(function (index, item) {
+					if (item.Id === pageId) {
+						currentQuestionPage = item;
+						return false;
+					}
+				});
+				currentQuestionPage.ScoringSaleQuestionItems.remove(data);
+				refresh_data_in_array(currentQuestionPage.ScoringSaleQuestionItems);
+
+				disabled_button_by_max_number_limit(
+					pageId,
+					currentQuestionPage.ScoringSaleQuestionItems().length,
+					@Constants.FLG_SCORINGSALE_QUESTION_PAGE_ITEM_MAX_NUMBER_QUESTIONS_DISPLAY);
+			},
+			get_selected_product_set: function () {
+				selectedProductSet = this;
+			},
+			add_scoring_sale_question_page: function () {
+				var clone = $.extend(true, {}, scoringSaleQuestionPageTemplate);
+				clone.PageName = ko.observable('');
+				clone.PreviousPageBtnCaption = ko.observable('');
+				clone.NextPageBtnCaption = ko.observable('');
+				clone.ScoringSaleQuestionItemIds = ko.observable('');
+				clone.ScoringSaleQuestionItems = ko.observableArray([]);
+				clone.IsSameAsFirstPage = ko.observable(true);
+				clone.Id = getUniqueId();
+				view_model.ScoringSaleQuestionPages.push(clone);
+				view_model.ScoringSaleQuestionPagesLength(view_model.ScoringSaleQuestionPages().length);
+				slide_check.ini();
+
+				disabled_button_by_max_number_limit(
+					'addQuestionPage',
+					view_model.ScoringSaleQuestionPagesLength(),
+					@Constants.FLG_SCORINGSALE_QUESTION_PAGE_MAX_NUMBER_QUESTIONS_DISPLAY);
+
+				feature.element_sort();
+
+			},
+			remove_scoring_sale_question_page: function (data) {
+				view_model.ScoringSaleQuestionPages.remove(data);
+				view_model.ScoringSaleQuestionPagesLength(view_model.ScoringSaleQuestionPages().length);
+
+				// Reset scoring sale question page 1
+				if (view_model.ScoringSaleQuestionPages()[0].IsSameAsFirstPage()) {
+					view_model.ScoringSaleQuestionPages()[0].IsSameAsFirstPage = ko.observable(false);
+					view_model.ScoringSaleQuestionPages()[0].PreviousPageBtnCaption = data.PreviousPageBtnCaption;
+					view_model.ScoringSaleQuestionPages()[0].NextPageBtnCaption = data.NextPageBtnCaption;
+				}
+
+				refresh_data_in_array(view_model.ScoringSaleQuestionPages);
+
+				disabled_button_by_max_number_limit(
+					'addQuestionPage',
+					view_model.ScoringSaleQuestionPagesLength(),
+					@Constants.FLG_SCORINGSALE_QUESTION_PAGE_MAX_NUMBER_QUESTIONS_DISPLAY);
+
+				feature.element_sort();
+			},
+			get_view_model: function () {
+				return view_model;
+			},
+			set_product_view_html: function (productSelect) {
+				switch (productModifyType) {
+					case "productRecommend":
+						view_model.ProductRecommend(productSelect);
+
+					case "productRecommendCondition":
+						// Update recommend conditions
+						var productRecommendCondition = $.extend(true, {}, selectedProductCondition);
+						productRecommendCondition.Id = productSelect.Id;
+						productRecommendCondition.ProductId = productSelect.ProductId;
+						productRecommendCondition.ProductName = productSelect.ProductName;
+						productRecommendCondition.ImageUrl = productSelect.ImageUrl;
+						productRecommendCondition.Quantity = productSelect.Quantity;
+						productRecommendCondition.FixedPurchaseFlg = productSelect.FixedPurchaseFlg;
+						productRecommendCondition.ShopId = productSelect.ShopId;
+						productRecommendCondition.VariationId = productSelect.VariationId;
+						productRecommendCondition.ScoringSaleId = productSelect.ScoringSaleId;
+						view_model.ProductRecommendConditions.replace(selectedProductCondition, productRecommendCondition);
+				}
+				// Close modal
+				modal.close();
+				feature.element_sort();
+			},
+			add_product_recommend_setting_page: function () {
+				var clone = $.extend(true, {}, productRecommendTemplate);
+				var newCondition = $.extend(
+					true,
+					{
+						Condition: ko.observable('AND'),
+						IsGroup: false,
+						IsShowSelectType: false,
+						GroupNo: 1,
+						IsGroupChecked: ko.observable(false),
+						ValueCondition: ko.observable('@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_VALUE'),
+						ScoreAxisAxisValueFrom: ko.observable(''),
+						ScoreAxisAxisValueTo: ko.observable('')
+					},
+					productRecommendConditionsTemplate[0]);
+				clone.Conditions = ko.observableArray([newCondition]);
+				clone.ProductGroupChecksList = ko.observableArray();
+
+				view_model.ProductRecommendConditions.push(clone);
+				view_model.ProductRecommendConditionsLength(view_model.ProductRecommendConditions().length);
+				slide_check.ini();
+
+				if (view_model.ProductRecommendConditions().length >= 1) feature.element_sort();
+			},
+			remove_product_recommend_setting_page: function (data, event) {
+				view_model.ProductRecommendConditions.remove(data);
+				view_model.ProductRecommendConditionsLength(view_model.ProductRecommendConditions().length);
+			},
+			select_products_recommend: function () {
+				modal.open('#modal-item-list-product-recommend', 'modal-size-m modal-item-list');
+				$('.item-search-result').html('');
+				$('#ParamModel_ProductName').val('');
+				$('#ParamModel_ProductId').val('');
+			},
+			delete_scoring_sale: function () {
+				var post_data = { scoringSaleId: view_model.ScoringSaleId() };
+				delete_scoring_sale(post_data);
+			},
+			product_recommend_modify: function(type, data, event) {
+				productModifyType = type;
+				selectedProductCondition = data;
+
+				modal.open('#modal-item-list-product-recommend', 'modal-size-m modal-item-list');
+				$('.item-search-result').html('');
+				$('#ParamModel_ProductName').val('');
+				$('#ParamModel_ProductId').val('');
+				switch (type) {
+					case "productRecommend":
+						if (selectedProductCondition.ProductRecommend().hasOwnProperty('ProductId') == false) {
+							$('#btn-replace-product').hide();
+							$('#btn-add-product').show();
+						} else {
+							$('#btn-add-product').hide();
+							$('#btn-replace-product').show();
+						};
+						break;
+
+					case "productRecommendCondition":
+						if (selectedProductCondition.hasOwnProperty('ProductId') == false) {
+							$('#btn-replace-product').hide();
+							$('#btn-add-product').show();
+						} else {
+							$('#btn-add-product').hide();
+							$('#btn-replace-product').show();
+						};
+						break;
+				}
+			},
+			add_condition: function(){
+				var data =  view_model.IsModify() ? {} : productRecommendConditionsTemplate[0];
+				var cloneProductRecommend = $.extend(true, {}, this);
+				var hadShow = true;
+				var newGroupNo = 1;
+				var newCondition = $.extend(
+					true,
+					{
+						Condition: cloneProductRecommend.ConditionTypeNonGroup,
+						IsGroup: false,
+						IsShowSelectType: false,
+						GroupNo: newGroupNo,
+						IsGroupChecked: ko.observable(false),
+						ValueCondition: ko.observable('@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_VALUE')
+					},
+					data);
+
+				if (cloneProductRecommend.Conditions) {
+					for(var index = 0; index < cloneProductRecommend.Conditions().length; index ++)
+					{
+						var cloneProductRecommendItem = cloneProductRecommend.Conditions()[index];
+						if ((cloneProductRecommend.Conditions()[index].IsGroup == false) && cloneProductRecommendItem.IsShowSelectType){
+							hadShow = false;
+						}
+						newGroupNo = cloneProductRecommendItem.GroupNo + 1;
+					}
+					newCondition.IsShowSelectType = hadShow;
+					newCondition.GroupNo = newGroupNo;
+					newCondition.ScoreAxisAxisValueFrom = ko.observable('');
+					newCondition.ScoreAxisAxisValueTo = ko.observable('');
+					cloneProductRecommend.Conditions.push(newCondition);
+				} else {
+					cloneProductRecommend.Conditions = ko.observableArray([newCondition]);
+					cloneProductRecommend.ProductGroupChecksList = ko.observableArray();
+				}
+				view_model.ProductRecommendConditions.replace(this, cloneProductRecommend);
+				feature.element_sort();
+			},
+			remove_condition: function(parent, data){
+				var cloneProductRecommend = $.extend(true,{}, parent);
+				var groupNoRemove = data.GroupNo;
+				var groupBrandNoRemove = data.GroupBrandNo;
+
+				// Get items group
+				var getItemsGroup = ko.utils.arrayFilter(cloneProductRecommend.Conditions(), function(item){
+					if (item.GroupNo == data.GroupNo) return item;
+				});
+
+				// Remove item
+				cloneProductRecommend.Conditions.remove(data);
+
+				// Format conditions
+				var groupNo = 1;
+				var groupBrandNo = 1;
+				ko.utils.arrayForEach(cloneProductRecommend.Conditions(), function(item)
+				{
+					// Set value for group brand no
+					if ((data.IsGroup == false) && (groupNo == groupNoRemove)) {
+						groupNo++;
+					}
+					if (item.GroupNo == groupNoRemove){
+						if (((groupBrandNoRemove != 1) && (item.GroupBrandNo == 1))
+							|| ((groupBrandNoRemove == 1) && (item.GroupBrandNo == 2))) {
+							groupBrandNo = 1;
+						}
+					} else if ((groupNo == item.GroupNo) && (item.GroupBrandNo == 1)) {
+						groupBrandNo = 1;
+					}
+
+					item.GroupNo = groupNo;
+
+					// Set group brand no
+					if (item.IsGroup) {
+						item.GroupBrandNo = groupBrandNo;
+					}
+
+					// Set group no
+					if (item.IsGroup && (item.GroupBrandNo != 1)) {
+						groupNo--;
+						item.GroupNo = groupNo;
+					}
+
+					// Set group flag
+					if ((getItemsGroup.length == 2) && (item.GroupNo == groupNoRemove)) {
+						item.IsGroup = false;
+						item.Condition = ko.observable(data.conditionsNonGroup);
+					}
+
+					// Set group brand no if group no item equal group no item remove
+					if ((getItemsGroup.length > 2) && (item.GroupNo == groupNoRemove)) {
+						item.GroupBrandNo = groupBrandNo;
+					}
+
+					groupNo++;
+					groupBrandNo++;
+				});
+				view_model.ProductRecommendConditions.replace(parent, cloneProductRecommend);
+			},
+			condition_type_change: function(parent, data, event){
+				var type = (data.IsGroup && (data.GroupBrandNo != 1)) ? parent.ConditionTypeGroup() : parent.ConditionTypeNonGroup();
+				var typeConditionGroup;
+				var typeConditionNonGroup;
+				if (data.IsGroup && (data.GroupBrandNo != 1)) {
+					typeConditionGroup = (type == '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_AND')
+						? '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_AND'
+						: '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_OR';
+					typeConditionNonGroup = (type == '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_AND')
+						? '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_OR'
+						: '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_AND';
+					parent.ConditionTypeGroup(typeConditionGroup);
+					parent.ConditionTypeNonGroup(typeConditionNonGroup);
+				} else {
+					typeConditionGroup = (type == '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_AND')
+						? '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_OR'
+						: '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_AND';
+					typeConditionNonGroup = (type == '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_AND')
+						? '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_AND'
+						: '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_OR';
+					parent.ConditionTypeNonGroup(typeConditionNonGroup);
+					parent.ConditionTypeGroup(typeConditionGroup);
+				}
+				ko.utils.arrayForEach(parent.Conditions(), function(item) {{
+					var newCon = $.extend(true, {},item);
+					var cond = (item.IsGroup)
+						? typeConditionGroup
+						: typeConditionNonGroup;
+					newCon.Condition(cond);
+					item = newCon;
+				}});
+			},
+			condition_text: function (parent, condition, dataIndex){
+				var result = ko.pureComputed(function()
+				{
+					if (check_visible_condition_select_type(parent, condition, dataIndex)) return "";
+					var all = view_model.ConditionType();
+					var conditionType = (condition.IsGroup && (condition.GroupBrandNo != 1))
+						? parent.ConditionTypeGroup()
+						: parent.ConditionTypeNonGroup();
+					for (var i = 0; i < all.length; i++){
+						var current = all[i];
+						if (ko.unwrap(current['value']) === conditionType) return current.text;
+					}
+				});
+				return result;
+			},
+			display_condition_type: function(parent, data, index){
+				var result = ko.pureComputed(function () { return check_visible_condition_select_type(parent, data, index)});
+				return result;
+			},
+			make_group: function(){
+				var clone = $.extend(true, {}, this);
+				var groupNo = 1;
+				var groupNoForGroup = 0;
+				var groupIndex = 1;
+				var hasNonGroup = false;
+				var conditionTypeNonGroup = ko.unwrap(clone.ConditionTypeNonGroup);
+				var conditionTypeGroup = ko.unwrap(clone.ConditionTypeGroup);
+				var cloneConditions = $.extend(true, [], clone.Conditions());
+
+				// Handle group items
+				ko.utils.arrayForEach(cloneConditions, function(item) {
+					item.GroupNo = groupNo;
+					item.CanChangeTypeCondition = false;
+
+					if (item.IsGroup) {
+						groupNo = (groupNo != 1 && (item.GroupBrandNo != 1)) ? groupNo - 1 : groupNo;
+						item.GroupNo = groupNo;
+						item.Condition(conditionTypeGroup);
+					} else {
+						item.Condition(conditionTypeNonGroup);
+					}
+
+					// Check item will be group
+					if (item.IsGroupChecked()) {
+						groupNo = ((groupNo != 1) && (groupIndex != 1))
+							? (groupNo - 1)
+							: groupNo;
+						groupNoForGroup = (groupNoForGroup == 0 ) ? groupNo : groupNoForGroup;
+						item.IsGroupChecked = ko.observable(false);
+						item.IsGroup = true;
+						item.Condition = ko.observable(conditionTypeGroup);
+						item.GroupNo = groupNoForGroup;
+						item.GroupBrandNo = groupIndex;
+						groupIndex ++;
+					}
+					groupNo++;
+
+					if (item.IsGroup == false) hasNonGroup = true;
+				});
+
+				// Sort conditions
+				var sort = ko.observableArray(cloneConditions).sorted(function(cur, next)
+				{
+					var result = (cur.GroupNo == next.GroupNo)
+						? 0
+						: (cur.GroupNo < next.GroupNo) ? -1 : 1;
+					return result;
+				});
+
+				clone.Conditions(sort);
+				clone.ProductGroupChecksList.removeAll();
+				view_model.ProductRecommendConditions.replace(this, clone);
+			},
+			cancel_group: function(parent, data){
+				var clone = $.extend(true, {}, parent);
+				var groupNoMin = data.GroupNo;
+				var dataGroupNo = data.GroupNo;
+				var indexTarget = parent.Conditions.indexOf(data);
+
+				ko.utils.arrayForEach(clone.Conditions(), function (item, index) {
+					if (item.GroupNo == dataGroupNo) {
+						item.IsGroup = false;
+						item.GroupNo = groupNoMin;
+						item.Condition(ko.unwrap(clone.ConditionTypeNonGroup));
+					}
+					if (item.GroupNo == groupNoMin) groupNoMin++;
+					if (index > indexTarget) item.GroupNo++;
+				});
+
+				view_model.ProductRecommendConditions.replace(parent, clone);
+			},
+			check_show: function(data)
+			{
+				var result = ko.pureComputed(function()
+				{
+					if (data.hasOwnProperty('ProductGroupChecksList') == false) return false;
+					return data.ProductGroupChecksList().length > 1;
+				});
+				return result;
+			},
+			get_file_name_image: function (data) {
+				var result = ko.pureComputed(function () {
+					if (data.IsDropFile()) {
+						if (!!data.DropFile()) {
+							var reader = new FileReader();
+							var fileName = data.DropFile().name;
+
+							data.TopPageImgPath("@Constants.PATH_SCORING_IMAGE" + fileName);
+
+							reader.onload = function (e) {
+								data.ImageSrc(e.target.result);
+							}
+							reader.readAsDataURL(data.DropFile());
+							data.UploadFile(null);
+							return fileName;
+						}
+					} else {
+						if (!!data.UploadFile()) {
+							var reader = new FileReader();
+							var fileName = data.UploadFile().name;
+
+							data.TopPageImgPath("@Constants.PATH_SCORING_IMAGE" + fileName);
+
+							reader.onload = function (e) {
+								data.ImageSrc(e.target.result);
+							}
+							reader.readAsDataURL(data.UploadFile());
+							data.DropFile(null);
+							return fileName;
+						}
+					}
+
+					return data.ImageSrc().substring(data.ImageSrc().lastIndexOf('/') + 1);
+				});
+				return result;
+			},
+			remove_image: function (data) {
+				data.IsCopyImage(false);
+				data.IsDropFile(false);
+				data.UploadFile(null);
+				data.DropFile(null);
+				data.ImageSrc('');
+				data.TopPageImgPath(null);
+			},
+			show_image_list_modal: function (data) {
+				image_search();
+				modal.open('#modal-imagelist-select', 'modal-size-l modal-item-list');
+			},
+			set_image: function (imageSrc, fileName, imagePath) {
+				view_model.IsCopyImage(true);
+				view_model.IsDropFile(false);
+				view_model.UploadFile(null),
+				view_model.DropFile(null);
+				view_model.ImageSrc(imageSrc);
+				view_model.FileName(fileName);
+				view_model.TopPageImgPath(imagePath);
+				modal.close();
+			},
+			set_analysis_modal: function(id) {
+				disp_analysis_modal(id);
+			},
+		};
+
+		// Disabled button add question page
+		function disabled_button_add_question_page()
+		{
+			if (view_model.ScoringSaleQuestionPages().length >= (@(Constants.FLG_SCORINGSALE_QUESTION_PAGE_MAX_NUMBER_QUESTIONS_DISPLAY)))
+			{
+				$("#addQuestionPage").css("pointer-events", "none");
+				$("#addQuestionPage").addClass("btn-switch-off");
+
+				return;
+			}
+
+			$("#addQuestionPage").css({"pointer-events": ""});
+			$("#addQuestionPage").removeClass("btn-switch-off");
+		}
+
+		// Publication deadline Hidden set
+		function set_period_hidden() {
+			view_model.RangeStartDate($('.access-authority-setting-period-info-hidden-input-start-date').val());
+			view_model.RangeStartTime($('.access-authority-setting-period-info-hidden-input-start-time').val());
+			view_model.RangeEndDate($('.access-authority-setting-period-info-hidden-input-end-date').val());
+			view_model.RangeEndTime($('.access-authority-setting-period-info-hidden-input-end-time').val());
+		}
+
+		// Registration success
+		function regi_success(data) {
+			loading_animation.end();
+			if (data.result === 'ng') {
+				notification.show(data.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('@WebMessages.RegisteredMessage', 'info', 'fadeout');
+				set_detail_datas(data.id);
+				get_page_list();
+			}
+		}
+
+		// Update success
+		function upd_success(data) {
+			loading_animation.end();
+
+			if (data.result === 'ng') {
+				notification.show(data.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('@WebMessages.UpdatedMessage', 'info', 'fadeout');
+				set_detail_datas(data.id);
+				get_page_list();
+			}
+		}
+
+		// Copy new view model change
+		function change_copy_view_model(data) {
+			view_model.ScoringSaleId('');
+			view_model.ScoringSaleTitle(data.ScoringSaleTitle + '_copy');
+			view_model.PublishStatus(data.PublishStatus);
+			view_model.RangeStartDate(data.RangeStartDate);
+			view_model.RangeStartTime(data.RangeStartTime);
+			view_model.RangeEndDate(data.RangeEndDate);
+			view_model.RangeEndTime(data.RangeEndTime);
+			// Screen status is registered
+			view_model.IsModify(false);
+			view_model.IsRegister(true);
+			// Image
+			view_model.IsCopyImage(false);
+			view_model.IsDropFile(false);
+			view_model.UploadFile(null);
+			view_model.DropFile(null);
+			view_model.FileName();
+			view_model.ImageSrc(data.ImageSrc);
+
+			feature.element_sort();
+			// Set period input
+			set_period_input();
+		}
+
+		// Input value generation
+		function create_post_input() {
+			set_period_hidden();
+			var topPageImgPath = view_model.TopPageUseFlg()
+				? view_model.TopPageImgPath()
+				: null;
+			var uploadFile = view_model.TopPageUseFlg()
+				? ((!!view_model.DropFile()) && view_model.IsDropFile())
+					? view_model.DropFile()
+					: view_model.UploadFile()
+				: undefined;
+
+			var post_data = {
+				ScoringSaleId: view_model.ScoringSaleId(),
+				ScoringSaleTitle: view_model.ScoringSaleTitle(),
+				PublishStatus: view_model.PublishStatus(),
+				RangeStartDate: view_model.RangeStartDate(),
+				RangeStartTime: view_model.RangeStartTime(),
+				RangeEndDate: view_model.RangeEndDate(),
+				RangeEndTime: view_model.RangeEndTime(),
+				ScoreAxisId: view_model.ScoreAxisId(),
+				ThemeColor: view_model.ThemeColor(),
+				TopPageUseFlg: view_model.TopPageUseFlg(),
+				TopPageTitle: view_model.TopPageTitle(),
+				TopPageSubTitle: view_model.TopPageSubTitle(),
+				TopPageBody: view_model.TopPageBody(),
+				TopPageImgPath: view_model.TopPageImgPath(),
+				TopPageBtnCaption: view_model.TopPageBtnCaption(),
+				ResultPageTitle: view_model.ResultPageTitle(),
+				ResultPageBodyAbove: $("#tbHtmlUp")[0].value,
+				ResultPageBodyBelow: $("#tbHtmlDown")[0].value,
+				RadarChartUseFlg: view_model.RadarChartUseFlg(),
+				RadarChartTitle: view_model.RadarChartTitle(),
+				ResultPageImgPath: view_model.ResultPageImgPath(),
+				ResultPageBtnCaption: view_model.ResultPageBtnCaption(),
+
+				ScoringSaleQuestionPages: [],
+				ProductRecommend: [],
+				ProductRecommendConditions: [],
+				IsCopyImage: view_model.IsCopyImage(),
+				UploadFile: uploadFile,
+				TopPageImgPath: topPageImgPath,
+			};
+			for (index = 0; index < view_model.ScoringSaleQuestionPages().length; index++) {
+				post_data.ScoringSaleQuestionPages.push({
+					ScoringSaleId: view_model.ScoringSaleId(),
+					PageNo: (index + 1),
+					PageName: view_model.ScoringSaleQuestionPages()[index].PageName(),
+					PreviousPageBtnCaption: view_model.ScoringSaleQuestionPages()[index].PreviousPageBtnCaption(),
+					NextPageBtnCaption: view_model.ScoringSaleQuestionPages()[index].NextPageBtnCaption(),
+					IsSameAsFirstPage: view_model.ScoringSaleQuestionPages()[index].IsSameAsFirstPage(),
+					ScoringSaleQuestionItems: view_model.ScoringSaleQuestionPages()[index].ScoringSaleQuestionItems()
+				});
+			}
+
+			for (index = 0; index < view_model.ProductRecommendConditions().length; index++) {
+				var conditions = $.extend(true, [], view_model.ProductRecommendConditions()[index].Conditions());
+				for (var item = 0; item < conditions.length; item++) {
+					var condition = conditions[item].Condition();
+					conditions[item].Condition = condition;
+					if (conditions[item].hasOwnProperty("ValueCondition")
+						&& (conditions[item].ValueCondition() == '@Constants.FLG_SCORINGSALE_RESULT_CONDITION_CONDITION_VALUE_MAX')) {
+						conditions[item].ScoreAxisAxisValueFrom = '@Constants.SCORINGSALE_RESULT_CONDITION_CONDITION_VALUE_MIN';
+						conditions[item].ScoreAxisAxisValueTo = '@Constants.SCORINGSALE_RESULT_CONDITION_CONDITION_VALUE_MAX';
+					}
+					else{
+						conditions[item].ScoreAxisAxisValueFrom = conditions[item].ScoreAxisAxisValueFrom();
+						conditions[item].ScoreAxisAxisValueTo = conditions[item].ScoreAxisAxisValueTo();
+					}
+				}
+
+				// Add product recommend conditions
+				post_data.ProductRecommendConditions.push({
+					ScoringSaleId: view_model.ScoringSaleId(),
+					BranchNo: (index + 1),
+					ShopId: view_model.ProductRecommendConditions()[index].ShopId,
+					ProductId: view_model.ProductRecommendConditions()[index].ProductId,
+					VariationId: view_model.ProductRecommendConditions()[index].VariationId,
+					Quantity: view_model.ProductRecommendConditions()[index].Quantity,
+					ScoringSaleResultCondition: conditions,
+				});
+			}
+
+			// Add product recommend non-condition
+			post_data.ProductRecommendConditions.push({
+				ScoringSaleId: view_model.ScoringSaleId(),
+				BranchNo: (view_model.ProductRecommendConditions().length + 1),
+				ShopId: view_model.ProductRecommend().ShopId,
+				ProductId: view_model.ProductRecommend().ProductId,
+				VariationId: view_model.ProductRecommend().VariationId,
+				Quantity: view_model.ProductRecommend().Quantity,
+			});
+			return post_data;
+		}
+
+		// Error handling
+		function to_error() {
+			// If there is an error, it will jump to the error page, so comment out
+			window.location.href = '@this.Url.Action(string.Empty, Constants.CONTROLLER_W2CMS_MANAGER_ERROR, new { ErrorPageLayout = Constants.LAYOUT_PATH_DEFAULT, }) ';
+		}
+
+		// Object to form data
+		function object_to_form_data(obj, rootName, ignoreList) {
+			var formData = new FormData();
+
+			// Append form data
+			function append_form_data(data, root) {
+				if (ignore(root) == false) {
+					root = root || '';
+					if (data instanceof File) {
+						formData.append(root, data);
+					} else if (Array.isArray(data)) {
+						for (var item = 0; item < data.length; item++) {
+							append_form_data(data[item], root + '[' + item + ']');
+						}
+					} else if (typeof data === 'object' && data) {
+						for (var key in data) {
+							if (data.hasOwnProperty(key)) {
+								if (root === '') {
+									append_form_data(data[key], key);
+								} else {
+									append_form_data(data[key], root + '.' + key);
+								}
+							}
+						}
+					} else {
+						if (data !== null && typeof data !== 'undefined') {
+							formData.append(root, data);
+						}
+					}
+				}
+			}
+
+			// Ignore
+			function ignore(root) {
+				return Array.isArray(ignoreList)
+					&& ignoreList.some(function (item) {
+						return item === root;
+					});
+			}
+
+			append_form_data(obj, rootName);
+
+			return formData;
+		}
+	})();
+
+	// Set product view html
+	function set_product_view_html(viewHtml) {
+		scoring_sale_list_page.set_product_view_html(viewHtml);
+	}
+
+	// Set detail datas
+	function set_detail_datas(id) {
+		$(".selected-low").removeClass("selected-low");
+		clearInterval(ltimer);
+		loading_animation.start();
+		var url = '@Url.Action("GetScoringSaleDetailViewModel")';
+		var post_data = { scoringSaleId: id };
+		$.ajax({
+			url: url,
+			type: 'POST',
+			data: JSON.stringify(post_data),
+			dataType: 'json',
+			contentType: 'application/json',
+		}).then(
+			function (data) {
+				checkOtherOperatorFileOpening('lScoringSaleId' + id).done(function (result) {
+					$("#" + id).addClass("selected-low");
+					$('input[value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.update.name@@")"]').attr('disabled', false);
+
+					if (result !== "") {
+						notification.show(result, 'warning', 'fixed');
+						$('input[value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.update.name@@")"]').attr('disabled', true);
+					} else {
+						sendOpeningFileName('lScoringSaleId' + id);
+						ltimer = setInterval(function () { sendOpeningFileName('lScoringSaleId' + id) }, 50 * 1000);
+					}
+				});
+				change_view_model(data);
+			},
+			function () { to_error(); }
+		).then(
+			function () { setTimeout(function () { loading_animation.end(); }, 200); }
+		);
+	}
+
+	// Get page list
+	function get_page_list() {
+		loading_animation.start();
+		var post_data = {
+			SearchWord: view_model.SearchWord(),
+			SearchPublicDateKbn: view_model.SearchPublicDateKbn(),
+			SearchPublishStatus: view_model.SearchPublishStatus(),
+		};
+		$('.list-style-switch').each(function() {
+			var list_head = $(this).closest('.list').find('.list-head');
+			list_head.find('.hide-style-list').show();
+			list_head.find('.list-head-col').css('display', '');
+		});
+		var url = '@Url.Action("GetScoringSaleListViewModel")';
+		$.ajax({
+			url: url,
+			type: 'POST',
+			data: JSON.stringify(post_data),
+			dataType: 'json',
+			contentType: 'application/json'
+		}).then(
+			function (data) { change_list_view_model(data); },
+			function () { to_error(); }
+		).then(
+			function () { setTimeout(function () { loading_animation.end(); }, 200);
+		});
+	}
+
+	// Change list view model
+	function change_list_view_model(data) {
+		view_model.PageList.splice(view_model.PageList.length);
+		for (var index = 0; index < data.Items.length; index++) {
+			view_model.PageList.push(data.Items[index]);
+			// Render chart
+			ScoringSaleCharts(
+				"Chart" + data.Items[index].ScoringSaleId,
+				data.Items[index].ScoringSaleChartViewModel,
+				'line',
+				'False',
+				'',
+				'@CommonPage.ReplaceTag("@@ScoringSale.chart.page_exit_rate_title.name@@")',
+				'@CommonPage.ReplaceTag("@@ScoringSale.chart.number_of_products.name@@")');
+		}
+	}
+
+	// Change view model
+	function change_view_model(data) {
+		var topPageBtnCaption = data.TopPageUseFlg
+			? data.TopPageBtnCaption
+			: '@CommonPage.ReplaceTag("@@ScoringSale.next_text.name@@")';
+
+		view_model.ScoringSaleId(data.ScoringSaleId);
+		view_model.ScoringSaleTitle(data.ScoringSaleTitle);
+		view_model.PublishStatus(data.PublishStatus);
+		view_model.RangeStartDate(data.RangeStartDate);
+		view_model.RangeStartTime(data.RangeStartTime);
+		view_model.RangeEndDate(data.RangeEndDate);
+		view_model.RangeEndTime(data.RangeEndTime);
+		view_model.ThemeColor(data.ThemeColor);
+		view_model.TopPageUseFlg(data.TopPageUseFlg);
+		view_model.TopPageTitle(data.TopPageTitle);
+		view_model.TopPageSubTitle(data.TopPageSubTitle);
+		view_model.TopPageBody(data.TopPageBody);
+		view_model.TopPageImgPath(data.TopPageImgPath);
+		view_model.TopPageBtnCaption(topPageBtnCaption);
+		view_model.ResultPageTitle(data.ResultPageTitle);
+		view_model.ResultPageBodyAbove(data.ResultPageBodyAbove);
+		view_model.ResultPageBodyBelow(data.ResultPageBodyBelow);
+		view_model.RadarChartUseFlg(data.RadarChartUseFlg);
+		view_model.RadarChartTitle(data.RadarChartTitle);
+		view_model.ResultPageImgPath(data.ResultPageImgPath);
+		view_model.ResultPageBtnCaption(data.ResultPageBtnCaption);
+		view_model.ProductRecommend(data.ProductRecommend);
+		view_model.IsModify(true);
+		view_model.IsRegister(false);
+		view_model.ScoreAxisId(data.ScoreAxisId);
+		view_model.ScoreAxisTitle(data.ScoreAxisTitle);
+		view_model.ScoringSaleQuestionPages.splice(view_model.ScoringSaleQuestionPages.length);
+		view_model.ScoreAxisAxisNoList(data.ScoreAxisAxisNoList);
+		view_model.IsCopyImage(false);
+		view_model.IsDropFile(false);
+		view_model.UploadFile(null);
+		view_model.DropFile(null);
+		view_model.FileName();
+		view_model.ImageSrc(data.ImageSrc);
+
+		// Set data for scoring sale question page
+		for (index = 0; index < data.ScoringSaleQuestionPages.length; index++) {
+			var clone = $.extend(true, {}, scoringSaleQuestionPageTemplate);
+			clone.PageName = ko.observable(data.ScoringSaleQuestionPages[index].PageName);
+			clone.PreviousPageBtnCaption = ko.observable(data.ScoringSaleQuestionPages[index].PreviousPageBtnCaption);
+			clone.NextPageBtnCaption = ko.observable(data.ScoringSaleQuestionPages[index].NextPageBtnCaption);
+			clone.ScoringSaleQuestionItemIds = ko.observable('');
+			clone.ScoringSaleQuestionItems = ko.observableArray(data.ScoringSaleQuestionPages[index].ScoringSaleQuestionItems);
+			clone.IsSameAsFirstPage = ko.observable(data.ScoringSaleQuestionPages[index].IsSameAsFirstPage);
+			clone.Id = getUniqueId();
+			view_model.ScoringSaleQuestionPages.push(clone);
+			view_model.ScoringSaleQuestionPagesLength(view_model.ScoringSaleQuestionPages().length);
+			question_sortable();
+		}
+
+		// Set data for product recommend condition setting
+		productRecommendTemplate = {};
+		for (var index = 0; index < data.ProductRecommendConditions.length; index++)
+		{
+			for (var item = 0; item < data.ProductRecommendConditions[index].Conditions.length; item++) {
+				data.ProductRecommendConditions[index].Conditions[item].IsGroupChecked = ko.observable(false);
+				var conditiontype = ko.observable(data.ProductRecommendConditions[index].Conditions[item].Condition);
+				data.ProductRecommendConditions[index].Conditions[item].Condition = conditiontype;
+				var conditionValue = ko.observable(data.ProductRecommendConditions[index].Conditions[item].ValueCondition);
+				data.ProductRecommendConditions[index].Conditions[item].ValueCondition = conditionValue;
+				data.ProductRecommendConditions[index].Conditions[item].ScoreAxisAxisValueFrom = ko.observable(data.ProductRecommendConditions[index].Conditions[item].ScoreAxisAxisValueFrom);
+				data.ProductRecommendConditions[index].Conditions[item].ScoreAxisAxisValueTo = ko.observable(data.ProductRecommendConditions[index].Conditions[item].ScoreAxisAxisValueTo);
+			}
+			var conditions = ko.observableArray(data.ProductRecommendConditions[index].Conditions);
+			data.ProductRecommendConditions[index].Conditions = conditions;
+			data.ProductRecommendConditions[index].ConditionTypeGroup = ko.observable(data.ProductRecommendConditions[index].ConditionTypeGroup);
+			data.ProductRecommendConditions[index].ConditionTypeNonGroup = ko.observable(data.ProductRecommendConditions[index].ConditionTypeNonGroup);
+			data.ProductRecommendConditions[index].ProductGroupChecksList = ko.observableArray([]);
+			productRecommendTemplate.ConditionTypeGroup = ko.observable(data.ProductRecommendConditions[index].ConditionTypeGroup);
+			productRecommendTemplate.ConditionTypeNonGroup = ko.observable(data.ProductRecommendConditions[index].ConditionTypeNonGroup);
+		}
+		productRecommendConditionsTemplate = data.ProductRecommendConditions;
+		view_model.ProductRecommendConditions(data.ProductRecommendConditions);
+		view_model.ProductRecommendConditionsLength(view_model.ProductRecommendConditions().length);
+		feature.element_sort();
+		set_period_input();
+		list.open();
+		disabled_button_by_max_number_limit("addQuestionPage", view_model.ScoringSaleQuestionPages().length, @Constants.FLG_SCORINGSALE_QUESTION_PAGE_MAX_NUMBER_QUESTIONS_DISPLAY);
+	}
+
+	// Publication deadline view model set
+	function set_period_input() {
+		$('#access-authority-setting-period-start-input-date').val(view_model.RangeStartDate());
+		$('#access-authority-setting-period-start-input-time').val(view_model.RangeStartTime());
+		$('#access-authority-setting-period-end-input-date').val(view_model.RangeEndDate());
+		$('#access-authority-setting-period-end-input-time').val(view_model.RangeEndTime());
+		access_authority_setting.period.set(
+			$("#access-authority-setting-period-info-value-wrap-"),
+			$("#modal-access-authority-setting-period-"));
+	}
+
+	// Key search word initialization
+	function keyword_ini() {
+		$('#search_keyword').off("keydown").on("keydown",
+			function (e) {
+				if ((e.which && e.which === 13) || (e.keyCode && e.keyCode === 13)) {
+					// Since knockout seems to be data bound when it is out of focus, it is out of focus once.
+					$('#search_keyword').blur();
+					scoring_sale_list_page.get_page_list();
+					$('#search_keyword').focus();
+					return false;
+				}
+				return true;
+			});
+	}
+
+	// Clipboard url copy
+	function clipboard_url_copy(trigger) {
+		return view_model.CreateUrl();
+	}
+
+	// Set score axis list
+	function set_score_axis_list(data) {
+		scoring_sale_list_page.set_score_axis_list(data);
+	}
+
+	// Add score axis
+	function add_score_axis(id, title) {
+		scoring_sale_list_page.add_score_axis(id, title);
+	}
+
+	// Set score axis list
+	function set_scoring_sale_question_list(data) {
+		scoring_sale_list_page.set_scoring_sale_question_list(data);
+	}
+
+	// Add scoring sale questions
+	function add_scoring_sale_questions() {
+		var pageId = $("#scoringSaleQuestionPageId").val();
+		var currentQuestionItems = [];
+		$(view_model.ScoringSaleQuestionPages()).each(function (index, item) {
+			if (item.Id === pageId) {
+				currentQuestionItems = item.ScoringSaleQuestionItems();
+				return false;
+			}
+		});
+
+		var questionIdsOld = [];
+
+		if (selected_questions.length === 0) {
+			notification.show('@WebMessages.ScoringSaleQuestionSetItemOneOrMoreItemError', 'warning', 'fadeout');
+			return;
+		}
+
+		if ((selected_questions.length + currentQuestionItems.length) > '@Constants.FLG_SCORINGSALE_QUESTION_PAGE_ITEM_MAX_NUMBER_QUESTIONS_DISPLAY') {
+			notification.show('@WebMessages.ScoringsaleQuestionItemMaxError.Replace("@@ 1 @@", Constants.FLG_SCORINGSALE_QUESTION_PAGE_ITEM_MAX_NUMBER_QUESTIONS_DISPLAY.ToString())', 'warning', 'fadeout');
+			return;
+		}
+
+		if (currentQuestionItems.length > 0) {
+			questionIdsOld = currentQuestionItems.map(function (item) { return item.QuestionId; });
+		}
+
+		for (var index = 0; index < selected_questions.length; index++) {
+			// Check question id already exists
+			if ((questionIdsOld.length > 0)
+				&& (questionIdsOld.indexOf(selected_questions[index].QuestionId) > -1)) {
+				continue;
+			}
+
+			currentQuestionItems.push(selected_questions[index]);
+		}
+
+		var scoringSaleQuestionItemsCount = 0;
+		$(view_model.ScoringSaleQuestionPages()).each(function (index, item) {
+			if (item.Id === pageId) {
+				item.ScoringSaleQuestionItems(currentQuestionItems);
+				scoringSaleQuestionItemsCount = item.ScoringSaleQuestionItems().length;
+				return false;
+			}
+		});
+
+		disabled_button_by_max_number_limit(
+			pageId,
+			scoringSaleQuestionItemsCount,
+			@Constants.FLG_SCORINGSALE_QUESTION_PAGE_ITEM_MAX_NUMBER_QUESTIONS_DISPLAY);
+
+		modal.close();
+	}
+
+	// Refresh data in array
+	function refresh_data_in_array(datas) {
+		var refreshData = datas().slice(0);
+		datas([]);
+		datas(refreshData);
+	}
+
+	// Shift data
+	function shift_data(data, startIndex, endIndex) {
+		var dataTarget = data()[startIndex];
+		data.splice(startIndex, 1);
+		data.splice(endIndex, 0, dataTarget);
+		refresh_data_in_array(data);
+	}
+
+	// Question sortable
+	function question_sortable() {
+		setTimeout(function () {
+			$(".feature-selected-item-list-body").each(function () {
+				var elements = $(this);
+				elements.each(function () {
+					var startIndex;
+					$(this).sortable({
+						start: function (e, ui) {
+							ui.placeholder.height(ui.item.height());
+							startIndex = ui.item.index();
+						},
+						handle: ".list-col-drag",
+						axis: "y",
+						placeholder: "ui-state-highlight",
+						update: function (event, element) {
+							var endIndex = element.item.index();
+							var parentElement = $(element.item).closest('.feature-page-element');
+							var parentIndex= parentElement.data().pageIndex;
+							shift_scoring_sale_question_choice(parentIndex, startIndex, endIndex);
+						}
+					});
+				});
+			});
+		}, 200);
+	}
+
+	// Swap product recommend
+	function swap_product_recommend(currentIndex, nextIndex)
+	{
+		var product_recommend_temp = $.extend(true, [], view_model.ProductRecommendConditions());
+		var current = $.extend(true, {}, view_model.ProductRecommendConditions()[currentIndex]);
+		var next = $.extend(true, {}, view_model.ProductRecommendConditions()[nextIndex]);
+		product_recommend_temp[currentIndex] = next;
+		product_recommend_temp[nextIndex] = current;
+		view_model.ProductRecommendConditions(product_recommend_temp);
+	}
+
+	// Swap question page
+	function swap_question_page(currentIndex, nextIndex)
+	{
+		var question_page_temp = $.extend(true, [], view_model.ScoringSaleQuestionPages());
+		var current = $.extend(true, {}, question_page_temp[currentIndex]);
+		var next = $.extend(true, {}, question_page_temp[nextIndex]);
+		if(currentIndex == 0)
+		{
+			var value = next.IsSameAsFirstPage();
+			current.IsSameAsFirstPage = ko.observable(value);
+			next.IsSameAsFirstPage(false);
+		} else if(nextIndex == 0)
+		{
+			var value = current.IsSameAsFirstPage();
+			next.IsSameAsFirstPage = ko.observable(value);
+			current.IsSameAsFirstPage(false);
+		}
+		question_page_temp[currentIndex] = next;
+		question_page_temp[nextIndex] = current;
+		view_model.ScoringSaleQuestionPages(question_page_temp);
+	}
+
+	// Shift scoring sale question choice
+	function shift_scoring_sale_question_choice(parentIndex, startIndex, endIndex) {
+		var scoringSaleQuestionChoiceTarget = view_model.ScoringSaleQuestionPages()[parentIndex].ScoringSaleQuestionItems()[startIndex];
+		view_model.ScoringSaleQuestionPages()[parentIndex].ScoringSaleQuestionItems().splice(startIndex, 1);
+		view_model.ScoringSaleQuestionPages()[parentIndex].ScoringSaleQuestionItems().splice(endIndex, 0, scoringSaleQuestionChoiceTarget);
+		refresh_data_in_array(view_model.ScoringSaleQuestionPages()[parentIndex].ScoringSaleQuestionItems);
+	}
+
+	// Delete scoring sale
+	function delete_scoring_sale(postData)
+	{
+		if (confirm('@WebMessages.ConfirmDeletedMessage')) {
+			checkOtherOperatorFileOpening('scoringSaleId' + view_model.ScoringSaleId()).done(function (result) {
+				if (result !== "") {
+					notification.show(result, 'warning', 'fixed');
+					return;
+				} else {
+					var url = '@Url.Action("Delete")';
+					$.ajax({
+						url: url,
+						type: 'POST',
+						data: JSON.stringify(postData),
+						dataType: 'json',
+						contentType: 'application/json'
+					}).then(
+						function (data)
+						{
+							del_ok(data)
+						},
+						function ()
+						{
+							to_error()
+						}
+					);
+				}
+			});
+		}
+	}
+
+	// Get unique id
+	function getUniqueId(data) {
+		var value = 1000;
+		if (data) value = data;
+		return new Date().getTime().toString(16) + Math.floor(value * Math.random()).toString(16);
+	}
+
+	// Delete complete
+	function del_ok(item) {
+		if (item.result === 'ng') {
+			notification.show(item.msg, 'warning', 'fadeout');
+		} else {
+			notification.show('@WebMessages.DeletedMessage', 'info', 'fadeout');;
+			get_page_list();
+			list.close();
+		}
+	}
+
+	// Compaction
+	function compaction(topUseFlg, previewKey, designType, scoringSaleId) {
+		var url = '@Url.Action("Preview")?designType=' + designType + '&previewKey=' + previewKey + '&topUseFlg=' + topUseFlg + '&scoringSaleId=' + scoringSaleId;
+		if (designType === 'PC') {
+			open_window(url, 'PreviewPC', '');
+		} else {
+			open_window(url, 'PreviewSP', 'width=450,height=800,scrollbars=yes');
+		}
+	}
+
+	// Set group item
+	function set_group_item(parent, data)
+	{
+		if (data.IsGroupChecked()) {
+			parent.ProductGroupChecksList.push(data);
+		} else if (parent.ProductGroupChecksList().length > 0) {
+			parent.ProductGroupChecksList.remove(data);
+		}
+	}
+
+	// Check visible condition select type
+	function check_visible_condition_select_type(parent, data, dataIndex){
+		if (parent.Conditions().length == 1) return false;
+
+		var conditionsNonGroup = ko.utils.arrayFilter(parent.Conditions(), function(item){
+			if (item.IsGroup == false) return item;
+		});
+		var conditionsGroupNo = ko.utils.arrayFilter(parent.Conditions(), function(item){
+			if (item.IsGroup && (item.GroupBrandNo == 1)) return item;
+		});
+		var conditionFirstGroup;
+		if (conditionsNonGroup.length == 0 && conditionsGroupNo.length == 1) {
+			return (dataIndex == 1);
+		}
+		if (conditionsGroupNo.length > 1) {
+			conditionFirstGroup = ko.utils.arrayFilter(parent.Conditions(), function(item){
+				if (item.GroupNo == conditionsGroupNo[0].GroupNo) return item;
+			});
+			return (dataIndex == conditionFirstGroup.length);
+		}
+
+		var first = parent.Conditions()[0];
+		if (first.IsGroup) {
+			conditionFirstGroup = ko.utils.arrayFilter(parent.Conditions(), function(item){
+				if (item.GroupNo == first.GroupNo) return item;
+			});
+			return (dataIndex == conditionFirstGroup.length);
+		}
+		return (dataIndex == 1);
+	}
+
+	// The textarea of the last focused product tag
+	var textAreaId;
+
+	// Insert wording at the caret position in the text area
+	function tagInput(tag) {
+		if (textAreaId == null) return;
+
+		var textarea = textAreaId;
+		var isSurroundTag = false;
+		if (tag.startsWith('@Html.Raw("<@@")')) {
+			isSurroundTag = true;
+		}
+		if (isSurroundTag) {
+			tag = tag.replace(/\s|<|>+/g, '');
+			tag = '<' + tag + '>' + '</' + tag + '>';
+		}
+
+		textarea.focus();
+		var sentence = textarea.value;
+		var len = sentence.length;
+		var pos = textarea.selectionStart;
+		var before = sentence.substr(0, pos);
+		var word = tag;
+		var after = sentence.substr(pos, len);
+		sentence = before + word + after;
+		textarea.value = sentence;
+		textarea.focus();
+		textarea.selectionStart = pos + word.length;
+		textarea.selectionEnd = pos + word.length;
+	}
+
+	// Real-time search
+	$('#tbTagSearch').keyup(function () {
+		var re = new RegExp($('#tbTagSearch').val());
+		$('#replacementtag tbody tr').each(function () {
+			var txt = $(this).find("td:eq(0)").html() + $(this).find("td:eq(1)").html();
+			if (txt.match(re) != null) {
+				$(this).show();
+			} else {
+				$(this).hide();
+			}
+		});
+	});
+
+	// Textarea being edited in the Wysiwyg editor
+	var textAreaWysiwygBinded;
+
+	// Open editor Wysiwyg
+	function open_wysiwyg(textAreaId) {
+		textAreaWysiwygBinded = document.getElementById(textAreaId);
+		open_window(
+			'@Url.Action("Edit", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_WYSIWYG_EDITOR)',
+			'wysiwyg',
+			'width=1000,height=740,top=120,left=420,status=NO, resizable=yes,scrollbars=yes');
+		textAreaWysiwygBinded.setAttribute("disabled", "disabled");
+	}
+
+	scoring_sale_list_page.ini();
+	keyword_ini();
+
+	valueConditionChange = function (obj, event) {
+		obj.ScoreAxisAxisValueFrom('');
+		obj.ScoreAxisAxisValueTo('');
+	}
+
+	// Set image
+	function set_image(imageSrc, fileName, imagePath){
+		scoring_sale_list_page.set_image(imageSrc, fileName, imagePath);
+	}
+
+	// 分析モーダル表示
+	function disp_analysis_modal(id) {
+		loading_animation.start();
+		$.ajax({
+			url: "@Url.Action("ScoringSaleAnalysisReportModal")",
+			type: "POST",
+			data: {
+				'scoringSaleId': id
+			}
+		}).done(function(data) {
+			$('#modal-analysis').html(data);
+			$('#scoringSaleIdsHidden').val(id);
+			modal.open("#modal-analysis", "modal-size-m modal-item-list");
+			loading_animation.end();
+		});
+	}
+</script>

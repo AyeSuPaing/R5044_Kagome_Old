@@ -1,0 +1,481 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+      
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_Recommend' AND COLUMN_NAME = 'onetime_flg')
+	ALTER TABLE [w2_Recommend] ADD [onetime_flg] [nvarchar] (10) NOT NULL DEFAULT (N'INVALID');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_RecommendItem' AND COLUMN_NAME = 'fixed_purchase_kbn')
+	ALTER TABLE [w2_RecommendItem] ADD [fixed_purchase_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_RecommendItem' AND COLUMN_NAME = 'fixed_purchase_setting1')
+	ALTER TABLE [w2_RecommendItem] ADD [fixed_purchase_setting1] [nvarchar] (10) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000171')
+BEGIN
+INSERT INTO [w2_MailTemplate] (
+	[shop_id]
+	,[mail_id]
+	,[mail_name]
+	,[mail_from]
+	,[mail_to]
+	,[mail_cc]
+	,[mail_bcc]
+	,[mail_subject]
+	,[mail_body]
+	,[mail_subject_mobile]
+	,[mail_body_mobile]
+	,[mail_attachmentfile_path]
+	,[del_flg]
+	,[date_created]
+	,[date_changed]
+	,[last_changed]
+	,[mail_from_name]
+	,[mail_category]
+	,[auto_send_flg]
+	)
+VALUES (
+	'0'
+	,'00000171'
+	,'注文更新通知メール'
+	,'bh@w2s.xyz'
+	,'bh@w2s.xyz'
+	,''
+	,''
+	,'【●●●●】[注文No.@@ order_id @@]注文内容変更のご連絡'
+	,'@@ owner_name @@ 様
+いつも「●●●●」をご利用いただき、誠にありがとうございます。
+おすすめ商品「@@ recommend_item_name @@」を購入いただいたため、注文内容を下記の通り更新いたしました。
+ご確認をお願いいたします。
+
+■注文情報
+注文番号 : @@ order_id @@
+
+◇商品
+@@ order_items @@
+
+<@@UseFixedPurchase@@>
+
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymd(d) @@ / @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定　: @@ next_shipping_date_yyyymd(d) @@ / @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymd(d) @@ / @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+────────────────────────
+小計 : ¥@@ order_price_subtotal @@
+<@@UnUseSeparateEstimates@@>
+配送料 : ¥@@ order_price_shipping @@
+</@@UnUseSeparateEstimates@@>
+<@@UseSeparateEstimates@@>
+配送料 : @@ separate_estimates_message @@
+</@@UseSeparateEstimates@@>
+決済手数料 : ¥@@ order_price_exchange @@
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+注文合計 : ¥@@ order_price_total @@(税込み)
+
+またのご利用をお待ちしております。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+'
+	,''
+	,''
+	,''
+	,'0'
+	,CAST('20180405 14:55:58.113' AS DATETIME)
+	,CAST('20180405 12:39:43.280' AS DATETIME)
+	,'ｗ２ユーザー'
+	,''
+	,'Order'
+	,'1'
+	)
+END
+
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000172')
+BEGIN
+INSERT INTO [w2_MailTemplate] (
+	[shop_id]
+	,[mail_id]
+	,[mail_name]
+	,[mail_from]
+	,[mail_to]
+	,[mail_cc]
+	,[mail_bcc]
+	,[mail_subject]
+	,[mail_body]
+	,[mail_subject_mobile]
+	,[mail_body_mobile]
+	,[mail_attachmentfile_path]
+	,[del_flg]
+	,[date_created]
+	,[date_changed]
+	,[last_changed]
+	,[mail_from_name]
+	,[mail_category]
+	,[auto_send_flg]
+	)
+VALUES (
+	'0'
+	,'00000172'
+	,'注文更新通知メール【管理者向け】'
+	,'bh@w2s.xyz'
+	,''
+	,''
+	,''
+	,'【●●●●】[注文No.@@ order_id @@]注文情報更新通知メール(管理者向け)'
+	,'@@ owner_name @@ 様
+いつも「●●●●」をご利用いただき、誠にありがとうございます。
+おすすめ商品「@@ recommend_item_name @@」を購入いただいたため、注文内容を下記の通り更新いたしました。
+ご確認をお願いいたします。
+
+■注文情報
+注文番号 : @@ order_id @@
+
+◇商品
+@@ order_items @@
+
+<@@UseFixedPurchase@@>
+
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymd(d) @@ / @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定　: @@ next_shipping_date_yyyymd(d) @@ / @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymd(d) @@ / @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+────────────────────────
+小計 : ¥@@ order_price_subtotal @@
+<@@UnUseSeparateEstimates@@>
+配送料 : ¥@@ order_price_shipping @@
+</@@UnUseSeparateEstimates@@>
+<@@UseSeparateEstimates@@>
+配送料 : @@ separate_estimates_message @@
+</@@UseSeparateEstimates@@>
+決済手数料 : ¥@@ order_price_exchange @@
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+注文合計 : ¥@@ order_price_total @@(税込み)
+
+またのご利用をお待ちしております。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+'
+	,''
+	,''
+	,''
+	,'0'
+	,CAST('20180405 14:55:58.113' AS DATETIME)
+	,CAST('20180405 12:39:43.280' AS DATETIME)
+	,'ｗ２ユーザー'
+	,'bh@w2s.xyz'
+	,'Order'
+	,'1'
+	)
+END
+
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000173')
+BEGIN
+INSERT INTO [w2_MailTemplate] (
+	[shop_id]
+	,[mail_id]
+	,[mail_name]
+	,[mail_from]
+	,[mail_to]
+	,[mail_cc]
+	,[mail_bcc]
+	,[mail_subject]
+	,[mail_body]
+	,[mail_subject_mobile]
+	,[mail_body_mobile]
+	,[mail_attachmentfile_path]
+	,[del_flg]
+	,[date_created]
+	,[date_changed]
+	,[last_changed]
+	,[mail_from_name]
+	,[mail_category]
+	,[auto_send_flg]
+	)
+VALUES (
+	'0'
+	,'00000173'
+	,'レコメンド時注文キャンセル通知メール'
+	,'bh@w2s.xyz'
+	,'bh@w2s.xyz'
+	,''
+	,''
+	,'【●●●●】[注文No.@@ order_id @@]注文内容変更(注文キャンセル)のご連絡'
+	,'@@ owner_name @@ 様
+いつも「●●●●」をご利用いただき、誠にありがとうございます。
+おすすめ商品「@@ recommend_item_name @@」を購入いただいたため、下記の注文をキャンセルして新しい注文を作成しました。
+新しい注文については別途送付いたしておりますメールにてご確認ください。
+
+■注文情報
+注文番号 : @@ order_id @@
+
+◇商品
+@@ order_items @@
+
+<@@UseFixedPurchase@@>
+
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymd(d) @@ / @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定　: @@ next_shipping_date_yyyymd(d) @@ / @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymd(d) @@ / @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+────────────────────────
+小計 : ¥@@ order_price_subtotal @@
+<@@UnUseSeparateEstimates@@>
+配送料 : ¥@@ order_price_shipping @@
+</@@UnUseSeparateEstimates@@>
+<@@UseSeparateEstimates@@>
+配送料 : @@ separate_estimates_message @@
+</@@UseSeparateEstimates@@>
+決済手数料 : ¥@@ order_price_exchange @@
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+注文合計 : ¥@@ order_price_total @@(税込み)
+
+またのご利用をお待ちしております。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+'
+	,''
+	,''
+	,''
+	,'0'
+	,CAST('20180405 14:55:58.113' AS DATETIME)
+	,CAST('20180405 12:39:43.280' AS DATETIME)
+	,'ｗ２ユーザー'
+	,''
+	,'Order'
+	,'1'
+	)
+END
+
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000174')
+BEGIN
+INSERT INTO [w2_MailTemplate] (
+	[shop_id]
+	,[mail_id]
+	,[mail_name]
+	,[mail_from]
+	,[mail_to]
+	,[mail_cc]
+	,[mail_bcc]
+	,[mail_subject]
+	,[mail_body]
+	,[mail_subject_mobile]
+	,[mail_body_mobile]
+	,[mail_attachmentfile_path]
+	,[del_flg]
+	,[date_created]
+	,[date_changed]
+	,[last_changed]
+	,[mail_from_name]
+	,[mail_category]
+	,[auto_send_flg]
+	)
+VALUES (
+	'0'
+	,'00000174'
+	,'レコメンド時注文キャンセル通知メール【管理者向け】'
+	,'bh@w2s.xyz'
+	,''
+	,''
+	,''
+	,'【●●●●】[注文No.@@ order_id @@]注文情報更新(注文キャンセル)通知メール(管理者向け)'
+	,'@@ owner_name @@ 様
+いつも「●●●●」をご利用いただき、誠にありがとうございます。
+おすすめ商品「@@ recommend_item_name @@」を購入いただいたため、下記の注文をキャンセルして新しい注文を作成しました。
+新しい注文については別途送付いたしておりますメールにてご確認ください。
+
+■注文情報
+注文番号 : @@ order_id @@
+
+◇商品
+@@ order_items @@
+
+<@@UseFixedPurchase@@>
+
+■定期配送情報
+配送パターン : @@ fixed_purchase_pattern @@
+今回配送予定 : @@ first_shipping_date_yyyymd(d) @@ / @@ first_shipping_date_yyyymmdd(d) @@
+次回配送予定　: @@ next_shipping_date_yyyymd(d) @@ / @@ next_shipping_date_yyyymmdd(d) @@
+次々回配送予定: @@ next_next_shipping_date_yyyymd(d) @@ / @@ next_next_shipping_date_yyyymmdd(d) @@
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+</@@UseFixedPurchase@@>
+────────────────────────
+小計 : ¥@@ order_price_subtotal @@
+<@@UnUseSeparateEstimates@@>
+配送料 : ¥@@ order_price_shipping @@
+</@@UnUseSeparateEstimates@@>
+<@@UseSeparateEstimates@@>
+配送料 : @@ separate_estimates_message @@
+</@@UseSeparateEstimates@@>
+決済手数料 : ¥@@ order_price_exchange @@
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@></@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@></@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@></@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+注文合計 : ¥@@ order_price_total @@(税込み)
+
+またのご利用をお待ちしております。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+'
+	,''
+	,''
+	,''
+	,'0'
+	,CAST('20180405 14:55:58.113' AS DATETIME)
+	,CAST('20180405 12:39:43.280' AS DATETIME)
+	,'ｗ２ユーザー'
+	,'bh@w2s.xyz'
+	,'Order'
+	,'1'
+	)
+END
+
+IF EXISTS (SELECT * FROM dbo.sysobjects where id = object_id(N'[dbo].[w2_RecommendHistory]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+DROP TABLE [dbo].[w2_RecommendHistory]
+GO
+/*
+=========================================================================================================
+  Module      : レコメンド表示履歴テーブル (w2_RecommendHistory.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_RecommendHistory] (
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[recommend_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[user_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[recommend_history_no] [int] NOT NULL DEFAULT(1),
+	[target_order_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[display_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'FRONT'),
+	[ordered_flg] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[date_changed] [datetime] NOT NULL DEFAULT (GETDATE()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_RecommendHistory] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_RecommendHistory] PRIMARY KEY  CLUSTERED
+	(
+		[shop_id],
+		[recommend_id],
+		[user_id],
+		[recommend_history_no]
+	) ON [PRIMARY]
+GO
+			]]>
+    </Statement>
+  </Up>
+</Migration>

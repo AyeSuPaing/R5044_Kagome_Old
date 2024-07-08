@@ -1,0 +1,183 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品検索SQLサブステートメントXML(ProductSearch.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductSearch_Sub>
+  
+  <!-- 商品検索用一覧取得WHERE文 -->
+  <PRODUCT_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_Product.shop_id = @shop_id
+           <@@hasval:valid_flg@@>
+           AND  w2_Product.valid_flg = @valid_flg
+           </@@hasval:valid_flg@@>
+           <@@hasval:product_id_like_escaped@@>
+           AND  w2_Product.product_id LIKE @product_id_like_escaped + '%' ESCAPE '#'      -- 商品ID
+           </@@hasval:product_id_like_escaped@@>
+           <@@hasval:name_like_escaped@@>
+           AND  w2_Product.name LIKE '%' + @name_like_escaped + '%' ESCAPE '#'            -- 商品名
+           </@@hasval:name_like_escaped@@>
+           <@@hasval:shipping_type@@>
+           AND  w2_Product.shipping_type = @shipping_type -- 配送種別
+           </@@hasval:shipping_type@@>
+           <@@hasval:fixed_purchase@@>
+           -- 定期購入
+           AND  (
+                  (@fixed_purchase = '0' AND w2_Product.fixed_purchase_flg IN ('0', '1')) -- 定期購入不可,定期購入可能
+                  OR
+                  (@fixed_purchase = '1' AND w2_Product.fixed_purchase_flg IN ('1', '2')) -- 定期購入可能,定期購入のみ可能
+                )
+           </@@hasval:fixed_purchase@@>
+           <@@val:subscription_box_flg:0@@>
+           AND  (
+                  w2_Product.subscription_box_flg = '0'
+                )
+           </@@val:subscription_box_flg:0@@>
+           <@@val:subscription_box_flg:1@@>
+           AND  (
+                  w2_Product.subscription_box_flg IN ('1', '2')
+                )
+           </@@val:subscription_box_flg:1@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="shipping_type" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase" Type="nvarchar" Size="1" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="is_order_product" Type="nvarchar" Size="1" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="subscription_box" Type="nvarchar" Size="1" />
+    </Parameter>
+  </PRODUCT_SEARCH_WHERE>
+
+  <!-- 商品検索用一覧取得ORDER BY -->
+  <PRODUCT_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_Product.shop_id ASC, w2_Product.product_id ASC
+      ]]>
+    </Statement>
+  </PRODUCT_SEARCH_ORDER_BY>
+
+  <!-- 商品バリエーション検索用一覧取得WHERE文 -->
+  <PRODUCT_VARIATION_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_ProductView.shop_id = @shop_id
+           <@@hasval:is_order_product@@>
+           AND  (
+                  -- 注文商品検索だったら現在購入可能な商品のみ表示
+                  w2_ProductView.sell_from <= @current_date
+                  AND
+                  (
+                    (w2_ProductView.sell_to IS NULL)
+                    OR
+                    (w2_ProductView.sell_to >= @current_date)
+                  )
+                  AND
+                  (
+                    w2_ProductView.stock_management_kbn = '0'    -- 在庫管理をしない
+                    OR
+                    w2_ProductView.stock_management_kbn = '1'    -- 在庫０以下の場合でも表示する（購入可）
+                    OR
+                    w2_ProductView.stock_management_kbn = '2'    -- 在庫０以下の場合でも表示する（購入不可）
+                  )
+              )
+           </@@hasval:is_order_product@@>
+           <@@hasval:valid_flg@@>
+           AND  w2_ProductView.valid_flg = @valid_flg
+           </@@hasval:valid_flg@@>
+           <@@hasval:product_id_like_escaped@@>
+           AND  w2_ProductView.variation_id LIKE @product_id_like_escaped + '%' ESCAPE '#'      -- 商品ID
+           </@@hasval:product_id_like_escaped@@>
+           <@@hasval:name_like_escaped@@>
+           AND  w2_ProductView.name LIKE '%' + @name_like_escaped + '%' ESCAPE '#'            -- 商品名
+           </@@hasval:name_like_escaped@@>
+           <@@hasval:shipping_type@@>
+           AND  w2_ProductView.shipping_type = @shipping_type -- 配送種別
+           </@@hasval:shipping_type@@>
+           -- 定期購入
+           <@@hasval:fixed_purchase@@>
+           AND  (
+                  (@fixed_purchase = '0' AND w2_ProductView.fixed_purchase_flg IN ('0', '1')) -- 定期購入不可,定期購入可能
+                  OR
+                  (@fixed_purchase = '1' AND w2_ProductView.fixed_purchase_flg IN ('1', '2')) -- 定期購入可能,定期購入のみ可能
+                )
+           </@@hasval:fixed_purchase@@>
+           <@@val:subscription_box_flg:0@@>
+           AND  (
+                  w2_ProductView.subscription_box_flg = '0'
+                )
+           </@@val:subscription_box_flg:0@@>
+           <@@val:subscription_box_flg:1@@>
+           AND  (
+                  w2_ProductView.subscription_box_flg IN ('1', '2')
+                )
+           </@@val:subscription_box_flg:1@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="shipping_type" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase" Type="nvarchar" Size="1" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="is_order_product" Type="nvarchar" Size="1" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="subscription_box_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </PRODUCT_VARIATION_SEARCH_WHERE>
+
+  <!-- 商品バリエーション検索用一覧取得ORDER BY -->
+  <PRODUCT_VARIATION_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_ProductView.shop_id ASC, w2_ProductView.product_id ASC, w2_ProductView.variation_id ASC
+      ]]>
+    </Statement>
+  </PRODUCT_VARIATION_SEARCH_ORDER_BY>
+
+  <!-- 会員ランク価格取得SQL（バリエーション単位） -->
+  <MEMBER_RANK_PRICE_PRODUCTVARIATION>
+    <Statement>
+      <![CDATA[
+        (
+          SELECT  TOP 1
+                  w2_ProductPrice.member_rank_price
+            FROM  w2_ProductPrice
+                  LEFT JOIN w2_MemberRank ON
+                  (
+                      w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                  )
+            WHERE  w2_ProductPrice.shop_id = w2_ProductView.shop_id
+              AND  w2_ProductPrice.product_id = w2_ProductView.product_id
+              AND  (w2_ProductPrice.variation_id = w2_ProductView.variation_id OR ((w2_ProductView.use_variation_flg = '0') AND (w2_ProductPrice.variation_id = '')))
+              AND  @member_rank_id <> ''
+              AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = @member_rank_id AND valid_flg = 'ON')
+              AND  w2_MemberRank.valid_flg = 'ON'
+          ORDER BY w2_MemberRank.member_rank_order
+        ) AS member_rank_price_variation
+      ]]>
+    </Statement>
+  </MEMBER_RANK_PRICE_PRODUCTVARIATION>
+
+</ProductSearch_Sub>

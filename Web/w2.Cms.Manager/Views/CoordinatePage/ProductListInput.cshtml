@@ -1,0 +1,153 @@
+﻿@*
+=========================================================================================================
+  Module      : 商品一覧入力(リスト)(ProductListInput.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common
+@model w2.Cms.Manager.ViewModels.Coordinate.ProductInputModel
+@{
+	var parentName = Model.BaseName + ".";
+}
+
+<div class="form-element-group-content">
+	@Html.HiddenFor(model => model.BaseName, new {Name = parentName + "BaseName"})
+	@Html.HiddenFor(model => model.GroupId, new {Name = parentName + "GroupId"})
+	<div class="feature-selected-item-list">
+		<div class="feature-selected-item-list-head">
+			<div class="feature-selected-item-list-head-order"></div>
+			<div class="feature-selected-item-list-head-item-id">商品ID</div>
+			<div class="feature-selected-item-list-head-item-variation">バリエーションID</div>
+			<div class="feature-selected-item-list-head-item-name">商品名</div>
+			<div class="feature-selected-item-list-head-stock">在庫数</div>
+			<div class="feature-selected-item-list-head-delete">削除</div>
+		</div>
+		<div class="feature-selected-item-list-body">
+			@{ var productIndex = 0;}
+			@foreach (var product in Model.ProductList)
+			{
+				<div class="feature-selected-item-list-item" data-list-id="@product.Id">
+					<div class="feature-selected-item-list-item-drag"><span class="icon-drag"></span></div>
+					<div class="feature-selected-item-list-item-order">
+						@Html.TextBoxFor(model => product.SortNo, new
+						{
+							Name = parentName + "ProductList[" + productIndex + "].SortNo",
+							@style="display:none"
+						})
+					</div>
+					<div class="feature-selected-item-list-item-id">@product.Id</div>
+					<div class="feature-selected-item-list-item-variation">
+						@if (product.VariationList.Count != 0)
+						{
+							@Html.DropDownListFor(model=>product.VariationId, product.VariationList,new
+							{
+								Name = parentName + "ProductList[" + productIndex + "].VariationId",
+								selected = product.VariationId,
+								onchange ="change_variation();"
+							})
+						}
+						else
+						{
+							<p>-</p>
+						}
+					</div>
+					<div class="feature-selected-item-list-item-image"><img src="@product.ImagePath" alt="商品画像"></div>
+					<div class="feature-selected-item-list-item-name">@product.Name</div>
+					@Html.HiddenFor(model => product.Name, new
+					{
+						Name = parentName + "ProductList[" + productIndex + "].Name"
+					})
+					@Html.HiddenFor(model => product.Id, new
+					{
+						Name = parentName + "ProductList[" + productIndex + "].Id"
+					})
+					<div class="feature-selected-item-list-item-stock">@product.Stock</div>
+					<div class="feature-selected-item-list-item-delete"><input id="sample_checkbox1" type="checkbox" name="delete_checkbox"></div>
+				</div>
+				productIndex++;
+			}
+			
+		</div>
+		<div class="feature-selected-item-list-bottom">
+			<select name="sort-type">
+				<option selected="selected" value="">並べ替え</option>
+				<option value="1">商品価格</option>
+				<option value="2">商品コード</option>
+				<option value="3">カテゴリ</option>
+				<option value="4">ブランド</option>
+				<option value="5">商品名</option>
+				<option value="6">商品並び順</option>
+				<option value="7">販売開始日</option>
+			</select>
+			<button class="btn btn-sub btn-size-s" type="button" onclick="sort(this)">表示順を変更</button>
+			<button class="btn btn-sub btn-size-s feature-selected-item-list-bottom-all-delete" onclick="checked_delete_click()" type="button">選択した商品を削除</button>
+		</div>
+	</div>
+</div>
+<div class="feature-item-list-btn">
+	<br/>
+	<a href="javascript:void(0);" class="btn btn-sub btn-size-m" onclick="change_product_list(this)">変更する</a>
+	<a href="javascript:void(0)" class="btn btn-sub btn-size-m feature-type-multi-group" onclick="delete_product_list()">削除する</a>
+</div>
+
+<script type="text/javascript">
+	$(function () {
+		list.ini();
+
+		$(".feature-selected-item-list-body").sortable({
+			handle: ".icon-drag",
+			axis: "y",
+			connectWith: ".list-sortable",
+			placeholder: "ui-state-highlight",
+			update: function (e, ui) {
+				list_update();
+			}
+		});
+	});
+
+	// チェックのついている商品を削除
+	function checked_delete_click() {
+		$("[name=delete_checkbox]:checked").each(function () {
+			$(this).parent().parent().remove();
+		});
+
+		list_update();
+	}
+
+	function list_update() {
+		var row_cnt = 0;
+		$(".feature-selected-item-list-item").each(function () {
+			var sortNo = $(this).find('.feature-selected-item-list-item-order').find('input');
+			$(sortNo).attr('name', '@parentName' + "ProductList[" + row_cnt + "].SortNo");
+			var pid = $(this).find('#product_Id');
+			$(pid).attr('name', '@parentName' + "ProductList[" + row_cnt + "].Id");
+			var pname = $(this).find('#product_Name');
+			$(pname).attr('name', '@parentName' + "ProductList[" + row_cnt + "].Name");
+			var pvid = $(this).find('#product_VariationId');
+			$(pvid).attr('name', '@parentName' + "ProductList[" + row_cnt + "].VariationId");
+			row_cnt++;
+		});
+
+		if (row_cnt === 0) delete_product_list();
+	}
+
+	// 表示順を変更
+	function sort(obj) {
+		$.ajax({
+			type: "POST",
+			url:
+				"@Url.Action("UpdateProductSort", Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+			data: {
+				'productIds': $(".feature-selected-item-list-body").sortable("toArray", { attribute: 'data-list-id' }),
+				'sortType': $('[name=sort-type]').val(),
+				'baseName': '@Model.BaseName',
+			},
+			traditional: true
+		}).done(function (viewHtml) {
+			var listBody = $(obj).parent().prev();
+			$(listBody).html(viewHtml);
+		}).fail(function () {
+		});
+	}
+</script>

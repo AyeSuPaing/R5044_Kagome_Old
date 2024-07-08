@@ -1,0 +1,4220 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : クーポンテーブル系SQLステートメントXML (Coupon.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<Coupon>
+  <!--           クーポン情報系          -->
+  <!-- 発行可能クーポン情報取得 -->
+  <GetAllPublishCoupons>
+    <Statement>
+      <![CDATA[
+        -- 利用回数制限有りのクーポン情報
+        SELECT  *
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  w2_Coupon.coupon_type IN ('01','02','03','04','06','07','08','46','47')   -- 新規登録 OR 購入 OR 初回購入 OR 回数制限有(会員) OR 汎用クーポン OR 誕生日クーポン OR purchase give for introducer OR register give for introducer
+           AND  w2_Coupon.valid_flg = '1' -- 有効
+           AND  w2_Coupon.publish_date_bgn <= getdate() AND getdate() <= w2_Coupon.publish_date_end -- 発行期間中
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllPublishCoupons>
+
+  <!-- 発行可能クーポン情報取得(発行期間を考慮しない) -->
+  <GetAllPublishCouponsNotPublishDate>
+    <Statement>
+      <![CDATA[
+        -- 利用回数制限有りのクーポン情報
+        SELECT  *
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  w2_Coupon.coupon_type IN ('01','02','03','04','06','07','08')   -- 新規登録 OR 購入 OR 初回購入 OR 回数制限有(会員) OR 汎用クーポン OR 誕生日クーポン
+           AND  w2_Coupon.valid_flg = '1' -- 有効
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllPublishCouponsNotPublishDate>
+
+  <!-- クーポン情報取得(クーポン発行用) ※新規登録 OR 購入 OR 初回購入発行時の場合のみ利用 -->
+  <GetPublishCouponsByCouponType>
+    <Statement>
+      <![CDATA[
+        -- 現在日付取得
+        DECLARE @current_date datetime
+        SET @current_date = GETDATE()
+
+        SELECT  *
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  w2_Coupon.coupon_type = @coupon_type          -- 新規登録 OR 購入 OR 初回購入のみ
+           AND  w2_Coupon.valid_flg = '1'                     -- 有効
+           AND  w2_Coupon.publish_date_bgn <= @current_date   -- 発行期間内
+           AND  w2_Coupon.publish_date_end >= @current_date
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_type" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetPublishCouponsByCouponType>
+
+  <!-- 発行可能クーポン情報取得(クーポンIDを含め抽出) -->
+  <GetPublishCouponsCouponId>
+    <Statement>
+      <![CDATA[
+        -- 利用回数制限有りのクーポン情報
+        SELECT  *
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  w2_Coupon.coupon_id = @coupon_id
+           AND  w2_Coupon.coupon_type IN ('01','02','03','04','06','07','08','46','47')   -- 新規登録 OR 購入 OR 初回購入 OR 回数制限有(会員) OR 汎用クーポン OR 誕生日クーポン OR purchase give for introducer OR register give for introducer
+           AND  w2_Coupon.valid_flg = '1' -- 有効
+           AND  w2_Coupon.publish_date_bgn <= getdate() AND getdate() <= w2_Coupon.publish_date_end -- 発行期間中
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetPublishCouponsCouponId>
+
+  <!-- クーポン情報一覧取得 -->
+  <GetCouponList>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_Coupon.coupon_id), 0)
+          FROM  w2_Coupon
+                [[ COUPON_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_Coupon.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_Coupon.dept_id,
+                          w2_Coupon.coupon_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ COUPON_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Coupon
+                          [[ COUPON_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Coupon ON
+                (
+                  RowIndex.dept_id = w2_Coupon.dept_id
+                  AND
+                  RowIndex.coupon_id = w2_Coupon.coupon_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="coupon_name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="coupon_type" Type="nvarchar" Size="10" />
+      <Input Name="publish_date" Type="nvarchar" Size="1" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetCouponList>
+
+  <!-- クーポン情報一覧取得（マスタ出力用）-->
+  <GetCouponMaster>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 該当情報取得
+        SELECT  @@ fields @@
+          FROM  (
+                  SELECT  w2_Coupon.dept_id,
+                          w2_Coupon.coupon_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ COUPON_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Coupon
+                          [[ COUPON_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Coupon ON
+                (
+                  RowIndex.dept_id = w2_Coupon.dept_id
+                  AND
+                  RowIndex.coupon_id = w2_Coupon.coupon_id
+                )
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="coupon_name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="coupon_type" Type="nvarchar" Size="10" />
+      <Input Name="publish_date" Type="nvarchar" Size="1" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetCouponMaster>
+
+  <!-- ユーザ情報一覧取得（マスタ出力用）-->
+  <GetUserCouponMaster>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  @@ fields @@
+          FROM  (
+                  SELECT  w2_User.user_id,
+                          ISNULL(Unused_Coupon.unused_coupon, 0) AS unused_coupon,
+                          ISNULL(Used_Coupon.used_coupon, 0) AS used_coupon,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ USER_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_User WITH (NOLOCK)
+                          LEFT JOIN
+                          (
+                            SELECT  w2_UserCoupon.user_id,
+                                    COUNT(w2_UserCoupon.user_id) AS unused_coupon
+                              FROM  w2_UserCoupon
+                                    INNER JOIN w2_Coupon ON
+                                    (
+                                      w2_UserCoupon.dept_id = w2_Coupon.dept_id
+                                      AND
+                                      w2_UserCoupon.coupon_id = w2_Coupon.coupon_id
+                                    )
+                             WHERE  w2_UserCoupon.dept_id = @dept_id
+                               AND  w2_UserCoupon.use_flg = '0'
+                          GROUP BY  w2_UserCoupon.user_id
+                          ) AS Unused_Coupon  -- 未利用クーポン数
+                          ON
+                          (
+                            w2_User.user_id = Unused_Coupon.user_id
+                          )
+                          LEFT JOIN
+                          (
+                            SELECT w2_UserCoupon.user_id,
+                                   COUNT(w2_UserCoupon.user_id) AS used_coupon
+                              FROM w2_UserCoupon
+                                   INNER JOIN w2_Coupon ON
+                                   (
+                                     w2_UserCoupon.dept_id = w2_Coupon.dept_id
+                                     AND
+                                     w2_UserCoupon.coupon_id = w2_Coupon.coupon_id
+                                   )
+                             WHERE w2_UserCoupon.dept_id = @dept_id
+                               AND w2_UserCoupon.use_flg = '1'
+                          GROUP BY w2_UserCoupon.user_id
+                          ) AS Used_Coupon     -- 利用済みクーポン数
+                          ON
+                          (
+                            w2_User.user_id = Used_Coupon.user_id
+                          )
+                          [[ USER_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_UserCoupon ON
+                (
+                  RowIndex.user_id = w2_UserCoupon.user_id
+                )
+                INNER JOIN w2_Coupon ON
+                (
+                   w2_UserCoupon.coupon_id = w2_Coupon.coupon_id
+                   AND
+                   w2_UserCoupon.dept_id = w2_Coupon.dept_id
+                )
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetUserCouponMaster>
+
+  <!-- クーポン利用ユーザー情報取得(マスタ出力用) -->
+  <GetCouponUseUserForMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_CouponUseUser
+                INNER JOIN w2_Coupon WITH (NOLOCK) ON
+                (
+                  w2_CouponUseUser.coupon_id = w2_coupon.coupon_id
+                )
+                LEFT JOIN w2_Order WITH (NOLOCK) ON
+                (
+                  w2_CouponUseUser.order_id = w2_Order.order_id
+                )
+                LEFT JOIN w2_User WITH (NOLOCK) ON
+                (
+                  w2_User.user_id = 
+                    CASE @used_user_judge_type
+                      WHEN 'MailAddress' THEN w2_Order.user_id
+                      WHEN 'UserId' THEN w2_CouponUseUser.coupon_use_user
+                    END
+                )
+         WHERE  (
+                  (
+                     @coupon_id = '' 
+                     OR
+                     w2_CouponUseUser.coupon_id = @coupon_id
+                  )
+                  AND
+                  (
+                     @user_id_like_escaped = '' 
+                     OR
+                     w2_User.user_id LIKE @user_id_like_escaped + '%' ESCAPE '#'
+                  )
+                  AND
+                  (
+                     @mail_addr_like_escaped = '' 
+                     OR
+                     w2_CouponUseUser.coupon_use_user LIKE @mail_addr_like_escaped + '%' ESCAPE '#'
+                  )
+                  AND
+                  (
+                     @name_like_escaped = '' 
+                     OR
+                     w2_User.name LIKE @name_like_escaped + '%' ESCAPE '#'
+                  )
+                  AND
+                  (
+                    (@date_created_from IS NULL OR w2_CouponUseUser.date_created >= @date_created_from)
+                    AND
+                    (@date_created_to IS NULL OR w2_CouponUseUser.date_created < DATEADD(day, 1, @date_created_to))
+                  )
+                  AND
+                  (
+                    @del_flg = '1' 
+                    OR 
+                    w2_User.del_flg = @del_flg
+                    OR
+                    w2_User.del_flg IS NULL  --利用ユーザー手動追加でユーザー情報と紐づかない場合対策
+                  )
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="mail_addr_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="80" />
+      <Input Name="date_created_from" Type="datetime"/>
+      <Input Name="date_created_to" Type="datetime"/>
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="used_user_judge_type" Type="nvarchar" Size="15" />
+    </Parameter>
+  </GetCouponUseUserForMaster>
+
+  <!--クーポンマスタフィールドチェック-->
+  <CheckCouponFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_Coupon
+      ]]>
+    </Statement>
+  </CheckCouponFields>
+
+  <!--ユーザクーポンマスタフィールドチェック-->
+  <CheckUserCouponFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_UserCoupon
+                  INNER JOIN w2_Coupon ON
+                  (
+                    w2_UserCoupon.coupon_id = w2_Coupon.coupon_id
+                    AND
+                    w2_UserCoupon.dept_id = w2_Coupon.dept_id
+                  )
+      ]]>
+    </Statement>
+  </CheckUserCouponFields>
+
+  <!-- クーポン利用ユーザー情報フィールドチェック -->
+  <CheckCouponUseUserFields>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  w2_CouponUseUser
+                INNER JOIN w2_Coupon WITH (NOLOCK) ON
+                (
+                  w2_CouponUseUser.coupon_id = w2_coupon.coupon_id
+                )
+                LEFT JOIN w2_Order WITH (NOLOCK) ON
+                (
+                  w2_CouponUseUser.order_id = w2_Order.order_id
+                )
+                LEFT JOIN w2_User WITH (NOLOCK) ON
+                (
+                  w2_User.user_id = 
+                    CASE @used_user_judge_type
+                      WHEN 'MailAddress' THEN w2_Order.user_id
+                      WHEN 'UserId' THEN w2_CouponUseUser.coupon_use_user
+                    END
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="used_user_judge_type" Type="nvarchar" Size="15" />
+    </Parameter>
+  </CheckCouponUseUserFields>
+
+  <!-- クーポン情報詳細取得 -->
+  <GetCoupon>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1 *,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND
+                w2_Coupon.coupon_id = @coupon_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCoupon>
+
+  <!-- クーポン情報登録 -->
+  <InsertCoupon>
+    <Statement>
+      <![CDATA[
+        INSERT
+            w2_Coupon
+            (
+            w2_Coupon.dept_id,
+            w2_Coupon.coupon_id,
+            w2_Coupon.coupon_code,
+            w2_Coupon.coupon_name,
+            w2_Coupon.coupon_disp_name,
+            w2_Coupon.coupon_discription,
+            w2_Coupon.coupon_type,
+            w2_Coupon.coupon_count,
+            w2_Coupon.publish_date_bgn,
+            w2_Coupon.publish_date_end,
+            w2_Coupon.discount_price,
+            w2_Coupon.discount_rate,
+            w2_Coupon.expire_day,
+            w2_Coupon.expire_date_bgn,
+            w2_Coupon.expire_date_end,
+            w2_Coupon.product_kbn,
+            w2_Coupon.exceptional_product,
+            w2_Coupon.exceptional_icon,
+            w2_Coupon.usable_price,
+            w2_Coupon.valid_flg,
+            w2_Coupon.date_created,
+            w2_Coupon.date_changed,
+            w2_Coupon.last_changed,
+            w2_Coupon.disp_flg,
+            w2_Coupon.coupon_disp_discription,
+            w2_Coupon.free_shipping_flg,
+            w2_Coupon.exceptional_brand_ids,
+            w2_Coupon.exceptional_product_category_ids
+            )
+          VALUES
+          (
+            @dept_id,
+            @coupon_id,
+            @coupon_code,
+            @coupon_name,
+            @coupon_disp_name,
+            @coupon_discription,
+            @coupon_type,
+            @coupon_count,
+            @publish_date_bgn,
+            @publish_date_end,
+            @discount_price,
+            @discount_rate,
+            @expire_day,
+            @expire_date_bgn,
+            @expire_date_end,
+            @product_kbn,
+            @exceptional_product,
+            @exceptional_icon,
+            @usable_price,
+            @valid_flg,
+            getdate(),
+            getdate(),
+            @last_changed,
+            @disp_flg,
+            @coupon_disp_discription,
+            @free_shipping_flg,
+            @exceptional_brand_ids,
+            @exceptional_product_category_ids
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code" Type="nvarchar" Size="30" />
+      <Input Name="coupon_name" Type="nvarchar" Size="30" />
+      <Input Name="coupon_disp_name" Type="nvarchar" Size="30" />
+      <Input Name="coupon_discription" Type="ntext" />
+      <Input Name="coupon_type" Type="nvarchar" Size="10" />
+      <Input Name="coupon_count" Type="int" />
+      <Input Name="publish_date_bgn" Type="datetime" />
+      <Input Name="publish_date_end" Type="datetime" />
+      <Input Name="discount_price" Type="decimal" />
+      <Input Name="discount_rate" Type="decimal" />
+      <Input Name="expire_day" Type="int" />
+      <Input Name="expire_date_bgn" Type="datetime" />
+      <Input Name="expire_date_end" Type="datetime" />
+      <Input Name="product_kbn" Type="nvarchar" Size="10" />
+      <Input Name="exceptional_product" Type="ntext" />
+      <Input Name="exceptional_icon" Type="int" />
+      <Input Name="usable_price" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="disp_flg" Type="nvarchar" Size="1" />
+      <Input Name="coupon_disp_discription" Type="nvarchar" Size="max" />
+      <Input Name="free_shipping_flg" Type="nvarchar" Size="1" />
+      <Input Name="exceptional_brand_ids" Type="nvarchar" Size="max" />
+      <Input Name="exceptional_product_category_ids" Type="nvarchar" Size="max" />
+    </Parameter>
+  </InsertCoupon>
+
+  <!-- クーポン情報更新 -->
+  <UpdateCoupon>
+    <Statement>
+      <![CDATA[
+        UPDATE
+            w2_Coupon
+        SET
+            w2_Coupon.coupon_code = @coupon_code,
+            w2_Coupon.coupon_name = @coupon_name,
+            w2_Coupon.coupon_disp_name = @coupon_disp_name,
+            w2_Coupon.coupon_disp_name_mobile = '',
+            w2_Coupon.coupon_discription = @coupon_discription,
+            w2_Coupon.coupon_discription_mobile = '',
+            w2_Coupon.coupon_type = @coupon_type,
+            w2_Coupon.coupon_count = @coupon_count,
+            w2_Coupon.publish_date_bgn = @publish_date_bgn,
+            w2_Coupon.publish_date_end = @publish_date_end,
+            w2_Coupon.discount_price = @discount_price,
+            w2_Coupon.discount_rate = @discount_rate,
+            w2_Coupon.expire_day = @expire_day,
+            w2_Coupon.expire_date_bgn = @expire_date_bgn,
+            w2_Coupon.expire_date_end = @expire_date_end,
+            w2_Coupon.product_kbn = @product_kbn,
+            w2_Coupon.exceptional_product = @exceptional_product,
+            w2_Coupon.exceptional_icon = @exceptional_icon,
+            w2_Coupon.usable_price = @usable_price,
+            w2_Coupon.valid_flg = @valid_flg,
+            w2_Coupon.date_changed = getdate(),
+            w2_Coupon.last_changed = @last_changed,
+            w2_Coupon.disp_flg = @disp_flg,
+            w2_Coupon.coupon_disp_discription = @coupon_disp_discription,
+            w2_Coupon.free_shipping_flg = @free_shipping_flg,
+            w2_Coupon.exceptional_brand_ids = @exceptional_brand_ids,
+            w2_Coupon.exceptional_product_category_ids = @exceptional_product_category_ids
+          WHERE
+            w2_Coupon.dept_id = @dept_id
+          AND
+            w2_Coupon.coupon_id = @coupon_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code" Type="nvarchar" Size="30" />
+      <Input Name="coupon_name" Type="nvarchar" Size="30" />
+      <Input Name="coupon_disp_name" Type="nvarchar" Size="30" />
+      <Input Name="coupon_discription" Type="ntext" />
+      <Input Name="coupon_type" Type="nvarchar" Size="10" />
+      <Input Name="coupon_count" Type="int" />
+      <Input Name="publish_date_bgn" Type="datetime" />
+      <Input Name="publish_date_end" Type="datetime" />
+      <Input Name="discount_price" Type="decimal" />
+      <Input Name="discount_rate" Type="decimal" />
+      <Input Name="expire_day" Type="int" />
+      <Input Name="expire_date_bgn" Type="datetime" />
+      <Input Name="expire_date_end" Type="datetime" />
+      <Input Name="product_kbn" Type="nvarchar" Size="10" />
+      <Input Name="exceptional_product" Type="ntext" />
+      <Input Name="exceptional_icon" Type="int" />
+      <Input Name="usable_price" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="disp_flg" Type="nvarchar" Size="1" />
+      <Input Name="coupon_disp_discription" Type="nvarchar" Size="max" />
+      <Input Name="free_shipping_flg" Type="nvarchar" Size="1" />
+      <Input Name="exceptional_brand_ids" Type="nvarchar" Size="max" />
+      <Input Name="exceptional_product_category_ids" Type="nvarchar" Size="max" />
+    </Parameter>
+  </UpdateCoupon>
+
+  <!-- クーポン情報、残り利用回数をマイナスする -->
+  <UpdateCouponCountDown>
+    <Statement>
+      <![CDATA[
+      -- ユーザクーポン情報更新(残り利用可能回数を減らす)
+      UPDATE
+        w2_Coupon
+      SET
+        w2_Coupon.coupon_count = (w2_Coupon.coupon_count - 1),
+        w2_Coupon.date_changed = GETDATE(),
+        w2_Coupon.last_changed = @last_changed
+      WHERE
+        w2_Coupon.dept_id = @dept_id
+      AND
+        w2_Coupon.coupon_id = @coupon_id
+      AND
+        w2_Coupon.coupon_code = @coupon_code
+      AND
+        w2_Coupon.coupon_count > 0
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateCouponCountDown>
+
+  <!-- クーポン情報、残り利用回数をマイナスする(現在のクーポン数を考慮しない) -->
+  <UpdateCouponCountDownIgnoreCouponCount>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Coupon
+           SET  w2_Coupon.coupon_count = (w2_Coupon.coupon_count - 1),
+                w2_Coupon.date_changed = GETDATE(),
+                w2_Coupon.last_changed = @last_changed
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  w2_Coupon.coupon_id = @coupon_id
+           AND  w2_Coupon.coupon_code = @coupon_code
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateCouponCountDownIgnoreCouponCount>
+
+  <!-- クーポン情報、残り利用回数をプラスする -->
+  <UpdateCouponCountUp>
+    <Statement>
+      <![CDATA[
+      -- ユーザクーポン情報更新(残り利用可能回数を減らす)
+      UPDATE
+        w2_Coupon
+      SET
+        w2_Coupon.coupon_count = (w2_Coupon.coupon_count + 1),
+        w2_Coupon.date_changed = GETDATE(),
+        w2_Coupon.last_changed = @last_changed
+      WHERE
+        w2_Coupon.dept_id = @dept_id
+      AND
+        w2_Coupon.coupon_id = @coupon_id
+      AND
+        w2_Coupon.coupon_code = @coupon_code
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateCouponCountUp>
+
+  <!-- クーポン情報削除 -->
+  <DeleteCoupon>
+    <Statement>
+      <![CDATA[
+        DELETE
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  w2_Coupon.coupon_id = @coupon_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteCoupon>
+
+  <!-- クーポン情報詳細取得 クーポンコードから、前方一致で取得 (複数一致しないと分かっている場合にのみ使う) -->
+  <GetCouponsFromCouponCode>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1 *,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND
+                w2_Coupon.coupon_code LIKE @coupon_code_like_escaped + '%' ESCAPE '#'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code_like_escaped" Type="nvarchar" Size="120" />
+    </Parameter>
+  </GetCouponsFromCouponCode>
+
+  <!-- クーポン情報取得 クーポンコード完全一致-->
+  <GetCouponFromCouponCodePerfectMatch>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1 *,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND
+                w2_Coupon.coupon_code = @coupon_code
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCouponFromCouponCodePerfectMatch>
+
+  <!--           ユーザクーポン情報系           -->
+  <!-- ユーザーが利用可能なクーポン取得 -->
+  <GetUserUsableCoupons>
+    <Statement>
+      <![CDATA[
+        -- 現在日付取得
+        DECLARE @current_date datetime
+        SET @current_date = GETDATE()
+
+        -- 利用回数制限有りのクーポン情報
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_Coupon.coupon_code,
+                w2_Coupon.coupon_name,
+                w2_Coupon.coupon_disp_name,
+                w2_Coupon.coupon_discription,
+                w2_Coupon.coupon_type,
+                w2_Coupon.coupon_count,
+                w2_Coupon.publish_date_bgn,
+                w2_Coupon.publish_date_end,
+                w2_Coupon.discount_price,
+                w2_Coupon.discount_rate,
+                w2_Coupon.expire_day,
+                w2_Coupon.expire_date_bgn,
+                w2_Coupon.expire_date_end,
+                w2_Coupon.product_kbn,
+                w2_Coupon.exceptional_product,
+                w2_Coupon.exceptional_icon,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                w2_Coupon.usable_price,
+                w2_Coupon.use_together_flg,
+                w2_Coupon.valid_flg,
+                w2_UserCoupon.user_id,
+                w2_UserCoupon.coupon_no,
+                w2_UserCoupon.use_flg,
+                w2_UserCoupon.date_created,
+                w2_UserCoupon.last_changed,
+                ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) AS expire_bgn,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) AS expire_end,
+                0  as sort,                                                    -- 回数制限有りクーポンを先頭に表示
+                w2_UserCoupon.user_coupon_count,
+                w2_Coupon.free_shipping_flg,
+                w2_Coupon.exceptional_brand_ids,
+                w2_Coupon.exceptional_product_category_ids
+          FROM  w2_Coupon
+                INNER JOIN w2_UserCoupon ON
+                (
+                  w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                  AND
+                  w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                )
+        WHERE  w2_Coupon.dept_id = @dept_id
+          AND  w2_Coupon.coupon_type IN ('01','02','03','04','06','07','08','09','46','47')   -- 新規登録 OR 購入 OR 初回購入 OR 回数制限有(会員) OR 汎用クーポン OR 誕生日クーポン OR purchase give for introducer OR register give for introducer
+          AND  w2_Coupon.valid_flg = '1'                        -- 有効
+          AND  (
+                 ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) <= @current_date
+                 AND
+                 ISNULL(w2_Coupon.expire_date_end, DATEADD(DAY, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) >= @current_date
+               )
+          AND  w2_UserCoupon.dept_id = @dept_id
+          AND  w2_UserCoupon.user_id = @user_id
+          AND  w2_UserCoupon.use_flg = '0'                      -- 未使用のクーポンのみ
+          AND  (
+                w2_UserCoupon.user_coupon_count IS NULL
+                OR
+                w2_UserCoupon.user_coupon_count >= 1
+              )
+        UNION ALL
+        -- 利用回数制限無しのクーポン情報
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_Coupon.coupon_code,
+                w2_Coupon.coupon_name,
+                w2_Coupon.coupon_disp_name,
+                w2_Coupon.coupon_discription,
+                w2_Coupon.coupon_type,
+                w2_Coupon.coupon_count,
+                w2_Coupon.publish_date_bgn,
+                w2_Coupon.publish_date_end,
+                w2_Coupon.discount_price,
+                w2_Coupon.discount_rate,
+                w2_Coupon.expire_day,
+                w2_Coupon.expire_date_bgn,
+                w2_Coupon.expire_date_end,
+                w2_Coupon.product_kbn,
+                w2_Coupon.exceptional_product,
+                w2_Coupon.exceptional_icon,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                w2_Coupon.usable_price,
+                w2_Coupon.use_together_flg,
+                w2_Coupon.valid_flg,
+                NULL AS user_id,
+                NULL AS coupon_no,
+                NULL AS use_flg,
+                w2_Coupon.date_created,
+                '' AS last_changed,
+                -- 回数制限無しの場合、ユーザに対してクーポンが発行されない。(w2_UserCouponにレコードが追加されない)
+                -- そのため、有効期限(w2_Coupon.expire_day)指定の場合、w2_Couponの作成日を発効日として利用する
+                ISNULL(w2_Coupon.expire_date_bgn, w2_Coupon.date_created) AS expire_bgn,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), w2_Coupon.date_created, 111) + ' 23:59:59.997'))) AS expire_end,
+                1 as sort,
+                null,
+                w2_Coupon.free_shipping_flg,
+                w2_Coupon.exceptional_brand_ids,
+                w2_Coupon.exceptional_product_category_ids
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  (
+                  (@user_id <> '' AND w2_Coupon.coupon_type = '11')   -- 回数制限無(会員)
+                  OR
+                  w2_Coupon.coupon_type = '12'                        -- 回数制限無
+                  OR
+                  (w2_Coupon.coupon_type IN ('21', '31') AND w2_Coupon.coupon_count > 0)
+                  OR
+                  (
+                    (
+                      (@user_id <> '' AND w2_Coupon.coupon_type IN ('41', '42'))
+                      OR
+                      w2_Coupon.coupon_type IN ('43', '44', '45')
+                )
+                    AND
+                    (
+                      NOT EXISTS
+                      (
+                        SELECT  w2_CouponUseUser.coupon_id
+                          FROM  w2_CouponUseUser
+                         WHERE  w2_CouponUseUser.coupon_id = w2_Coupon.coupon_id
+                           AND  (
+                                  (@used_user_judge_type = 'UserId' AND w2_CouponUseUser.coupon_use_user = @user_id)
+                                  OR
+                                  (@used_user_judge_type = 'MailAddress' AND w2_CouponUseUser.coupon_use_user = @coupon_use_user)
+                                )
+                      )
+                    )
+                  )
+                )
+           AND  w2_Coupon.valid_flg = '1'                             -- 有効
+           AND  (
+                  ISNULL(w2_Coupon.expire_date_bgn, w2_Coupon.date_created) <= @current_date
+                  AND
+                  ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), w2_Coupon.date_created, 111) + ' 23:59:59.997'))) >= @current_date
+                )
+      ORDER BY  sort ASC, date_created DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_use_user" Type="nvarchar" Size="256" />
+      <Input Name="used_user_judge_type" Type="nvarchar" Size="15" />
+    </Parameter>
+  </GetUserUsableCoupons>
+
+  <!-- ユーザークーポン取得 -->
+  <GetUserCoupons>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserCoupon
+                INNER JOIN w2_Coupon ON
+                (
+                  w2_UserCoupon.dept_id = w2_Coupon.dept_id
+                  AND
+                  w2_UserCoupon.coupon_id = w2_Coupon.coupon_id
+                )
+         WHERE  w2_UserCoupon.user_id = @user_id
+           AND  w2_UserCoupon.dept_id = @dept_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserCoupons>
+  
+  <!-- 有効期限にもかかわらず、ユーザクーポン情報取得  -->
+  <GetAllUserCoupons>
+    <Statement>
+      <![CDATA[
+        -- 利用回数制限有りのクーポン情報
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_Coupon.coupon_code,
+                w2_Coupon.coupon_name,
+                w2_Coupon.coupon_disp_name,
+                w2_Coupon.coupon_discription,
+                w2_Coupon.coupon_type,
+                w2_Coupon.coupon_count,
+                w2_Coupon.publish_date_bgn,
+                w2_Coupon.publish_date_end,
+                w2_Coupon.discount_price,
+                w2_Coupon.discount_rate,
+                w2_Coupon.expire_day,
+                w2_Coupon.expire_date_bgn,
+                w2_Coupon.expire_date_end,
+                w2_Coupon.product_kbn,
+                w2_Coupon.exceptional_product,
+                w2_Coupon.exceptional_icon,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                w2_Coupon.usable_price,
+                w2_Coupon.use_together_flg,
+                w2_Coupon.valid_flg,
+                w2_UserCoupon.user_id,
+                w2_UserCoupon.coupon_no,
+                w2_UserCoupon.use_flg,
+                w2_UserCoupon.user_coupon_count,
+                w2_UserCoupon.date_created,
+                w2_UserCoupon.last_changed,
+                ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) AS expire_bgn,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) AS expire_end
+          FROM  w2_Coupon
+                INNER JOIN w2_UserCoupon ON
+                (
+                  w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                  AND
+                  w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                )
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  w2_Coupon.coupon_type IN ('01','02','03','04','06','07','08','09')   -- 新規登録 OR 購入 OR 初回購入 OR 回数制限有(会員) OR 汎用クーポン OR 誕生日クーポン
+           AND  w2_UserCoupon.user_id = @user_id
+        UNION ALL
+        -- 利用回数制限無しのクーポン情報
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_Coupon.coupon_code,
+                w2_Coupon.coupon_name,
+                w2_Coupon.coupon_disp_name,
+                w2_Coupon.coupon_discription,
+                w2_Coupon.coupon_type,
+                w2_Coupon.coupon_count,
+                w2_Coupon.publish_date_bgn,
+                w2_Coupon.publish_date_end,
+                w2_Coupon.discount_price,
+                w2_Coupon.discount_rate,
+                w2_Coupon.expire_day,
+                w2_Coupon.expire_date_bgn,
+                w2_Coupon.expire_date_end,
+                w2_Coupon.product_kbn,
+                w2_Coupon.exceptional_product,
+                w2_Coupon.exceptional_icon,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                w2_Coupon.usable_price,
+                w2_Coupon.use_together_flg,
+                w2_Coupon.valid_flg,
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                w2_Coupon.date_created,
+                '',
+                -- 回数制限無しの場合、ユーザに対してクーポンが発行されない。(w2_UserCouponにレコードが追加されない)
+                -- そのため、有効期限(w2_Coupon.expire_day)指定の場合、w2_Couponの作成日を発効日として利用する
+                ISNULL(w2_Coupon.expire_date_bgn, w2_Coupon.date_created) AS expire_bgn,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), w2_Coupon.date_created, 111) + ' 23:59:59.997'))) AS expire_end
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  (
+                  ((@user_id <> '') AND (w2_Coupon.coupon_type = '11'))   -- 回数制限無(会員)
+                  OR
+                  w2_Coupon.coupon_type = '12'                -- 回数制限無
+                  OR
+                  w2_Coupon.coupon_type = '21'                -- 回数指定制限
+                  OR
+                  w2_Coupon.coupon_type = '31'                -- 利用回数制限付き配送無料クーポン
+                  OR
+                  ((@user_id <> '') AND (w2_Coupon.coupon_type = '41')) -- ブラックリスト型(会員)
+                  OR
+                  ((@user_id <> '') AND (w2_Coupon.coupon_type = '42')) -- ブラックリスト型配送無料(会員)
+                  OR
+                  w2_Coupon.coupon_type = '43'  -- ブラックリスト型
+                  OR
+                  w2_Coupon.coupon_type = '44'  -- ブラックリスト型配送無料
+                  OR
+                  w2_Coupon.coupon_type = '45' -- Thanks for introducer
+                )
+      ORDER BY  coupon_id ASC, date_created ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllUserCoupons>
+
+  <!-- ユーザクーポン情報取得指定（クーポンコード条件に含め抽出）-->
+  <GetAllUserCouponsFromCouponCode>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM
+                (
+                  -- 利用回数制限有りのクーポン情報
+                  SELECT  w2_Coupon.dept_id,
+                          w2_Coupon.coupon_id,
+                          w2_Coupon.coupon_code,
+                          w2_Coupon.coupon_name,
+                          w2_Coupon.coupon_disp_name,
+                          w2_Coupon.coupon_discription,
+                          w2_Coupon.coupon_type,
+                          w2_Coupon.coupon_count,
+                          w2_Coupon.publish_date_bgn,
+                          w2_Coupon.publish_date_end,
+                          w2_Coupon.discount_price,
+                          w2_Coupon.discount_rate,
+                          w2_Coupon.expire_day,
+                          w2_Coupon.expire_date_bgn,
+                          w2_Coupon.expire_date_end,
+                          w2_Coupon.product_kbn,
+                          w2_Coupon.exceptional_product,
+                          w2_Coupon.exceptional_icon,
+                          w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                          w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                          w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                          w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                          w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                          w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                          w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                          w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                          w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                          w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                          w2_Coupon.usable_price,
+                          w2_Coupon.use_together_flg,
+                          w2_Coupon.valid_flg,
+                          w2_UserCoupon.user_id,
+                          w2_UserCoupon.coupon_no,
+                          w2_UserCoupon.use_flg,
+                          w2_UserCoupon.user_coupon_count,
+                          w2_UserCoupon.date_created,
+                          w2_UserCoupon.last_changed,
+                          ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) AS expire_bgn,
+                          ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59'))) AS expire_end,
+                          w2_Coupon.free_shipping_flg,
+                          w2_Coupon.exceptional_brand_ids,
+                          w2_Coupon.exceptional_product_category_ids
+                    FROM  w2_Coupon
+                          INNER JOIN w2_UserCoupon ON
+                          (
+                            w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                            AND
+                            w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                          )
+                   WHERE  w2_Coupon.dept_id = @dept_id
+                     AND  w2_Coupon.coupon_code = @coupon_code
+                     AND  w2_Coupon.coupon_type IN ('01','02','03','04','06','07','08','09','46','47')   -- 新規登録 OR 購入 OR 初回購入 OR 回数制限有(会員) OR 汎用クーポン OR 誕生日クーポン OR purchase give for introducer OR register give for introducer
+                     AND  w2_UserCoupon.user_id = @user_id
+                     AND  w2_UserCoupon.use_flg = '0'
+                     AND  (
+                            w2_UserCoupon.user_coupon_count IS NULL
+                            OR
+                            w2_UserCoupon.user_coupon_count >= 1
+                          )
+                  UNION ALL
+                  -- 利用回数制限無しのクーポン情報
+                  SELECT  w2_Coupon.dept_id,
+                          w2_Coupon.coupon_id,
+                          w2_Coupon.coupon_code,
+                          w2_Coupon.coupon_name,
+                          w2_Coupon.coupon_disp_name,
+                          w2_Coupon.coupon_discription,
+                          w2_Coupon.coupon_type,
+                          w2_Coupon.coupon_count,
+                          w2_Coupon.publish_date_bgn,
+                          w2_Coupon.publish_date_end,
+                          w2_Coupon.discount_price,
+                          w2_Coupon.discount_rate,
+                          w2_Coupon.expire_day,
+                          w2_Coupon.expire_date_bgn,
+                          w2_Coupon.expire_date_end,
+                          w2_Coupon.product_kbn,
+                          w2_Coupon.exceptional_product,
+                          w2_Coupon.exceptional_icon,
+                          w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                          w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                          w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                          w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                          w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                          w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                          w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                          w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                          w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                          w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                          w2_Coupon.usable_price,
+                          w2_Coupon.use_together_flg,
+                          w2_Coupon.valid_flg,
+                          NULL,
+                          NULL,
+                          NULL,
+                          NULL,
+                          w2_Coupon.date_created,
+                          '',
+                          -- 回数制限無しの場合、ユーザに対してクーポンが発行されない。(w2_UserCouponにレコードが追加されない)
+                          -- そのため、有効期限(w2_Coupon.expire_day)指定の場合、w2_Couponの作成日を発効日として利用する
+                          ISNULL(w2_Coupon.expire_date_bgn, w2_Coupon.date_created) AS expire_bgn,
+                          ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), w2_Coupon.date_created, 111) + ' 23:59:59'))) AS expire_end,
+                          w2_Coupon.free_shipping_flg,
+                          w2_Coupon.exceptional_brand_ids,
+                          w2_Coupon.exceptional_product_category_ids
+                    FROM  w2_Coupon
+                   WHERE  w2_Coupon.dept_id = @dept_id
+                     AND  w2_Coupon.coupon_code = @coupon_code
+                     AND  (
+                            ((@user_id <> '') AND (w2_Coupon.coupon_type = '11')) -- 回数制限無(会員)
+                            OR
+                            w2_Coupon.coupon_type = '12'                          -- 回数制限無
+                            OR
+                            w2_Coupon.coupon_type = '21'                          -- 回数指定制限
+                            OR
+                            w2_Coupon.coupon_type = '31'                          -- 利用回数制限付き配送無料クーポン
+                            OR
+                            ((@user_id <> '') AND (w2_Coupon.coupon_type = '41')) -- ブラックリスト型(会員)
+                            OR
+                            ((@user_id <> '') AND (w2_Coupon.coupon_type = '42')) -- ブラックリスト型配送無料(会員)
+                            OR
+                            w2_Coupon.coupon_type = '43'  -- ブラックリスト型
+                            OR
+                            w2_Coupon.coupon_type = '44'  -- ブラックリスト型配送無料
+                            OR
+                            w2_Coupon.coupon_type = '45' -- Thanks for introducer
+                          )
+                ) AS AllUserCoupons
+         WHERE  AllUserCoupons.expire_bgn <= GETDATE()
+           AND  AllUserCoupons.expire_end >= GETDATE()
+      ORDER BY  AllUserCoupons.expire_end
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllUserCouponsFromCouponCode>
+
+  <!-- ユーザクーポン情報取得指定（クーポンコード条件に含め、利用不可のものも含めて抽出）-->
+  <GetAllUserCouponsFromCouponCodeIncludeUnavailable>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM
+                (
+                  -- 利用回数制限有りのクーポン情報
+                  SELECT  w2_Coupon.dept_id,
+                          w2_Coupon.coupon_id,
+                          w2_Coupon.coupon_code,
+                          w2_Coupon.coupon_name,
+                          w2_Coupon.coupon_disp_name,
+                          w2_Coupon.coupon_discription,
+                          w2_Coupon.coupon_type,
+                          w2_Coupon.coupon_count,
+                          w2_Coupon.publish_date_bgn,
+                          w2_Coupon.publish_date_end,
+                          w2_Coupon.discount_price,
+                          w2_Coupon.discount_rate,
+                          w2_Coupon.expire_day,
+                          w2_Coupon.expire_date_bgn,
+                          w2_Coupon.expire_date_end,
+                          w2_Coupon.product_kbn,
+                          w2_Coupon.exceptional_product,
+                          w2_Coupon.exceptional_icon,
+                          w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                          w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                          w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                          w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                          w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                          w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                          w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                          w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                          w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                          w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                          w2_Coupon.usable_price,
+                          w2_Coupon.use_together_flg,
+                          w2_Coupon.valid_flg,
+                          w2_UserCoupon.user_id,
+                          w2_UserCoupon.coupon_no,
+                          w2_UserCoupon.use_flg,
+                          w2_UserCoupon.user_coupon_count,
+                          w2_UserCoupon.date_created,
+                          w2_UserCoupon.last_changed,
+                          ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) AS expire_bgn,
+                          ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59'))) AS expire_end,
+                          w2_Coupon.free_shipping_flg,
+                          w2_Coupon.exceptional_brand_ids,
+                          w2_Coupon.exceptional_product_category_ids
+                    FROM  w2_Coupon
+                          INNER JOIN w2_UserCoupon ON
+                          (
+                            w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                            AND
+                            w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                          )
+                   WHERE  w2_Coupon.dept_id = @dept_id
+                     AND  w2_Coupon.coupon_code = @coupon_code
+                     AND  w2_Coupon.coupon_type IN ('01','02','03','04','06','07','08','09','46','47')   -- 新規登録 OR 購入 OR 初回購入 OR 回数制限有(会員) OR 汎用クーポン OR 誕生日クーポン OR purchase give for introducer OR register give for introducer
+                     AND  w2_UserCoupon.user_id = @user_id
+                  UNION ALL
+                  -- 利用回数制限無しのクーポン情報
+                  SELECT  w2_Coupon.dept_id,
+                          w2_Coupon.coupon_id,
+                          w2_Coupon.coupon_code,
+                          w2_Coupon.coupon_name,
+                          w2_Coupon.coupon_disp_name,
+                          w2_Coupon.coupon_discription,
+                          w2_Coupon.coupon_type,
+                          w2_Coupon.coupon_count,
+                          w2_Coupon.publish_date_bgn,
+                          w2_Coupon.publish_date_end,
+                          w2_Coupon.discount_price,
+                          w2_Coupon.discount_rate,
+                          w2_Coupon.expire_day,
+                          w2_Coupon.expire_date_bgn,
+                          w2_Coupon.expire_date_end,
+                          w2_Coupon.product_kbn,
+                          w2_Coupon.exceptional_product,
+                          w2_Coupon.exceptional_icon,
+                          w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                          w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                          w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                          w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                          w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                          w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                          w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                          w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                          w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                          w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                          w2_Coupon.usable_price,
+                          w2_Coupon.use_together_flg,
+                          w2_Coupon.valid_flg,
+                          NULL,
+                          NULL,
+                          NULL,
+                          NULL,
+                          w2_Coupon.date_created,
+                          '',
+                          -- 回数制限無しの場合、ユーザに対してクーポンが発行されない。(w2_UserCouponにレコードが追加されない)
+                          -- そのため、有効期限(w2_Coupon.expire_day)指定の場合、w2_Couponの作成日を発効日として利用する
+                          ISNULL(w2_Coupon.expire_date_bgn, w2_Coupon.date_created) AS expire_bgn,
+                          ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), w2_Coupon.date_created, 111) + ' 23:59:59'))) AS expire_end,
+                          w2_Coupon.free_shipping_flg,
+                          w2_Coupon.exceptional_brand_ids,
+                          w2_Coupon.exceptional_product_category_ids
+                    FROM  w2_Coupon
+                   WHERE  w2_Coupon.dept_id = @dept_id
+                     AND  w2_Coupon.coupon_code = @coupon_code
+                     AND  (
+                            ((@user_id <> '') AND (w2_Coupon.coupon_type = '11')) -- 回数制限無(会員)
+                            OR
+                            w2_Coupon.coupon_type = '12'                          -- 回数制限無
+                            OR
+                            w2_Coupon.coupon_type = '21'                          -- 回数指定制限
+                            OR
+                            w2_Coupon.coupon_type = '31'                          -- 利用回数制限付き配送無料クーポン
+                            OR
+                            ((@user_id <> '') AND (w2_Coupon.coupon_type = '41')) -- ブラックリスト型(会員)
+                            OR
+                            ((@user_id <> '') AND (w2_Coupon.coupon_type = '42')) -- ブラックリスト型配送無料(会員)
+                            OR
+                            w2_Coupon.coupon_type = '43'  -- ブラックリスト型
+                            OR
+                            w2_Coupon.coupon_type = '44'  -- ブラックリスト型配送無料
+                            OR
+                            w2_Coupon.coupon_type = '45' -- Thanks for introducer
+                          )
+                ) AS AllUserCoupons
+      ORDER BY  AllUserCoupons.expire_end
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllUserCouponsFromCouponCodeIncludeUnavailable>
+
+  <!-- ユーザクーポン情報取得指定 ※クーポンID、枝番条件に含め抽出 -->
+  <GetAllUserCouponsFromCouponId>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        -- 利用回数制限有りのクーポン情報
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_Coupon.coupon_code,
+                w2_Coupon.coupon_name,
+                w2_Coupon.coupon_disp_name,
+                w2_Coupon.coupon_discription,
+                w2_Coupon.coupon_type,
+                w2_Coupon.coupon_count,
+                w2_Coupon.publish_date_bgn,
+                w2_Coupon.publish_date_end,
+                w2_Coupon.discount_price,
+                w2_Coupon.discount_rate,
+                w2_Coupon.expire_day,
+                w2_Coupon.expire_date_bgn,
+                w2_Coupon.expire_date_end,
+                w2_Coupon.product_kbn,
+                w2_Coupon.exceptional_product,
+                w2_Coupon.exceptional_icon,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                w2_Coupon.usable_price,
+                w2_Coupon.use_together_flg,
+                w2_Coupon.valid_flg,
+                w2_UserCoupon.user_id,
+                w2_UserCoupon.coupon_no,
+                w2_UserCoupon.use_flg,
+                w2_UserCoupon.user_coupon_count,
+                w2_UserCoupon.date_created,
+                w2_UserCoupon.last_changed,
+                ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) AS expire_bgn,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) AS expire_end,
+                w2_Coupon.free_shipping_flg,
+                w2_Coupon.exceptional_brand_ids,
+                w2_Coupon.exceptional_product_category_ids
+          FROM  w2_Coupon
+                INNER JOIN w2_UserCoupon ON
+                (
+                  w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                  AND
+                  w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                )
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  w2_Coupon.coupon_id = @coupon_id
+           AND  w2_Coupon.coupon_type IN ('01','02','03','04','06','07','08','09','46','47')   -- 新規登録 OR 購入 OR 初回購入 OR 回数制限有(会員) OR 汎用クーポン OR 誕生日クーポン OR purchase give for introducer OR register give for introducer
+           AND  w2_UserCoupon.user_id = @user_id
+           AND  w2_UserCoupon.coupon_no = @coupon_no
+        UNION ALL
+        -- 利用回数制限無しのクーポン情報
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_Coupon.coupon_code,
+                w2_Coupon.coupon_name,
+                w2_Coupon.coupon_disp_name,
+                w2_Coupon.coupon_discription,
+                w2_Coupon.coupon_type,
+                w2_Coupon.coupon_count,
+                w2_Coupon.publish_date_bgn,
+                w2_Coupon.publish_date_end,
+                w2_Coupon.discount_price,
+                w2_Coupon.discount_rate,
+                w2_Coupon.expire_day,
+                w2_Coupon.expire_date_bgn,
+                w2_Coupon.expire_date_end,
+                w2_Coupon.product_kbn,
+                w2_Coupon.exceptional_product,
+                w2_Coupon.exceptional_icon,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                w2_Coupon.usable_price,
+                w2_Coupon.use_together_flg,
+                w2_Coupon.valid_flg,
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                w2_Coupon.date_created,
+                '',
+                -- 回数制限無しの場合、ユーザに対してクーポンが発行されない。(w2_UserCouponにレコードが追加されない)
+                -- そのため、有効期限(w2_Coupon.expire_day)指定の場合、w2_Couponの作成日を発効日として利用する
+                ISNULL(w2_Coupon.expire_date_bgn, w2_Coupon.date_created) AS expire_bgn,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), w2_Coupon.date_created, 111) + ' 23:59:59.997'))) AS expire_end,
+                w2_Coupon.free_shipping_flg,
+                w2_Coupon.exceptional_brand_ids,
+                w2_Coupon.exceptional_product_category_ids
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  w2_Coupon.coupon_id = @coupon_id
+           AND  (
+                  (@user_id <> '' AND w2_Coupon.coupon_type = '11')   -- 回数制限無(会員)
+                  OR
+                  w2_Coupon.coupon_type = '12'                        -- 回数制限無
+                  OR
+                  w2_Coupon.coupon_type = '21'                        -- 回数指定制限
+                  OR
+                  w2_Coupon.coupon_type = '31'                        -- 利用回数制限付き配送無料クーポン
+                  OR
+                  ((@user_id <> '') AND (w2_Coupon.coupon_type = '41')) -- ブラックリスト型(会員)
+                  OR
+                  ((@user_id <> '') AND (w2_Coupon.coupon_type = '42')) -- ブラックリスト型配送無料(会員)
+                  OR
+                  w2_Coupon.coupon_type = '43'  -- ブラックリスト型
+                  OR
+                  w2_Coupon.coupon_type = '44'  -- ブラックリスト型配送無料
+                  OR
+                  w2_Coupon.coupon_type = '45' -- Thanks for introducer
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_no" Type="int" />
+    </Parameter>
+  </GetAllUserCouponsFromCouponId>
+
+  <!-- ユーザクーポン情報取得指定
+       ※クーポンID、枝番条件に含め抽出
+  -->
+  <GetUserCouponFromCouponNo>
+    <Statement>
+      <![CDATA[
+        -- 現在日付取得
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_Coupon.coupon_code,
+                w2_Coupon.coupon_name,
+                w2_Coupon.coupon_disp_name,
+                w2_Coupon.coupon_discription,
+                w2_Coupon.coupon_type,
+                w2_Coupon.coupon_count,
+                w2_Coupon.publish_date_bgn,
+                w2_Coupon.publish_date_end,
+                w2_Coupon.discount_price,
+                w2_Coupon.discount_rate,
+                w2_Coupon.expire_day,
+                w2_Coupon.expire_date_bgn,
+                w2_Coupon.expire_date_end,
+                w2_Coupon.product_kbn,
+                w2_Coupon.exceptional_product,
+                w2_Coupon.exceptional_icon,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                w2_Coupon.usable_price,
+                w2_Coupon.use_together_flg,
+                w2_Coupon.valid_flg,
+                w2_UserCoupon.user_id,
+                w2_UserCoupon.coupon_no,
+                w2_UserCoupon.use_flg,
+                w2_UserCoupon.user_coupon_count,
+                w2_UserCoupon.date_created,
+                w2_UserCoupon.last_changed,
+                ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) AS expire_bgn,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) AS expire_end
+          FROM  w2_Coupon
+                INNER JOIN w2_UserCoupon ON
+                (
+                  w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                  AND
+                  w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                )
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  w2_Coupon.coupon_id = @coupon_id
+           AND  w2_Coupon.coupon_type IN ('01','02','03','04','06','07','08','46','47')  -- 新規登録 OR 購入 OR 初回購入 OR 回数制限有(会員) OR 回数制限付きクーポン OR 汎用クーポン OR 誕生日クーポン OR purchase give for introducer OR register give for introducer
+           AND  (
+                  ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) <= @current_date
+                  AND
+                  ISNULL(w2_Coupon.expire_date_end, DATEADD(DAY, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) >= @current_date
+                )
+           AND  w2_UserCoupon.dept_id = @dept_id
+           AND  w2_UserCoupon.user_id = @user_id
+           AND  w2_UserCoupon.coupon_no = @coupon_no
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_no" Type="int" />
+    </Parameter>
+  </GetUserCouponFromCouponNo>
+
+  <!-- クーポンIDからユーザクーポン情報取得 -->
+  <GetUserCouponFromCouponId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserCoupon
+         WHERE  dept_id = @dept_id
+           AND  coupon_id = @coupon_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetUserCouponFromCouponId>
+
+  <!-- ユーザクーポン情報取得(本注文で発行したクーポン) -->
+  <GetOrderPublishUserCoupon>
+    <Statement>
+      <![CDATA[
+        SELECT  *,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) AS expire_end
+          FROM  w2_UserCoupon
+                INNER JOIN w2_Coupon ON
+                (
+                  w2_UserCoupon.dept_id = w2_Coupon.dept_id
+                  AND
+                  w2_UserCoupon.coupon_id = w2_Coupon.coupon_id
+                )
+         WHERE  w2_UserCoupon.dept_id = @dept_id
+           AND  w2_UserCoupon.user_id = @user_id
+           AND  w2_UserCoupon.order_id = @order_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetOrderPublishUserCoupon>
+
+  <!-- ユーザクーポン枝番取得 -->
+  <GetUserCouponNo>
+    <Statement>
+      <![CDATA[
+        SELECT  (ISNULL(MAX(w2_UserCoupon.coupon_no), 0) + 1) AS coupon_no
+          FROM  w2_UserCoupon
+         WHERE  w2_UserCoupon.user_id = @user_id
+           AND  w2_UserCoupon.dept_id = @dept_id
+           AND  w2_UserCoupon.coupon_id = @coupon_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserCouponNo>
+
+  <!-- ユーザーが利用可能なクーポン数 -->
+  <GetAllUserUsableCouponsCount>
+    <Statement>
+      <![CDATA[
+        -- 現在日付取得
+        DECLARE @current_date datetime
+        SET @current_date = GETDATE()
+
+        SELECT  COUNT(w2_Coupon.dept_id)
+          FROM  w2_Coupon
+                LEFT JOIN w2_UserCoupon ON
+                (
+                  w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                  AND
+                  w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                )
+                [[ USABLE_COUPON_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="coupon_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="user_coupon_only" Type="nvarchar" Size="1" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="used_user_judge_type" Type="nvarchar" Size="15" />
+    </Parameter>
+  </GetAllUserUsableCouponsCount>
+
+  <!-- ユーザーが利用可能なクーポンを取得する -->
+  <GetAllUserUsableCoupons>
+    <Statement>
+      <![CDATA[
+        -- 現在日付取得
+        DECLARE @current_date datetime
+        SET @current_date = GETDATE()
+
+        -- 一時テーブル作成
+        CREATE TABLE #temp_table (
+          dept_id nvarchar(30) NOT NULL,
+          coupon_id nvarchar(30) NOT NULL,
+          user_id nvarchar(30),
+          coupon_no int,
+          expire_date datetime NOT NULL
+        )
+
+        -- 利用回数制限有りのクーポン情報
+        INSERT  #temp_table
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_UserCoupon.user_id,
+                w2_UserCoupon.coupon_no,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997')))
+          FROM  w2_Coupon
+                LEFT JOIN w2_UserCoupon ON
+                (
+                  w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                  AND
+                  w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                )
+                [[ USABLE_COUPON_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_Coupon.coupon_code,
+                w2_Coupon.coupon_name,
+                w2_Coupon.coupon_disp_name,
+                w2_Coupon.coupon_discription,
+                w2_Coupon.coupon_type,
+                w2_Coupon.coupon_count,
+                w2_Coupon.publish_date_bgn,
+                w2_Coupon.publish_date_end,
+                w2_Coupon.discount_price,
+                w2_Coupon.discount_rate,
+                w2_Coupon.expire_day,
+                w2_Coupon.expire_date_bgn,
+                w2_Coupon.expire_date_end,
+                w2_Coupon.product_kbn,
+                w2_Coupon.exceptional_product,
+                w2_Coupon.exceptional_icon,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                w2_Coupon.usable_price,
+                w2_Coupon.use_together_flg,
+                w2_Coupon.valid_flg,
+                w2_UserCoupon.user_id,
+                w2_UserCoupon.coupon_no,
+                w2_UserCoupon.use_flg,
+                w2_UserCoupon.user_coupon_count,
+                IsNUll(w2_UserCoupon.date_created, w2_Coupon.date_created) AS date_created,
+                w2_UserCoupon.last_changed,
+                ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) AS expire_bgn,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) AS expire_end,
+                (SELECT COUNT(dept_id) FROM #temp_table) AS row_count,
+                w2_Coupon.free_shipping_flg,
+                w2_Coupon.exceptional_brand_ids,
+                w2_Coupon.exceptional_product_category_ids
+          FROM  (
+                  SELECT  #temp_table.dept_id AS dept_id,
+                          #temp_table.coupon_id AS coupon_id,
+                          #temp_table.user_id AS user_id,
+                          #temp_table.coupon_no AS coupon_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            ORDER BY #temp_table.expire_date
+                          ) AS row_num
+                    FROM  #temp_table
+                ) AS RowIndex
+                INNER JOIN w2_Coupon ON
+                (
+                  RowIndex.coupon_id = w2_Coupon.coupon_id
+                )
+                LEFT JOIN w2_UserCoupon ON
+                (
+                  w2_UserCoupon.user_id = @user_id
+                  AND
+                  w2_UserCoupon.dept_id = RowIndex.dept_id
+                  AND
+                  w2_UserCoupon.coupon_id = RowIndex.coupon_id
+                  AND
+                  w2_UserCoupon.coupon_no = RowIndex.coupon_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="coupon_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="user_coupon_only" Type="nvarchar" Size="1" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="used_user_judge_type" Type="nvarchar" Size="15" />
+    </Parameter>
+  </GetAllUserUsableCoupons>
+
+  <!-- ユーザクーポン情報登録（注文ID指定無し） -->
+  <InsertUserCoupon>
+    <Statement>
+      <![CDATA[
+        -- 最新枝番取得
+        DECLARE @coupon_no int
+        SELECT @coupon_no = ISNULL(MAX(w2_UserCoupon.coupon_no), 0) + 1 FROM w2_UserCoupon WHERE w2_UserCoupon.user_id = @user_id AND w2_UserCoupon.dept_id = @dept_id
+
+        INSERT
+          w2_UserCoupon
+          (
+            w2_UserCoupon.user_id,
+            w2_UserCoupon.dept_id,
+            w2_UserCoupon.coupon_id,
+            w2_UserCoupon.coupon_no,
+            w2_UserCoupon.order_id,
+            w2_UserCoupon.use_flg,
+            w2_UserCoupon.date_created,
+            w2_UserCoupon.date_changed,
+            w2_UserCoupon.user_coupon_count,
+            w2_UserCoupon.last_changed
+            )
+          VALUES
+          (
+            @user_id,
+            @dept_id,
+            @coupon_id,
+            @coupon_no,
+            '',
+            '0',  -- 未使用
+            getdate(),
+            getdate(),
+            @user_coupon_count,
+            @last_changed
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="user_coupon_count" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="30" />
+    </Parameter>
+  </InsertUserCoupon>
+
+  <!-- ユーザクーポン情報登録（注文ID指定あり） -->
+  <InsertUserCouponWithOrderId>
+    <Statement>
+      <![CDATA[
+      -- ユーザクーポン情報追加
+      INSERT  w2_UserCoupon
+          (
+            w2_UserCoupon.user_id,
+            w2_UserCoupon.dept_id,
+            w2_UserCoupon.coupon_id,
+            w2_UserCoupon.coupon_no,
+            w2_UserCoupon.order_id,
+            w2_UserCoupon.use_flg,
+            w2_UserCoupon.date_created,
+            w2_UserCoupon.date_changed,
+            w2_UserCoupon.last_changed,
+            w2_UserCoupon.user_coupon_count
+          )
+      VALUES  (
+            @user_id,
+            @dept_id,
+            @coupon_id,
+            @coupon_no,
+            @order_id,
+            '0',          -- 未利用
+            getdate(),
+            getdate(),
+            @last_changed,
+            @user_coupon_count
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_no" Type="int" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="user_coupon_count" Type="int" />
+    </Parameter>
+  </InsertUserCouponWithOrderId>
+
+  <!-- ユーザクーポン情報更新処理（回数制限有りのクーポンの場合のみ）-->
+  <UpdateUserCouponUseFlg>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserCoupon
+           SET  w2_UserCoupon.use_flg = @use_flg,
+                w2_UserCoupon.date_changed = @date_changed,
+                w2_UserCoupon.last_changed = @last_changed
+         WHERE  w2_UserCoupon.user_id = @user_id
+           AND  w2_UserCoupon.dept_id = @dept_id
+           AND  w2_UserCoupon.coupon_id = @coupon_id
+           AND  w2_UserCoupon.coupon_no = @coupon_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_no" Type="int" />
+      <Input Name="use_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateUserCouponUseFlg>
+
+  <!-- ユーザクーポン更新(使用済み→未使用) -->
+  <UpdateUnUseUserCoupon>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserCoupon
+           SET  w2_UserCoupon.use_flg = '0',
+                w2_UserCoupon.date_changed = getdate(),
+                w2_UserCoupon.last_changed = @last_changed
+         WHERE  w2_UserCoupon.user_id = @user_id
+           AND  w2_UserCoupon.dept_id = @dept_id
+           AND  w2_UserCoupon.coupon_id = @coupon_id
+           AND  w2_UserCoupon.coupon_no = @coupon_no
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_no" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateUnUseUserCoupon>
+
+  <!-- ユーザークーポン更新(ユーザークーポン利用可能回数) -->
+  <UpdateUseCouponCountUserCoupon>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserCoupon
+           SET  user_coupon_count = @user_coupon_count
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  w2_UserCoupon.user_id = @user_id
+           AND  w2_UserCoupon.dept_id = @dept_id
+           AND  w2_UserCoupon.coupon_id = @coupon_id
+           AND  w2_UserCoupon.coupon_no = @coupon_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_no" Type="int" />
+      <Input Name="user_coupon_count" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateUseCouponCountUserCoupon>
+
+  <!-- クーポン情報削除 -->
+  <DeleteUserCoupon>
+    <Statement>
+      <![CDATA[
+        DELETE
+          FROM  w2_UserCoupon
+         WHERE  w2_UserCoupon.user_id = @user_id
+           AND  w2_UserCoupon.dept_id = @dept_id
+           AND  w2_UserCoupon.coupon_id = @coupon_id
+           AND  w2_UserCoupon.coupon_no = @coupon_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_no" Type="int" />
+    </Parameter>
+  </DeleteUserCoupon>
+
+  <!-- ユーザクーポン情報削除(注文キャンセル時) -->
+  <DeleteUserCouponByOrderId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserCoupon
+         WHERE  w2_UserCoupon.user_id = @user_id
+           AND  w2_UserCoupon.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteUserCouponByOrderId>
+
+  <!-- 有効期限切れクーポン取得（退会ユーザ含む） -->
+  <GetExpiredUserCoupons>
+    <Statement>
+      <![CDATA[
+      -- 現在日付取得
+      DECLARE @current_date datetime
+      SET @current_date = GETDATE()
+
+      -- 有効期限切れクーポン
+      SELECT  w2_UserCoupon.*,
+              w2_Coupon.coupon_code,
+              w2_Coupon.discount_price
+        FROM  w2_Coupon
+              LEFT JOIN w2_UserCoupon ON
+              (
+                w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                AND
+                w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+              )
+        WHERE  w2_UserCoupon.use_flg = '0' -- 未利用
+          AND  ISNULL(w2_Coupon.expire_date_end, DATEADD(DAY, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) <= @current_date -- 有効期限切れ
+        UNION
+        -- 退会者のクーポン
+      SELECT  w2_UserCoupon.*,
+              w2_Coupon.coupon_code,
+              w2_Coupon.discount_price
+        FROM  w2_Coupon
+              LEFT JOIN w2_UserCoupon ON
+              (
+                w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                AND
+                w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+              )
+        WHERE  w2_UserCoupon.use_flg = '0' -- 未利用
+          AND  EXISTS (
+                      SELECT  *
+                        FROM  w2_User
+                        WHERE  w2_User.user_id = w2_UserCoupon.user_id
+                          AND  w2_User.del_flg = '1'
+                      )
+    ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetExpiredUserCoupons>
+
+  <!-- ユーザクーポン削除（退会ユーザ含む） -->
+  <DeleteExpiredUserCoupon>
+    <Statement>
+      <![CDATA[
+      -- 現在日付取得
+      DECLARE @current_date datetime
+      SET @current_date = GETDATE()
+
+      -- 有効期限切れの日付を履歴の作成日とする（★後に削除したい）
+      -- 退会ユーザについては、ユーザデータの最終更新日（ほぼ退会日）を履歴の作成日とする
+      DECLARE @coupon_exp DATETIME
+      SELECT  @coupon_exp = CASE
+                              WHEN w2_User.del_flg = '1' THEN w2_User.date_changed
+                              WHEN w2_Coupon.expire_day IS NULL THEN w2_Coupon.expire_date_end
+                              WHEN w2_Coupon.expire_date_end IS NULL THEN DATEADD(DAY, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))
+                              ELSE @current_date
+                            END
+        FROM  w2_UserCoupon
+              INNER JOIN w2_Coupon ON
+              (
+                w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                AND
+                w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+              )
+              LEFT JOIN w2_User ON
+              (
+                w2_User.user_id = w2_UserCoupon.user_id
+              )
+        WHERE  w2_UserCoupon.user_id = @user_id
+          AND  w2_UserCoupon.dept_id = @dept_id
+          AND  w2_UserCoupon.coupon_id = @coupon_id
+          AND  w2_UserCoupon.coupon_no = @coupon_no
+
+      -- ユーザクーポン削除
+      DELETE  w2_UserCoupon
+        WHERE  w2_UserCoupon.user_id = @user_id
+          AND  w2_UserCoupon.dept_id = @dept_id
+          AND  w2_UserCoupon.coupon_id = @coupon_id
+          AND  w2_UserCoupon.coupon_no = @coupon_no
+
+      -- ユーザクーポン履歴NO取得
+      DECLARE  @history_no int
+      SELECT  @history_no = ISNULL(MAX(history_no), 0) + 1
+        FROM  w2_UserCouponHistory
+        WHERE  user_id = @user_id
+
+      INSERT  w2_UserCouponHistory
+              (
+                user_id,
+                history_no,
+                dept_id,
+                coupon_id,
+                coupon_code,
+                order_id,
+                history_kbn,
+                action_kbn,
+                coupon_inc,
+                coupon_price,
+                memo,
+                date_created,
+                last_changed
+              )
+      VALUES  (
+                @user_id,
+                @history_no,
+                @dept_id,
+                @coupon_id,
+                @coupon_code,
+                '',
+                @history_kbn,
+                @action_kbn,
+                @coupon_inc,
+                @coupon_price,
+                @memo,
+                ISNULL(@coupon_exp, @current_date),
+                'batch'
+              )
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code" Type="nvarchar" Size="30" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="history_kbn" Type="nvarchar" Size="10" />
+      <Input Name="action_kbn" Type="nvarchar" Size="10" />
+      <Input Name="coupon_inc" Type="decimal" />
+      <Input Name="coupon_price" Type="decimal" />
+      <Input Name="memo" Type="nvarchar" Size="200" />
+      <Input Name="coupon_no" Type="int" />
+    </Parameter>
+  </DeleteExpiredUserCoupon>
+
+  <!--           ユーザクーポン履歴情報系           -->
+    <!-- ユーザークーポン履歴取得（全て） -->
+  <GetHistoiresAll>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  *
+          FROM  w2_UserCouponHistory
+         WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetHistoiresAll>
+  
+  <!-- ユーザクーポン履歴情報登録 -->
+  <InsertUserCouponHistory>
+    <Statement>
+      <![CDATA[
+        -- 最新枝番取得
+        DECLARE @history_no int
+        SELECT @history_no = ISNULL(MAX(w2_UserCouponHistory.history_no), 0) + 1 FROM w2_UserCouponHistory WHERE w2_UserCouponHistory.user_id = @user_id
+
+        INSERT
+          w2_UserCouponHistory
+          (
+            w2_UserCouponHistory.user_id,
+            w2_UserCouponHistory.history_no,
+            w2_UserCouponHistory.dept_id,
+            w2_UserCouponHistory.coupon_id,
+            w2_UserCouponHistory.coupon_code,
+            w2_UserCouponHistory.order_id,
+            w2_UserCouponHistory.history_kbn,
+            w2_UserCouponHistory.action_kbn,
+            w2_UserCouponHistory.coupon_inc,
+            w2_UserCouponHistory.coupon_price,
+            w2_UserCouponHistory.memo,
+            w2_UserCouponHistory.date_created,
+            w2_UserCouponHistory.last_changed,
+            w2_UserCouponHistory.fixed_purchase_id
+          )
+          VALUES
+          (
+            @user_id,
+            @history_no,
+            @dept_id,
+            @coupon_id,
+            @coupon_code,
+            @order_id,
+            @history_kbn,
+            @action_kbn,
+            @coupon_inc,
+            @coupon_price,
+            '',
+            getdate(),
+            @last_changed,
+            @fixed_purchase_id
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code" Type="nvarchar" Size="30" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="history_kbn" Type="nvarchar" Size="10" />
+      <Input Name="action_kbn" Type="nvarchar" Size="10" />
+      <Input Name="coupon_inc" Type="decimal" />
+      <Input Name="coupon_price" Type="decimal" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </InsertUserCouponHistory>
+
+  <!--ユーザクーポン履歴情報取得 -->
+  <GetUserCouponHistory>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(history_no), 0)
+          FROM  w2_UserCouponHistory
+                INNER JOIN w2_User ON
+                (
+                  w2_UserCouponHistory.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_Coupon ON
+                (
+                  w2_UserCouponHistory.dept_id = w2_Coupon.dept_id
+                  AND
+                  w2_UserCouponHistory.coupon_id = w2_Coupon.coupon_id
+                )
+                [[ USERCOUPONHISTORY_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_UserCouponHistory.*,
+                w2_Coupon.coupon_name,
+                RowIndex.row_num,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_UserCouponHistory.user_id,
+                          w2_UserCouponHistory.history_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ USERCOUPONHISTORY_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_UserCouponHistory
+                          INNER JOIN w2_User WITH (NOLOCK) ON
+                          (
+                            w2_UserCouponHistory.user_id = w2_User.user_id
+                          )
+                          INNER JOIN w2_Coupon ON
+                          (
+                            w2_UserCouponHistory.dept_id = w2_Coupon.dept_id
+                            AND
+                            w2_UserCouponHistory.coupon_id = w2_Coupon.coupon_id
+                          )
+                          [[ USERCOUPONHISTORY_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_UserCouponHistory ON
+                (
+                  RowIndex.user_id = w2_UserCouponHistory.user_id
+                  AND
+                  RowIndex.history_no = w2_UserCouponHistory.history_no
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_UserCouponHistory.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_Coupon ON
+                (
+                  w2_UserCouponHistory.dept_id = w2_Coupon.dept_id
+                  AND
+                  w2_UserCouponHistory.coupon_id = w2_Coupon.coupon_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetUserCouponHistory>
+
+  <!-- ユーザーIDとクーポンIDからユーザークーポン履歴情報取得 -->
+  <GetUserCouponHistoryByUserIdAndCouponId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserCouponHistory.*
+          FROM  w2_UserCouponHistory
+         WHERE  w2_UserCouponHistory.user_id = @user_id
+           AND  w2_UserCouponHistory.coupon_id = @coupon_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserCouponHistoryByUserIdAndCouponId>
+
+  <!-- ユーザクーポン履歴情報削除 -->
+  <DeleteUserCouponHistory>
+    <Statement>
+      <![CDATA[
+        -- ユーザクーポン履歴を削除
+        DELETE
+            w2_UserCouponHistory
+        WHERE
+            w2_UserCouponHistory.order_id = @order_id
+        AND
+            w2_UserCouponHistory.dept_id = @dept_id
+        AND
+            w2_UserCouponHistory.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteUserCouponHistory>
+
+  <!--           ユーザ&クーポン一覧情報系           -->
+  <!-- ユーザ情報一覧取得 -->
+  <GetUserList>
+    <Statement>
+      <![CDATA[
+        DECLARE @date DATETIME = GETDATE()
+      
+        -- 該当情報取得
+        ;WITH Unused_Coupon AS -- 未利用クーポン数
+        (
+          SELECT  w2_UserCoupon.user_id,
+                  COUNT(w2_UserCoupon.user_id) AS unused_coupon
+            FROM  w2_UserCoupon
+                  INNER JOIN w2_Coupon ON
+                  (
+                    w2_UserCoupon.dept_id = w2_Coupon.dept_id
+                    AND
+                    w2_UserCoupon.coupon_id = w2_Coupon.coupon_id
+                  )
+           WHERE  w2_UserCoupon.dept_id = @dept_id
+             AND  w2_UserCoupon.use_flg = '0'
+             AND  w2_Coupon.valid_flg = '1'
+             AND  (
+                    CASE
+                      WHEN w2_Coupon.expire_date_bgn > 0 THEN w2_Coupon.expire_date_bgn
+                      ELSE w2_Coupon.date_created
+                    END <= @date
+                    AND
+                    CASE
+                      WHEN w2_Coupon.expire_date_end > 0 THEN w2_Coupon.expire_date_end
+                      ELSE DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), w2_UserCoupon.date_created, 111) + ' 23:59:59.997'))
+                    END >= @date
+                  )
+          GROUP BY  w2_UserCoupon.user_id
+        ),
+        Blacklist_Coupon AS
+        (
+          SELECT  w2_User.user_id,
+                  (
+                    SELECT  COUNT(w2_Coupon.coupon_id) AS unused_coupon
+                      FROM  w2_Coupon
+                     WHERE  w2_Coupon.dept_id = @dept_id
+                       AND  w2_Coupon.valid_flg = '1'
+                       AND  (
+                              w2_Coupon.coupon_type IN ('11', '12')
+                              OR
+                              (w2_Coupon.coupon_type IN ('21', '31') AND w2_Coupon.coupon_count > 0)
+                              OR
+                              (
+                                w2_Coupon.coupon_type IN ('41', '42', '43', '44', '45')
+                                AND
+                                (
+                                  NOT EXISTS
+                                  (
+                                    SELECT  w2_CouponUseUser.coupon_id
+                                      FROM  w2_CouponUseUser
+                                     WHERE  w2_CouponUseUser.coupon_id = w2_Coupon.coupon_id
+                                       AND  (
+                                              (@used_user_judge_type = 'UserId' AND w2_CouponUseUser.coupon_use_user = w2_User.user_id)
+                                              OR
+                                              (@used_user_judge_type = 'MailAddress' AND w2_CouponUseUser.coupon_use_user = w2_User.mail_addr)
+                                            )
+                                  )
+                                )
+                              )
+                            )
+                       AND  (
+                              CASE
+                                WHEN w2_Coupon.expire_date_bgn > 0 THEN w2_Coupon.expire_date_bgn
+                                ELSE w2_Coupon.date_created
+                              END <= @date
+                              AND
+                              CASE
+                                WHEN w2_Coupon.expire_date_end > 0 THEN w2_Coupon.expire_date_end
+                                ELSE DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), w2_Coupon.date_created, 111) + ' 23:59:59.997'))
+                              END >= @date
+                            )
+                  ) AS unused_coupon
+            FROM  w2_User
+        ),
+        Used_Coupon AS -- 利用済みクーポン数
+        (
+          SELECT  Used_Coupon.user_id,
+                  COUNT(Used_Coupon.used_coupon) AS used_coupon
+            FROM  (
+                    SELECT  w2_UserCouponHistory.user_id,
+                            w2_UserCouponHistory.history_no,
+                            COUNT(w2_UserCouponHistory.coupon_id) AS used_coupon
+                      FROM  w2_UserCouponHistory
+                     WHERE  w2_UserCouponHistory.history_kbn = '10'
+                       AND  w2_UserCouponHistory.action_kbn IN ('01', '98') -- オペレータ調整分は除く
+                    GROUP BY  w2_UserCouponHistory.user_id, w2_UserCouponHistory.history_no
+                  ) AS Used_Coupon
+          GROUP BY  Used_Coupon.user_id
+        )
+        SELECT  w2_User.user_id,
+                w2_User.user_kbn,
+                w2_User.name,
+                CASE
+                  WHEN Unused_Coupon.unused_coupon > 0 THEN Unused_Coupon.unused_coupon
+                  ELSE 0
+                END
+                +
+                CASE
+                  WHEN Blacklist_Coupon.unused_coupon > 0 THEN Blacklist_Coupon.unused_coupon
+                  ELSE 0
+                END AS unused_coupon,
+                CASE
+                  WHEN Used_Coupon.used_coupon > 0 THEN Used_Coupon.used_coupon
+                  ELSE 0
+                END AS used_coupon
+          FROM  w2_User WITH (NOLOCK)
+                LEFT JOIN Unused_Coupon ON
+                (
+                  w2_User.user_id = Unused_Coupon.user_id
+                )
+                LEFT JOIN Blacklist_Coupon ON
+                (
+                  w2_User.user_id = Blacklist_Coupon.user_id
+                )
+                LEFT JOIN Used_Coupon ON
+                (
+                  w2_User.user_id = Used_Coupon.user_id
+                )
+          [[ USER_SEARCH_WHERE ]]
+          [[ USER_SEARCH_ORDER_BY ]]
+        OFFSET  @bgn_row_num ROWS
+         FETCH  NEXT @page_size ROWS ONLY
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="page_size" Type="int" />
+      <Input Name="used_user_judge_type" Type="nvarchar" Size="15" />
+    </Parameter>
+  </GetUserList>
+
+  <!-- ユーザ情報該当件数取得 -->
+  <GetUserCount>
+    <Statement>
+      <![CDATA[
+      -- 全件数取得
+      SELECT  ISNULL(COUNT(user_id), 0) AS row_count
+        FROM  w2_User WITH (NOLOCK)
+              [[ USER_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="4000" />
+    </Parameter>
+  </GetUserCount>
+
+  <!--           クーポン推移レポート情報系           -->
+  <!-- 全クーポン数取得 -->
+  <GetAllCouponCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(coupon_id)
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllCouponCount>
+
+  <!-- クーポン数取得（前方一致） -->
+  <GetCouponCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(coupon_id)
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+              AND
+                (
+                    -- coupon_id、coupon_code のどちらも設定されていない場合
+                    (@coupon_id = '' AND @coupon_code_like_escaped = '')
+                  OR
+                    (
+                      -- coupon_id が設定されている場合
+                      (@coupon_id = '' OR w2_Coupon.coupon_id = @coupon_id)
+                    AND
+                      -- coupon_code が設定されている場合
+                      (
+                        @coupon_code_like_escaped = '' OR w2_Coupon.coupon_code LIKE @coupon_code_like_escaped + '%' ESCAPE '#'
+                      )
+                    )
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code_like_escaped" Type="nvarchar" Size="120" />
+    </Parameter>
+  </GetCouponCount>
+
+  <!-- クーポン情報取得 -->
+  <GetAllCoupons>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Coupon.*
+          FROM  w2_Coupon
+         WHERE  w2_Coupon.dept_id = @dept_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllCoupons>
+
+  <!-- クーポン推移レポート(日別・月別レポートの共通) -->
+  <GetCouponTransition>
+    <Statement>
+      <![CDATA[
+        -- 変数宣言
+        DECLARE @table_temp TABLE(
+          [tgt_year] nvarchar(4) NOT NULL,
+          [tgt_month] nvarchar(2) NOT NULL,
+          [tgt_day] nvarchar(2) NOT NULL DEFAULT (N'0'),
+          [add_coupon] decimal NOT NULL DEFAULT (0),
+          [add_count] decimal NOT NULL DEFAULT (0),
+          [use_coupon] decimal NOT NULL DEFAULT (0),
+          [use_count] decimal NOT NULL DEFAULT (0),
+          [exp_coupon] decimal NOT NULL DEFAULT (0),
+          [exp_count] decimal NOT NULL DEFAULT (0),
+          [unuse_coupon] decimal NOT NULL DEFAULT (0),
+          [unuse_count] decimal NOT NULL DEFAULT (0)
+        )
+        DECLARE @tgt_year nvarchar(4)
+        DECLARE @tgt_month nvarchar(2)
+        DECLARE @tgt_day nvarchar(2)
+        DECLARE @add_coupon decimal
+        DECLARE @add_count decimal
+        DECLARE @use_coupon decimal
+        DECLARE @use_count decimal
+        DECLARE @cancel_coupon decimal
+        DECLARE @cancel_count decimal
+        DECLARE @exp_coupon decimal
+        DECLARE @exp_count decimal
+        DECLARE @unuse_coupon decimal
+        DECLARE @unuse_count decimal
+
+        -- クーポンコードを基に、クーポンIDを一時的に格納するテーブル
+        DECLARE @table_coupon_id TABLE(
+          [coupon_id] nvarchar(30) NOT NULL
+        )
+
+        INSERT INTO
+              @table_coupon_id (
+                coupon_id
+              )
+                SELECT coupon_id
+                FROM w2_Coupon
+                WHERE w2_Coupon.coupon_code like @coupon_code_like_escaped + '%' ESCAPE '#'
+                  GROUP BY coupon_id
+
+        -- 全ユーザクーポン履歴情報取得
+        DECLARE cur_coupon CURSOR FOR SELECT DISTINCT
+            DATEPART(year, w2_UserCouponHistory.date_created) AS tgt_year,
+            DATEPART(month, w2_UserCouponHistory.date_created) AS tgt_month
+            <@@val:report_type:Day@@>
+            ,DATEPART(day, w2_UserCouponHistory.date_created) AS tgt_day
+            </@@val:report_type:Day@@>
+        FROM
+            w2_UserCouponHistory
+        WHERE
+            DATEPART(year, w2_UserCouponHistory.date_created) = @year
+        <@@val:report_type:Day@@>
+        AND
+            DATEPART(month, w2_UserCouponHistory.date_created) = @month
+        </@@val:report_type:Day@@>
+
+        OPEN cur_coupon
+        FETCH NEXT FROM cur_coupon
+        INTO @tgt_year, @tgt_month
+        <@@val:report_type:Day@@>
+        ,@tgt_day
+        </@@val:report_type:Day@@>
+
+        WHILE @@FETCH_STATUS = 0
+          BEGIN
+            -- 発行クーポン取得
+            SELECT
+              @add_coupon = ISNULL(SUM(w2_UserCouponHistory.coupon_price),0),
+              @add_count = ISNULL(SUM(w2_UserCouponHistory.coupon_inc),0)
+            FROM
+                w2_UserCouponHistory
+            WHERE
+                w2_UserCouponHistory.history_kbn = '01'          -- 発行
+            [[ COUPONTRANSITION_COMMON_CONDITION ]]
+
+            -- 利用クーポン取得
+            SELECT
+              @use_coupon = ISNULL(SUM(w2_UserCouponHistory.coupon_price),0),
+              @use_count = ISNULL(SUM(w2_UserCouponHistory.coupon_inc),0) * -1  -- 利用の場合、マイナスのため*-1する
+            FROM
+                w2_UserCouponHistory
+            WHERE
+                w2_UserCouponHistory.history_kbn = '10'          -- 利用
+            [[ COUPONTRANSITION_COMMON_CONDITION ]]
+
+            -- 利用キャンセルクーポン取得
+            SELECT  @cancel_coupon = ISNULL(SUM(uch.coupon_price),0) * -1,  -- 利用キャンセルの場合、マイナスのため*-1する
+                    @cancel_count = ISNULL(SUM(uch.coupon_inc),0)
+              FROM  w2_UserCouponHistory uch
+             WHERE  uch.history_kbn = '30'          -- 利用キャンセル
+               AND  EXISTS (
+                            SELECT  'X'
+                              FROM  w2_UserCouponHistory
+                             WHERE  uch.user_id = w2_UserCouponHistory.user_id
+                               AND  uch.order_id = w2_UserCouponHistory.order_id
+                               AND  uch.coupon_id = w2_UserCouponHistory.coupon_id
+                               AND  w2_UserCouponHistory.history_kbn = '10'          -- 利用 
+                               [[ COUPONTRANSITION_COMMON_CONDITION ]]
+                           )
+
+            -- 期限切れクーポン取得
+            SELECT
+              @exp_coupon = ISNULL(SUM(w2_UserCouponHistory.coupon_price),0),
+              @exp_count = ISNULL(SUM(w2_UserCouponHistory.coupon_inc),0)
+            FROM
+                w2_UserCouponHistory
+            WHERE
+                w2_UserCouponHistory.history_kbn = '11'          -- 有効期限切れ削除
+            [[ COUPONTRANSITION_COMMON_CONDITION ]]
+
+            -- ★未使用クーポン取得
+            -- 別テーブル
+            SET @unuse_coupon = 0
+
+            -- 未使用クーポン数取得
+            -- 別テーブル
+            SET @unuse_count = 0
+
+            -- 日別・月別クーポン推移情報追加
+            INSERT INTO
+              @table_temp(
+                tgt_year,
+                tgt_month,
+                <@@val:report_type:Day@@>
+                tgt_day,
+                </@@val:report_type:Day@@>
+                add_coupon,
+                add_count,
+                use_coupon,
+                use_count,
+                exp_coupon,
+                exp_count,
+                unuse_coupon,
+                unuse_count
+              )
+            VALUES(
+                RIGHT('0000' +  @tgt_year, 4),
+                RIGHT('00' +  @tgt_month, 2),
+                <@@val:report_type:Day@@>
+                RIGHT('00' +  @tgt_day, 2),
+                </@@val:report_type:Day@@>
+                @add_coupon,
+                @add_count,
+                @use_coupon - @cancel_coupon,
+                @use_count - @cancel_count,
+                @exp_coupon,
+                @exp_count,
+                @unuse_coupon,
+                @unuse_count
+              )
+
+            FETCH NEXT FROM cur_coupon
+            INTO @tgt_year, @tgt_month
+            <@@val:report_type:Day@@>
+            ,@tgt_day
+            </@@val:report_type:Day@@>
+          END
+
+        CLOSE cur_coupon
+        DEALLOCATE cur_coupon
+
+        SELECT  *
+          FROM  @table_temp
+      ORDER BY  tgt_year, tgt_month, tgt_day
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="month" Type="nvarchar" Size="2" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code_like_escaped" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetCouponTransition>
+
+  <!-- 未使用クーポン数推移レポート(日別レポート) -->
+  <GetUnusedCouponCountTransitionDay>
+    <Statement>
+      <![CDATA[
+        SELECT  tgt_year,
+                tgt_month,
+                tgt_day,
+                SUM(CONVERT(decimal, counts)) AS unused_count
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = 'cpn_unused_cnt'          -- 未利用クーポン数
+           AND  reserved8 = @coupon_id
+           AND  tgt_year = RIGHT('0000' +  @year, 4)
+           AND  tgt_month = RIGHT('00' +  @month, 2)
+        GROUP BY tgt_year, tgt_month, tgt_day
+        ORDER BY tgt_year, tgt_month, tgt_day
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="10" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="month" Type="nvarchar" Size="2" />
+    </Parameter>
+  </GetUnusedCouponCountTransitionDay>
+
+  <!-- 未使用クーポン金額推移レポート(日別レポート) -->
+  <GetUnusedCouponPriceTransitionDay>
+    <Statement>
+      <![CDATA[
+        SELECT  tgt_year,
+                tgt_month,
+                tgt_day,
+                SUM(w2_DispSummaryAnalysis.price) AS unused_price
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = 'cpn_unused_prc'          -- 未利用クーポン金額
+           AND  reserved8 = @coupon_id
+           AND  tgt_year = RIGHT('0000' +  @year, 4)
+           AND  tgt_month = RIGHT('00' +  @month, 2)
+        GROUP BY tgt_year, tgt_month, tgt_day
+        ORDER BY tgt_year, tgt_month, tgt_day
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="10" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="month" Type="nvarchar" Size="2" />
+    </Parameter>
+  </GetUnusedCouponPriceTransitionDay>
+
+  <!-- 未使用クーポン数推移レポート(月別レポート) -->
+  <GetUnusedCouponCountTransitionMonth>
+    <Statement>
+      <![CDATA[
+        -- 各月の最終日格納テーブル
+        CREATE TABLE #return_table (
+          tgt_year nvarchar (4) NOT NULL,
+          tgt_month nvarchar (2) NOT NULL,
+          tgt_day nvarchar (2) NOT NULL
+        )
+        -- 格納
+        INSERT #return_table
+        SELECT  tgt_year,
+                tgt_month,
+                MAX(tgt_day) AS tgt_day
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = 'cpn_unused_cnt'          -- 未利用クーポン数
+           AND  reserved8 = @coupon_id
+           AND  tgt_year = RIGHT('0000' +  @year, 4)
+        GROUP BY tgt_year, tgt_month
+
+        -- 該当データ取得
+        SELECT  w2_DispSummaryAnalysis.tgt_year,
+                w2_DispSummaryAnalysis.tgt_month,
+                w2_DispSummaryAnalysis.tgt_day,
+                CONVERT(decimal, counts) AS unused_count
+          FROM  w2_DispSummaryAnalysis,
+                #return_table
+         WHERE  w2_DispSummaryAnalysis.dept_id = @dept_id
+           AND  w2_DispSummaryAnalysis.summary_kbn = 'cpn_unused_cnt'          -- 未利用クーポン数
+           AND  w2_DispSummaryAnalysis.reserved8 = @coupon_id
+           AND  w2_DispSummaryAnalysis.tgt_year = #return_table.tgt_year
+           AND  w2_DispSummaryAnalysis.tgt_month = #return_table.tgt_month
+           AND  w2_DispSummaryAnalysis.tgt_day = #return_table.tgt_day
+      ORDER BY  w2_DispSummaryAnalysis.tgt_year,
+                w2_DispSummaryAnalysis.tgt_month,
+                w2_DispSummaryAnalysis.tgt_day
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="10" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="year" Type="nvarchar" Size="4" />
+    </Parameter>
+  </GetUnusedCouponCountTransitionMonth>
+
+  <!-- 未使用クーポン金額推移レポート(月別レポート) -->
+  <GetUnusedCouponPriceTransitionMonth>
+    <Statement>
+      <![CDATA[
+        -- 各月の最終日格納テーブル
+        CREATE TABLE #return_table (
+          tgt_year nvarchar (4) NOT NULL,
+          tgt_month nvarchar (2) NOT NULL,
+          tgt_day nvarchar (2) NOT NULL
+        )
+        -- 格納
+        INSERT #return_table
+        SELECT  tgt_year,
+                tgt_month,
+                MAX(tgt_day) AS tgt_day
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = 'cpn_unused_prc'          -- 未利用クーポン価格
+           AND  reserved8 = @coupon_id
+           AND  tgt_year = RIGHT('0000' +  @year, 4)
+        GROUP BY tgt_year, tgt_month
+
+        -- 該当データ取得
+        SELECT  w2_DispSummaryAnalysis.tgt_year,
+                w2_DispSummaryAnalysis.tgt_month,
+                w2_DispSummaryAnalysis.tgt_day,
+                w2_DispSummaryAnalysis.price AS unused_price
+          FROM  w2_DispSummaryAnalysis,
+                #return_table
+         WHERE  w2_DispSummaryAnalysis.dept_id = @dept_id
+           AND  w2_DispSummaryAnalysis.summary_kbn = 'cpn_unused_prc'          -- 未利用クーポン価格
+           AND  w2_DispSummaryAnalysis.reserved8 = @coupon_id
+           AND  w2_DispSummaryAnalysis.tgt_year = #return_table.tgt_year
+           AND  w2_DispSummaryAnalysis.tgt_month = #return_table.tgt_month
+           AND  w2_DispSummaryAnalysis.tgt_day = #return_table.tgt_day
+      ORDER BY  w2_DispSummaryAnalysis.tgt_year,
+                w2_DispSummaryAnalysis.tgt_month,
+                w2_DispSummaryAnalysis.tgt_day
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="10" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="year" Type="nvarchar" Size="4" />
+    </Parameter>
+  </GetUnusedCouponPriceTransitionMonth>
+
+  <!-- 未利用クーポンレポート（枚数）登録 -->
+  <InsertUnusedCouponCountTransition>
+    <Statement>
+      <![CDATA[
+        -- 対象日付取得
+        DECLARE @tgt_date datetime
+        SET @tgt_date = CONVERT(datetime,@tgt_year+'/'+@tgt_month+'/'+@tgt_day)
+
+        -- 削除
+        DELETE  w2_DispSummaryAnalysis
+         WHERE  summary_kbn = @summary_kbn
+           AND  tgt_year = @tgt_year
+           AND  tgt_month = @tgt_month
+           AND  tgt_day = @tgt_day
+
+        -- レポート作成
+        INSERT  w2_DispSummaryAnalysis
+                (
+                dept_id,
+                summary_kbn,
+                tgt_year,
+                tgt_month,
+                tgt_day,
+                counts,
+                reserved8
+                )
+        SELECT  @dept_id,
+                @summary_kbn,
+                @tgt_year,
+                @tgt_month,
+                @tgt_day,
+                ISNULL(SUM(w2_UserCoupon.user_coupon_count), COUNT(*)),
+                w2_Coupon.coupon_id
+          FROM  w2_Coupon
+                LEFT JOIN w2_UserCoupon ON
+                (
+                  w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                )
+         WHERE  w2_UserCoupon.dept_id = @dept_id
+           AND  w2_UserCoupon.use_flg = '0'     -- 未利用
+           AND  (
+                  ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) <= @tgt_date
+                  AND
+                  ISNULL(w2_Coupon.expire_date_end, DATEADD(DAY, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) >= @tgt_date
+                )
+      GROUP BY  w2_Coupon.coupon_id
+
+        -- 各クーポン合計レポート作成
+        INSERT  w2_DispSummaryAnalysis
+                (
+                dept_id,
+                summary_kbn,
+                tgt_year,
+                tgt_month,
+                tgt_day,
+                counts,
+                reserved8
+                )
+        SELECT  dept_id,
+                summary_kbn,
+                tgt_year,
+                tgt_month,
+                tgt_day,
+                SUM(counts),
+                ''
+          FROM  w2_DispSummaryAnalysis
+         WHERE  w2_DispSummaryAnalysis.dept_id = @dept_id
+           AND  w2_DispSummaryAnalysis.summary_kbn = @summary_kbn
+           AND  w2_DispSummaryAnalysis.tgt_year = @tgt_year
+           AND  w2_DispSummaryAnalysis.tgt_month = @tgt_month
+           AND  w2_DispSummaryAnalysis.tgt_day = @tgt_day
+        GROUP BY
+                w2_DispSummaryAnalysis.dept_id,
+                w2_DispSummaryAnalysis.summary_kbn,
+                w2_DispSummaryAnalysis.tgt_year,
+                w2_DispSummaryAnalysis.tgt_month,
+                w2_DispSummaryAnalysis.tgt_day
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_kbn" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+    </Parameter>
+  </InsertUnusedCouponCountTransition>
+
+  <!-- 未利用クーポンレポート（金額）登録 -->
+  <InsertUnusedCouponPriceTransition>
+    <Statement>
+      <![CDATA[
+        -- 対象日付取得
+        DECLARE @tgt_date datetime
+        SET @tgt_date = CONVERT(datetime,@tgt_year+'/'+@tgt_month+'/'+@tgt_day)
+
+        -- 削除
+        DELETE  w2_DispSummaryAnalysis
+         WHERE  summary_kbn = @summary_kbn
+           AND  tgt_year = @tgt_year
+           AND  tgt_month = @tgt_month
+           AND  tgt_day = @tgt_day
+
+        -- レポート作成
+        INSERT  w2_DispSummaryAnalysis
+                (
+                dept_id,
+                summary_kbn,
+                tgt_year,
+                tgt_month,
+                tgt_day,
+                price,
+                reserved8
+                )
+        SELECT  @dept_id,
+                @summary_kbn,
+                @tgt_year,
+                @tgt_month,
+                @tgt_day,
+                ISNULL(w2_Coupon.discount_price, 0) * ISNULL(COUNT(w2_UserCoupon.coupon_id),0),
+                w2_Coupon.coupon_id
+          FROM  w2_Coupon
+                LEFT JOIN w2_UserCoupon ON
+                (
+                  w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                )
+         WHERE  w2_UserCoupon.dept_id = @dept_id
+           AND  w2_UserCoupon.use_flg = '0'     -- 未利用
+           AND  (
+                  ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) <= @tgt_date
+                  AND
+                  ISNULL(w2_Coupon.expire_date_end, DATEADD(DAY, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) >= @tgt_date
+                )
+      GROUP BY  w2_Coupon.coupon_id, w2_Coupon.discount_price
+
+        -- 各クーポン合計レポート作成
+        INSERT  w2_DispSummaryAnalysis
+                (
+                dept_id,
+                summary_kbn,
+                tgt_year,
+                tgt_month,
+                tgt_day,
+                price,
+                reserved8
+                )
+        SELECT  dept_id,
+                summary_kbn,
+                tgt_year,
+                tgt_month,
+                tgt_day,
+                SUM(price),
+                ''
+          FROM  w2_DispSummaryAnalysis
+         WHERE  w2_DispSummaryAnalysis.dept_id = @dept_id
+           AND  w2_DispSummaryAnalysis.summary_kbn = @summary_kbn
+           AND  w2_DispSummaryAnalysis.tgt_year = @tgt_year
+           AND  w2_DispSummaryAnalysis.tgt_month = @tgt_month
+           AND  w2_DispSummaryAnalysis.tgt_day = @tgt_day
+      GROUP BY  w2_DispSummaryAnalysis.dept_id,
+                w2_DispSummaryAnalysis.summary_kbn,
+                w2_DispSummaryAnalysis.tgt_year,
+                w2_DispSummaryAnalysis.tgt_month,
+                w2_DispSummaryAnalysis.tgt_day
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_kbn" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+    </Parameter>
+  </InsertUnusedCouponPriceTransition>
+
+  <!-- 有効期限開始日が指定日時以降・有効期限終了日が指定日時以降のクーポン情報を取得する -->
+  <GetAllUserCouponsSpecificExpireDate>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  (
+                -- 利用回数制限有りのクーポン情報
+                SELECT  w2_Coupon.dept_id,
+                        w2_Coupon.coupon_id,
+                        w2_Coupon.coupon_code,
+                        w2_Coupon.coupon_name,
+                        w2_Coupon.coupon_disp_name,
+                        w2_Coupon.coupon_discription,
+                        w2_Coupon.coupon_disp_discription,
+                        w2_Coupon.coupon_type,
+                        w2_Coupon.coupon_count,
+                        w2_Coupon.publish_date_bgn,
+                        w2_Coupon.publish_date_end,
+                        w2_Coupon.discount_price,
+                        w2_Coupon.discount_rate,
+                        w2_Coupon.expire_day,
+                        w2_Coupon.expire_date_bgn,
+                        w2_Coupon.expire_date_end,
+                        w2_Coupon.product_kbn,
+                        w2_Coupon.exceptional_product,
+                        w2_Coupon.exceptional_icon,
+                        w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                        w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                        w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                        w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                        w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                        w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                        w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                        w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                        w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                        w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                        w2_Coupon.usable_price,
+                        w2_Coupon.use_together_flg,
+                        w2_Coupon.valid_flg,
+                        w2_UserCoupon.user_id,
+                        w2_UserCoupon.coupon_no,
+                        w2_UserCoupon.use_flg,
+                        w2_UserCoupon.date_created,
+                        w2_UserCoupon.last_changed,
+                        ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) AS expire_bgn,
+                        ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) AS expire_end,
+                        w2_UserCoupon.user_coupon_count,
+                        w2_Coupon.free_shipping_flg,
+                        w2_Coupon.exceptional_brand_ids,
+                        w2_Coupon.exceptional_product_category_ids
+                  FROM  w2_Coupon
+                        INNER JOIN w2_UserCoupon ON
+                        (
+                          w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                          AND
+                          w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                        )
+                 WHERE  w2_Coupon.dept_id = @dept_id
+                   AND  w2_Coupon.coupon_type IN ('01','02','03','04','06','07','08','09','46','47')   -- 新規登録 OR 購入 OR 初回購入 OR 回数制限有(会員) OR 汎用クーポン OR 誕生日クーポン OR purchase give for introducer OR register give for introducer
+                   AND  w2_UserCoupon.user_id = @user_id
+                   AND  (
+                          w2_UserCoupon.user_coupon_count IS NULL
+                          OR
+                          w2_UserCoupon.user_coupon_count >= 1
+                        )
+                   AND  w2_Coupon.disp_flg = '1'
+                UNION ALL
+                -- 利用回数制限無しのクーポン情報
+                SELECT  w2_Coupon.dept_id,
+                        w2_Coupon.coupon_id,
+                        w2_Coupon.coupon_code,
+                        w2_Coupon.coupon_name,
+                        w2_Coupon.coupon_disp_name,
+                        w2_Coupon.coupon_discription,
+                        w2_Coupon.coupon_disp_discription,
+                        w2_Coupon.coupon_type,
+                        w2_Coupon.coupon_count,
+                        w2_Coupon.publish_date_bgn,
+                        w2_Coupon.publish_date_end,
+                        w2_Coupon.discount_price,
+                        w2_Coupon.discount_rate,
+                        w2_Coupon.expire_day,
+                        w2_Coupon.expire_date_bgn,
+                        w2_Coupon.expire_date_end,
+                        w2_Coupon.product_kbn,
+                        w2_Coupon.exceptional_product,
+                        w2_Coupon.exceptional_icon,
+                        w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                        w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                        w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                        w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                        w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                        w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                        w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                        w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                        w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                        w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                        w2_Coupon.usable_price,
+                        w2_Coupon.use_together_flg,
+                        w2_Coupon.valid_flg,
+                        NULL,
+                        NULL,
+                        NULL,
+                        w2_Coupon.date_created,
+                        '',
+                        -- 回数制限無しの場合、ユーザに対してクーポンが発行されない。(w2_UserCouponにレコードが追加されない)
+                        -- そのため、有効期限(w2_Coupon.expire_day)指定の場合、w2_Couponの作成日を発効日として利用する
+                        ISNULL(w2_Coupon.expire_date_bgn, w2_Coupon.date_created) AS expire_bgn,
+                        ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), w2_Coupon.date_created, 111) + ' 23:59:59.997'))) AS expire_end,
+                        '',
+                        w2_Coupon.free_shipping_flg,
+                        w2_Coupon.exceptional_brand_ids,
+                        w2_Coupon.exceptional_product_category_ids
+                  FROM  w2_Coupon
+                  WHERE  w2_Coupon.dept_id = @dept_id
+                    AND  (
+                          ((@user_id <> '') AND (w2_Coupon.coupon_type = '11'))   -- 回数制限無(会員)
+                          OR
+                          w2_Coupon.coupon_type = '12'                -- 回数制限無
+                          OR
+                          w2_Coupon.coupon_type = '21'                -- 回数指定制限
+                          OR
+                          w2_Coupon.coupon_type = '31'                -- 利用回数制限付き配送無料クーポン
+                          OR
+                          ((@user_id <> '') AND (w2_Coupon.coupon_type = '41')) -- ブラックリスト型(会員)
+                          OR
+                          ((@user_id <> '') AND (w2_Coupon.coupon_type = '42')) -- ブラックリスト型配送無料(会員)
+                          OR
+                          w2_Coupon.coupon_type = '43'  -- ブラックリスト型
+                          OR
+                          w2_Coupon.coupon_type = '44'  -- ブラックリスト型配送無料
+                          OR
+                          w2_Coupon.coupon_type = '45' -- Thanks for introducer
+                        )
+                   AND  w2_Coupon.disp_flg = '1'
+                ) AS UserCoupon
+         WHERE  expire_bgn <= @expire_bgn
+           AND  expire_end >= @expire_end
+      ORDER BY  expire_end ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="expire_bgn" Type="datetime" />
+      <Input Name="expire_end" Type="datetime" />
+    </Parameter>
+  </GetAllUserCouponsSpecificExpireDate>
+
+  <!-- クーポン利用ユーザー件数取得 -->
+  <GetCountCouponUseUser>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_CouponUseUser
+         WHERE  coupon_id = @coupon_id
+           AND  coupon_use_user = @coupon_use_user
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_use_user" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetCountCouponUseUser>
+
+  <!-- クーポン利用ユーザー取得 -->
+  <GetCouponUseUser>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CouponUseUser
+         WHERE  coupon_id = @coupon_id
+           AND  coupon_use_user = @coupon_use_user
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_use_user" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetCouponUseUser>
+
+  <!-- ユーザー情報に紐づくクーポン利用ユーザー情報取得 -->
+  <GetCouponUseUserByCouponUseUser>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CouponUseUser
+         WHERE  coupon_use_user = @coupon_use_user
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_use_user" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetCouponUseUserByCouponUseUser>
+
+  <!-- クーポン利用ユーザー検索ヒット件数取得 -->
+  <GetCouponUseUserSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_CouponUseUser
+                INNER JOIN w2_Coupon ON
+                (
+                  w2_CouponUseUser.coupon_id = w2_coupon.coupon_id
+                )
+                LEFT JOIN w2_Order ON
+                (
+                  w2_CouponUseUser.order_id = w2_Order.order_id
+                )
+                LEFT JOIN w2_User ON
+                (
+                  w2_User.user_id = 
+                    CASE @used_user_judge_type 
+                      WHEN 'MailAddress' THEN w2_Order.user_id
+                      WHEN 'UserId' THEN w2_CouponUseUser.coupon_use_user
+                    END
+                )
+                [[ COUPONUSEUSER_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetCouponUseUserSearchHitCount>
+
+  <!-- クーポン利用ユーザー検索 -->
+  <SearchCouponUseUser>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CouponUseUser.*,
+                RowIndex.coupon_name,
+                ISNULL(RowIndex.user_id, CASE CHARINDEX('@',w2_CouponUseUser.coupon_use_user) WHEN 0 THEN w2_CouponUseUser.coupon_use_user ELSE '' END) AS user_id,
+                ISNULL(RowIndex.mail_addr, CASE CHARINDEX('@',w2_CouponUseUser.coupon_use_user) WHEN 0 THEN '' ELSE w2_CouponUseUser.coupon_use_user END) AS mail_addr,
+                ISNULL(RowIndex.name, '') AS name,
+                ISNULL(RowIndex.user_kbn, '') AS user_kbn
+          FROM  (
+                  SELECT  w2_CouponUseUser.*,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ COUPONUSEUSER_SEARCH_ORDER_BY ]]
+                          ) AS row_num,
+                          w2_Coupon.coupon_name,
+                          w2_User.user_id,
+                          w2_User.mail_addr,
+                          w2_User.name,
+                          w2_User.user_kbn
+                    FROM  w2_CouponUseUser
+                          INNER JOIN w2_Coupon WITH (NOLOCK) ON
+                          (
+                            w2_CouponUseUser.coupon_id = w2_coupon.coupon_id
+                          )
+                          LEFT JOIN w2_Order WITH (NOLOCK) ON
+                          (
+                            w2_CouponUseUser.order_id = w2_Order.order_id
+                          )
+                          LEFT JOIN w2_FixedPurchase WITH (NOLOCK) ON
+                          (
+                            w2_CouponUseUser.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                          )
+                          LEFT JOIN w2_User WITH (NOLOCK) ON
+                          (
+                            w2_User.user_id = 
+                              CASE @used_user_judge_type
+                                WHEN 'MailAddress' THEN ISNULL(w2_Order.user_id, w2_FixedPurchase.user_id)
+                                WHEN 'UserId' THEN w2_CouponUseUser.coupon_use_user
+                              END
+                          )
+                          [[ COUPONUSEUSER_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_CouponUseUser WITH (NOLOCK) ON
+                (
+                  RowIndex.coupon_id = w2_CouponUseUser.coupon_id
+                  AND
+                  RowIndex.coupon_use_user = w2_CouponUseUser.coupon_use_user
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchCouponUseUser>
+
+  <!-- クーポン利用ユーザー登録 -->
+  <InsertCouponUseUser>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CouponUseUser
+                (
+                  coupon_id
+                  ,coupon_use_user
+                  ,order_id
+                  ,date_created
+                  ,last_changed
+                  ,fixed_purchase_id
+                )
+        VALUES  (
+                  @coupon_id
+                  ,@coupon_use_user
+                  ,@order_id
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@fixed_purchase_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_use_user" Type="nvarchar" Size="256" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </InsertCouponUseUser>
+
+  <!-- クーポン利用ユーザー更新 -->
+  <UpdateCouponUseUser>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CouponUseUser
+           SET  use_flg = @use_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  coupon_id = @coupon_id
+           AND  coupon_use_user = @coupon_use_user
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_use_user" Type="nvarchar" Size="256" />
+      <Input Name="use_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateCouponUseUser>
+
+  <!-- クーポン利用ユーザー削除 -->
+  <DeleteCouponUseUser>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CouponUseUser
+         WHERE  coupon_id = @coupon_id
+           AND  coupon_use_user = @coupon_use_user
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_use_user" Type="nvarchar" Size="256" />
+    </Parameter>
+  </DeleteCouponUseUser>
+
+  <!-- クーポンIDからクーポン利用ユーザーを削除 -->
+  <DeleteCouponUseUserByCouponId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CouponUseUser
+         WHERE  coupon_id = @coupon_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteCouponUseUserByCouponId>
+
+  <!-- クーポン利用ユーザー 注文ID更新 -->
+  <UpdateCouponUseUserOrderId>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CouponUseUser
+           SET  order_id = @order_id
+                ,last_changed = @last_changed
+         WHERE  coupon_id = @coupon_id
+           AND  coupon_use_user = @coupon_use_user
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_use_user" Type="nvarchar" Size="256" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateCouponUseUserOrderId>
+
+  <!-- クーポン利用ユーザー削除 -->
+  <DeleteCouponUseUserByOrderId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CouponUseUser
+         WHERE  coupon_id = @coupon_id
+           AND  order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteCouponUseUserByOrderId>
+
+  <!-- クーポン利用ユーザー削除（定期購入ID指定） -->
+  <DeleteCouponUseUserByFixedPurchaseId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CouponUseUser
+         WHERE  coupon_id = @coupon_id
+           AND  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteCouponUseUserByFixedPurchaseId>
+
+  <!-- クーポン発行スケジュール検索 -->
+  <SearchCouponSchedule>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_CouponSchedule.coupon_schedule_id), 0)
+          FROM  w2_CouponSchedule
+                [[ COUPONSCHEDULE_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_CouponSchedule.*
+                ,@row_count AS row_count
+          FROM  (
+                  SELECT  w2_CouponSchedule.coupon_schedule_id
+                          ,ROW_NUMBER()
+                          OVER
+                          (
+                            [[ COUPONSCHEDULE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_CouponSchedule
+                          [[ COUPONSCHEDULE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_CouponSchedule ON
+                (
+                  RowIndex.coupon_schedule_id = w2_CouponSchedule.coupon_schedule_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_schedule_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_schedule_name" Type="nvarchar" Size="100" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchCouponSchedule>
+
+  <!-- クーポン発行スケジュール取得（すべて） -->
+  <GetAllCouponSchedule>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CouponSchedule
+      ]]>
+    </Statement>
+  </GetAllCouponSchedule>
+
+  <!-- クーポン発行スケジュール取得 -->
+  <GetCouponSchedule>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CouponSchedule
+         WHERE  w2_CouponSchedule.coupon_schedule_id = @coupon_schedule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_schedule_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCouponSchedule>
+
+  <!-- 識別ID・クーポンIDを元にクーポン発行スケジュール件数取得 -->
+  <GetCouponScheduleCountFromCouponId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_CouponSchedule
+         WHERE  w2_CouponSchedule.coupon_id = @coupon_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCouponScheduleCountFromCouponId>
+
+  <!-- クーポン発行スケジュール登録 -->
+  <InsertCouponSchedule>
+    <Statement>
+      <![CDATA[
+        INSERT 
+          w2_CouponSchedule
+          (
+            coupon_schedule_id
+            ,coupon_schedule_name
+            ,status
+            ,last_count
+            ,last_exec_date
+            ,target_id
+            ,target_extract_flg
+            ,coupon_id
+            ,publish_quantity
+            ,mail_id
+            ,exec_timing
+            ,schedule_kbn
+            ,schedule_day_of_week
+            ,schedule_year
+            ,schedule_month
+            ,schedule_day
+            ,schedule_hour
+            ,schedule_minute
+            ,schedule_second
+            ,valid_flg
+            ,date_created
+            ,date_changed
+            ,last_changed
+          ) 
+          VALUES
+          (
+            @coupon_schedule_id
+            ,@coupon_schedule_name
+            ,@status
+            ,@last_count
+            ,@last_exec_date
+            ,@target_id
+            ,@target_extract_flg
+            ,@coupon_id
+            ,@publish_quantity
+            ,@mail_id
+            ,@exec_timing
+            ,@schedule_kbn
+            ,@schedule_day_of_week
+            ,@schedule_year
+            ,@schedule_month
+            ,@schedule_day
+            ,@schedule_hour
+            ,@schedule_minute
+            ,@schedule_second
+            ,@valid_flg
+            ,getdate()
+            ,getdate()
+            ,@last_changed
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_schedule_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_schedule_name" Type="nvarchar" Size="100" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="last_count" Type="nvarchar" Size="30" />
+      <Input Name="last_exec_date" Type="datetime" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg" Type="nvarchar" Size="10" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="publish_quantity" Type="int" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="schedule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="schedule_day_of_week" Type="nvarchar" Size="10" />
+      <Input Name="schedule_year" Type="int" />
+      <Input Name="schedule_month" Type="int" />
+      <Input Name="schedule_day" Type="int" />
+      <Input Name="schedule_hour" Type="int" />
+      <Input Name="schedule_minute" Type="int" />
+      <Input Name="schedule_second" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertCouponSchedule>
+
+  <!-- クーポン発行スケジュール削除 -->
+  <DeleteCouponSchedule>
+    <Statement>
+      <![CDATA[
+        DELETE  
+          FROM  w2_CouponSchedule
+         WHERE  w2_CouponSchedule.coupon_schedule_id = @coupon_schedule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_schedule_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteCouponSchedule>
+
+  <!-- クーポン発行スケジュール更新 -->
+  <UpdateCouponSchedule>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CouponSchedule
+           SET  
+                coupon_schedule_name = @coupon_schedule_name
+                ,status = @status
+                ,last_count = @last_count
+                ,last_exec_date = @last_exec_date
+                ,target_id = @target_id
+                ,target_extract_flg = @target_extract_flg
+                ,coupon_id = @coupon_id
+                ,publish_quantity = @publish_quantity
+                ,mail_id = @mail_id
+                ,exec_timing = @exec_timing
+                ,schedule_kbn = @schedule_kbn
+                ,schedule_day_of_week = @schedule_day_of_week
+                ,schedule_year = @schedule_year
+                ,schedule_month = @schedule_month
+                ,schedule_day = @schedule_day
+                ,schedule_hour = @schedule_hour
+                ,schedule_minute = @schedule_minute
+                ,schedule_second = @schedule_second
+                ,valid_flg = @valid_flg
+                ,date_changed = getdate()
+                ,last_changed = @last_changed
+         WHERE  w2_CouponSchedule.coupon_schedule_id = @coupon_schedule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_schedule_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_schedule_name" Type="nvarchar" Size="100" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="last_count" Type="nvarchar" Size="30" />
+      <Input Name="last_exec_date" Type="datetime" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg" Type="nvarchar" Size="10" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="publish_quantity" Type="int" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="schedule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="schedule_day_of_week" Type="nvarchar" Size="10" />
+      <Input Name="schedule_year" Type="int" />
+      <Input Name="schedule_month" Type="int" />
+      <Input Name="schedule_day" Type="int" />
+      <Input Name="schedule_hour" Type="int" />
+      <Input Name="schedule_minute" Type="int" />
+      <Input Name="schedule_second" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateCouponSchedule>
+
+  <!-- クーポン発行スケジュールステータス更新 -->
+  <UpdateCouponScheduleStatus>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CouponSchedule
+           SET  
+                status = @status
+                ,date_changed = getdate()
+                ,last_changed = @last_changed
+         WHERE  w2_CouponSchedule.coupon_schedule_id = @coupon_schedule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_schedule_id" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateCouponScheduleStatus>
+
+  <!-- クーポン発行スケジュール最終付与人数更新 -->
+  <UpdateCouponScheduleLastCount>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CouponSchedule
+           SET  
+                last_count = @last_count
+                ,date_changed = getdate()
+                ,last_changed = @last_changed
+         WHERE  w2_CouponSchedule.coupon_schedule_id = @coupon_schedule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_schedule_id" Type="nvarchar" Size="30" />
+      <Input Name="last_count" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateCouponScheduleLastCount>
+
+  <!-- ターゲットリスト削除前使用チェック -->
+  <CheckTargetListUsed>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CouponSchedule
+         WHERE  target_id = @target_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckTargetListUsed>
+
+  <!-- Get Valid User Coupon List -->
+  <GetValidUserCouponList>
+    <Statement>
+      <![CDATA[
+        -- 現在日付取得
+        DECLARE @current_date datetime
+        SET @current_date = GETDATE()
+
+        -- 該当情報取得
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_Coupon.coupon_code,
+                w2_Coupon.coupon_name,
+                w2_Coupon.coupon_disp_name,
+                w2_Coupon.coupon_discription,
+                w2_Coupon.coupon_type,
+                w2_Coupon.coupon_count,
+                w2_Coupon.publish_date_bgn,
+                w2_Coupon.publish_date_end,
+                w2_Coupon.discount_price,
+                w2_Coupon.discount_rate,
+                w2_Coupon.expire_day,
+                w2_Coupon.expire_date_bgn,
+                w2_Coupon.expire_date_end,
+                w2_Coupon.product_kbn,
+                w2_Coupon.exceptional_product,
+                w2_Coupon.exceptional_icon,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                w2_Coupon.usable_price,
+                w2_Coupon.use_together_flg,
+                w2_Coupon.valid_flg,
+                w2_UserCoupon.user_id,
+                w2_UserCoupon.coupon_no,
+                w2_UserCoupon.use_flg,
+                w2_UserCoupon.user_coupon_count,
+                IsNUll(w2_UserCoupon.date_created, w2_Coupon.date_created) AS date_created,
+                w2_UserCoupon.last_changed,
+                ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) AS expire_bgn,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) AS expire_end
+          FROM  w2_Coupon
+                LEFT JOIN w2_UserCoupon ON
+                (
+                  w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                  AND
+                  w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                )
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  (
+                  -- 新規登録 OR 購入 OR 初回購入
+                  (
+                    w2_Coupon.coupon_type IN ('01','02','03')
+                    AND
+                    w2_UserCoupon.user_id IS NOT NULL
+                  )
+                  OR
+                  -- 回数制限有(会員)
+                  (
+                    w2_Coupon.coupon_type IN ('04','06')
+                    AND
+                    w2_UserCoupon.user_coupon_count > 0
+                    AND
+                    w2_UserCoupon.user_id IS NOT NULL
+                  )
+                  OR
+                  -- 回数制限有(誕生日)
+                  (
+                    w2_Coupon.coupon_type IN ('07','08')
+                    AND
+                    w2_UserCoupon.user_coupon_count > 0
+                    AND
+                    w2_UserCoupon.user_id IS NOT NULL
+                  )
+                  OR
+                  -- 回数制限無(会員)
+                  (
+                    w2_Coupon.coupon_type IN ('11')
+                    AND
+                    @user_id <> ''
+                  )
+                  OR
+                  -- 回数制限無
+                  w2_Coupon.coupon_type IN ('12')
+                  OR
+                  -- 回数指定制限 OR 利用回数制限付き配送無料
+                  (
+                    w2_Coupon.coupon_type IN ('21', '31')
+                    AND
+                    w2_Coupon.coupon_count > 0
+                  )
+                  -- ブラックリスト型クーポン
+                  OR
+                  (
+                    w2_Coupon.coupon_type IN ('41', '42', '43', '44', '45')
+                    AND
+                    (
+                      NOT EXISTS
+                      (
+                        SELECT  w2_CouponUseUser.coupon_id
+                          FROM  w2_CouponUseUser
+                         WHERE  w2_CouponUseUser.coupon_id = w2_Coupon.coupon_id
+                           AND  (
+                                  (
+                                    @used_user_judge_type = 'UserId'
+                                    AND
+                                    @user_id <> ''
+                                    AND
+                                    w2_CouponUseUser.coupon_use_user = @user_id
+                                  )
+                                  OR
+                                  (
+                                    @used_user_judge_type = 'MailAddress'
+                                    AND
+                                    @mail_addr <> ''
+                                    AND
+                                    w2_CouponUseUser.coupon_use_user = @mail_addr
+                                  )
+                                )
+                      )
+                    )
+                  )
+                )
+           AND  (
+                  w2_UserCoupon.user_id IS NULL
+                  OR
+                  w2_UserCoupon.user_id = @user_id
+                )
+           AND  (
+                  COALESCE(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created, w2_Coupon.date_created) <= @current_date
+                  AND
+                  ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) >= @current_date
+                )
+           AND  w2_Coupon.valid_flg = '1'
+           AND  (
+                  w2_UserCoupon.use_flg IS NULL
+                  OR w2_UserCoupon.use_flg = '0'
+                )
+        ORDER BY expire_end DESC, w2_Coupon.coupon_code ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="used_user_judge_type" Type="nvarchar" Size="15" />
+    </Parameter>
+  </GetValidUserCouponList>
+
+  <!-- Get Invalid User Coupon List -->
+  <GetInvalidUserCouponList>
+    <Statement>
+      <![CDATA[
+       SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  UserCoupon.*,
+                w2_Coupon.dept_id,
+                w2_Coupon.coupon_code,
+                w2_Coupon.coupon_name,
+                w2_Coupon.coupon_disp_name,
+                w2_Coupon.coupon_type,
+                w2_Coupon.coupon_count,
+                w2_Coupon.publish_date_bgn,
+                w2_Coupon.publish_date_end,
+                w2_Coupon.discount_price,
+                w2_Coupon.discount_rate,
+                w2_Coupon.expire_day,
+                w2_Coupon.expire_date_bgn,
+                w2_Coupon.expire_date_end,
+                w2_Coupon.usable_price,
+                w2_Coupon.valid_flg
+          FROM  w2_Coupon
+                INNER JOIN
+                (
+                  --有効期限が切れた利用回数制限付きのクーポン
+                  SELECT  user_id,
+                          w2_UserCoupon.coupon_id,
+                          '11' AS history_kbn,
+                          '' AS order_id,
+                          NULL as coupon_price,
+                          ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) AS used_date
+                    FROM  w2_UserCoupon
+                          INNER JOIN w2_Coupon ON
+                          (
+                          w2_UserCoupon.coupon_id = w2_Coupon.coupon_id
+                          )
+                   WHERE  user_id = @user_id
+                          AND
+                          w2_UserCoupon.use_flg = '1'
+                          AND
+                          w2_Coupon.coupon_type IN ('04','06','07','08')
+                  UNION
+                  --有効期限が切れたクーポン
+                  SELECT  user_id,
+                          coupon_id,
+                          history_kbn,
+                          '' AS order_id,
+                          coupon_price,
+                          date_created AS used_date
+                    FROM  w2_UserCouponHistory
+                   WHERE  user_id = @user_id
+                          AND
+                          w2_UserCouponHistory.history_kbn = '11'
+                  UNION
+                  --利用済みのクーポン
+                  SELECT  user_id,
+                          UserCouponHistoryK10.coupon_id,
+                          UserCouponHistoryK10.history_kbn,
+                          UserCouponHistoryK10.order_id,
+                          UserCouponHistoryK10.coupon_price,
+                          UserCouponHistoryK10.date_created AS used_date
+                    FROM  w2_UserCouponHistory AS UserCouponHistoryK10
+                   WHERE  user_id = @user_id
+                          AND
+                          UserCouponHistoryK10.history_kbn = '10'
+                          AND NOT EXISTS
+                          (
+                            SELECT  UserCouponHistoryK30.coupon_id
+                              FROM  w2_UserCouponHistory AS UserCouponHistoryK30
+                             WHERE  UserCouponHistoryK30.history_kbn = '30'
+                                    AND
+                                    UserCouponHistoryK10.user_id = UserCouponHistoryK30.user_id
+                                    AND
+                                    UserCouponHistoryK10.coupon_id = UserCouponHistoryK30.coupon_id
+                                    AND
+                                    UserCouponHistoryK10.order_id = UserCouponHistoryK30.order_id
+                          )
+                ) AS UserCoupon ON
+                (
+                  UserCoupon.coupon_id = w2_Coupon.coupon_id
+                )
+        ORDER BY used_date DESC, w2_Coupon.coupon_code ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="used_user_judge_type" Type="nvarchar" Size="15" />
+    </Parameter>
+  </GetInvalidUserCouponList>
+  
+  <!-- ユーザークーポン更新(ユーザー統合用) -->
+  <UpdateUserCouponForIntegration>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserCoupon
+           SET  user_id = @user_id
+                ,coupon_no = @coupon_no
+         WHERE  user_id = @user_id_old
+           AND  coupon_id = @coupon_id
+           AND  coupon_no = @coupon_no_old
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id_old" Type="nvarchar" Size="30" />
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_no" Type="int" />
+      <Input Name="coupon_no_old" Type="int" />
+    </Parameter>
+  </UpdateUserCouponForIntegration>
+
+  <!-- ユーザークーポン履歴更新(ユーザー統合用) -->
+  <UpdateUserCouponHistoryForIntegration>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserCouponHistory
+           SET  user_id = @user_id
+                ,history_no = @history_no
+         WHERE  user_id = @user_id_old
+           AND  history_no = @history_no_old
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id_old" Type="nvarchar" Size="30" />
+      <Input Name="history_no" Type="int" />
+      <Input Name="history_no_old" Type="int" />
+    </Parameter>
+  </UpdateUserCouponHistoryForIntegration>
+  
+  <!-- ユーザークーポン履歴Noを取得 -->
+  <GetNextHistoryNo>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MAX(history_no), 0) + 1
+          FROM  w2_UserCouponHistory
+         WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetNextHistoryNo>
+
+  <!-- Search coupons for autosuggest -->
+  <SearchCouponsForAutosuggest>
+    <Statement>
+      <![CDATA[
+        -- 現在日付取得
+        DECLARE @current_date datetime
+        SET @current_date = GETDATE()
+
+        -- 一時テーブル作成
+        CREATE TABLE #temp_table (
+          dept_id nvarchar(30) NOT NULL,
+          coupon_id nvarchar(30) NOT NULL,
+          user_id nvarchar(30),
+          coupon_no int,
+          expire_date datetime NOT NULL
+        )
+
+        -- 利用回数制限有りのクーポン情報
+        INSERT  #temp_table
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_UserCoupon.user_id,
+                w2_UserCoupon.coupon_no,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997')))
+          FROM  w2_Coupon
+                LEFT JOIN w2_UserCoupon ON
+                (
+                  w2_Coupon.dept_id = w2_UserCoupon.dept_id
+                  AND
+                  w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                )
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  (
+                  w2_Coupon.coupon_code LIKE @coupon_code_like_escaped + '%' ESCAPE '#'
+                  OR
+                  w2_Coupon.coupon_name LIKE '%' + @coupon_name_like_escaped + '%' ESCAPE '#'
+                  OR
+                  w2_Coupon.coupon_disp_name LIKE '%' + @coupon_name_like_escaped + '%' ESCAPE '#'
+                )
+           AND  (
+                  -- 新規登録 OR 購入 OR 初回購入
+                  (
+                    w2_Coupon.coupon_type IN ('01','02','03')
+                    AND
+                    w2_UserCoupon.user_id IS NOT NULL
+                  )
+                  OR
+                  -- 回数制限有(会員)
+                  (
+                    w2_Coupon.coupon_type IN ('04','06')
+                    AND
+                    w2_UserCoupon.user_coupon_count > 0
+                    AND
+                    w2_UserCoupon.user_id IS NOT NULL
+                  )
+                  OR
+                  -- 回数制限有(誕生日)
+                  (
+                    w2_Coupon.coupon_type IN ('07','08')
+                    AND
+                    w2_UserCoupon.user_coupon_count > 0
+                    AND
+                    w2_UserCoupon.user_id IS NOT NULL
+                  )
+                  OR
+                  -- 回数制限無(会員)
+                  (
+                    w2_Coupon.coupon_type IN ('11')
+                    AND
+                    @user_id <> ''
+                  )
+                  OR
+                  -- 回数制限無
+                  w2_Coupon.coupon_type IN ('12')
+                  OR
+                  -- 回数指定制限 OR 利用回数制限付き配送無料
+                  (
+                    w2_Coupon.coupon_type IN ('21', '31')
+                    AND
+                    w2_Coupon.coupon_count > 0
+                  )
+                  -- ブラックリスト型クーポン
+                  OR
+                  (
+                    w2_Coupon.coupon_type IN ('41', '42', '43', '44')
+                    AND
+                    (
+                      NOT EXISTS
+                      (
+                        SELECT  w2_CouponUseUser.coupon_id
+                          FROM  w2_CouponUseUser
+                         WHERE  w2_CouponUseUser.coupon_id = w2_Coupon.coupon_id
+                           AND  (
+                                  (
+                                    @used_user_judge_type = 'UserId'
+                                    AND
+                                    @user_id <> ''
+                                    AND
+                                    w2_CouponUseUser.coupon_use_user = @user_id
+                                  )
+                                  OR
+                                  (
+                                    @used_user_judge_type = 'MailAddress'
+                                    AND
+                                    @mail_addr <> ''
+                                    AND
+                                    w2_CouponUseUser.coupon_use_user = @mail_addr
+                                  )
+                                )
+                      )
+                    )
+                  )
+                )
+           AND  (
+                  w2_UserCoupon.user_id IS NULL
+                  OR
+                  w2_UserCoupon.user_id = @user_id
+                )
+           AND  (
+                  COALESCE(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created, w2_Coupon.date_created) <= @current_date
+                  AND
+                  ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) >= @current_date
+                )
+           AND  w2_Coupon.valid_flg = '1'
+           AND  (
+                  w2_UserCoupon.use_flg IS NULL
+                  OR w2_UserCoupon.use_flg = '0'
+                )
+
+        -- 該当情報取得
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_Coupon.coupon_code,
+                w2_Coupon.coupon_name,
+                w2_Coupon.coupon_disp_name,
+                w2_Coupon.coupon_discription,
+                w2_Coupon.coupon_type,
+                w2_Coupon.coupon_count,
+                w2_Coupon.publish_date_bgn,
+                w2_Coupon.publish_date_end,
+                w2_Coupon.discount_price,
+                w2_Coupon.discount_rate,
+                w2_Coupon.expire_day,
+                w2_Coupon.expire_date_bgn,
+                w2_Coupon.expire_date_end,
+                w2_Coupon.product_kbn,
+                w2_Coupon.exceptional_product,
+                w2_Coupon.exceptional_icon & 2 AS exceptional_icon1,  -- 論理積(AND)で各アイコン設定値取得
+                w2_Coupon.exceptional_icon & 4 AS exceptional_icon2,
+                w2_Coupon.exceptional_icon & 8 AS exceptional_icon3,
+                w2_Coupon.exceptional_icon & 16 AS exceptional_icon4,
+                w2_Coupon.exceptional_icon & 32 AS exceptional_icon5,
+                w2_Coupon.exceptional_icon & 64 AS exceptional_icon6,
+                w2_Coupon.exceptional_icon & 128 AS exceptional_icon7,
+                w2_Coupon.exceptional_icon & 256 AS exceptional_icon8,
+                w2_Coupon.exceptional_icon & 512 AS exceptional_icon9,
+                w2_Coupon.exceptional_icon & 1024 AS exceptional_icon10,
+                w2_Coupon.usable_price,
+                w2_Coupon.use_together_flg,
+                w2_Coupon.valid_flg,
+                w2_UserCoupon.user_id,
+                w2_UserCoupon.coupon_no,
+                w2_UserCoupon.use_flg,
+                w2_UserCoupon.user_coupon_count,
+                IsNUll(w2_UserCoupon.date_created, w2_Coupon.date_created) AS date_created,
+                w2_UserCoupon.last_changed,
+                ISNULL(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created) AS expire_bgn,
+                ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) AS expire_end,
+                (SELECT COUNT(dept_id) FROM #temp_table) AS row_count
+          FROM  (
+                  SELECT  #temp_table.dept_id AS dept_id,
+                          #temp_table.coupon_id AS coupon_id,
+                          #temp_table.user_id AS user_id,
+                          #temp_table.coupon_no AS coupon_no
+                    FROM  #temp_table
+                ) AS RowIndex
+                INNER JOIN w2_Coupon ON
+                (
+                  RowIndex.coupon_id = w2_Coupon.coupon_id
+                )
+                LEFT JOIN w2_UserCoupon ON
+                (
+                  w2_UserCoupon.user_id = @user_id
+                  AND
+                  w2_UserCoupon.dept_id = RowIndex.dept_id
+                  AND
+                  w2_UserCoupon.coupon_id = RowIndex.coupon_id
+                  AND
+                  w2_UserCoupon.coupon_no = RowIndex.coupon_no
+                )
+        ORDER BY w2_Coupon.coupon_id ASC, date_created ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="coupon_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="used_user_judge_type" Type="nvarchar" Size="15" />
+    </Parameter>
+  </SearchCouponsForAutosuggest>
+
+</Coupon>

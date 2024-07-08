@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+-- w2_FixedPurchase
+DECLARE @TABLE_NAME NVARCHAR(256)
+DECLARE @COLUMN_NAME NVARCHAR(256)
+DECLARE @TABLE_ID INTEGER 
+DECLARE @COLUMN_ID INTEGER 
+DECLARE @CONSTRAINT_NAME NVARCHAR(256)
+SET @TABLE_NAME = 'w2_FixedPurchase'
+SET @COLUMN_NAME = 'order_count'
+
+--削除したいテーブルのシステムidを取得する
+SELECT @TABLE_ID = id FROM sys.sysobjects 
+WHERE xtype = 'U' AND name = @TABLE_NAME
+
+--削除したいカラムのシステムidを取得する
+SELECT @COLUMN_ID = column_id FROM sys.columns 
+WHERE object_id = @TABLE_ID AND name = @COLUMN_NAME
+
+--削除したい制約名を取得する
+SELECT @CONSTRAINT_NAME = name FROM sys.sysobjects 
+WHERE id = (SELECT constid FROM sys.sysconstraints WHERE id = @TABLE_ID AND colid = @COLUMN_ID)
+
+--確認 => テーブル->制約->制約名->制約をスクリプト化であっているか確認できます。
+--SELECT @CONSTRAINT_NAME
+
+--制約を削除する
+EXEC('ALTER TABLE '+ @TABLE_NAME + ' DROP CONSTRAINT ' + @CONSTRAINT_NAME)
+
+ALTER TABLE [w2_FixedPurchase] ADD DEFAULT (0) FOR [order_count];
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchase' AND column_name = 'shipped_count')
+	ALTER TABLE [w2_FixedPurchase] ADD [shipped_count] [int] NOT NULL DEFAULT (0);
+
+-- w2_FixedPurchaseHistory
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseHistory' AND column_name = 'update_order_count')
+	ALTER TABLE [w2_FixedPurchaseHistory] ADD [update_order_count] [int];
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseHistory' AND column_name = 'update_shipped_count')
+	ALTER TABLE [w2_FixedPurchaseHistory] ADD [update_shipped_count] [int];
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseHistory' AND column_name = 'update_order_count_result')
+	ALTER TABLE [w2_FixedPurchaseHistory] ADD [update_order_count_result] [int];
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseHistory' AND column_name = 'update_shipped_count_result')
+	ALTER TABLE [w2_FixedPurchaseHistory] ADD [update_shipped_count_result] [int];
+
+-- w2_Order
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_Order' AND column_name = 'fixed_purchase_order_count')
+	ALTER TABLE [w2_Order] ADD [fixed_purchase_order_count] [int];
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_Order' AND column_name = 'fixed_purchase_shipped_count')
+	ALTER TABLE [w2_Order] ADD [fixed_purchase_shipped_count] [int];
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

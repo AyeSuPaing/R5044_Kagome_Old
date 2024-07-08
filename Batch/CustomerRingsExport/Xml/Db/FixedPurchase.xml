@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期購入情報出力SQLステートメントXML(FixedPurchase.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchase>
+  <!-- 差分出力 -->
+  <ExportDifferential>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        WITH
+          targetFixedPurchase AS
+          (
+            SELECT  fixed_purchase_id
+              FROM  w2_FixedPurchase
+             WHERE  w2_FixedPurchase.date_changed >= @date_changed
+          ),
+          targetShipping AS
+          (
+            SELECT  fixed_purchase_id
+              FROM  w2_FixedPurchaseShipping
+             WHERE  w2_FixedPurchaseShipping.date_changed >= @date_changed
+          ),
+          targetItem AS
+          (
+            SELECT  DISTINCT fixed_purchase_id
+              FROM  w2_FixedPurchaseItem
+             WHERE  w2_FixedPurchaseItem.date_changed >= @date_changed
+          ),
+          targetFixedPurchaseIds AS
+          (
+            SELECT DISTINCT fixed_purchase_id
+              FROM
+              (
+                  SELECT * FROM targetFixedPurchase
+                  UNION ALL
+                  SELECT * FROM targetShipping
+                  UNION ALL
+                  SELECT * FROM targetItem
+              ) AS tt
+          )
+        
+          SELECT  @@ EXPORT_FIELDS @@
+            FROM  w2_FixedPurchase
+                  INNER JOIN targetFixedPurchaseIds ON
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = targetFixedPurchaseIds.fixed_purchase_id
+                  )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date_changed" Type="datetime" />
+    </Parameter>
+  </ExportDifferential>
+
+  <!-- 全件出力 -->
+  <ExportAll>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+          SELECT  @@ EXPORT_FIELDS @@
+            FROM  w2_FixedPurchase
+      ]]>
+    </Statement>
+  </ExportAll>
+</FixedPurchase>

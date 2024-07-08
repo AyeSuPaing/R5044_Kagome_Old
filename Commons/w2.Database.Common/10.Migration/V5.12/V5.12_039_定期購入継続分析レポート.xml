@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_FixedPurchaseRepeatAnalysis]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_FixedPurchaseRepeatAnalysis]
+GO
+/*
+=========================================================================================================
+  Module      : 定期購入継続分析テーブル (w2_FixedPurchaseRepeatAnalysis.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_FixedPurchaseRepeatAnalysis] (
+	[data_no] [bigint] IDENTITY (1, 1) NOT NULL,
+	[user_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[product_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[variation_id] [nvarchar] (60) NOT NULL DEFAULT (N''),
+	[count] [int] NOT NULL,
+	[order_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[fixed_purchase_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[status] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_FixedPurchaseRepeatAnalysis] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_FixedPurchaseRepeatAnalysis] PRIMARY KEY  CLUSTERED
+	(
+		[data_no]
+	) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_FixedPurchaseRepeatAnalysis_1] ON [dbo].[w2_FixedPurchaseRepeatAnalysis]([user_id], [product_id], [variation_id]) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_FixedPurchaseRepeatAnalysis_2] ON [dbo].[w2_FixedPurchaseRepeatAnalysis]([product_id], [variation_id]) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_FixedPurchaseRepeatAnalysis_3] ON [dbo].[w2_FixedPurchaseRepeatAnalysis]([variation_id]) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_FixedPurchaseRepeatAnalysis_4] ON [dbo].[w2_FixedPurchaseRepeatAnalysis]([order_id]) ON [PRIMARY]
+GO
+
+truncate table w2_FixedPurchaseRepeatAnalysis
+
+
+/* 注文 */
+insert into w2_FixedPurchaseRepeatAnalysis (user_id, product_id, variation_id, count, order_id, fixed_purchase_id, status, date_created, date_changed, last_changed)
+select distinct
+	w2_Order.user_id,
+	w2_OrderItem.product_id,
+	w2_OrderItem.variation_id,
+	ROW_NUMBER() over (partition by w2_Order.user_id, w2_OrderItem.product_id, w2_OrderItem.variation_id order by w2_Order.order_date, w2_Order.date_created ) as count,
+	w2_Order.order_id,
+	w2_Order.fixed_purchase_id,
+	case w2_Order.order_status when 'SHP_ARGD' then '20' when 'SHP_COMP' then '20' else '10' end as status,
+	getdate() as date_created,
+	getdate() as date_changed,
+	'migration' as last_changed
+from w2_Order with(nolock)
+inner join w2_OrderItem with(nolock) on w2_OrderItem.order_id = w2_Order.order_id
+where
+	w2_Order.order_status not in ('ODR_CNSL', 'TMP_CNSL')
+	and w2_Order.fixed_purchase_id <> '' and w2_OrderItem.product_name like '#[定期#]%' escape '#'
+order by w2_Order.user_id, w2_OrderItem.product_id, w2_OrderItem.variation_id
+
+/* 存在 */
+insert into w2_FixedPurchaseRepeatAnalysis (user_id, product_id, variation_id, count, order_id, fixed_purchase_id, status, date_created, date_changed, last_changed)
+select distinct
+	w2_FixedPurchase.user_id,
+	w2_FixedPurchaseItem.product_id,
+	w2_FixedPurchaseItem.variation_id,
+	0 as count,
+	'' as order_id,
+	w2_FixedPurchase.fixed_purchase_id,
+	'00' as status,
+	getdate() as date_created,
+	getdate() as date_changed,
+	'migration' as last_changed
+from w2_FixedPurchase with(nolock)
+inner join w2_FixedPurchaseItem with(nolock) on w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+
+/* 離脱 */
+insert into w2_FixedPurchaseRepeatAnalysis (user_id, product_id, variation_id, count, order_id, fixed_purchase_id, status, date_created, date_changed, last_changed)
+select
+	w2_FixedPurchaseRepeatAnalysis.user_id,
+	w2_FixedPurchaseRepeatAnalysis.product_id,
+	w2_FixedPurchaseRepeatAnalysis.variation_id,
+	max(w2_FixedPurchaseRepeatAnalysis.count) as count,
+	'' as order_id,
+	'' as fixed_purchase_id,
+	'90' as status,
+	getdate() as date_created,
+	getdate() as date_changed,
+	'migration' as last_changed
+	
+from w2_FixedPurchaseRepeatAnalysis with(nolock)
+where w2_FixedPurchaseRepeatAnalysis.status not in ('00')
+	and not exists ( select * from w2_FixedPurchaseRepeatAnalysis tmp
+		where tmp.user_id = w2_FixedPurchaseRepeatAnalysis.user_id
+			and tmp.product_id = w2_FixedPurchaseRepeatAnalysis.product_id
+			and tmp.variation_id = w2_FixedPurchaseRepeatAnalysis.variation_id
+			and tmp.status in ('00', '90') )
+group by
+	w2_FixedPurchaseRepeatAnalysis.user_id,
+	w2_FixedPurchaseRepeatAnalysis.product_id,
+	w2_FixedPurchaseRepeatAnalysis.variation_id
+
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

@@ -1,0 +1,288 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : インシデント系SQLサブステートメントXML(CsIncident_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsIncident_Sub>
+
+  <!-- 検索 WHERE -->
+  <Search_Where>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_CsIncident.dept_id = @dept_id
+           AND  (
+                  @target_operator_group_type = '0'
+                  <@@val:target_operator_group_type:1@@>
+                  OR
+                  (
+                    w2_CsIncident.operator_id = @operator_id
+                  )
+                  </@@val:target_operator_group_type:1@@>
+                  <@@val:target_operator_group_type:2-1@@>
+                  OR
+                  (
+                    w2_CsIncident.operator_id = @operator_id
+                    OR
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_CsOperatorGroup
+                       WHERE  w2_CsOperatorGroup.dept_id = w2_CsIncident.dept_id 
+                         AND  w2_CsOperatorGroup.cs_group_id = w2_CsIncident.cs_group_id
+                         AND  w2_CsOperatorGroup.operator_id = @operator_id
+                    )
+                  )
+                  </@@val:target_operator_group_type:2-1@@>
+                  <@@val:target_operator_group_type:2-2@@>
+                  OR
+                  (
+                    w2_CsIncident.operator_id = @operator_id
+                    OR
+                    w2_CsIncident.cs_group_id = ''
+                    OR
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_CsOperatorGroup
+                       WHERE  w2_CsOperatorGroup.dept_id = w2_CsIncident.dept_id 
+                         AND  w2_CsOperatorGroup.cs_group_id = w2_CsIncident.cs_group_id
+                         AND  w2_CsOperatorGroup.operator_id = @operator_id
+                    )
+                  )
+                  </@@val:target_operator_group_type:2-2@@>
+                  <@@val:target_operator_group_type:2-3@@>
+                  OR
+                  (
+                    w2_CsIncident.cs_group_id = @cs_group_id
+                  )
+                  </@@val:target_operator_group_type:2-3@@>
+                )
+           <@@hasval:incident_category_id_like_escaped@@>
+           AND  (
+                  EXISTS
+                  (
+                    SELECT  *
+                      FROM  categories
+                     WHERE  categories.dept_id = @dept_id
+                       AND  categories.category_id = w2_CsIncident.incident_category_id
+                  )
+                )
+           </@@hasval:incident_category_id_like_escaped@@>
+           AND  w2_CsIncident.status IN (@@ statuses @@)
+           AND  w2_CsIncident.valid_flg = @valid_flg
+      ]]>
+    </Statement>
+  </Search_Where>
+
+  <!-- 検索 再帰クエリWITH -->
+  <Search_With>
+    <Statement>
+      <![CDATA[
+        WITH  categories
+          AS  (
+                SELECT  cat1.dept_id,
+                        cat1.category_id,
+                        cast(cat1.category_id as varchar(30)) as ranked_category_id
+                  FROM  w2_CsIncidentCategory as cat1
+                 WHERE  cat1.dept_id = @dept_id
+                   AND  cat1.category_id = @incident_category_id
+              UNION ALL
+                SELECT  cat2.dept_id,
+                        cat2.category_id,
+                        cast(categories.ranked_category_id + cat2.category_id as varchar(30))
+                  FROM  w2_CsIncidentCategory cat2
+                        INNER JOIN categories ON
+                        (
+                          categories.category_id = cat2.parent_category_id
+                        )
+                 WHERE  cat2.dept_id = @dept_id
+                   AND  ranked_category_id LIKE @incident_category_id_like_escaped + '%' ESCAPE '#'
+              )
+      ]]>
+    </Statement>
+  </Search_With>
+
+  <!-- 部分一致の検索結果保持 -->
+  <InsertWhereLikeStringForIncident>
+    <Statement>
+      <![CDATA[
+      CREATE TABLE #w2_WorkIncidentId(incident_id nvarchar (30) NOT NULL DEFAULT(''))
+      
+      INSERT  #w2_WorkIncidentId
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+       WHERE  w2_CsIncident.incident_id LIKE @keyword_likestring ESCAPE '#'
+
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+       WHERE  w2_CsIncident.incident_title LIKE @keyword_likestring ESCAPE '#' 
+      
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+              LEFT JOIN w2_CsMessage ON ( w2_CsMessage.incident_id = w2_CsIncident.incident_id )
+       WHERE  w2_CsMessage.user_name1 LIKE @keyword_likestring ESCAPE '#' 
+
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+              LEFT JOIN w2_CsMessage ON ( w2_CsMessage.incident_id = w2_CsIncident.incident_id )
+       WHERE  w2_CsMessage.user_name2 LIKE @keyword_likestring ESCAPE '#'
+
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+              LEFT JOIN w2_CsMessage ON ( w2_CsMessage.incident_id = w2_CsIncident.incident_id )
+              LEFT JOIN w2_CsMessageMail ReceiveMail ON
+              (
+                w2_CsMessage.dept_id = ReceiveMail.dept_id
+                AND
+                w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+              )
+       WHERE  ReceiveMail.mail_subject LIKE @keyword_likestring ESCAPE '#'
+
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+              LEFT JOIN w2_CsMessage ON ( w2_CsMessage.incident_id = w2_CsIncident.incident_id )
+              LEFT JOIN w2_CsMessageMail ReceiveMail ON
+              (
+                w2_CsMessage.dept_id = ReceiveMail.dept_id
+                AND
+                w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+              )
+       WHERE  ReceiveMail.mail_body LIKE @keyword_likestring ESCAPE '#'
+
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+              LEFT JOIN w2_CsMessage ON ( w2_CsMessage.incident_id = w2_CsIncident.incident_id )
+              LEFT JOIN w2_CsMessageMail ReceiveMail ON
+              (
+                w2_CsMessage.dept_id = ReceiveMail.dept_id
+                AND
+                w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+              )
+       WHERE  ReceiveMail.mail_to LIKE @keyword_likestring ESCAPE '#'
+
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+              LEFT JOIN w2_CsMessage ON ( w2_CsMessage.incident_id = w2_CsIncident.incident_id )
+              LEFT JOIN w2_CsMessageMail ReceiveMail ON
+              (
+                w2_CsMessage.dept_id = ReceiveMail.dept_id
+                AND
+                w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+              )
+       WHERE  ReceiveMail.mail_from LIKE @keyword_likestring ESCAPE '#'
+
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+              LEFT JOIN w2_CsMessage ON ( w2_CsMessage.incident_id = w2_CsIncident.incident_id )
+              LEFT JOIN w2_CsMessageMail ReceiveMail ON
+              (
+                w2_CsMessage.dept_id = ReceiveMail.dept_id
+                AND
+                w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+              )
+       WHERE  ReceiveMail.mail_cc LIKE @keyword_likestring ESCAPE '#'
+
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+              LEFT JOIN w2_CsMessage ON ( w2_CsMessage.incident_id = w2_CsIncident.incident_id )
+              LEFT JOIN w2_CsMessageMail SendMail ON
+              (
+                w2_CsMessage.dept_id = SendMail.dept_id
+                AND
+                w2_CsMessage.send_mail_id = SendMail.mail_id
+              )
+       WHERE  SendMail.mail_subject LIKE @keyword_likestring ESCAPE '#'
+
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+              LEFT JOIN w2_CsMessage ON ( w2_CsMessage.incident_id = w2_CsIncident.incident_id )
+              LEFT JOIN w2_CsMessageMail SendMail ON
+              (
+                w2_CsMessage.dept_id = SendMail.dept_id
+                AND
+                w2_CsMessage.send_mail_id = SendMail.mail_id
+              )
+       WHERE  SendMail.mail_body LIKE @keyword_likestring ESCAPE '#'
+
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+              LEFT JOIN w2_CsMessage ON ( w2_CsMessage.incident_id = w2_CsIncident.incident_id )
+              LEFT JOIN w2_CsMessageMail SendMail ON
+              (
+                w2_CsMessage.dept_id = SendMail.dept_id
+                AND
+                w2_CsMessage.send_mail_id = SendMail.mail_id
+              )
+       WHERE  SendMail.mail_to LIKE @keyword_likestring ESCAPE '#'
+
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+              LEFT JOIN w2_CsMessage ON ( w2_CsMessage.incident_id = w2_CsIncident.incident_id )
+              LEFT JOIN w2_CsMessageMail SendMail ON
+              (
+                w2_CsMessage.dept_id = SendMail.dept_id
+                AND
+                w2_CsMessage.send_mail_id = SendMail.mail_id
+              )
+       WHERE  SendMail.mail_from LIKE @keyword_likestring ESCAPE '#'
+
+      UNION ALL
+
+      SELECT  w2_CsIncident.incident_id
+        FROM  w2_CsIncident
+              LEFT JOIN w2_CsMessage ON ( w2_CsMessage.incident_id = w2_CsIncident.incident_id )
+              LEFT JOIN w2_CsMessageMail SendMail ON
+              (
+                w2_CsMessage.dept_id = SendMail.dept_id
+                AND
+                w2_CsMessage.send_mail_id = SendMail.mail_id
+              )
+       WHERE  SendMail.mail_cc LIKE @keyword_likestring ESCAPE '#'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="keyword_likestring" Type="nvarchar"/>
+    </Parameter>
+  </InsertWhereLikeStringForIncident>
+
+  <!-- Search Message Keyword -->
+  <SearchMessageKeyword>
+    <Statement>
+      <![CDATA[
+          AND  w2_CsIncident.incident_id IN
+               (
+                 SELECT  incident_id
+                   FROM  #w2_WorkIncidentId
+               )
+      ]]>
+    </Statement>
+  </SearchMessageKeyword>
+  
+</CsIncident_Sub>

@@ -1,0 +1,230 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Yahoo!注文追加情報系SQLステートメントXML(AddYahooOrder.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+ <AddYahooOrder>
+
+  <!-- 注文情報追加処理 -->
+  <AddOrder>
+    <Statement>
+      <![CDATA[
+        UPDATE
+          w2_Order
+        SET
+          user_id = @user_id,
+          order_status = @order_status,
+          relation_memo = relation_memo + @relation_memo,
+          order_payment_kbn = @order_payment_kbn,
+          order_payment_status = @order_payment_status,
+          memo = @memo,
+          card_instruments = @card_instruments,
+          date_changed = GETDATE(),
+          last_changed = 'batch'
+        WHERE
+          shop_id = @shop_id
+          AND
+          order_id = @order_id
+          AND
+          order_status = 'TMP'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="20" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="order_status" Type="nvarchar" Size="30" />
+      <Input Name="relation_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="order_payment_kbn" Type="nvarchar" Size="10" />
+      <Input Name="order_payment_status" Type="nvarchar" Size="1" />
+      <Input Name="memo" Type="nvarchar" Size="MAX" />
+      <Input Name="card_instruments" Type="nvarchar" Size="30" />
+    </Parameter>
+  </AddOrder>
+
+   <AddOrderForPayPay>
+     <Statement>
+       <![CDATA[
+        UPDATE
+	        w2_Order
+        SET
+          user_id = @user_id,
+          order_status = @order_status,
+	        relation_memo = relation_memo + @relation_memo,
+          regulation_memo = regulation_memo + @regulation_memo,
+	        order_payment_kbn = @order_payment_kbn,
+	        order_payment_status = @order_payment_status,
+          order_price_regulation = @order_price_regulation,
+          order_price_total = @order_price_total,
+	        memo = @memo,
+	        card_instruments = @card_instruments,
+          date_changed = GETDATE(),
+          last_changed = 'batch'
+        WHERE
+	        shop_id = @shop_id
+	        AND
+	        order_id = @order_id
+          AND
+          order_status = 'TMP'
+			]]>
+     </Statement>
+     <Parameter>
+       <Input Name="order_id" Type="nvarchar" Size="30" />
+       <Input Name="shop_id" Type="nvarchar" Size="20" />
+       <Input Name="user_id" Type="nvarchar" Size="30" />
+       <Input Name="order_status" Type="nvarchar" Size="30" />
+       <Input Name="relation_memo" Type="nvarchar" Size="MAX" />
+       <Input Name="regulation_memo" Type="nvarchar" Size="MAX" />
+       <Input Name="order_price_regulation" Type="decimal" Size="18,3" />
+       <Input Name="order_price_total" Type="decimal" Size="18,3" />
+       <Input Name="order_payment_kbn" Type="nvarchar" Size="10" />
+       <Input Name="order_payment_status" Type="nvarchar" Size="1" />
+       <Input Name="memo" Type="nvarchar" Size="MAX" />
+       <Input Name="card_instruments" Type="nvarchar" Size="30" />
+     </Parameter>
+   </AddOrderForPayPay>
+
+  <!-- 注文者情報追加処理 -->
+  <AddOrderOwner>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_OrderOwner
+           SET  w2_OrderOwner.owner_kbn = @owner_kbn,
+                w2_OrderOwner.owner_name = @owner_name,
+                w2_OrderOwner.owner_name1 = @owner_name1,
+                w2_OrderOwner.owner_name2 = @owner_name2,
+                w2_OrderOwner.owner_mail_addr = @owner_mail_addr,
+                w2_OrderOwner.owner_addr1 = @owner_addr1,
+                w2_OrderOwner.owner_addr2 = @owner_addr2,
+                w2_OrderOwner.owner_addr3 = @owner_addr3,
+                w2_OrderOwner.owner_addr4 = @owner_addr4,
+                w2_OrderOwner.owner_zip = @owner_zip,
+                w2_OrderOwner.owner_tel1 = @owner_tel1,
+                w2_OrderOwner.date_changed = GETDATE()
+         WHERE  w2_OrderOwner.order_id = @order_id
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="owner_kbn" Type="nvarchar" Size="10" />
+      <Input Name="owner_name" Type="nvarchar" Size="40" />
+      <Input Name="owner_name1" Type="nvarchar" Size="20" />
+      <Input Name="owner_name2" Type="nvarchar" Size="20" />
+      <Input Name="owner_mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="owner_addr1" Type="nvarchar" Size="50" />
+      <Input Name="owner_addr2" Type="nvarchar" Size="50" />
+      <Input Name="owner_addr3" Type="nvarchar" Size="50" />
+      <Input Name="owner_addr4" Type="nvarchar" Size="50" />
+      <Input Name="owner_zip" Type="nvarchar" Size="8" />
+      <Input Name="owner_tel1" Type="nvarchar" Size="16" />
+    </Parameter>
+  </AddOrderOwner>
+
+  <!-- 注文配送先情報追加処理 -->
+  <AddOrderShipping>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_OrderShipping
+           SET  w2_OrderShipping.shipping_name = @shipping_name,
+                w2_OrderShipping.shipping_name1 = @shipping_name1,
+                w2_OrderShipping.shipping_name2 = @shipping_name2,
+                w2_OrderShipping.shipping_zip = @shipping_zip,
+                w2_OrderShipping.shipping_addr1 = @shipping_addr1,
+                w2_OrderShipping.shipping_addr2 = @shipping_addr2,
+                w2_OrderShipping.shipping_addr3 = @shipping_addr3,
+                w2_OrderShipping.shipping_addr4 = @shipping_addr4,
+                w2_OrderShipping.shipping_tel1 = @shipping_tel1,
+                w2_OrderShipping.shipping_date = @shipping_date,
+                w2_OrderShipping.shipping_time = @shipping_time,
+                w2_OrderShipping.date_changed = GETDATE(),
+                w2_OrderShipping.another_shipping_flg = @another_shipping_flg
+         WHERE  w2_OrderShipping.order_id = @order_id
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shipping_name" Type="nvarchar" Size="40" />
+      <Input Name="shipping_name1" Type="nvarchar" Size="20" />
+      <Input Name="shipping_name2" Type="nvarchar" Size="20" />
+      <Input Name="shipping_zip" Type="nvarchar" Size="8" />
+      <Input Name="shipping_addr1" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr2" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr3" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr4" Type="nvarchar" Size="50" />
+      <Input Name="shipping_tel1" Type="nvarchar" Size="16" />
+      <Input Name="shipping_date" Type="datetime" />
+      <Input Name="shipping_time" Type="nvarchar" Size="30" />
+      <Input Name="another_shipping_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </AddOrderShipping>
+
+  <!-- 注文情報確認処理 -->
+  <CheckOrderId>
+    <Statement>
+      <![CDATA[
+        SELECT
+          w2_order.*
+        FROM
+          w2_order
+        WHERE
+          shop_id = @shop_id
+          AND
+          order_id = @order_id
+          AND
+          --　注文ステータスが仮注文
+          order_status = 'TMP'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </CheckOrderId>
+
+  <!-- 配送種別情報を取得する -->
+  <GetShippingFromOrderId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_DeliveryCompany.shipping_time_id1,
+                w2_DeliveryCompany.shipping_time_id2,
+                w2_DeliveryCompany.shipping_time_id3,
+                w2_DeliveryCompany.shipping_time_id4,
+                w2_DeliveryCompany.shipping_time_id5,
+                w2_DeliveryCompany.shipping_time_id6,
+                w2_DeliveryCompany.shipping_time_id7,
+                w2_DeliveryCompany.shipping_time_id8,
+                w2_DeliveryCompany.shipping_time_id9,
+                w2_DeliveryCompany.shipping_time_id10,
+                w2_DeliveryCompany.shipping_time_message1,
+                w2_DeliveryCompany.shipping_time_message2,
+                w2_DeliveryCompany.shipping_time_message3,
+                w2_DeliveryCompany.shipping_time_message4,
+                w2_DeliveryCompany.shipping_time_message5,
+                w2_DeliveryCompany.shipping_time_message6,
+                w2_DeliveryCompany.shipping_time_message7,
+                w2_DeliveryCompany.shipping_time_message8,
+                w2_DeliveryCompany.shipping_time_message9,
+                w2_DeliveryCompany.shipping_time_message10
+          FROM  w2_Order
+                INNER JOIN w2_OrderShipping ON
+                (
+                  w2_Order.order_id = w2_OrderShipping.order_id
+                )
+                LEFT JOIN	w2_DeliveryCompany ON
+                (
+                  w2_OrderShipping.delivery_company_id = w2_DeliveryCompany.delivery_company_id
+                )          
+          WHERE w2_Order.shop_id = @shop_id
+            AND w2_Order.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetShippingFromOrderId>
+
+</AddYahooOrder>

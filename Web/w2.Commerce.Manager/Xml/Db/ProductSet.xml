@@ -1,0 +1,281 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品セットSQLステートメントXML(ProductSet.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductSet>
+
+  <!-- 商品セット一覧取得 -->
+  <GetProductSetList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_ProductSet.product_set_id), 0)
+          FROM  w2_ProductSet
+                [[ PRODUCTSET_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_ProductSet.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ProductSet.shop_id,
+                          w2_ProductSet.product_set_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCTSET_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductSet
+                          [[ PRODUCTSET_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductSet ON
+                (
+                  RowIndex.shop_id = w2_ProductSet.shop_id
+                  AND
+                  RowIndex.product_set_id = w2_ProductSet.product_set_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="product_set_name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetProductSetList>
+
+  <!-- 商品セット取得 -->
+  <GetProductSet>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductSet
+         WHERE  shop_id = @shop_id
+           AND  product_set_id = @product_set_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductSet>
+
+  <!-- 商品セットアイテム取得 -->
+  <GetProductSetItem>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductSetItem.*,
+                w2_Product.name,
+                w2_Product.use_variation_flg,
+                w2_ProductVariationView.variation_name1,
+                w2_ProductVariationView.variation_name2,
+                w2_ProductVariationView.variation_name3,
+                w2_ProductVariationView.price
+          FROM  w2_ProductSetItem
+                LEFT JOIN w2_ProductVariationView
+                ON (
+                  w2_ProductSetItem.shop_id = w2_ProductVariationView.shop_id
+                  AND
+                  w2_ProductSetItem.product_id = w2_ProductVariationView.product_id
+                  AND
+                  w2_ProductSetItem.variation_id = w2_ProductVariationView.variation_id
+                )
+                LEFT JOIN w2_Product
+                ON (
+                  w2_ProductSetItem.shop_id = w2_Product.shop_id
+                  AND
+                  w2_ProductSetItem.product_id = w2_Product.product_id
+                )
+         WHERE  w2_ProductSetItem.shop_id = @shop_id
+           AND  w2_ProductSetItem.product_set_id = @product_set_id
+        ORDER BY w2_ProductSetItem.display_order, w2_ProductSetItem.product_id, w2_ProductSetItem.variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductSetItem>
+
+  <!-- 商品セット登録 -->
+  <InsertProductSet>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductSet
+                (
+                shop_id,
+                product_set_id,
+                product_set_name,
+                parent_min,
+                parent_max,
+                child_min,
+                child_max,
+                description_kbn,
+                description,
+                max_sell_quantity,
+                valid_flg,
+                date_created,
+                date_changed,
+                last_changed
+                )
+        VALUES  (
+                @shop_id,
+                @product_set_id,
+                @product_set_name,
+                @parent_min,
+                @parent_max,
+                @child_min,
+                @child_max,
+                @description_kbn,
+                @description,
+                @max_sell_quantity,
+                @valid_flg,
+                GETDATE(),
+                GETDATE(),
+                @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_name" Type="nvarchar" Size="30" />
+      <Input Name="parent_max" Type="int" />
+      <Input Name="parent_min" Type="int" />
+      <Input Name="child_max" Type="int" />
+      <Input Name="child_min" Type="int" />
+      <Input Name="description_kbn" Type="nvarchar" Size="10" />
+      <Input Name="description" Type="ntext" />
+      <Input Name="max_sell_quantity" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </InsertProductSet>
+
+  <!-- 商品セット更新 -->
+  <UpdateProductSet>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductSet
+           SET  product_set_name = @product_set_name,
+                parent_max = @parent_max,
+                parent_min = @parent_min,
+                child_max = @child_max,
+                child_min = @child_min,
+                description_kbn = @description_kbn,
+                description = @description,
+                description_kbn_mobile = '0',
+                description_mobile = '',
+                max_sell_quantity = @max_sell_quantity,
+                valid_flg = @valid_flg,
+                date_changed = GETDATE(),
+                last_changed  = @last_changed
+         WHERE  shop_id = @shop_id
+           AND  product_set_id = @product_set_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+      <Input Name="product_set_name" Type="nvarchar" Size="30" />
+      <Input Name="parent_max" Type="int" />
+      <Input Name="parent_min" Type="int" />
+      <Input Name="child_max" Type="int" />
+      <Input Name="child_min" Type="int" />
+      <Input Name="description_kbn" Type="nvarchar" Size="10" />
+      <Input Name="description" Type="ntext" />
+      <Input Name="max_sell_quantity" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateProductSet>
+
+  <!-- 商品セット削除（アイテムも削除） -->
+  <DeleteProductSet>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductSet
+         WHERE  shop_id = @shop_id
+           AND  product_set_id = @product_set_id
+           
+        DELETE  w2_ProductSetItem
+         WHERE  shop_id = @shop_id
+           AND  product_set_id = @product_set_id  
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductSet>
+
+  <!-- 商品セットアイテム削除 -->
+  <DelleteProductSetItem>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductSetItem
+         WHERE  shop_id = @shop_id
+           AND  product_set_id = @product_set_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DelleteProductSetItem>
+
+  <!-- 商品セットアイテムインサート -->
+  <InsertProductSetItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductSetItem
+                (
+                shop_id,
+                product_set_id,
+                product_id,
+                variation_id,
+                setitem_price,
+                count_min,
+                count_max,
+                family_flg,
+                display_order,
+                last_changed
+                )
+        VALUES  (
+                @shop_id,
+                @product_set_id,
+                @product_id,
+                @variation_id,
+                @setitem_price,
+                @count_min,
+                @count_max,
+                @family_flg,
+                @display_order,
+                @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="setitem_price" Type="decimal" Size="18,3" />
+      <Input Name="count_min" Type="int" />
+      <Input Name="count_max" Type="int" />
+      <Input Name="family_flg" Type="nvarchar" Size="10" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertProductSetItem>
+
+</ProductSet>

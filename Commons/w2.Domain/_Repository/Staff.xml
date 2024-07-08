@@ -1,0 +1,288 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : スタッフ系SQLステートメントXML (Staff.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<Staff>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_Staff
+                [[ STAFF_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+
+  <!-- 
+    スタッフ情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetStaffMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_Staff
+                [[ STAFF_MASTER_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetStaffMaster>
+
+  <!-- スタッフマスタフィールドチェック -->
+  <CheckStaffFields>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  w2_Staff
+      ]]>
+    </Statement>
+  </CheckStaffFields>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Staff.*
+          FROM  (
+                  SELECT  w2_Staff.staff_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ STAFF_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Staff
+                          [[ STAFF_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Staff ON
+                (
+                  RowIndex.staff_id = w2_Staff.staff_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_Staff
+         WHERE  staff_id = @staff_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="staff_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- オペレータIDで取得 -->
+  <GetByOperatorId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_Staff
+         WHERE  operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="operator_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetByOperatorId>
+
+  <!-- 全取得（コーディネート用） -->
+  <GetAllForCoordinate>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_Staff
+         WHERE  model_flg = '1'
+           AND  valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetAllForCoordinate>
+
+  <!-- フォローリストを取得 -->
+  <GetFollowList>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  (
+                  SELECT  w2_UserActivity.user_id,
+                          w2_UserActivity.master_kbn,
+                          w2_UserActivity.master_id,
+                          w2_Staff.*,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            ORDER BY w2_UserActivity.master_id DESC
+                          ) AS row_num
+                    FROM  w2_UserActivity
+                          LEFT JOIN w2_Staff ON
+                          (
+                            w2_Staff.staff_id =  w2_UserActivity.master_id
+                          )
+                   WHERE  user_id = @user_id
+                     AND  master_kbn = 'COORDINATE_FOLLOW'
+                     AND  w2_Staff.valid_flg = '1'
+                     AND  w2_Staff.model_flg = '1'
+                ) AS RowIndex
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetFollowList>
+
+  <!-- フォローリスト件数を取得 -->
+  <GetFollowCount>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(COUNT(master_id), 0)
+          FROM  w2_UserActivity
+                LEFT JOIN w2_Staff ON
+                (
+                  w2_Staff.staff_id =  w2_UserActivity.master_id
+                )
+         WHERE  user_id = @user_id
+           AND  master_kbn = 'COORDINATE_FOLLOW'
+           AND  w2_Staff.valid_flg = '1'
+           AND  w2_Staff.model_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetFollowCount>
+
+  <!-- 全取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_Staff
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetAll>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_Staff
+                (
+                  staff_id
+                  ,staff_name
+                  ,staff_profile
+                  ,staff_height
+                  ,staff_instagram_id
+                  ,staff_sex
+                  ,model_flg
+                  ,operator_id
+                  ,real_shop_id
+                  ,valid_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @staff_id
+                  ,@staff_name
+                  ,@staff_profile
+                  ,@staff_height
+                  ,@staff_instagram_id
+                  ,@staff_sex
+                  ,@model_flg
+                  ,@operator_id
+                  ,@real_shop_id
+                  ,@valid_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="staff_id" Type="nvarchar" Size="30" />
+      <Input Name="staff_name" Type="nvarchar" Size="30" />
+      <Input Name="staff_profile" Type="nvarchar" Size="MAX" />
+      <Input Name="staff_height" Type="int" />
+      <Input Name="staff_instagram_id" Type="nvarchar" Size="30" />
+      <Input Name="staff_sex" Type="nvarchar" Size="10" />
+      <Input Name="model_flg" Type="nvarchar" Size="1" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Staff
+           SET  staff_name = @staff_name
+                ,staff_profile = @staff_profile
+                ,staff_height = @staff_height
+                ,staff_instagram_id = @staff_instagram_id
+                ,staff_sex = @staff_sex
+                ,model_flg = @model_flg
+                ,operator_id = @operator_id
+                ,real_shop_id = @real_shop_id
+                ,valid_flg = @valid_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  staff_id = @staff_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="staff_id" Type="nvarchar" Size="30" />
+      <Input Name="staff_name" Type="nvarchar" Size="30" />
+      <Input Name="staff_profile" Type="nvarchar" Size="MAX" />
+      <Input Name="staff_height" Type="int" />
+      <Input Name="staff_instagram_id" Type="nvarchar" Size="30" />
+      <Input Name="staff_sex" Type="nvarchar" Size="10" />
+      <Input Name="model_flg" Type="nvarchar" Size="1" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_Staff
+         WHERE  staff_id = @staff_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="staff_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+</Staff>

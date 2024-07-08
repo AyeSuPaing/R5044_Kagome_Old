@@ -1,0 +1,414 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 特定商品表示系SQLサブステートメントXML(ProductDisplay_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductDisplay_Sub>
+
+  <!-- 現在時刻 -->
+  <NOW_DATETIME>
+    <Statement>
+      <![CDATA[
+        DECLARE @now_datetime DATETIME = GETDATE()
+      ]]>
+    </Statement>
+  </NOW_DATETIME>
+
+  <!-- 人気商品ランキング情報一覧取得用WHERE文 -->
+  <PRODUCTRANKING_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_DispProductInfo.shop_id = @shop_id
+           AND  w2_DispProductInfo.data_kbn = 'SRK'    -- 売れ筋ランキング
+           AND  w2_Product.display_from <= @now_datetime      -- 表示期間内
+           AND ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @now_datetime))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.mobile_disp_flg IN ('0','1')   -- PC&モバイル OR PCのみ
+           AND  w2_Product.valid_flg = '1'                -- 有効
+      ]]>
+    </Statement>
+  </PRODUCTRANKING_SEARCH_WHERE>
+
+  <!-- ユーザー会員ランクの優先順位 -->
+  <USER_MEMBER_RANK_ORDER>
+    <Statement>
+      <![CDATA[
+        -- 会員ランク順位取得
+        DECLARE @member_rank_order INT
+        SET     @member_rank_order = ISNULL(
+                (
+                  SELECT  member_rank_order
+                    FROM  w2_MemberRank 
+                   WHERE  member_rank_id = @member_rank_id
+                     AND  valid_flg = 'ON'
+                ), 999)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </USER_MEMBER_RANK_ORDER>
+
+  <!-- 商品カテゴリ結合 -->
+  <JOIN_PRODUCT_CATEGORY>
+    <Statement>
+      <![CDATA[
+                  LEFT JOIN w2_ProductCategory cat1 ON (w2_Product.shop_id = cat1.shop_id AND w2_Product.category_id1 = cat1.category_id)
+                  LEFT JOIN w2_MemberRank mem1 ON (cat1.member_rank_id = mem1.member_rank_id)
+                  LEFT JOIN w2_ProductCategory cat2 ON (w2_Product.shop_id = cat2.shop_id AND w2_Product.category_id2 = cat2.category_id)
+                  LEFT JOIN w2_MemberRank mem2 ON (cat2.member_rank_id = mem2.member_rank_id)
+                  LEFT JOIN w2_ProductCategory cat3 ON (w2_Product.shop_id = cat3.shop_id AND w2_Product.category_id3 = cat3.category_id)
+                  LEFT JOIN w2_MemberRank mem3 ON (cat3.member_rank_id = mem3.member_rank_id)
+                  LEFT JOIN w2_ProductCategory cat4 ON (w2_Product.shop_id = cat4.shop_id AND w2_Product.category_id4 = cat4.category_id)
+                  LEFT JOIN w2_MemberRank mem4 ON (cat4.member_rank_id = mem4.member_rank_id)
+                  LEFT JOIN w2_ProductCategory cat5 ON (w2_Product.shop_id = cat5.shop_id AND w2_Product.category_id5 = cat5.category_id)
+                  LEFT JOIN w2_MemberRank mem5 ON (cat5.member_rank_id = mem5.member_rank_id)
+      ]]>
+    </Statement>
+  </JOIN_PRODUCT_CATEGORY>
+
+  <!-- 商品セール価格結合(Viewを使わない・@current_dateが必要) -->
+  <JOIN_PRODUCT_SALE_PRICE>
+    <Statement>
+      <![CDATA[
+                LEFT JOIN
+                (
+                  SELECT  w2_ProductSale.shop_id,
+                          w2_ProductSalePriceTmp.product_id,
+                          w2_ProductSalePriceTmp.sale_price
+                    FROM  w2_ProductSale
+                          LEFT JOIN w2_ProductSalePriceTmp ON
+                          (
+                            w2_ProductSale.shop_id = w2_ProductSalePriceTmp.shop_id
+                            AND
+                            w2_ProductSale.productsale_id = w2_ProductSalePriceTmp.productsale_id
+                          )
+                   WHERE  w2_ProductSale.productsale_kbn = 'TS'
+                     AND  w2_ProductSale.date_bgn <= @current_date
+                     AND  w2_ProductSale.date_end >= @current_date
+                     AND  w2_ProductSale.valid_flg = '1'
+                ) AS productSale ON
+                (
+                   w2_Product.shop_id = productSale.shop_id
+                   AND
+                   w2_Product.product_id = productSale.product_id
+                )
+      ]]>
+    </Statement>
+  </JOIN_PRODUCT_SALE_PRICE>
+
+  <!-- Product Category search where -->
+  <PRODUCT_CATEGORY_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+          AND
+          (
+            -- カテゴリID1
+            (
+              -- カテゴリ設定なし
+              cat1.category_id IS NULL
+              OR
+              (
+                <@@notval:fixed_purchase_member_flg:1@@>
+                cat1.only_fixed_purchase_member_flg = '0'
+                </@@notval:fixed_purchase_member_flg:1@@>
+                <@@val:fixed_purchase_member_flg:1@@>
+                cat1.only_fixed_purchase_member_flg IN ('0', '1')
+                </@@val:fixed_purchase_member_flg:1@@>
+                AND
+                (
+                  mem1.member_rank_id IS NULL
+                  OR
+                  mem1.member_rank_order >= @member_rank_order
+                )
+                AND
+                -- ルートカテゴリの閲覧制限チェック
+                EXISTS
+                (
+                  SELECT  parent.category_id
+                    FROM  w2_ProductCategory parent
+                    WHERE  parent.shop_id = @shop_id
+                      AND  parent.parent_category_id = 'ROOT'
+                      AND  cat1.category_id LIKE parent.category_id + '%'
+                      <@@notval:fixed_purchase_member_flg:1@@>
+                      AND  parent.only_fixed_purchase_member_flg = '0'
+                      </@@notval:fixed_purchase_member_flg:1@@>
+                      <@@val:fixed_purchase_member_flg:1@@>
+                      AND parent.only_fixed_purchase_member_flg IN ('0', '1')
+                      </@@val:fixed_purchase_member_flg:1@@>
+                )
+              )
+            )
+            AND
+            -- カテゴリID2
+            (
+              -- カテゴリ設定なし
+              cat2.category_id IS NULL
+              OR
+              (
+                <@@notval:fixed_purchase_member_flg:1@@>
+                cat2.only_fixed_purchase_member_flg = '0'
+                </@@notval:fixed_purchase_member_flg:1@@>
+                <@@val:fixed_purchase_member_flg:1@@>
+                cat2.only_fixed_purchase_member_flg IN ('0', '1')
+                </@@val:fixed_purchase_member_flg:1@@>
+                AND
+                (
+                  mem2.member_rank_id IS NULL
+                  OR
+                  mem2.member_rank_order >= @member_rank_order
+                )
+                AND
+                -- ルートカテゴリの閲覧制限チェック
+                EXISTS
+                (
+                  SELECT  parent.category_id
+                    FROM  w2_ProductCategory parent
+                    WHERE  parent.shop_id = @shop_id
+                      AND  parent.parent_category_id = 'ROOT'
+                      AND  cat2.category_id LIKE parent.category_id + '%'
+                      <@@notval:fixed_purchase_member_flg:1@@>
+                      AND  parent.only_fixed_purchase_member_flg = '0'
+                      </@@notval:fixed_purchase_member_flg:1@@>
+                      <@@val:fixed_purchase_member_flg:1@@>
+                      AND parent.only_fixed_purchase_member_flg IN ('0', '1')
+                      </@@val:fixed_purchase_member_flg:1@@>
+                )
+              )
+            )
+            AND
+            -- カテゴリID3
+            (
+              -- カテゴリ設定なし
+              cat3.category_id IS NULL
+              OR
+              (
+                <@@notval:fixed_purchase_member_flg:1@@>
+                cat3.only_fixed_purchase_member_flg = '0'
+                </@@notval:fixed_purchase_member_flg:1@@>
+                <@@val:fixed_purchase_member_flg:1@@>
+                cat3.only_fixed_purchase_member_flg IN ('0', '1')
+                </@@val:fixed_purchase_member_flg:1@@>
+                AND
+                (
+                  mem3.member_rank_id IS NULL
+                  OR
+                  mem3.member_rank_order >= @member_rank_order
+                )
+                AND
+                -- ルートカテゴリの閲覧制限チェック
+                EXISTS
+                (
+                  SELECT  parent.category_id
+                    FROM  w2_ProductCategory parent
+                    WHERE  parent.shop_id = @shop_id
+                      AND  parent.parent_category_id = 'ROOT'
+                      AND  cat3.category_id LIKE parent.category_id + '%'
+                      <@@notval:fixed_purchase_member_flg:1@@>
+                      AND  parent.only_fixed_purchase_member_flg = '0'
+                      </@@notval:fixed_purchase_member_flg:1@@>
+                      <@@val:fixed_purchase_member_flg:1@@>
+                      AND parent.only_fixed_purchase_member_flg IN ('0', '1')
+                      </@@val:fixed_purchase_member_flg:1@@>
+                )
+              )
+            )
+            AND
+            -- カテゴリID4
+            (
+              -- カテゴリ設定なし
+              cat4.category_id IS NULL
+              OR
+              (
+                <@@notval:fixed_purchase_member_flg:1@@>
+                cat4.only_fixed_purchase_member_flg = '0'
+                </@@notval:fixed_purchase_member_flg:1@@>
+                <@@val:fixed_purchase_member_flg:1@@>
+                cat4.only_fixed_purchase_member_flg IN ('0', '1')
+                </@@val:fixed_purchase_member_flg:1@@>
+                AND
+                (
+                  mem4.member_rank_id IS NULL
+                  OR
+                  mem4.member_rank_order >= @member_rank_order
+                )
+                AND
+                -- ルートカテゴリの閲覧制限チェック
+                EXISTS
+                (
+                  SELECT  parent.category_id
+                    FROM  w2_ProductCategory parent
+                    WHERE  parent.shop_id = @shop_id
+                      AND  parent.parent_category_id = 'ROOT'
+                      AND  cat4.category_id LIKE parent.category_id + '%'
+                      <@@notval:fixed_purchase_member_flg:1@@>
+                      AND  parent.only_fixed_purchase_member_flg = '0'
+                      </@@notval:fixed_purchase_member_flg:1@@>
+                      <@@val:fixed_purchase_member_flg:1@@>
+                      AND parent.only_fixed_purchase_member_flg IN ('0', '1')
+                      </@@val:fixed_purchase_member_flg:1@@>
+                )
+              )
+            )
+            AND
+            -- カテゴリID5
+            (
+              -- カテゴリ設定なし
+              cat5.category_id IS NULL
+              OR
+              (
+                <@@notval:fixed_purchase_member_flg:1@@>
+                cat5.only_fixed_purchase_member_flg = '0'
+                </@@notval:fixed_purchase_member_flg:1@@>
+                <@@val:fixed_purchase_member_flg:1@@>
+                cat5.only_fixed_purchase_member_flg IN ('0', '1')
+                </@@val:fixed_purchase_member_flg:1@@>
+                AND
+                (
+                  mem5.member_rank_id IS NULL
+                  OR
+                  mem5.member_rank_order >= @member_rank_order
+                )
+                AND
+                -- ルートカテゴリの閲覧制限チェック
+                EXISTS
+                (
+                  SELECT  parent.category_id
+                    FROM  w2_ProductCategory parent
+                    WHERE  parent.shop_id = @shop_id
+                      AND  parent.parent_category_id = 'ROOT'
+                      AND  cat5.category_id LIKE parent.category_id + '%'
+                      <@@notval:fixed_purchase_member_flg:1@@>
+                      AND  parent.only_fixed_purchase_member_flg = '0'
+                      </@@notval:fixed_purchase_member_flg:1@@>
+                      <@@val:fixed_purchase_member_flg:1@@>
+                      AND parent.only_fixed_purchase_member_flg IN ('0', '1')
+                      </@@val:fixed_purchase_member_flg:1@@>
+                )
+              )
+            )
+          )
+      ]]>
+    </Statement>
+  </PRODUCT_CATEGORY_SEARCH_WHERE>
+
+  <!-- 人気商品ランキング情報一覧取得用ORDER_BY -->
+  <PRODUCTRANKING_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          w2_DispProductInfo.display_order,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_DispProductInfo.shop_id ASC, w2_DispProductInfo.data_kbn ASC
+      ]]>
+    </Statement>
+  </PRODUCTRANKING_SEARCH_ORDER_BY>
+
+  <!-- おすすめ商品情報一覧取得用WHERE文 -->
+  <PRODUCTPARTICULAR_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_DispProductInfo.shop_id = @shop_id
+           AND  w2_DispProductInfo.data_kbn = @data_kbn
+           AND  w2_Product.display_from <= @now_datetime      -- 表示期間内
+           AND ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @now_datetime))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.mobile_disp_flg IN ('0','1')   -- PC&モバイル OR PCのみ
+           AND  w2_Product.valid_flg = '1'                -- 有効
+      ]]>
+    </Statement>
+  </PRODUCTPARTICULAR_SEARCH_WHERE>
+
+  <!-- おすすめ商品情報一覧取得用ORDER_BY -->
+  <PRODUCTPARTICULAR_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_DispProductInfo.shop_id ASC, w2_DispProductInfo.data_kbn ASC
+      ]]>
+    </Statement>
+  </PRODUCTPARTICULAR_SEARCH_ORDER_BY>
+
+  <!-- 会員ランク価格取得SQL（商品単位） -->
+  <MEMBER_RANK_PRICE_PRODUCT>
+    <Statement>
+      <![CDATA[
+        <@@hasval:member_rank_id@@>
+        (
+          SELECT  TOP 1
+                  w2_ProductPrice.member_rank_price
+            FROM  w2_ProductPrice
+                  LEFT JOIN w2_MemberRank ON
+								  (
+										  w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+								  )
+						WHERE  w2_ProductPrice.shop_id = w2_Product.shop_id
+							AND  w2_ProductPrice.product_id = w2_Product.product_id
+							AND  w2_ProductPrice.variation_id = ''
+							AND  w2_MemberRank.member_rank_order >= @member_rank_order
+							AND  w2_MemberRank.valid_flg = 'ON'
+					ORDER BY w2_MemberRank.member_rank_order
+        )
+        </@@hasval:member_rank_id@@>
+        <@@val:member_rank_id:@@>
+        NULL
+        </@@val:member_rank_id:@@>
+        AS member_rank_price
+      ]]>
+    </Statement>
+  </MEMBER_RANK_PRICE_PRODUCT>
+
+  <!-- 在庫有無のSELECT区用パラメータ -->
+  <PRODUCT_SOLD_OUT_SELECT>
+    <Statement>
+      <![CDATA[
+        (
+          CASE w2_Product.stock_management_kbn
+          WHEN '0' THEN 1  -- 在庫管理をしない
+          WHEN '1' THEN 1  -- 商品情報：在庫０以下の場合でも表示する。購入可能
+          WHEN '2' THEN    -- 商品情報：在庫０以下の場合でも表示する。購入不可
+              CASE
+              WHEN EXISTS(
+                SELECT  w2_ProductStock.stock
+                  FROM  w2_ProductStock
+                 WHERE  w2_ProductStock.shop_id = w2_Product.shop_id
+                   AND  w2_ProductStock.product_id = w2_Product.product_id
+                   AND  w2_ProductStock.stock > 0
+                  ) THEN 1
+              ELSE 0
+              END
+          ELSE 0
+          END
+        )
+      ]]>
+    </Statement>
+  </PRODUCT_SOLD_OUT_SELECT>
+
+  <!-- 在庫有無のWHERE用パラメータ -->
+  <SHOW_OUT_OF_STOCK_PRODUCT_WHERE>
+    <Statement>
+      <![CDATA[
+        -- (在庫管理する商品の)在庫数が1以上あるSKUの数を返し、その合算数が1以上であれば在庫ありと判断する
+        (
+          @show_out_of_stock = '1'
+          OR
+          w2_Product.stock_management_kbn IN ('0', '1')
+          OR
+          EXISTS
+          (
+              SELECT  w2_ProductStock.shop_id
+                FROM  w2_ProductStock
+               WHERE  w2_ProductStock.shop_id = w2_Product.shop_id
+                 AND  w2_ProductStock.product_id = w2_Product.product_id
+                 AND  w2_ProductStock.stock > 0
+          )
+        )
+      ]]>
+    </Statement>
+  </SHOW_OUT_OF_STOCK_PRODUCT_WHERE>
+
+</ProductDisplay_Sub>

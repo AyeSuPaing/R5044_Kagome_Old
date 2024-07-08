@@ -1,0 +1,407 @@
+﻿@*
+=========================================================================================================
+  Module      : パーツ管理 パーツ一覧(パーシャルビュー)(_MainContentList.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using w2.App.Common
+@using w2.App.Common.Design
+@using w2.App.Common.Util
+@using w2.Cms.Manager.Codes.PageDesign
+@using w2.Common.Util
+@model w2.Cms.Manager.ViewModels.PartsDesign.GroupListViewModel
+
+<!-- リストグループ -->
+<div class="list-content custom-scroll-area">
+	<div class="list-group-sortable">
+		@foreach (var groupModel in Model.GroupPartsViewModels)
+		{
+			<div class="list-group" data-list-group-id="@groupModel.GroupId">
+				<div class="list-group-row">
+					@if (groupModel.GroupId != PageDesignUtility.OtherPageGroupModel.GroupId)
+					{
+						<span class="icon-drag"></span>
+					}
+					<p class="list-group-name list-group-toggle-btn">@groupModel.GroupName</p>
+					<div class="list-group-name-form">
+						@Html.TextBoxFor(model => groupModel.GroupName, new
+						{
+							Id = "group_name_text_box_" + groupModel.GroupId,
+							Name = "Input.GroupName"
+						})
+						<input type="submit" class="btn btn-main btn-size-s list-group-edit-submit"
+								onclick="@Html.Raw("group_name_edit(" + @groupModel.GroupId + ",\"group_name_text_box_" + @groupModel.GroupId + "\")")"value="OK">
+						<input type="button" class="btn btn-sub btn-size-s list-group-edit-cancel" value="キャンセル">
+					</div>
+					@if (groupModel.GroupId != 0)
+					{
+						<div class="dropdown">
+							<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle">
+								<span class="icon-dots"></span>
+							</a>
+							<div class="dropdown-menu">
+								<a class="dropdown-menu-item list-group-name-edit-trigger" data-target-list-group="@groupModel.GroupId" href="">グループ名を変更する</a>
+								<a class="dropdown-menu-item" href="javascript:group_delete(@groupModel.GroupId)">削除</a>
+							</div>
+						</div>
+					}
+				</div>
+				<!-- リスト要素 -->
+				<div class="list-group-toggle-content list-sortable">
+					@foreach (var partsModel in groupModel.ListPartsViewModels)
+					{
+						<div class="list-row"
+							data-list-id="@groupModel.GroupId-@partsModel.PartsId"
+							data-parts-id="@partsModel.PartsId"
+							id ="@partsModel.PartsId">
+							<div class="list-col list-col-drag">
+								<span class="icon-drag"></span>
+							</div>
+							<div class="list-col list-col-thumb w10 hide-style-list">
+								<div class="list-col-inner">
+									@{
+										var param = new List<KeyValuePair<string, string>>
+										{
+											new KeyValuePair<string, string>(Constants.REQUEST_KEY_PARTS_PREVIEW_PARTS_ID, partsModel.PartsId.ToString())
+										}; 
+									}
+									@if (partsModel.UsePc)
+									{
+										var pcSrc= (Constants.PATH_ROOT_CMS + (WebBrowserCapture.GetImageFilePath(
+											Constants.PAGE_FRONT_PARTS_PREVIEW, 
+											webUrlParams:param,
+											device:WebBrowserCapture.Device.Pc, 
+											delay:100, 
+											iSizeH:800, 
+											iSizeW:800, 
+											bSizeH:1280, 
+											bSizeW:720)) + "?" + DateTime.Now.ToString("yyyyMMddHHmmss")).Replace(@"\", "/");
+										<figure>
+											<img class="web-browser-capture-image frame-pc"
+												onError="this.onerror=null; this.style='display:none';"
+												style="display: none;"
+												onclick="imageModal('@pcSrc')"
+												src="@pcSrc" alt="PC">
+										</figure>
+									}
+									@if (partsModel.UseSp && DesignCommon.UseSmartPhone)
+									{
+										var spSrc = (Constants.PATH_ROOT_CMS + (WebBrowserCapture.GetImageFilePath(
+											Path.Combine(DesignCommon.SiteSpRootPath, Constants.PAGE_FRONT_PARTS_PREVIEW),
+											webUrlParams: param,
+											device: WebBrowserCapture.Device.Sp,
+											delay: 100,
+											iSizeH: 400,
+											iSizeW: 400,
+											bSizeH: 400,
+											bSizeW: 800)) + "?" + DateTime.Now.ToString("yyyyMMddHHmmss")).Replace(@"\", "/");
+
+										<figure>
+											<img class="web-browser-capture-image frame-sp"
+												onError="this.onerror=null; this.style='display:none';"
+												style="display: none;"
+												onclick="imageModal('@spSrc','sp')"
+												src="@spSrc" alt="SP">
+										</figure>
+									}
+								</div>
+							</div>
+							<div class="list-col list-col-title">
+								<div class="list-col-inner">
+									<p class="list-col-title-label line-clamp ta-left">
+										<a href="javascript:open_parts(@partsModel.PartsId)" class="list-col-title-a">@LayoutHelper.ManagerTitleCheck(partsModel.ManagementTitle, "管理用パーツ名")</a>
+									</p>
+									<div class="list-col-title-form">
+										@Html.TextBoxFor(model => partsModel.ManagementTitle, new
+										{
+											Id = "parts_title_text_box_" + @partsModel.PartsId,
+											Name = "title"
+										})
+										<input type="button" class="btn btn-main btn-size-s list-title-edit-submit"
+												onclick="@Html.Raw("parts_title_edit(" + @partsModel.PartsId + ",\"parts_title_text_box_" + @partsModel.PartsId + "\")")" value="OK">
+										<input type="button" class="btn btn-sub btn-size-s list-title-edit-cancel" value="キャンセル">
+									</div>
+									<div class="dropdown">
+										<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle">
+											<span class="icon-dots"></span>
+										</a>
+										<div class="dropdown-menu">
+											<a class="dropdown-menu-item btn-modal-open" href="#" onclick="group_move_click(@partsModel.PartsId)">所属グループを変更する</a>
+											@if (partsModel.IsCustomParts)
+											{
+												<a class="dropdown-menu-item list-title-edit-trigger" data-target-list="@groupModel.GroupId-@partsModel.PartsId" href="#">管理用パーツ名を変更する</a>
+											}
+											@if (partsModel.PermissionDelete)
+											{
+												<a class="dropdown-menu-item" href="Javascript:delete_custom_parts(@partsModel.PartsId)">削除</a>
+											}
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="list-col w10 hide-list-detail">
+								<p>
+									<span class="icon-type icon-type-default">
+										@partsModel.PartsTypeText
+									</span>
+								</p>
+							</div>
+							<div class="list-col w10 hide-list-detail">
+								<p>
+									@if (partsModel.UsePc)
+									{
+										<span class="icon-site-type icon-site-type-pc">
+											@Html.Raw((DesignCommon.UseResponsive) ? "RESPONSIVE" : "PC")
+										</span>
+									}
+									@if (partsModel.UseSp && DesignCommon.UseSmartPhone)
+									{
+										<span class="icon-site-type icon-site-type-sp">SP</span>
+									}
+								</p>
+							</div>
+							<div class="list-col w10 hide-list-detail">
+								<p>
+									@{
+										var dateChanged = partsModel.UpdateDate.Split(new[] { " " }, StringSplitOptions.None); 
+										<p>@dateChanged[0]</p>
+										<p>@dateChanged[1]</p>
+									}
+								</p>
+							</div>
+							<div class="list-col w10 hide-list-detail">
+								<p>
+									@if (partsModel.Publish == Constants.FLG_PAGEDESIGN_PUBLISH_PUBLIC)
+									{
+										<span class="icon-status icon-status-open">
+											@ValueText.GetValueText(Constants.TABLE_PAGEDESIGN, Constants.FIELD_PAGEDESIGN_PUBLISH, Constants.FLG_PAGEDESIGN_PUBLISH_PUBLIC)
+										</span>
+									}
+									@if (partsModel.Publish == Constants.FLG_PAGEDESIGN_PUBLISH_PRIVATE)
+									{
+										<span class="icon-status icon-status-close">
+											@ValueText.GetValueText(Constants.TABLE_PAGEDESIGN, Constants.FIELD_PAGEDESIGN_PUBLISH, Constants.FLG_PAGEDESIGN_PUBLISH_PRIVATE)
+										</span>
+									}
+								</p>
+								@if (partsModel.IsSettingReleaseRange)
+								{
+									<p><span class="icon-status icon-status-limited">公開範囲設定あり</span></p>
+								}
+							</div>
+						</div>
+						<div style="padding: 0.1px;"></div>
+					}
+				</div>
+			</div>
+		}
+	</div>
+</div>
+
+<script type="text/javascript">
+	$(function() {
+		set_group_parts_portable();
+		list.ini();
+		list_group_toggle.ini();
+		dropdown_toggle.ini();
+		custom_scroll.ini();
+
+		thumbnail_ini();
+
+		// 該当がない場合バナー表示
+		var partsArray = [];
+		@foreach(var model2 in Model.GroupPartsViewModels) {
+			@:partsArray.push(@model2.ListPartsViewModels.Count);
+		}
+
+		if (partsArray[0] === 0 && partsArray[1] === 0 && partsArray[2] === 0
+			&& partsArray[3] === 0 && partsArray[4] === 0) {
+			search_error_no_result();
+			$(function () {
+				notification.ini();
+				notification.show('該当の管理用パーツ名、ファイル名は存在しません', 'warning', 'fadeout');
+			});
+		}
+	});
+
+	/**
+	 * グループ・パーツのD&D移動イベントの設定
+	 */
+	function set_group_parts_portable() {
+		// グループ D&D移動
+		$(".list-group-sortable").sortable({
+			handle: ".icon-drag",
+			axis: "y",
+			placeholder: "ui-state-highlight",
+			update: function(e, ui) {
+				var moveAfterGroupIdList = $(this).sortable("toArray", { attribute: 'data-list-group-id' });
+				// 「その他」グループの位置は固定
+				if (moveAfterGroupIdList[moveAfterGroupIdList.length - 1] !==
+					'@PageDesignUtility.OtherPageGroupModel.GroupId') {
+					$(this).sortable("cancel");
+					notification.show('「' + '@PageDesignUtility.OtherPageGroupModel.GroupName' + '」グループの位置は移動できません。',
+						'info',
+						'fadeout');
+				} else {
+					$.ajax({
+						type: "POST",
+						url: "@Url.Action("UpdateGroupSort", Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)",
+						data: { 'groupIds': moveAfterGroupIdList },
+						traditional: true
+					}).done(function() {
+					}).fail(function() {
+					});
+				}
+			}
+		});
+
+		// ページ D&D移動
+		$(".list-sortable").sortable({
+			handle: ".icon-drag",
+			axis: "y",
+			connectWith: ".list-sortable",
+			placeholder: "ui-state-highlight",
+			update: function(e, ui) {
+				$.ajax({
+					type: "POST",
+					url:
+						"@Url.Action("UpdatePartsSort", Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)",
+					data: {
+						'groupId': $(this).parent().attr('data-list-group-id'),
+						'partsIds': $(this).sortable("toArray", { attribute: 'data-parts-id' })
+					},
+					traditional: true
+				}).done(function() {
+				}).fail(function() {
+				});
+			}
+		});
+	}
+
+	/**
+	 * グループ移動
+	 * param {} partsId 対象ページID
+	 */
+	function group_move_click(partsId) {
+		checkOtherOperatorFileOpening('partsId' + partsId).done(function (result) {
+			if (result !== "") {
+				notification.show(result, 'warning', 'fixed');
+				return;
+			} else {
+				$.ajax({
+					type: "POST",
+					url: "@Url.Action("GroupMove", Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)",
+					data: {
+						'partsId': partsId
+					},
+				}).done(function (viewHtml) {
+					modal.close();
+					$('#model-group-edit-area').html(viewHtml);
+					setTimeout(function () {
+							modal.open('#modal-list-group-edit', 'modal-size-s', 'console.log(this)');
+						},
+						500);
+				}).fail(function () {
+				});
+				modal.close();
+			}
+		});
+	}
+
+	/**
+	 * パーツタイトル変更
+	 * param {} partsId パーツID
+	 * param {} textBoxId テキストボックスID
+	 */
+	function parts_title_edit(partsId, textBoxId) {
+		if ($('#' + textBoxId).val() === "") {
+			notification.show("管理用パーツ名を入力してください", 'warning', 'fadeout');
+			return;
+		}
+		checkOtherOperatorFileOpening('partsId' + partsId).done(function (result) {
+			if (result !== "") {
+				notification.show(result, 'warning', 'fixed');
+				return;
+			} else {
+				$.ajax({
+					type: "POST",
+					url: "@Url.Action("ManagementTitleEdit", Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)",
+					data: { 'partsId': partsId, 'title': $('#' + textBoxId).val() }
+				}).done(function () {
+					group_list_redraw();
+					notification.show('管理用パーツ名が変更されました', 'info', 'fadeout');
+				}).fail(function () {
+				});
+			}
+		});
+
+	}
+
+	/**
+	 * グループ名変更
+	 * param {} groupId グループID
+	 * param {} textBoxId テキストボックスID
+	 */
+	function group_name_edit(groupId, textBoxId) {
+
+		if (group_name_valid_check($('#' + textBoxId).val()) === false) return;
+
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("GroupNameEdit", Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)",
+			data: { 'groupId': groupId, 'name': $('#' + textBoxId).val() }
+		}).done(function() {
+			group_dropDown_update_name_edit("group_list", groupId, $('#' + textBoxId).val());
+			group_dropDown_update_name_edit("group-select", groupId, $('#' + textBoxId).val());
+			group_list_redraw();
+			notification.show('グループ名が変更されました', 'info', 'fadeout');
+		}).fail(function() {
+		});
+	}
+
+
+	/**
+	 * グループドロップリスト更新 名前変更時
+	 * param {} dropDownId 対象ドロップリストID
+	 * param {} groupId グループID
+	 * param {} groupName グループ名
+	 */
+	function group_dropDown_update_name_edit(dropDownId, groupId, groupName) {
+		var dropDown = $("#" + dropDownId + " option[value='" + groupId + "']");
+		if (dropDown.length !== 0) {
+			dropDown.text(groupName);
+		}
+	}
+
+	/**
+	 * グループ削除
+	 * param {} groupId グループID
+	 */
+	function group_delete(groupId) {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("GroupDelete", Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)",
+			data: { 'groupId': groupId }
+		}).done(function() {
+			group_dropDown_update_remove("group_list", groupId);
+			group_dropDown_update_remove("group-select", groupId);
+			group_list_redraw();
+			notification.show('グループが削除されました', 'info', 'fadeout');
+		}).fail(function() {
+		});
+	}
+
+	/**
+	 * グループドロップリスト更新 削除時
+	 * param {} dropDownId 対象ドロップリストID
+	 * param {} groupId グループID
+	 */
+	function group_dropDown_update_remove(dropDownId, groupId) {
+		var dropDown = $("#" + dropDownId + " option[value='" + groupId + "']");
+		if (dropDown.length !== 0) {
+			dropDown.remove();
+		}
+	}
+</script>

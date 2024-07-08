@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品在庫系SQLサブステートメントXML(ProductStock_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductStock_Sub>
+
+  <!-- 商品在庫情報一覧取得用WHERE文 -->
+  <PRODUCTSTOCK_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+           WHERE  w2_ProductView.valid_flg = '1'            -- 有効
+             AND  w2_ProductView.stock_management_kbn != 0   -- 在庫管理するもの
+             AND  w2_ProductView.shop_id = @shop_id          -- 店舗ID
+             AND  w2_ProductView.stock IS NOT NULL 
+             AND  w2_ProductView.stock_alert IS NOT NULL 
+             AND 
+             (
+                @srch_key = 0 AND w2_ProductView.product_id like @srch_word_like_escaped + '%' ESCAPE '#'    -- 商品ID
+                OR
+                @srch_key = 0 AND w2_ProductView.variation_id like @srch_word_like_escaped + '%' ESCAPE '#'    -- 商品バリエーションID
+                OR
+                @srch_key = 1 AND w2_ProductView.name like '%' + @srch_word_like_escaped + '%'   ESCAPE '#'  -- 商品名
+                OR
+                @srch_key = 2 AND w2_ProductView.name_kana like '%' + @srch_word_like_escaped + '%'  ESCAPE '#'  -- フリガナ
+                OR
+                @srch_key = 3 AND (
+                    w2_ProductView.category_id1 like @srch_word_like_escaped + '%' ESCAPE '#'
+                    OR 
+                    w2_ProductView.category_id2 like @srch_word_like_escaped + '%' ESCAPE '#'
+                    OR 
+                    w2_ProductView.category_id3 like @srch_word_like_escaped + '%' ESCAPE '#'
+                    OR 
+                    w2_ProductView.category_id4 like @srch_word_like_escaped + '%' ESCAPE '#'
+                    OR 
+                    w2_ProductView.category_id5 like @srch_word_like_escaped + '%' ESCAPE '#'
+                )                    -- カテゴリID
+                OR
+                @srch_key = 99 AND  @srch_word_like_escaped = ''            -- 条件なし
+              )
+             AND
+             (
+                @stock_alert_kbn = 0
+                OR
+                (
+                  @stock_alert_kbn = 1
+                  AND
+                  w2_ProductView.stock_alert > w2_ProductView.stock -- 在庫数が安全在庫基準を下回っている商品
+                )
+                OR
+                -- 在庫切れで販売が停止している場合
+                (
+                  @stock_alert_kbn = 2
+                  AND
+                  w2_ProductView.stock_management_kbn = 2 -- 在庫管理方法が「在庫０以下の場合でも表示するが、購入不可」
+                  AND
+                  w2_ProductView.stock <= 0 -- 論理在庫数が0以下
+                )
+              )
+              AND
+              (
+                (
+                  @srch_stock_count_type = '0'
+                  AND
+                  (
+                    @srch_stock_key = ''
+                    OR
+                    @srch_stock_key = 'stock' AND w2_ProductView.stock = @srch_stock_count
+                    OR
+                    @srch_stock_key = 'realstock' AND w2_ProductView.realstock = @srch_stock_count
+                    OR
+                    @srch_stock_key = 'realstock_b' AND w2_ProductView.realstock_b = @srch_stock_count
+                    OR
+                    @srch_stock_key = 'realstock_c' AND w2_ProductView.realstock_c = @srch_stock_count
+                  )
+                )
+                OR
+                (
+                  @srch_stock_count_type = '1'
+                  AND
+                  (
+                    @srch_stock_key = ''
+                    OR
+                    @srch_stock_key = 'stock' AND w2_ProductView.stock >= @srch_stock_count
+                    OR
+                    @srch_stock_key = 'realstock' AND w2_ProductView.realstock >= @srch_stock_count
+                    OR
+                    @srch_stock_key = 'realstock_b' AND w2_ProductView.realstock_b >= @srch_stock_count
+                    OR
+                    @srch_stock_key = 'realstock_c' AND w2_ProductView.realstock_c >= @srch_stock_count
+                  )
+                )
+                OR
+                (
+                  @srch_stock_count_type = '2'
+                  AND
+                  (
+                    @srch_stock_key = ''
+                    OR
+                    @srch_stock_key = 'stock' AND w2_ProductView.stock <= @srch_stock_count
+                    OR
+                    @srch_stock_key = 'realstock' AND w2_ProductView.realstock <= @srch_stock_count
+                    OR
+                    @srch_stock_key = 'realstock_b' AND w2_ProductView.realstock_b <= @srch_stock_count
+                    OR
+                    @srch_stock_key = 'realstock_c' AND w2_ProductView.realstock_c <= @srch_stock_count
+                  )
+                )
+              )
+      ]]>
+    </Statement>
+  </PRODUCTSTOCK_SEARCH_WHERE>
+
+  <!-- 商品在庫情報一覧取得用ORDER_BY -->
+  <PRODUCTSTOCK_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+         ORDER BY
+          CASE @sort_kbn
+            WHEN 0 THEN w2_ProductView.product_id
+            WHEN 2 THEN w2_ProductView.name
+            WHEN 4 THEN w2_ProductView.name_kana
+            ELSE '1'
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN 0 THEN w2_ProductView.variation_id
+            ELSE '1'
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN 6 THEN w2_ProductView.date_created
+            WHEN 8 THEN w2_ProductView.date_changed
+            ELSE NULL
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN 1 THEN w2_ProductView.product_id
+            WHEN 3 THEN w2_ProductView.name
+            WHEN 5 THEN w2_ProductView.name_kana
+            ELSE '1'
+          END 
+          DESC, 
+          CASE @sort_kbn
+            WHEN 1 THEN w2_ProductView.variation_id
+            ELSE '1'
+          END 
+          DESC, 
+          CASE @sort_kbn
+            WHEN 7 THEN w2_ProductView.date_created
+            WHEN 9 THEN w2_ProductView.date_changed
+            ELSE NULL
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_ProductView.shop_id ASC, w2_ProductView.product_id ASC, w2_ProductView.variation_id ASC
+      ]]>
+    </Statement>
+  </PRODUCTSTOCK_SEARCH_ORDER_BY>
+
+</ProductStock_Sub>

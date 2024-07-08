@@ -1,0 +1,372 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+=========================================================================================================
+  Module      : パーツデザイン パーツ管理系SQLステートメントXML (PartsDesign.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<PartsDesign>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(distinct(w2_PartsDesign.parts_id))
+          FROM  w2_PartsDesign
+                [[ PARTS_DESIGN_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_PartsDesign.*
+          FROM  w2_PartsDesign
+                [[ PARTS_DESIGN_SEARCH_WHERE ]]
+                [[ PARTS_DESIGN_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </Search>
+
+  <!-- グループ取得 -->
+  <GetGroup>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PartsDesignGroup
+         WHERE  group_id = @group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="group_id" Type="bigint" />
+    </Parameter>
+  </GetGroup>
+
+  <!-- グループ全取得 -->
+  <GetAllGroup>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PartsDesignGroup
+        ORDER BY group_sort_number ASC
+      ]]>
+    </Statement>
+  </GetAllGroup>
+
+  <!-- グループ登録 (登録後、ID取得)-->
+  <InsertGroup>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_PartsDesignGroup
+                (
+                  group_name
+                  ,group_sort_number
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @group_name
+                  ,@group_sort_number
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+                
+        SELECT  SCOPE_IDENTITY()
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="group_name" Type="nvarchar" Size="60" />
+      <Input Name="group_sort_number" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertGroup>
+
+  <!-- グループ更新 -->
+  <UpdateGroup>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_PartsDesignGroup
+           SET  group_name = @group_name
+                ,group_sort_number = @group_sort_number
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  group_id = @group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="group_id" Type="bigint" />
+      <Input Name="group_name" Type="nvarchar" Size="60" />parts_
+      <Input Name="group_sort_number" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateGroup>
+
+  <!-- グループ削除 -->
+  <DeleteGroup>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_PartsDesignGroup
+         WHERE  group_id = @group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="group_id" Type="bigint" />
+    </Parameter>
+  </DeleteGroup>
+
+  <!-- パーツ取得 -->
+  <GetParts>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PartsDesign
+         WHERE  parts_id = @parts_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="parts_id" Type="bigint" />
+    </Parameter>
+  </GetParts>
+
+  <!-- パーツ取得 -->
+  <GetPartsByFileName>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PartsDesign
+         WHERE  file_name = @file_name
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="file_name" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetPartsByFileName>
+
+  <!-- パーツ取得 条件:特集エリアID -->
+  <GetPartsByAreaId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PartsDesign
+         WHERE  area_id = @area_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="area_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetPartsByAreaId>
+
+  <!-- パーツ全取得 -->
+  <GetAllParts>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PartsDesign
+      ]]>
+    </Statement>
+  </GetAllParts>
+
+  <!-- パーツ登録 (登録後、ID取得)-->
+  <InsertParts>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_PartsDesign
+                (
+                  management_title
+                  ,parts_type
+                  ,file_name
+                  ,pc_file_dir_path
+                  ,group_id
+                  ,parts_sort_number
+                  ,use_type
+                  ,publish
+                  ,condition_publish_date_from
+                  ,condition_publish_date_to
+                  ,condition_member_only_type
+                  ,condition_member_rank_id
+                  ,condition_target_list_type
+                  ,condition_target_list_ids
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,area_id
+                )
+        VALUES  (
+                  @management_title
+                  ,@parts_type
+                  ,@file_name
+                  ,@pc_file_dir_path
+                  ,@group_id
+                  ,@parts_sort_number
+                  ,@use_type
+                  ,@publish
+                  ,@condition_publish_date_from
+                  ,@condition_publish_date_to
+                  ,@condition_member_only_type
+                  ,@condition_member_rank_id
+                  ,@condition_target_list_type
+                  ,@condition_target_list_ids
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@area_id
+                )
+                
+        SELECT  SCOPE_IDENTITY()
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="management_title" Type="nvarchar" Size="100" />
+      <Input Name="parts_type" Type="nvarchar" Size="20" />
+      <Input Name="file_name" Type="nvarchar" Size="60" />
+      <Input Name="pc_file_dir_path" Type="nvarchar" Size="300" />
+      <Input Name="group_id" Type="bigint" />
+      <Input Name="parts_sort_number" Type="int" />
+      <Input Name="use_type" Type="nvarchar" Size="20" />
+      <Input Name="publish" Type="nvarchar" Size="20" />
+      <Input Name="condition_publish_date_from" Type="datetime" />
+      <Input Name="condition_publish_date_to" Type="datetime" />
+      <Input Name="condition_member_only_type" Type="nvarchar" Size="20" />
+      <Input Name="condition_member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="condition_target_list_type" Type="nvarchar" Size="20" />
+      <Input Name="condition_target_list_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="area_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </InsertParts>
+
+  <!-- カスタムパーツ更新 -->
+  <UpdateCustomParts>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_PartsDesign
+           SET  management_title = @management_title
+                ,group_id = @group_id
+                ,use_type = @use_type
+                ,publish = @publish
+                ,condition_publish_date_from = @condition_publish_date_from
+                ,condition_publish_date_to = @condition_publish_date_to
+                ,condition_member_only_type = @condition_member_only_type
+                ,condition_member_rank_id = @condition_member_rank_id
+                ,condition_target_list_type = @condition_target_list_type
+                ,condition_target_list_ids = @condition_target_list_ids
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  parts_id = @parts_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="parts_id" Type="bigint" />
+      <Input Name="management_title" Type="nvarchar" Size="100" />
+      <Input Name="group_id" Type="bigint" />
+      <Input Name="use_type" Type="nvarchar" Size="20" />
+      <Input Name="publish" Type="nvarchar" Size="20" />
+      <Input Name="condition_publish_date_from" Type="datetime" />
+      <Input Name="condition_publish_date_to" Type="datetime" />
+      <Input Name="condition_member_only_type" Type="nvarchar" Size="20" />
+      <Input Name="condition_member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="condition_target_list_type" Type="nvarchar" Size="20" />
+      <Input Name="condition_target_list_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateCustomParts>
+
+  <!-- 標準パーツ更新 -->
+  <UpdateNormalParts>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_PartsDesign
+           SET  group_id = @group_id
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  parts_id = @parts_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="parts_id" Type="bigint" />
+      <Input Name="group_id" Type="bigint" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateNormalParts>
+
+  <!-- パーツ順序 更新 -->
+  <UpdatePartsGroupSort>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_PartsDesign
+           SET  group_id = @group_id
+                ,parts_sort_number = @parts_sort_number
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  parts_id = @parts_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="parts_id" Type="bigint" />
+      <Input Name="group_id" Type="bigint" />
+      <Input Name="parts_sort_number" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdatePartsGroupSort>
+
+  <!-- パーツ削除 -->
+  <DeleteParts>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_PartsDesign
+         WHERE  parts_id = @parts_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="parts_id" Type="bigint" />
+    </Parameter>
+  </DeleteParts>
+
+  <!-- パーツをその他グループに移動 -->
+  <UpdatePartsMoveOtherGroup>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_PartsDesign
+           SET  group_id = 0
+                ,parts_sort_number = 0
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  group_id = @group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="group_id" Type="bigint" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdatePartsMoveOtherGroup>
+
+  <!-- 存在しないグループと紐づいているパーツのグループIDを抽出 -->
+  <NotExistGroupIds>
+    <Statement>
+      <![CDATA[
+        SELECT  parts_design_group_id.group_id
+          FROM  (
+                  SELECT  w2_PartsDesign.group_id
+                    FROM  w2_PartsDesign
+                   WHERE  w2_PartsDesign.group_id <> 0
+                ) AS parts_design_group_id
+                LEFT JOIN w2_PartsDesignGroup ON
+                (
+                  w2_PartsDesignGroup.group_id = parts_design_group_id.group_id
+                )
+         WHERE  w2_PartsDesignGroup.group_id IS NULL
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </NotExistGroupIds>
+
+</PartsDesign>

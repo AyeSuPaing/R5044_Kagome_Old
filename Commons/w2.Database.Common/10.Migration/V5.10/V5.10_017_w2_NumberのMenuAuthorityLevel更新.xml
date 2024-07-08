@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+MERGE w2_Number
+USING 
+(
+  SELECT   '0' as dept_id
+    ,'MenuAuthorityLevel' as number_code
+    ,(SELECT CONVERT(bigint, ISNULL(MAX(w2_MenuAuthority.menu_authority_level), 0)) FROM w2_MenuAuthority) as number
+    ,getdate() as date_created
+    ,getdate() as date_changed
+) t_number
+ON (w2_Number.dept_id = t_number.dept_id AND w2_Number.number_code = t_number.number_code)
+WHEN MATCHED THEN
+  UPDATE 
+  SET w2_Number.number = t_number.number
+      ,w2_Number.date_changed = t_number.date_changed
+WHEN NOT MATCHED THEN
+  INSERT
+  (
+    dept_id,number_code,number,date_created,date_changed
+  )
+  VALUES
+  (
+    t_number.dept_id,t_number.number_code,t_number.number,t_number.date_created,t_number.date_changed
+  );
+  
+  
+MERGE w2_Number
+USING 
+(
+  SELECT   '0' as dept_id
+    ,'CSOperatorAuthorityId' as number_code
+    ,(SELECT CONVERT(bigint, ISNULL(MAX(w2_CsOperatorAuthority.operator_authority_id), 0)) FROM w2_CsOperatorAuthority) as number
+    ,getdate() as date_created
+    ,getdate() as date_changed
+) t_number
+ON (w2_Number.dept_id = t_number.dept_id AND w2_Number.number_code = t_number.number_code)
+WHEN MATCHED THEN
+  UPDATE 
+  SET w2_Number.number = t_number.number
+      ,w2_Number.date_changed = t_number.date_changed
+WHEN NOT MATCHED THEN
+  INSERT
+  (
+    dept_id,number_code,number,date_created,date_changed
+  )
+  VALUES
+  (
+    t_number.dept_id,t_number.number_code,t_number.number,t_number.date_created,t_number.date_changed
+  );
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

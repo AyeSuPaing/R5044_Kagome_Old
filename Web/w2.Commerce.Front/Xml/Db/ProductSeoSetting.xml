@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品SQO設定系SQLステートメントXML(ProductSeoSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductSeoSetting>
+  
+  <!-- 商品カテゴリー情報取得 -->
+  <GetProductCategory>
+    <Statement>
+      <![CDATA[
+        -- 変数宣言
+        DECLARE @category_name nvarchar(40)
+        DECLARE @parent_category_id nvarchar(30)
+        DECLARE @parent_category_name nvarchar(40)
+        DECLARE @seo_keywords nvarchar(200)
+     
+        -- カテゴリー名取得
+        SELECT  @category_name = w2_ProductCategory.name,
+                @parent_category_id = w2_ProductCategory.parent_category_id,
+                @seo_keywords = w2_ProductCategory.seo_keywords
+          FROM  w2_ProductCategory
+         WHERE  w2_ProductCategory.shop_id = @shop_id
+           AND  w2_ProductCategory.category_id = @category_id
+           AND  w2_ProductCategory.del_flg = '0'
+           AND  w2_ProductCategory.mobile_disp_flg IN ('0','1') -- PC&モバイル OR PCのみ
+           AND  w2_ProductCategory.valid_flg = '1'
+  
+        -- 親カテゴリー名取得
+        SELECT @parent_category_name = w2_ProductCategory.name
+          FROM  w2_ProductCategory
+         WHERE  w2_ProductCategory.shop_id = @shop_id
+           AND  w2_ProductCategory.category_id = @parent_category_id
+           AND  w2_ProductCategory.del_flg = '0'
+           AND  w2_ProductCategory.mobile_disp_flg IN ('0','1') -- PC&モバイル OR PCのみ
+           AND  w2_ProductCategory.valid_flg = '1'
+  
+        -- 結果出力
+        SELECT  ISNULL(@category_name,'') AS category_name,
+                ISNULL(@parent_category_name,'') AS parent_category_name,
+                ISNULL(@parent_category_id,'') AS parent_category_id,
+                ISNULL(@seo_keywords,'') AS seo_keywords
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductCategory>
+  
+  <!-- 商品カテゴリー情報取得(直下の子カテゴリー) -->
+  <GetProductCategoryFamily>
+    <Statement>
+      <![CDATA[
+        -- カテゴリー名取得
+        SELECT  w2_ProductCategory.*
+          FROM  w2_ProductCategory
+         WHERE  w2_ProductCategory.shop_id = @shop_id
+           AND  (
+                  (
+                    @category_id = '' 
+                    AND 
+                    w2_ProductCategory.parent_category_id = 'root'
+                  )
+                  OR 
+                  w2_ProductCategory.parent_category_id = @category_id
+                )
+           AND  w2_ProductCategory.mobile_disp_flg IN ('0','1') -- PC&モバイル OR PCのみ
+           AND  w2_ProductCategory.valid_flg = '1'
+      ORDER BY  w2_ProductCategory.shop_id, w2_ProductCategory.category_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductCategoryFamily>
+  
+</ProductSeoSetting>

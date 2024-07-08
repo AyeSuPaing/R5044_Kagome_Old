@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 外部連携ログ処理SQLステートメントXML(ExternalApi.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+※ リソースファイルなので、ビルド時にdllに埋め込まれます。
+-->
+<ExternalApi>
+  <InsertLog>
+    <Statement>
+      <![CDATA[
+      INSERT INTO  w2_ExternalApiLog
+      (
+        date_excuted,
+        log_level,
+        source,
+        stacktrace,
+        message,
+        data,
+        exception,
+        date_created
+      )
+      VALUES
+      (
+        @date_excuted,
+        @log_level,
+        @source,
+        @stacktrace,
+        @message,
+        @data,
+        @exception,
+        getdate()
+      )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date_excuted" Type="datetime" Size="17" />
+      <Input Name="log_level" Type="nvarchar" Size="10" />
+      <Input Name="source" Type="nvarchar" Size="500" />
+      <Input Name="stacktrace" Type="nvarchar" />
+      <Input Name="message" Type="nvarchar" Size="200" />
+      <Input Name="data" Type="nvarchar" />
+      <Input Name="exception" Type="nvarchar" />
+    </Parameter>
+  </InsertLog>
+  <TestSql>
+    <Statement>
+      <![CDATA[
+     select TOP 1 * from w2_Order
+      ]]>
+    </Statement>
+  </TestSql>
+
+  <!-- Apiログ -->
+  <GetApiLog>
+    <Statement>
+      <![CDATA[
+        SELECT * FROM w2_ExternalApiLog
+        WHERE log_level IN ('warn','error','fatal')
+        AND   date_excuted = @executed_time
+        ORDER BY date_created ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="executed_time" Type="datetime" />
+    </Parameter>
+  </GetApiLog>
+</ExternalApi>

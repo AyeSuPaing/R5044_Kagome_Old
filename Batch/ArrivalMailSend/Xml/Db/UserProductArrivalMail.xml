@@ -1,0 +1,207 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 入荷通知メール情報系SQLステートメントXML(UserProductArrivalMail.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<UserProductArrivalMail>
+
+  <!-- 入荷メール情報取得 -->
+  <GetSendTarget>
+    <Statement>
+      <![CDATA[
+        -- ユーザの登録情報から実際の送信先(PCorモバイル)取得
+        DECLARE @PcmobileKbn TABLE(
+          user_id nvarchar(30),
+          pcmobile_kbn nvarchar(10), -- 配信するときの区分
+          pcmobile_kbn_org nvarchar(10), -- 登録したときの区分
+          mail_addr nvarchar(256)
+          )
+  
+        INSERT INTO @PcmobileKbn(
+          user_id,
+          pcmobile_kbn,
+          pcmobile_kbn_org,
+          mail_addr
+          )
+        -- 会員＆ゲストの情報取得
+        SELECT  w2_UserProductArrivalMail.user_id,
+                CASE WHEN (
+                            -- ゲストアドレス → 選択された区分
+                            w2_UserProductArrivalMail.guest_mail_addr <> ''
+                          ) THEN w2_UserProductArrivalMail.pcmobile_kbn
+                     WHEN (
+                            -- PCで申込＆PCメールアドレス有効 → PC
+                            w2_UserProductArrivalMail.pcmobile_kbn = 'PC'
+                            AND
+                            w2_User.mail_addr <> ''
+                          ) THEN 'PC'
+                     WHEN (
+                            -- PCで申込＆PCメールアドレス無効＆携帯メールアドレス有効 → モバイル
+                            w2_UserProductArrivalMail.pcmobile_kbn = 'PC'
+                            AND
+                            w2_User.mail_addr = ''
+                            AND
+                            w2_User.mail_addr2 <>''
+                          ) THEN 'MB'
+                     WHEN (
+                            -- モバイルで申込＆携帯メールアドレス有効 → モバイル
+                            w2_UserProductArrivalMail.pcmobile_kbn = 'MB'
+                            AND
+                            w2_User.mail_addr2 <> ''
+                          ) THEN 'MB'
+                     WHEN (
+                             -- モバイルで申込＆携帯メールアドレス無効＆PCメールアドレス有効 → PC
+                            w2_UserProductArrivalMail.pcmobile_kbn = 'MB'
+                            AND
+                            w2_User.mail_addr2 = ''
+                            AND
+                            w2_User.mail_addr <> ''
+                          ) THEN 'PC'
+                     ELSE ''
+                     END AS pcmobile_kbn,
+                w2_UserProductArrivalMail.pcmobile_kbn,
+                w2_UserProductArrivalMail.guest_mail_addr
+          FROM  w2_UserProductArrivalMail
+                LEFT JOIN w2_User ON
+                (
+                  w2_UserProductArrivalMail.user_id = w2_User.user_id
+                )
+         WHERE  w2_UserProductArrivalMail.shop_id = @shop_id
+                AND
+                w2_UserProductArrivalMail.product_id = @product_id
+                AND
+                w2_UserProductArrivalMail.variation_id = @variation_id
+                AND
+                w2_UserProductArrivalMail.arrival_mail_kbn = @arrival_mail_kbn
+                AND
+                w2_UserProductArrivalMail.mail_send_status = '1'   -- 送信ステータスが処理中
+
+        -- 送信情報取得＆重複排除
+        SELECT  PcmobileKbn.user_id,
+                @shop_id AS shop_id,
+		            @product_id AS product_id,
+                @variation_id AS variation_id,
+                PcmobileKbn.pcmobile_kbn,
+                @arrival_mail_kbn AS arrival_mail_kbn,
+                w2_Product.name,
+                w2_Product.use_variation_flg,
+                w2_Product.display_price,
+                w2_Product.sell_from,
+                w2_ProductVariationView.variation_name1,
+                w2_ProductVariationView.variation_name2,
+                w2_ProductVariationView.price,
+                w2_Product.brand_id1,
+                w2_Product.brand_id2,
+                w2_Product.brand_id3,
+                w2_Product.brand_id4,
+                w2_Product.brand_id5,
+                w2_User.name AS user_name,
+                w2_User.mail_addr,
+                w2_User.mail_addr2,
+                w2_User.mail_flg,
+                w2_User.del_flg,
+                w2_User.user_management_level_id,
+                w2_UserProductArrivalMail.date_expired,
+                PcmobileKbn.mail_addr as guest_mail_addr,
+                w2_User.disp_language_code,
+                w2_User.disp_language_locale_id,
+                w2_User.advcode_first
+          FROM  (
+                  SELECT  user_id,
+                          pcmobile_kbn,
+                          pcmobile_kbn_org,
+                          mail_addr
+                    FROM  @PcmobileKbn
+                  GROUP BY user_id,pcmobile_kbn,pcmobile_kbn_org,mail_addr
+                )PcmobileKbn
+                INNER JOIN w2_Product ON
+                (
+                  w2_Product.shop_id = @shop_id
+                  AND
+                  w2_Product.product_id = @product_id
+                )
+                INNER JOIN w2_ProductVariationView ON
+                (
+                  w2_ProductVariationView.shop_id = @shop_id
+                  AND
+                  w2_ProductVariationView.product_id = @product_id
+                  AND
+                  w2_ProductVariationView.variation_id = @variation_id
+                )
+                INNER JOIN w2_UserProductArrivalMail ON
+                (
+                  w2_UserProductArrivalMail.user_id = PcmobileKbn.user_id
+                  AND
+                  w2_UserProductArrivalMail.shop_id = @shop_id
+                  AND
+                  w2_UserProductArrivalMail.product_id = @product_id
+                  AND
+                  w2_UserProductArrivalMail.variation_id = @variation_id
+                  AND
+                  w2_UserProductArrivalMail.arrival_mail_kbn = @arrival_mail_kbn
+                  AND
+                  w2_UserProductArrivalMail.pcmobile_kbn = PcmobileKbn.pcmobile_kbn_org
+                  AND
+                  w2_UserProductArrivalMail.guest_mail_addr = PcmobileKbn.mail_addr
+                  AND
+                  w2_UserProductArrivalMail.mail_send_status = '1'   -- 送信ステータスが処理中
+                )
+                LEFT JOIN w2_User ON
+                (
+                  PcmobileKbn.user_id = w2_User.user_id
+                )
+         WHERE  (
+                  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+                  OR
+                  (w2_UserProductArrivalMail.user_id = 'GUEST')
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="arrival_mail_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetSendTarget>
+
+  <!-- メール配信済みフラグ更新 -->
+  <UpdateMailSendStatus>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserProductArrivalMail
+           SET  mail_send_status = @mail_send_status,
+                date_changed = GETDATE(),
+                last_changed = 'batch'
+         WHERE  (@user_id = ''
+                 OR
+                 (user_id <> 'GUEST' AND user_id = @user_id)
+                 OR 
+                 (user_id = 'GUEST' AND guest_mail_addr = @guest_mail_addr))
+                AND
+                shop_id = @shop_id
+                AND
+                product_id = @product_id
+                AND
+                variation_id = @variation_id
+                AND
+                arrival_mail_kbn = @arrival_mail_kbn
+                AND
+                mail_send_status = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="arrival_mail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mail_send_status" Type="nvarchar" Size="1" />
+      <Input Name="guest_mail_addr" Type="nvarchar" Size="256" />
+    </Parameter>
+  </UpdateMailSendStatus>
+
+</UserProductArrivalMail>

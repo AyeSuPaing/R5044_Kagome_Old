@@ -1,0 +1,183 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Import yahoo order item XML(AddYahooOrderItem.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2014 All Rights Reserved.
+=========================================================================================================
+-->
+ <AddYahooOrderItem>
+
+  <!-- 注文情報確認処理 -->
+  <CheckOrderId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_Order
+         WHERE  shop_id = @shop_id
+           AND  order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </CheckOrderId>
+   
+  <!-- 注文商品確認 -->
+  <CheckOrderItem>
+    <Statement>
+      <![CDATA[
+        SELECT  order_id,
+                order_item_no
+          FROM  w2_OrderItem
+         WHERE  order_id = @order_id
+           AND  product_name NOT LIKE '【仮登録】%'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckOrderItem>
+
+   <!-- 注文商品登録 -->
+   <InsertOrderItem>
+     <Statement>
+       <![CDATA[
+        -- 入力項目以外は、商品マスタから取得
+        DECLARE @brand_id nvarchar(30) = ''
+        DECLARE @cooperation_id1 nvarchar(30) = ''
+        DECLARE @cooperation_id2 nvarchar(30) = ''
+        DECLARE @cooperation_id3 nvarchar(30) = ''
+        DECLARE @cooperation_id4 nvarchar(30) = ''
+        DECLARE @cooperation_id5 nvarchar(30) = ''
+        DECLARE @cooperation_id6 nvarchar(50) = ''
+        DECLARE @cooperation_id7 nvarchar(50) = ''
+        DECLARE @cooperation_id8 nvarchar(50) = ''
+        DECLARE @cooperation_id9 nvarchar(50) = ''
+        DECLARE @cooperation_id10 nvarchar(50) = ''
+
+        SELECT  @brand_id = brand_id1,
+                @cooperation_id1 = variation_cooperation_id1,
+                @cooperation_id2 = variation_cooperation_id2,
+                @cooperation_id3 = variation_cooperation_id3,
+                @cooperation_id4 = variation_cooperation_id4,
+                @cooperation_id5 = variation_cooperation_id5,
+                @cooperation_id6 = variation_cooperation_id6,
+                @cooperation_id7 = variation_cooperation_id7,
+                @cooperation_id8 = variation_cooperation_id8,
+                @cooperation_id9 = variation_cooperation_id9,
+                @cooperation_id10 = variation_cooperation_id10
+          FROM  w2_ProductView
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id = @product_id
+           AND  w2_ProductView.variation_id = @variation_id
+
+        INSERT INTO 
+                w2_OrderItem
+                (
+                  order_id,
+                  order_item_no,
+                  order_shipping_no,
+                  shop_id,
+                  product_id,
+                  variation_id,
+                  product_name,
+                  product_price,
+                  product_point,
+                  product_tax_included_flg,
+                  product_tax_rate,
+                  product_tax_round_type,
+                  product_price_pretax,
+                  product_price_ship,
+                  item_quantity,
+                  item_quantity_single,
+                  item_price,
+                  item_price_tax,
+                  item_price_single,
+                  date_created,
+                  date_changed,
+                  brand_id,
+                  cooperation_id1,
+                  cooperation_id2,
+                  cooperation_id3,
+                  cooperation_id4,
+                  cooperation_id5,
+                  cooperation_id6,
+                  cooperation_id7,
+                  cooperation_id8,
+                  cooperation_id9,
+                  cooperation_id10
+                )
+        VALUES  (
+                  @order_id,
+                  @order_item_no,
+                  1,
+                  @shop_id,
+                  @product_id,
+                  @variation_id,
+                  @product_name,
+                  @product_price,
+                  @product_point,
+                  @product_tax_included_flg,
+                  @product_tax_rate,
+                  @product_tax_round_type,
+                  @product_price_pretax,
+                  @product_price_ship,
+                  @item_quantity,
+                  @item_quantity_single,
+                  @item_price,
+                  @item_price_tax,
+                  @item_price_single,
+                  getdate(),
+                  getdate(),
+                  @brand_id,
+                  @cooperation_id1,
+                  @cooperation_id2,
+                  @cooperation_id3,
+                  @cooperation_id4,
+                  @cooperation_id5,
+                  @cooperation_id6,
+                  @cooperation_id7,
+                  @cooperation_id8,
+                  @cooperation_id9,
+                  @cooperation_id10
+                )
+      ]]>
+     </Statement>
+     <Parameter>
+       <Input Name="order_id" Type="nvarchar" Size="30" />
+       <Input Name="order_item_no" Type="int" />
+       <Input Name="shop_id" Type="nvarchar" Size="10" />
+       <Input Name="product_id" Type="nvarchar" Size="30" />
+       <Input Name="variation_id" Type="nvarchar" Size="60" />
+       <Input Name="product_name" Type="nvarchar" Size="200" />
+       <Input Name="product_price" Type="decimal" Size="18,3" />
+       <Input Name="product_point" Type="float" />
+       <Input Name="product_tax_included_flg" Type="nvarchar" Size="1" />
+       <Input Name="product_tax_rate" Type="decimal" />
+       <Input Name="product_tax_round_type" Type="nvarchar" Size="20" />
+       <Input Name="product_price_pretax" Type="decimal" Size="18,3" />
+       <Input Name="product_price_ship" Type="decimal" />
+       <Input Name="item_quantity" Type="int" />
+       <Input Name="item_quantity_single" Type="int" />
+       <Input Name="item_price" Type="decimal" Size="18,3" />
+       <Input Name="item_price_tax" Type="decimal" Size="18,3" />
+       <Input Name="item_price_single" Type="decimal" Size="18,3" />
+     </Parameter>
+   </InsertOrderItem>
+
+   <!-- Delete yahoo order item -->
+   <DeleteOrderItem>
+     <Statement>
+       <![CDATA[
+        DELETE  w2_OrderItem
+         WHERE  w2_OrderItem.order_id = @order_id
+      ]]>
+     </Statement>
+     <Parameter>
+       <Input Name="order_id" Type="nvarchar" Size="30" />
+     </Parameter>
+   </DeleteOrderItem>
+
+</AddYahooOrderItem>

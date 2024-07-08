@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 会員ランク変更履歴系SQLサブステートメントXML(UserMemberRank_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<UserMemberRank_Sub>
+
+  <!-- 会員ランク更新履歴一覧取得用WHERE文 -->
+  <USERMEMBERRANKHIS_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (
+                    @user_id_like_escaped = '' 
+                    OR 
+                    w2_UserMemberRankHistory.user_id LIKE @user_id_like_escaped + '%' ESCAPE '#'
+                  )      -- ユーザーID
+                  AND
+                  (
+                    @before_rank_id = '' 
+                    OR 
+                    w2_UserMemberRankHistory.before_rank_id = @before_rank_id
+                  )    -- 更新前ランクID
+                  AND
+                  (
+                    @after_rank_id = '' 
+                    OR 
+                    w2_UserMemberRankHistory.after_rank_id = @after_rank_id
+                  )    -- 更新後ランクID
+                  AND
+                  (
+                    @date_created_from IS NULL 
+                    OR 
+                    w2_UserMemberRankHistory.date_created >= @date_created_from
+                  )            
+                  AND 
+                  (
+                    @date_created_to IS NULL 
+                    OR 
+                    w2_UserMemberRankHistory.date_created < @date_created_to
+                  )
+                )
+      ]]>
+    </Statement>
+  </USERMEMBERRANKHIS_SEARCH_WHERE>
+
+  <!-- 会員ランク更新履歴一覧取得用ORDER_BY -->
+  <USERMEMBERRANKHIS_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          w2_UserMemberRankHistory.history_no DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_UserMemberRankHistory.history_no ASC
+      ]]>
+    </Statement>
+  </USERMEMBERRANKHIS_SEARCH_ORDER_BY>
+  
+</UserMemberRank_Sub>

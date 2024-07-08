@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザーポイント系SQLステートメントXML(UserPoint.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<UserPoint>
+
+  <!-- ユーザーポイント出力情報一覧取得 -->
+  <GetUserPointListExport>
+    <Statement>
+      <![CDATA[
+        -- 本ポイント一覧取得し、ユーザーポイントテーブル変数に格納
+        WITH UserPoint_CTE
+        AS
+        (
+          SELECT  w2_UserPoint.user_id,
+                  w2_UserPoint.point_exp,
+                  SUM(w2_UserPoint.point) point
+            FROM  dbo.w2_UserPoint
+           WHERE  w2_UserPoint.point_type = '01'
+         GROUP BY w2_UserPoint.user_id, w2_UserPoint.point_type, w2_UserPoint.point_exp
+        ),
+        UserPointTemp_CTE
+        AS
+        (
+          SELECT  w2_UserPoint.user_id,
+                  SUM(w2_UserPoint.point) point_temp
+          FROM    dbo.w2_UserPoint
+          WHERE   w2_UserPoint.point_type = '00'
+         GROUP BY w2_UserPoint.user_id, w2_UserPoint.point_type
+        )
+        SELECT  w2_User.user_id,
+                w2_User.name,
+                UserPoint_CTE.point,
+                UserPointTemp_CTE.point_temp,
+                UserPoint_CTE.point_exp
+          FROM  w2_User 
+                LEFT JOIN UserPoint_CTE ON
+                (
+                  w2_User.user_id = UserPoint_CTE.user_id
+                )
+                LEFT JOIN UserPointTemp_CTE ON
+                (
+                  w2_User.user_id = UserPointTemp_CTE.user_id
+                )
+        [[ USERPOINT_SEARCH_WHERE ]]
+        [[ USERPOINT_EXPORT_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="select_point_kbn" Type="int" />
+    </Parameter>
+  </GetUserPointListExport>
+  
+  <!-- Hack削除予定 -->
+  <!-- ユーザーポイント情報取得 -->
+  <GetUserPoint>
+    <Statement>
+      <![CDATA[
+        SELECT 
+          w2_User.user_id, 
+          w2_User.name, 
+          CASE 
+            WHEN w2_UserPoint.point_kbn IS NULL THEN '01'  -- 通常ポイント
+            ELSE w2_UserPoint.point_kbn 
+          END AS point_kbn, 
+          w2_UserPoint.point_kbn_no, 
+          w2_UserPoint.point_type, 
+          w2_UserPoint.point, 
+          w2_UserPoint.effective_date
+          w2_UserPoint.point_exp, 
+          w2_UserPoint.kbn1  
+        FROM 
+            w2_User WITH (NOLOCK)
+            LEFT JOIN w2_UserPoint ON
+            (
+              w2_UserPoint.user_id = w2_User.user_id
+            )
+        WHERE 
+            w2_User.user_id = @user_id 
+        AND  
+            w2_UserPoint.point_kbn = @point_kbn 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetUserPoint>
+
+</UserPoint>

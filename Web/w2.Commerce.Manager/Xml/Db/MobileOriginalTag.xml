@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モバイルオリジナルタグ系SQLステートメントXML(MobileOriginalTag.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MobileOriginalTag>
+
+  <!-- モバイルオリジナルタグ一覧取得 -->
+  <GetMobileOriginalTagList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_MobileOriginalTag.orgtag_id), 0)
+          FROM  w2_MobileOriginalTag
+                [[ MOBILEORIGINALTAG_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_MobileOriginalTag.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_MobileOriginalTag.dept_id,
+                          w2_MobileOriginalTag.orgtag_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MOBILEORIGINALTAG_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MobileOriginalTag
+                          [[ MOBILEORIGINALTAG_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_MobileOriginalTag ON
+                (
+                  RowIndex.dept_id = w2_MobileOriginalTag.dept_id
+                  AND
+                  RowIndex.orgtag_id = w2_MobileOriginalTag.orgtag_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="orgtag_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="orgtag_name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+    </GetMobileOriginalTagList>
+
+    <!-- モバイルオリジナルタグ詳細取得 -->
+    <GetMobileOriginalTagDetail>
+      <Statement>
+        <![CDATA[      
+          SELECT  *
+            FROM  w2_MobileOriginalTag
+           WHERE  w2_MobileOriginalTag.dept_id = @dept_id
+             AND  w2_MobileOriginalTag.orgtag_id = @orgtag_id
+        ]]>
+      </Statement>
+      <Parameter>
+        <Input Name="dept_id" Type="nvarchar" Size="30" />
+        <Input Name="orgtag_id" Type="nvarchar" Size="30" />
+      </Parameter>
+    </GetMobileOriginalTagDetail>
+
+    <!-- モバイルオリジナルタグ登録 -->
+    <InsertMobileOriginalTag>
+      <Statement>
+        <![CDATA[
+        INSERT  w2_MobileOriginalTag
+            (            
+            dept_id,
+            orgtag_id,
+            orgtag_name,
+            orgtag_html,
+            date_created,
+            date_changed,
+            last_changed
+            )
+         VALUES  (
+            @dept_id,
+            @orgtag_id,
+            @orgtag_name,
+            @orgtag_html,
+            getdate(),
+            getdate(),
+            @last_changed
+            )
+      ]]>
+      </Statement>
+      <Parameter>
+        <Input Name="dept_id" Type="nvarchar" Size="30" />
+        <Input Name="orgtag_id" Type="nvarchar" Size="30" />
+        <Input Name="orgtag_name" Type="nvarchar" Size="30" />
+        <Input Name="orgtag_html" Type="ntext" />
+        <Input Name="last_changed" Type="nvarchar" Size="20" />
+      </Parameter>
+    </InsertMobileOriginalTag>
+
+    <!-- モバイルオリジナルタグ更新 -->
+    <UpdateMobileOriginalTag>
+      <Statement>
+        <![CDATA[
+          UPDATE  w2_MobileOriginalTag 
+             SET  w2_MobileOriginalTag.orgtag_id = @orgtag_id,
+                  w2_MobileOriginalTag.orgtag_name = @orgtag_name, 
+                  w2_MobileOriginalTag.orgtag_html = @orgtag_html, 
+                  w2_MobileOriginalTag.date_changed = getdate(), 
+                  w2_MobileOriginalTag.last_changed = @last_changed 
+           WHERE  w2_MobileOriginalTag.dept_id = @dept_id 
+             AND  w2_MobileOriginalTag.orgtag_id = @orgtag_id_old
+        ]]>
+      </Statement>
+      <Parameter>
+        <Input Name="dept_id" Type="nvarchar" Size="30" />
+        <Input Name="orgtag_id" Type="nvarchar" Size="30" />
+        <Input Name="orgtag_id_old" Type="nvarchar" Size="30" />
+        <Input Name="orgtag_name" Type="nvarchar" Size="30" />
+        <Input Name="orgtag_html" Type="ntext" />
+        <Input Name="last_changed" Type="nvarchar" Size="20" />
+      </Parameter>
+    </UpdateMobileOriginalTag>  
+  
+    <!-- モバイルオリジナルタグ削除 -->
+    <DeleteMobileOriginalTag>
+      <Statement>
+        <![CDATA[
+        DELETE
+          FROM  w2_MobileOriginalTag
+         WHERE  w2_MobileOriginalTag.dept_id = @dept_id
+           AND  w2_MobileOriginalTag.orgtag_id = @orgtag_id
+      ]]>
+      </Statement>
+      <Parameter>
+        <Input Name="dept_id" Type="nvarchar" Size="30" />
+        <Input Name="orgtag_id" Type="nvarchar" Size="30" />
+      </Parameter>
+    </DeleteMobileOriginalTag>
+
+    <!-- 重複チェック（モバイルオリジナルタグ登録時） -->
+    <CheckDuplicationInsertOrgtagId>
+      <Statement>
+        <![CDATA[
+            SELECT 
+                COUNT(orgtag_id) AS orgtag_count 
+            FROM 
+                w2_MobileOriginalTag 
+            WHERE 
+                w2_MobileOriginalTag.dept_id = @dept_id 
+            AND           
+                w2_MobileOriginalTag.orgtag_id = @orgtag_id
+            ]]>
+      </Statement>
+      <Parameter>
+        <Input Name="dept_id" Type="nvarchar" Size="30" />
+        <Input Name="orgtag_id" Type="nvarchar" Size="30" />
+      </Parameter>
+    </CheckDuplicationInsertOrgtagId>
+
+    <!-- 重複チェック（モバイルオリジナルタグ更新時） -->
+  <CheckDuplicationUpdateOrgtagId>
+    <Statement>
+      <![CDATA[
+        SELECT 
+            COUNT(orgtag_id) AS parts_count 
+        FROM 
+            w2_MobileOriginalTag 
+        WHERE 
+            w2_MobileOriginalTag.dept_id = @dept_id 
+        AND 
+            w2_MobileOriginalTag.orgtag_id = @orgtag_id
+        AND    
+            w2_MobileOriginalTag.orgtag_id != @orgtag_id_old
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="orgtag_id" Type="nvarchar" Size="30" />
+      <Input Name="orgtag_id_old" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationUpdateOrgtagId>
+  
+</MobileOriginalTag>

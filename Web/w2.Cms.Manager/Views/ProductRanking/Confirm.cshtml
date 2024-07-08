@@ -1,0 +1,269 @@
+﻿@*
+=========================================================================================================
+  Module      : 商品ランキング設定確認ページ(Confirm.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Extensions.Currency
+@using w2.App.Common.Option
+@using w2.Cms.Manager.Codes
+@using w2.Common.Util
+@{
+	ViewBag.Title = "商品ランキング設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+	var sessionWrapper = new SessionWrapper(this.Session);
+}
+@model w2.Cms.Manager.ViewModels.ProductRanking.ConfirmViewModel
+
+@helper TopBottomControls()
+{
+	using (Html.BeginForm("Confirm", Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_RANKING, new
+	{
+		this.Model.ProductRanking.RankingId,
+		this.Model.ActionStatus,
+	}, FormMethod.Post, new
+	{
+		name = "Confirm",
+	}))
+	{
+		if (Model.IsActionStatusDetail)
+		{
+			<input type="submit" name="BackList" value="  一覧へ戻る  " class="btn btn-main"/>
+			<input type="submit" name="Edit" value="  編集する  " class="btn btn-main">
+			<input type="submit" name="CopyInsert" value="  コピー新規登録する  " class="btn btn-main"/>
+			<input type="submit" name="Delete" value="  削除する  " onclick="return confirm('情報を削除してもよろしいですか？');" class="btn btn-main"/>
+		}
+		else
+		{
+			<input type="submit" name="BackEdit" value="  戻る  " class="btn btn-main"/>
+		}
+
+		if (Model.IsActionStatusUpdate)
+		{
+			<input type="submit" name="Update" value="  更新する  " class="btn btn-main">
+		}
+
+		if (Model.IsActionStatusInsert)
+		{
+			<input type="submit" name="Insert" value="  登録する  " class="btn btn-main">
+		}
+	}
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr id="trTitleProductTop" runat="server">
+	</tr>
+	<!--▽ 詳細 ▽-->
+	<tr><td><h1 class="page-title">商品ランキング設定</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	@if (Model.IsActionStatusDetail)
+	{
+		<tr id="trDetail" runat="server" Visible="False">
+		<td><h2 class="cmn-hed-h2">商品ランキング設定詳細</h2></td>
+		</tr>
+	}
+	else
+	{
+		<tr id="trConfirm" runat="server" Visible="False">
+			<td><h2 class="cmn-hed-h2">商品ランキング設定入力確認</h2></td>
+		</tr>
+	}
+	<tr>
+	<td>
+		<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+		<tr>
+		<td>
+		<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+		<tr>
+		<td align="center">
+		<table cellspacing="0" cellpadding="0" border="0">
+		<tr>
+			<td>
+				<div class="action_part_top">
+					@TopBottomControls()
+				</div>
+				
+				<table class="detail_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					<tr>
+						<td class="detail_title_bg" align="center" colspan="2">基本情報</td>
+					</tr>
+					<tr id="trDispRankingId" runat="server">
+						<td class="detail_title_bg" align="left" width="25%">商品ランキングID</td>
+						<td class="detail_item_bg" align="left">
+							@Model.ProductRanking.RankingId
+						</td>
+					</tr>
+					<tr>
+						<td class="detail_title_bg" align="left">集計タイプ</td>
+						<td class="detail_item_bg" align="left">
+							@(ValueText.GetValueText(
+								Constants.TABLE_PRODUCTRANKING,
+								Constants.FIELD_PRODUCTRANKING_TOTAL_TYPE,
+								Model.ProductRanking.TotalType))
+						</td>
+					</tr>
+					<tr>
+						<td class="detail_title_bg" align="left">説明文</td>
+						<td class="detail_item_bg" align="left">
+							@Model.Desc
+						</td>
+					</tr>
+					<!-- ▽集計タイプが自動の場合に表示▽ -->
+					@if (Model.ProductRanking.IsTotalTypeAuto)
+					{
+						<tbody runat="server" id="tbodyTotalTypeAutoArea">
+						<tr>
+							<td class="detail_title_bg" align="left">カテゴリID指定</td>
+							<td class="detail_item_bg" align="left">
+								@Model.ProductRanking.CategoryId
+							</td>
+						</tr>
+						<tr>
+							<td class="detail_title_bg" align="left">カテゴリID除外指定</td>
+							<td class="detail_item_bg" align="left">
+								@Model.ProductRanking.ExcludeCategoryIds
+							</td>
+						</tr>
+						@if (w2.App.Common.Constants.PRODUCT_BRAND_ENABLED)
+						{
+							<tr>
+								<td class="detail_title_bg" align="left">ブランド指定</td>
+								<td class="detail_item_bg" align="left">
+									@{
+										var brandIdText = Model.ProductRanking.IsBrandKbnValid
+										? string.Format("ブランドID：( {0} )", Model.ProductRanking.BrandId)
+										: "";
+									}
+									@(Model.ProductRanking.IsTotalTypeAuto
+										? ValueText.GetValueText(
+											Constants.TABLE_PRODUCTRANKING,
+											Constants.FIELD_PRODUCTRANKING_BRAND_KBN,
+											Model.ProductRanking.BrandKbn)
+										: "-")
+									@(Model.ProductRanking.IsBrandKbnValid ? string.Format("ブランドID：( {0} )", Model.ProductRanking.BrandId) : "")
+								</td>
+							</tr>
+						}
+						<tr>
+							<td class="detail_title_bg" align="left">在庫切れ商品</td>
+							<td class="detail_item_bg" align="left">
+								@(Model.ProductRanking.IsTotalTypeAuto
+									? ValueText.GetValueText(
+										Constants.TABLE_PRODUCTRANKING,
+										Constants.FIELD_PRODUCTRANKING_STOCK_KBN,
+										Model.ProductRanking.StockKbn)
+									: "-")
+							</td>
+						</tr>
+						<tr>
+							<td class="edit_title_bg" align="left" width="200">集計期間</td>
+							<td class="edit_item_bg" align="left">
+								@{ var totalFromTo = Model.ProductRanking.IsTotalKbnPeriod ? Model.ProductRanking.TotalDate : string.Format("{0}日前～前日まで", Model.ProductRanking.TotalDays); }
+								@(Model.ProductRanking.IsTotalTypeAuto
+									? ValueText.GetValueText(
+										Constants.TABLE_PRODUCTRANKING,
+										Constants.FIELD_PRODUCTRANKING_TOTAL_KBN,
+										Model.ProductRanking.TotalKbn)
+									: "-")
+								@totalFromTo
+							</td>
+						</tr>
+						<tr>
+							<td class="detail_title_bg" align="left">有効フラグ</td>
+							<td class="detail_item_bg" align="left">
+								@(ValueText.GetValueText(
+									Constants.TABLE_PRODUCTRANKING,
+									Constants.FIELD_PRODUCTRANKING_VALID_FLG,
+									Model.ProductRanking.ValidFlg))
+							</td>
+						</tr>
+						</tbody>
+					}
+					<!-- △集計タイプが自動の場合に表示△ -->
+					@if (Model.IsActionStatusDetail)
+					{
+						<tr id="trDateCreated" runat="server" Visible="False">
+							<td class="detail_title_bg" align="left" width="250">作成日</td>
+							<td class="detail_item_bg" align="left">@Model.DateCreated</td>
+						</tr>
+						<tr id="trDateChanged" runat="server" Visible="False">
+							<td class="detail_title_bg" align="left" width="250">更新日</td>
+							<td class="detail_item_bg" align="left">@Model.DateChanged</td>
+						</tr>
+						<tr id="trLastChanged" runat="server" Visible="False">
+							<td class="detail_title_bg" align="left" width="250">最終更新者</td>
+							<td class="detail_item_bg" align="left">@Model.LastChanged</td>
+						</tr>
+					}
+				</table>
+				<br />
+				<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					<tr>
+						<td class="edit_title_bg" align="center" width="70">ランク</td>
+						<td class="edit_title_bg" align="center" width="190">商品ID</td>
+						<td class="edit_title_bg" align="left" width="298">商品名</td>
+						<td class="edit_title_bg" align="right" width="180">
+							商品表示価格（@TaxCalculationUtility.GetTaxTypeText()）<br/>(商品表示特別価格（@TaxCalculationUtility.GetTaxTypeText()）)
+						</td>
+						<td class="edit_title_bg" align="center" width="80">固定フラグ</td>
+					</tr>
+					@{ var index = 0;}
+					@foreach (var item in this.Model.ProductRankingItems)
+					{
+						index++;
+						<tr>
+							<td class="edit_item_bg" align="center">
+								@index 位
+							</td>
+							<td class="edit_item_bg" align="center">
+								@item.ProductId
+							</td>
+							<td class="edit_item_bg" align="left">
+								@if (item.ProductId != "")
+								{
+									@item.Name
+								}
+							</td>
+							<td class="edit_item_bg" align="right">
+								@if (item.ProductId != "")
+								{
+									@item.DisplayPrice.ToPriceString(true)
+									if (string.IsNullOrEmpty(item.DisplaySpecialPrice) == false)
+									{
+										<br/>
+										<p>(@item.DisplaySpecialPrice.ToPriceString(true))</p>
+									}
+								}
+							</td>
+							<td class="edit_item_bg" align="center">
+							@if (item.ProductId != "")
+							{
+								@(string.IsNullOrEmpty(item.RankingId)
+									? ""
+									: ValueText.GetValueText(
+										Constants.TABLE_PRODUCTRANKINGITEM,
+										Constants.FIELD_PRODUCTRANKINGITEM_FIXATION_FLG,
+										item.FixationFlg))
+							}
+							</td>
+						</tr>
+					}
+				</table>
+				<div class="action_part_bottom">
+					@TopBottomControls()
+				</div>
+			</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+	</td>
+	</tr>
+	<!--△ 詳細 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>

@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : アフィリエイト連携ログ系SQLステートメントXML(AffiliateCoopLog.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2011 All Rights Reserved.
+=========================================================================================================
+-->
+<AffiliateCoopLog>
+
+  <!-- アフィリエイト連携ログ該当件数取得 -->
+  <GetAffiliateReportCount>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        SELECT  ISNULL(COUNT(w2_AffiliateCoopLog.log_no), 0) AS row_count
+          FROM  w2_AffiliateCoopLog
+                [[ AFFILIATEREPORT_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_kbn" Type="nvarchar" Size="50" />
+      <Input Name="master_id_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="date_created_from" Type="varchar" Size="20" />
+      <Input Name="date_created_to" Type="varchar" Size="20" />
+      <Input Name="coop_data11" Type="int" />
+    </Parameter>
+  </GetAffiliateReportCount>
+
+  <!-- アフィリエイト連携ログ一覧取得 -->
+  <GetAffiliateReportList>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  w2_AffiliateCoopLog.*
+          FROM  (
+                  SELECT  w2_AffiliateCoopLog.log_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ AFFILIATEREPORT_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_AffiliateCoopLog
+                          [[ AFFILIATEREPORT_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_AffiliateCoopLog ON
+                (
+                  RowIndex.log_no = w2_AffiliateCoopLog.log_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_kbn" Type="nvarchar" Size="50" />
+      <Input Name="master_id_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="date_created_from" Type="varchar" Size="20" />
+      <Input Name="date_created_to" Type="varchar" Size="20" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="coop_data11" Type="int" />
+    </Parameter>
+  </GetAffiliateReportList>
+
+  <!-- アフィリエイト連携ログ情報取得（ログNoから） -->
+  <GetAffiliateReportFromLogNo>
+    <Statement>
+      <![CDATA[
+          SELECT  w2_AffiliateCoopLog.*
+            FROM  w2_AffiliateCoopLog
+           WHERE  w2_AffiliateCoopLog.log_no = @log_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="log_no" Type="int" />
+    </Parameter>
+  </GetAffiliateReportFromLogNo>
+
+    <!-- 
+    アフィリエイト連携ログ情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetAffiliateCoopLogMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  (
+                  SELECT  w2_AffiliateCoopLog.log_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ AFFILIATEREPORT_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_AffiliateCoopLog
+                          [[ AFFILIATEREPORT_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_AffiliateCoopLog ON
+                (
+                  RowIndex.log_no = w2_AffiliateCoopLog.log_no
+                )
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_kbn" Type="nvarchar" Size="50" />
+      <Input Name="master_id_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="date_created_from" Type="varchar" Size="20" />
+      <Input Name="date_created_to" Type="varchar" Size="20" />
+      <Input Name="coop_data11" Type="int" />
+    </Parameter>
+  </GetAffiliateCoopLogMaster>
+  
+</AffiliateCoopLog>

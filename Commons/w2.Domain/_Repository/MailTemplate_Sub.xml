@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メールテンプレートマスタ系SQLサブステートメントXML (MailTemplate_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<MailTemplate_Sub>
+
+  <!-- 検索用WHERE文 -->
+  <MAILTEMPLATE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_MailTemplate.shop_id = @shop_id
+           AND  (
+                  @srch_key = 0 AND w2_MailTemplate.mail_id = @srch_word    -- ID
+                  OR
+                  @srch_key = 1 AND w2_MailTemplate.mail_name like + '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- 商品名
+                  OR
+                  @srch_key = 99 AND  @srch_word = ''        -- 条件なし
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word" Type="nvarchar" Size="4000" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </MAILTEMPLATE_SEARCH_WHERE>
+  
+  <!-- 検索用ORDER BY -->
+  <MAILTEMPLATE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_MailTemplate.mail_id
+            WHEN  2 THEN w2_MailTemplate.mail_name
+            ELSE '1'
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  4 THEN w2_MailTemplate.date_created
+            WHEN  6 THEN w2_MailTemplate.date_changed
+            ELSE NULL
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_MailTemplate.mail_id
+            WHEN  3 THEN w2_MailTemplate.mail_name
+            ELSE '1'
+          END 
+          DESC,
+          CASE @sort_kbn
+            WHEN  5 THEN w2_MailTemplate.date_created
+            WHEN  7 THEN w2_MailTemplate.date_changed
+            ELSE NULL
+          END
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_MailTemplate.shop_id ASC, w2_MailTemplate.mail_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </MAILTEMPLATE_SEARCH_ORDER_BY>
+
+</MailTemplate_Sub>

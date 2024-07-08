@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メッセージ集計SQLサブステートメントXML(CsReportMessage_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsReportMessage_Sub>
+
+  <!-- レポート取得 WHERE -->
+  <GetReport_Where>
+    <Statement>
+      <![CDATA[
+        WHERE  w2_CsMessage.dept_id = @dept_id
+          AND  (
+                (
+                  NOT (w2_CsMessage.media_kbn = 'MAIL' AND w2_CsMessage.direction_kbn = 'REC')
+                  AND
+                  w2_CsMessage.message_status = 'DONE'
+                  AND
+                  w2_CsMessage.inquiry_reply_date >= @inquiry_reply_date_bgn
+                  AND
+                  w2_CsMessage.inquiry_reply_date <= @inquiry_reply_date_end                   
+                )
+                OR
+                (
+                  (w2_CsMessage.media_kbn = 'MAIL' AND w2_CsMessage.direction_kbn = 'REC')
+                  AND
+                  w2_CsMessage.message_status = 'RECEIVED'
+                  AND
+                  w2_CsMessage.date_created >= @inquiry_reply_date_bgn
+                  AND
+                  w2_CsMessage.date_created <= @inquiry_reply_date_end                   
+                )
+              )
+         AND  w2_CsMessage.valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="inquiry_reply_date_bgn" Type="datetime" />
+      <Input Name="inquiry_reply_date_end" Type="datetime" />
+    </Parameter>
+  </GetReport_Where>
+
+</CsReportMessage_Sub>

@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+--w2_OrderItem
+UPDATE w2_OrderItem SET product_tax_rate = 5 WHERE product_tax_rate is null
+GO
+ALTER TABLE w2_OrderItem ALTER COLUMN product_tax_rate decimal(5,2) not null
+GO
+ALTER TABLE w2_OrderItem ADD CONSTRAINT DF_w2_OrderItem_product_tax_rate DEFAULT 0 FOR product_tax_rate
+GO
+
+UPDATE w2_OrderItem SET product_price_pretax = product_price WHERE product_price_pretax is null
+GO
+ALTER TABLE w2_OrderItem ALTER COLUMN product_price_pretax decimal not null
+GO
+ALTER TABLE w2_OrderItem ADD CONSTRAINT DF_w2_OrderItem_product_price_pretax DEFAULT 0 FOR product_price_pretax
+GO
+
+UPDATE w2_OrderItem SET product_tax_round_type = '' WHERE product_tax_round_type is null
+GO
+ALTER TABLE w2_OrderItem ALTER COLUMN product_tax_round_type nvarchar(20) not null
+GO
+ALTER TABLE w2_OrderItem ADD CONSTRAINT DF_w2_OrderItem_product_tax_round_type DEFAULT N'ROUNDDOWN' FOR product_tax_round_type
+GO
+UPDATE w2_OrderItem SET product_tax_round_type = CASE product_tax_round_type WHEN '1' THEN 'ROUNDDOWN' WHEN '2' THEN 'ROUNDUP' ELSE 'ROUNDOFF' END
+GO
+
+--w2_Product
+UPDATE w2_Product SET tax_rate = 0 WHERE tax_rate is null
+GO
+ALTER TABLE w2_Product ALTER COLUMN tax_rate decimal(5,2) not null
+GO
+ALTER TABLE w2_Product ADD CONSTRAINT DF_w2_Product_tax_rate DEFAULT 0 FOR tax_rate
+GO
+
+UPDATE w2_Product SET price_pretax = 0 WHERE price_pretax is null
+GO
+ALTER TABLE w2_Product ALTER COLUMN price_pretax decimal not null
+GO
+ALTER TABLE w2_Product ADD CONSTRAINT DF_w2_Product_price_pretax DEFAULT 0 FOR price_pretax
+GO
+
+UPDATE w2_Product SET tax_round_type = '' WHERE tax_round_type is null
+GO
+ALTER TABLE w2_Product ALTER COLUMN tax_round_type nvarchar(20) not null
+GO
+ALTER TABLE w2_Product ADD CONSTRAINT DF_w2_Product_tax_round_type DEFAULT N'ROUNDDOWN' FOR tax_round_type
+GO
+UPDATE w2_Product SET tax_round_type = CASE tax_round_type WHEN '1' THEN 'ROUNDDOWN' WHEN '2' THEN 'ROUNDUP' ELSE 'ROUNDOFF' END
+GO
+
+--w2_WorkProduct
+UPDATE w2_WorkProduct SET tax_rate = 0 WHERE tax_rate is null
+GO
+ALTER TABLE w2_WorkProduct ALTER COLUMN tax_rate decimal(5,2) not null
+GO
+ALTER TABLE w2_WorkProduct ADD CONSTRAINT DF_w2_WorkProduct_tax_rate DEFAULT 0 FOR tax_rate
+GO
+
+UPDATE w2_WorkProduct SET price_pretax = 0 WHERE price_pretax is null
+GO
+ALTER TABLE w2_WorkProduct ALTER COLUMN price_pretax decimal not null
+GO
+ALTER TABLE w2_WorkProduct ADD CONSTRAINT DF_w2_WorkProduct_price_pretax DEFAULT 0 FOR price_pretax
+GO
+
+UPDATE w2_WorkProduct SET tax_round_type = '' WHERE tax_round_type is null
+GO
+ALTER TABLE w2_WorkProduct ALTER COLUMN tax_round_type nvarchar(20) not null
+GO
+ALTER TABLE w2_WorkProduct ADD CONSTRAINT DF_w2_WorkProduct_tax_round_type DEFAULT N'ROUNDDOWN' FOR tax_round_type
+GO
+UPDATE w2_WorkProduct SET tax_round_type = CASE tax_round_type WHEN '1' THEN 'ROUNDDOWN' WHEN '2' THEN 'ROUNDUP' ELSE 'ROUNDOFF' END
+GO
+
+--w2_Order
+ALTER TABLE [w2_Order] ADD [order_tax_included_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1')
+GO
+ALTER TABLE [w2_Order] ADD [order_tax_rate] [decimal] (5,2) NOT NULL DEFAULT (0)
+GO
+ALTER TABLE [w2_Order] ADD [order_tax_round_type] [nvarchar] (20) NOT NULL DEFAULT (N'ROUNDDOWN')
+GO
+UPDATE w2_Order SET order_tax_rate = 5
+GO
+--UPDATE w2_Order SET order_price_tax = order_price_total - Floor((order_price_total / 1.05) + 0)
+--GO
+
+--w2_DispSummaryAnalysis
+UPDATE w2_DispSummaryAnalysis SET reserved2 = counts - Floor((counts / 1.05) + 0) WHERE summary_kbn = 'pct_buyprice'
+GO
+UPDATE w2_DispSummaryAnalysis SET reserved2 = counts - Floor((counts / 1.05) + 0) WHERE summary_kbn = 'pct_buyprice_pc'
+GO
+UPDATE w2_DispSummaryAnalysis SET reserved2 = counts - Floor((counts / 1.05) + 0) WHERE summary_kbn = 'pct_buyprice_mob'
+GO
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

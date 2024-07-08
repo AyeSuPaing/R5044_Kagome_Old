@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Googleショッピング連携バッチ用ステートメントXML(Statements.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<Statements>
+
+  <!-- 対象商品一覧を取得する -->
+  <GetProductList>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  w2_Product.*,
+                sum_ProductStock.stock
+          FROM  w2_Product
+    -- 在庫管理をしない商品の登録は禁止されているため、INNER JOINで取り除く
+    INNER JOIN  (
+                  SELECT  w2_ProductStock.product_id,
+                          -- バリエーションの登録が出来ないため、バリエーションの在庫を合算する
+                          SUM
+                          (
+                            CASE
+                              -- 在庫数がゼロ以下の場合、合算時にマイナスにならない様ゼロとする。
+                              WHEN w2_ProductStock.stock < 0 THEN 0
+                              ELSE w2_ProductStock.stock
+                            END
+                          ) AS stock
+                    FROM  w2_ProductStock
+                GROUP BY  w2_ProductStock.product_id
+                ) AS sum_ProductStock
+            ON  (
+                  w2_Product.product_id = sum_ProductStock.product_id
+                )
+         WHERE  w2_Product.google_shopping_flg = '1'      -- Googleショッピング連携有効
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.display_from <= GETDATE()      -- 商品表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= GETDATE()))
+           AND  w2_Product.sell_from <= GETDATE()         -- 商品販売期間内
+           AND  ((w2_Product.sell_to IS NULL) OR (w2_Product.sell_to >= GETDATE()))
+           AND  w2_Product.valid_flg = '1'                -- 有効
+        ORDER BY  w2_Product.shop_id ASC, w2_Product.product_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetProductList>
+
+</Statements>

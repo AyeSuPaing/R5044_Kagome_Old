@@ -1,0 +1,1147 @@
+﻿@*
+=========================================================================================================
+  Module      : List (List.cshtml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Web.Page
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.Common
+@using w2.Cms.Manager.ViewModels.ScoringSale
+@using w2.Cms.Manager.ViewModels.Shared
+@model w2.Cms.Manager.ViewModels.ScoringSale.ScoringSaleQuestionListViewModel
+
+<!-- Scoring sale question list area -->
+@helper ScoringSaleQuestionListArea()
+{
+	<div class="list">
+		<div class="list-head">
+			<div class="list-head-row">
+				<div class="list-style-switch" style="visibility: hidden;">
+					<div class="list-style-switch-inner">
+						<input type="radio" name="list-style" id="list-style-2" value="thumb" checked="" />
+						<label for="list-style-2" class="btn-switch">
+							<span class="icon icon-thumbnail"></span><span class="label hide-list-detail">@CommonPage.ReplaceTag("@@ScoringSale.thumbnail_text.name@@")</span>
+						</label>
+						<input type="radio" name="list-style" id="list-style-1" value="list" />
+						<label for="list-style-1" class="btn-switch">
+							<span class="icon icon-list"></span><span class="label hide-list-detail">@CommonPage.ReplaceTag("@@ScoringSale.list_text.name@@")</span>
+						</label>
+					</div>
+				</div>
+				<div class="list-head-col hide-list-detail w25">
+					<p>@CommonPage.ReplaceTag("@@ScoringSaleQuestion.list_head.score_axis_title.name@@")</p>
+				</div>
+				<div class="list-head-col hide-list-detail w25">
+					<p>@CommonPage.ReplaceTag("@@ScoringSaleQuestion.list_head.date_changed.name@@")</p>
+				</div>
+			</div>
+		</div>
+		<div class="list-content custom-scroll-area">
+			<!-- ko foreach: ScoringSaleQuestionList -->
+			<div class="list-row" data-list-id="1-1" data-bind="attr: { id: $data.QuestionId }">
+				<div class="list-col">
+					<div class="list-col-inner-row">
+						<div class="list-col-title">
+							<div class="list-col-inner">
+								<p class="list-col-title-label line-clamp ta-left">
+									<a data-bind="attr: { href: 'javascript:scoringSaleQuestionListPage.set_detail_datas(\'' + $data.QuestionId + '\')' }, text: $data.QuestionTitle" class="list-col-title-a"></a>
+								</p>
+							</div>
+						</div>
+					</div>
+					<div class="list-col-inner-row hide-list-detail hide-style-list">
+						<div class="list-col-url">
+							<a data-bind="text: $data.QuestionId" target="_blank"></a>
+						</div>
+					</div>
+				</div>
+				<div class="list-col w25 hide-list-detail line-clamp">
+					<p data-bind="text: $data.ScoreAxisTitle"></p>
+				</div>
+				<div class="list-col w25 hide-list-detail">
+					<p data-bind="text: $data.DateChanged1"></p>
+					<p data-bind="text: $data.DateChanged2"></p>
+				</div>
+			</div>
+			<!-- /ko -->
+			<br />
+		</div>
+	</div>
+}
+
+<!-- Scoring sale question list tool area -->
+@helper ScoringSaleQuestionListToolArea()
+{
+	<div class="list-tools">
+		<div class="list-tools-row">
+			<div class="list-tools-col ta-left">
+				<div class="keyword-search">
+					<input id="search_keyword" type="text" placeholder="@CommonPage.ReplaceTag("@@ScoringSale.management_name_text.name@@")" class="keyword-search-input" data-bind="textInput: SearchWord" />
+					<a href="javascript:scoringSaleQuestionListPage.get_scoring_sale_question_list()" class="keyword-search-submit">
+						<span class="icon-search"></span>
+					</a>
+				</div>
+			</div>
+			<div class="list-tools-col ta-right">
+				<button id="lp-new-register" class="btn btn-main btn-size-m" type="button" onclick="scoringSaleQuestionListPage.open_new_page();">
+					<span class="icon icon-plus"></span>
+					<span class="hide-list-detail">@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.create.name@@")</span>
+				</button>
+			</div>
+		</div>
+	</div>
+}
+
+<!-- Page detail area -->
+@helper PageDetailArea()
+{
+	<div class="main-content-detail-inner">
+		<a class="main-content-detail-btn-close"><span class="icon icon-close"></span>@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.close.name@@")</a>
+
+		<div class="main-content-detail-head">
+			<div class="main-content-detail-head-title h2">
+				<input name="input.QuestionTitle" data-bind="textInput: QuestionTitle" type="text" placeholder="@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.set_management_name_text.name@@")" />
+				<input type="hidden" class="QuestionId" name="input.QuestionId" data-bind="value: QuestionId" value="" />
+			</div>
+			<div class="main-content-detail-head-main-actions">
+				<input type="button" name="Update" onclick="javascript: scoringSaleQuestionListPage.update()" class="btn btn-main btn-size-l" data-bind=" visible: IsModify" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.update.name@@")" />
+				<input type="button" name="Update" onclick="javascript: scoringSaleQuestionListPage.register()" class="btn btn-main btn-size-l" data-bind="	visible: IsRegister" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.register.name@@")" />
+				<div class="dropdown" data-bind="visible: IsModify">
+					<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle">
+						<span class="icon-dots"></span>
+					</a>
+					<div class="dropdown-menu">
+						<a class="dropdown-menu-item" href="javascript:scoringSaleQuestionListPage.copy_new()">@CommonPage.ReplaceTag("@@ScoringSale.duplicate_create_scoring_sale_text.name@@")</a>
+						<a class="dropdown-menu-item" href="javascript:scoringSaleQuestionListPage.delete()">@CommonPage.ReplaceTag("@@ScoringSale.delete_scoring_sale_text.name@@")</a>
+						<a class="dropdown-menu-item" href="javascript:scoringSaleQuestionListPage.reset()">@CommonPage.ReplaceTag("@@ScoringSale.reset_scoring_sale_text.name@@")</a>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="main-content-detail-body">
+			<div class="feature-page-element-head" style="justify-content: flex-start; border-bottom: none; padding-bottom: 0; padding-left: 0;">
+				<h3 style="margin: 0;">@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.setting_basic.name@@")</h3>
+			</div>
+			<div class="feature-page-element-head" style="justify-content: flex-start; border-bottom: none;">
+				<div class="feature-page-element-head-left" style="width: 100%; padding-right: 20px;">
+					<div class="form-element-group-title" style="min-width: 110px;">
+						<label>@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.setting_basic.score_axis_label.name@@")<span class="notice">*</span></label>
+					</div>
+					<div class="form-element-group-content" style="width: 100%; margin-left: 40px">
+						<div class="access-authority-setting-period-info">
+							<div style="margin-top: 5px; word-break: break-all;" data-bind="text: $data.ScoreAxis().ScoreAxisTitle"></div>
+							<a href="javascript:void(0);" style="margin: 5px 0 0 10px;" data-bind="click: $data.open_modal_score_axis, visible: IsRegister, class: scoringSaleQuestionListPage.score_axis_button_class($data.ScoreAxis())">
+								<div data-bind="html: scoringSaleQuestionListPage.score_axis_button_text($data.ScoreAxis())"></div>
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="feature-page-element-head" style="justify-content: flex-start; border-bottom: none;">
+				<div class="feature-page-element-head-left" style="width: 100%; padding-right: 20px;">
+					<div class="form-element-group-title" style="min-width: 150px;">
+						<label>@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.setting_basic.answer_type_label.name@@")<span class="notice">*</span></label>
+					</div>
+					<div class="form-element-group-content" style="width: 100%;">
+						<div class="feature-type-select" style="justify-content: flex-start;">
+							<!-- ko foreach: AnswerTypeSettings -->
+							<input data-bind="attr: { id: 'answer-type-' + $index() }, checked: $root.AnswerType, value: $data.Key" type="radio" name="AnswerType" />
+							<label data-bind="attr: { for: 'answer-type-' + $index() }" class="feature-type-select-item" style="width: 220px; height: 163px;">
+								<div class="feature-type-select-item-img" style="width: 261px; height: 130px;">
+									<img data-bind="attr: { src: '@Constants.PATH_ROOT_CMS' + 'Images/QuestionSetting/' + $data.Key + '.jpg', alt: $data.Value}" style="height: 133px; display: block; margin-left: auto; margin-right: auto;">
+								</div>
+								<dl class="feature-type-select-item-text" style="width: 100%; text-align: center; font-size: 15px;">
+									<dt data-bind="text: $data.Value"></dt>
+								</dl>
+							</label>
+							<!-- /ko -->
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="feature-page-element-head" style="justify-content: flex-start; border-bottom: none; padding-bottom: 0; padding-left: 0;">
+				<h3 style="margin: 0;">@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.setting_question.name@@")</h3>
+			</div>
+			<div class="feature-page-element-head" style="justify-content: flex-start; border-bottom: none;">
+				<div class="feature-page-element-head-left" style="padding-right: 20px; width: 100%">
+					<div class="form-element-group-title" style="width: 90px;">
+						<label>@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.setting_question.question_statement_label.name@@")<span class="notice">*</span></label>
+					</div>
+					<div class="form-element-group-content" style="padding-left: 55px; width: 100%">
+						<input data-bind="textInput: QuestionStatement" name="QuestionStatement" style="width: 100%;" type="text" placeholder="@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.set_question_text.name@@")" />
+					</div>
+				</div>
+			</div>
+			<div class="feature-page-element-head" style="justify-content: flex-start; border-bottom: none; padding-bottom: 0; padding-left: 0;">
+				<h3 style="margin: 0;">@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.setting_choice.name@@")</h3>
+			</div>
+			<div class="feature-page-element" style="border: none;">
+				<div class="feature-page-element-content">
+					<div class="feature-item-list">
+						<div class="form-element-group form-element-group-vertical">
+							<div class="form-element-group-content">
+								<div class="feature-selected-item-list" data-bind="visible: $data.ScoringSaleQuestionChoiceList().length > 0">
+									<div style="overflow: auto;" class="feature-selected-item-list-body ui-sortable" data-bind="foreach: $data.ScoringSaleQuestionChoiceList">
+										<div class="feature-selected-item-list-item list-row" data-bind="attr: { dataBranchNo: BranchNo }, visible: scoringSaleQuestionListPage.is_visible_choice($data)">
+											<div style="width: 7%;" class="list-col-drag ui-sortable-handle">
+												<span class="icon-drag"></span>
+											</div>
+											<div style="width: 100%;">
+												<div data-bind="visible: scoringSaleQuestionListPage.is_answer_type_image($root.AnswerType())">
+													<div style="display: flex; align-items: center;">
+														<div class="form-element-group-title" style="min-width: 132px;">
+															<h5 style="font-weight: normal;">@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.setting_choice.question_choice_image_label.name@@")<span class="notice">*</span></h5>
+														</div>
+														<div class="uploadImage1" style="width: 100%; margin-top: 15px;">
+															<div class="image-upload-content" data-bind="fileDrop: { drop: DropFile, isdrop: IsDropFile }">
+																<div class="image-upload-content-drag">
+																	<div class="image-upload-content-block-wrapper" data-bind="visible: $data.ImageSrc() != ''">
+																		<div class="image-upload-content-block">
+																			<div class="image-upload-content-block-image">
+																				<img data-bind="attr: { src: ImageSrc }" alt="ScoringSaleQuestionChoiceImage" class="existing_img">
+																			</div>
+																			<div class="image-upload-content-block-control">
+																				<dl>
+																					<dt data-bind="text: scoringSaleQuestionListPage.get_file_name_image($data)"></dt>
+																				</dl>
+																				<button type="button" class="btn btn-main btn-size-s" data-bind="click: function (data, event) { scoringSaleQuestionListPage.remove_image(data); }">削除</button>
+																			</div>
+																		</div>
+																	</div>
+																	<div id="uploadedImage"></div>
+																	<p class="image-upload-content-drag-text">@CommonPage.ReplaceTag("@@ScoringSale.drag_image_file_text.name@@")&amp;@CommonPage.ReplaceTag("@@ScoringSale.drop_or_select_image_text.name@@")</p>
+																	<div class="image-upload-content-drag-btns">
+																		<label class="btn btn-main btn-size-m">
+																			@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.select_image.name@@")
+																			<input type="file" name="upload_img" class="upload_img" style="display: none;" data-bind="fileUpload: { upload: UploadFile, isdrop: IsDropFile }" />
+																		</label>
+																		<p class="image-upload-content-drag-btns-text">
+																			@CommonPage.ReplaceTag("@@ScoringSale.or_text.name@@")
+																			<a href="javascript:void(0)" class="btn btn-main btn-size-m" data-bind="click: function (data, event) { scoringSaleQuestionListPage.show_image_list_modal(data); }">@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.select_image_from_list.name@@")</a>
+																		</p>
+																	</div>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div style="display: flex; align-items: center;">
+													<div class="form-element-group-title" style="min-width: 132px;">
+														<h5 style="font-weight: normal;">@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.setting_choice.question_choice_label.name@@")<span class="notice">*</span></h5>
+													</div>
+													<div class="form-element-group-content">
+														<input data-bind="textInput: QuestionChoiceStatement" name="QuestionChoiceStatement" type="text" style="width: 100%;" placeholder="@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.set_choice_text.name@@")" />
+													</div>
+												</div>
+												<div style="display: flex;">
+													<div class="form-element-group-title" style="min-width: 110px;">
+														<h5 style="font-weight: normal;">@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.setting_choice.setting_score_label.name@@")<span class="notice">*</span></h5>
+													</div>
+													<div class="form-element-group-content">
+														<div style="overflow-x: visible; overflow-y: hidden;">
+															<ul style="list-style-type: none; text-align: center; display: flex; flex-wrap: wrap; margin-bottom: 15px;" data-bind="foreach: Items">
+																<li style="margin-left: 10px; width: 80px;">
+																	<div>
+																		<p data-bind="text: AxisName" style="text-overflow: ellipsis; overflow: hidden; width: 80px; white-space: nowrap;"></p>
+																		<input data-bind="textInput: AxisAdditional" type="text" style="width: 50px" />
+																	</div>
+																</li>
+															</ul>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div style="width: 10%; cursor: pointer; text-align: center;">
+												<span class="icon icon-close" data-bind="click: function (data, event) { scoringSaleQuestionListPage.remove_scoring_sale_question_choice(data); }"></span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="feature-item-list-btn">
+							<a href="javascript:void(0);" data-bind="visible: $root.is_visible_add_choice($data), click: function (data, event) { scoringSaleQuestionListPage.add_scoring_sale_question_choice(data); }" class="btn btn-sub btn-size-m">@CommonPage.ReplaceTag("@@ScoringSaleQuestion.detail.setting_choice.add_choice_lable.name@@")</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+<!-- Score axis modal -->
+@Html.Partial("_ScoreAxisModal")
+
+<!-- Scoring sale question choice list image modal -->
+@helper ScoringSaleQuestionChoiceListImageModal()
+{
+	<div class="modal-content-hide">
+		@Html.Partial(Constants.CMS_PARTIALVIEWNAME_SCORING_SALE_IMAGE_LIST_MODAL)
+	</div>
+}
+
+<a href="javascript:void(0)" class="list-menu-btn">
+	<span class="icon icon-menu"></span>
+</a>
+
+<div class="main-content-list">
+	<!-- Scoring sale question list tool area -->
+	@ScoringSaleQuestionListToolArea()
+	<!-- Scoring sale question list area -->
+	@ScoringSaleQuestionListArea()
+</div>
+
+<div class="main-content-detail">
+	<!-- Page detail area -->
+	@PageDetailArea()
+</div>
+
+<!-- Scoring sale question choice list image modal -->
+@ScoringSaleQuestionChoiceListImageModal()
+
+<script type="text/javascript">
+	$(function () {
+		list.ini();
+		list_group_toggle.ini();
+		dropdown_toggle.ini();
+		custom_scroll.ini();
+		page_url_edit.ini();
+	});
+
+	var scoringSaleQuestionListPage = (function () {
+
+		// Dragover for event
+		function dragover(_e) {
+			var e = _e;
+			if (_e.originalEvent) {
+				e = _e.originalEvent;
+			}
+			e.preventDefault();
+		}
+
+		// Set image when dropping the file
+		function setImage(_e, obj) {
+			var e = _e;
+			if (_e.originalEvent) {
+				e = _e.originalEvent;
+			}
+			e.preventDefault();
+
+			if (canUploadImage(e.dataTransfer.files[0]) === false) {
+				obj.isdrop(false);
+				return;
+			}
+
+			obj.isdrop(true);
+			obj.drop(e.dataTransfer.files[0]);
+		}
+
+		// Check format and size of upload image
+		function canUploadImage(file) {
+			if (!file
+				|| (file.type.indexOf('image/jpeg') < 0
+					&& file.type.indexOf('image/gif') < 0
+					&& file.type.indexOf('image/png') < 0
+					&& file.type.indexOf('image/bmp') < 0
+					&& file.type.indexOf('image/svg') < 0
+					&& file.type.indexOf('image/tiff') < 0)) {
+				notification.show(disptext_file_format_message.replace('@@ 1 @@', 'JPEG / GIF / PNG / BMP / SVG / TIFF'), 'warning', 'fadeout');
+				return false;
+			} else if (file.size > max_file_size) {
+				notification.show(disptext_file_size_message.replace('@@ 1 @@', max_file_size / 1024), 'warning', 'fadeout');
+				return false;
+			}
+
+			return true;
+		}
+
+		var viewModel;
+		var scoringSaleQuestionChoiceCurrent;
+		var intervalSendOpeningFileName;
+
+		return {
+			ini: function () {
+				viewModel = {
+					QuestionId: ko.observable(),
+					QuestionTitle: ko.observable(),
+					ScoreAxisId: ko.observable(),
+					AnswerType: ko.observable(),
+					QuestionStatement: ko.observable(),
+					DateChanged: ko.observable(),
+					SearchWord: ko.observable(),
+					ScoringSaleQuestionList: ko.observableArray([]),
+					IsRegister: ko.observable(),
+					IsModify: ko.observable(),
+					AnswerTypeSettings: ko.observableArray([]),
+					ScoreAxis: ko.observable({}),
+					ScoreAxisList: ko.observableArray([]),
+					ScoringSaleQuestionChoiceList: ko.observableArray([]),
+					open_modal_score_axis: function () {
+						if (this.IsModify()) return;
+
+						modal.open('#modal-score-axis-list', 'modal-size-m modal-item-list');
+						get_score_axis_list();
+					},
+					is_answer_type_exist: function (data) {
+						return data.AnswerTypeSettings().some(function (setting) {
+							return (setting.Key == data.AnswerType());
+						});
+					},
+					is_visible_add_choice: function (data) {
+						var isVisible = (this.AnswerType() == '@Constants.FLG_SCORINGSALE_QUESTION_TYPE_CHART')
+							? (data.ScoringSaleQuestionChoiceList().length < '@Constants.CONST_SCORING_SALE_QUESTION_ANSWER_TYPE_CHART_CHOICE_AMOUNT_MAX')
+							: (data.ScoringSaleQuestionChoiceList().length < '@Constants.CONST_SCORING_SALE_QUESTION_ANSWER_TYPE_OTHER_CHOICE_AMOUNT_MAX')
+
+						return isVisible;
+					},
+				};
+
+				// File upload event
+				ko.bindingHandlers.fileUpload = {
+					init: function (element, valueAccessor) {
+						var options = valueAccessor();
+						$(element).change(function () {
+							if (canUploadImage(element.files[0]) === false) {
+								options.isdrop(false);
+								return;
+							}
+
+							options.isdrop(false);
+							options.upload(element.files[0]);
+						});
+					},
+					update: function (element, valueAccessor) {
+						if (ko.unwrap(valueAccessor()) === null) {
+							$(element).wrap('<form>').closest('form').get(0).reset();
+							$(element).unwrap();
+						}
+					}
+				};
+
+				// File drop event
+				ko.bindingHandlers.fileDrop = {
+					init: function (element, valueAccessor) {
+						var options = valueAccessor();
+						var block = $(element);
+						var drag_area = block.find('.image-upload-content-drag');
+						var switch_active = {
+							on : function(){
+								if(!drag_area.hasClass('active')){
+									drag_area.css({
+										'height' : drag_area.outerHeight()+'px',
+										'padding' : 0,
+										'line-height' : drag_area.outerHeight()+'px'
+									}).addClass('active');
+								}
+							},
+							off : function(){
+								drag_area.css({
+									'height' : '',
+									'padding' : '',
+									'line-height' : ''
+								}).removeClass('active');
+							}
+						}
+
+						if (browser == 'firefox') {
+							$('body').off('dragover drop').on('dragover drop', function(event) {
+								dragover(event);
+							});
+
+							drag_area.off('dragover').on('dragover', function(event) {
+								switch_active.on();
+							});
+
+							drag_area.off('dragleave').on('dragleave', function(event) {
+								switch_active.off();
+							});
+
+							drag_area.off('drop').on('drop', function(event) {
+								switch_active.off();
+								setImage(event, options);
+							});
+						} else {
+							$('body').off('dragover drop').on('dragover drop', function() {
+								dragover(event);
+							});
+
+							drag_area.off('dragenter').on('dragenter', function () {}, false);
+
+							drag_area.off('dragover').on('dragover', function() {
+								switch_active.on();
+							});
+
+							drag_area.off('dragleave').on('dragleave', function() {
+								switch_active.off();
+							});
+
+							drag_area.off('drop').on('drop', function() {
+								switch_active.off();
+								setImage(event, options);
+							});
+						}
+					},
+					update: function (element, valueAccessor) {
+						if (ko.unwrap(valueAccessor()) === null) {
+							$(element).wrap('<form>').closest('form').get(0).reset();
+							$(element).unwrap();
+						}
+					}
+				};
+
+				ko.applyBindings(viewModel);
+
+				get_scoring_sale_question_list();
+			},
+			get_scoring_sale_question_list: function () {
+				get_scoring_sale_question_list();
+			},
+			open_new_page: function () {
+				viewModel.QuestionId('');
+				viewModel.QuestionTitle('');
+				viewModel.ScoreAxisId('');
+				viewModel.AnswerType('');
+				viewModel.QuestionStatement('');
+				viewModel.ScoreAxis({});
+				viewModel.ScoringSaleQuestionChoiceList([]);
+				viewModel.IsRegister(true);
+				viewModel.IsModify(false);
+
+				slide_check.ini();
+				list.open();
+				$(".selected-low").removeClass("selected-low");
+			},
+			set_detail_datas: function (questionId) {
+				set_detail_datas(questionId);
+			},
+			add_score_axis: function (id, title) {
+				var scoreAxis = viewModel.ScoreAxisList().filter(function (item) {
+					return (item.ScoreAxisId == id);
+				});
+				scoreAxis = scoreAxis.length > 0 ? scoreAxis[0] : {};
+				viewModel.ScoreAxis(scoreAxis);
+				viewModel.ScoreAxisId(scoreAxis.ScoreAxisId);
+				viewModel.ScoringSaleQuestionChoiceList().forEach(function (scoringSaleQuestionChoice) {
+					if (scoringSaleQuestionChoice.Items().length >= 0) {
+						set_score_axis_to_choice(scoringSaleQuestionChoice);
+					}
+				});
+
+				modal.close();
+			},
+			remove_scoring_sale_question_choice: function (data) {
+				var index = viewModel.ScoringSaleQuestionChoiceList().indexOf(data);
+				viewModel.ScoringSaleQuestionChoiceList.remove(data);
+				if (index != -1) {
+					refresh_data_in_array(viewModel.ScoringSaleQuestionChoiceList);
+				}
+			},
+			remove_image: function (data) {
+				data.IsCopyImage(false);
+				data.IsDropFile(false);
+				data.UploadFile(null);
+				data.DropFile(null);
+				data.ImageSrc('');
+				data.QuestionChoiceStatementImgPath('');
+			},
+			add_scoring_sale_question_choice: function (data) {
+				var message = check_setting();
+
+				if (message.length > 0) {
+					notification.show(message, 'warning', 'fadeout');
+					return;
+				}
+
+				data.ScoringSaleQuestionChoiceList().forEach(function (choice, index) {
+					choice.BranchNo(index + 1);
+				})
+
+				var scoringSaleQuestionChoiceClone = {
+					QuestionId: ko.observable(''),
+					BranchNo: ko.observable(data.ScoringSaleQuestionChoiceList().length + 1),
+					QuestionChoiceStatement: ko.observable(''),
+					QuestionChoiceStatementImgPath: ko.observable(''),
+					Items: ko.observableArray([]),
+					IsCopyImage: ko.observable(false),
+					IsDropFile: ko.observable(false),
+					UploadFile: ko.observable(),
+					DropFile: ko.observable(),
+					ImageSrc: ko.observable(''),
+					FileName: ko.observable(''),
+				};
+
+				if (scoringSaleQuestionChoiceClone.IsDropFile()) {
+					if (!!scoringSaleQuestionChoiceClone.DropFile()) {
+						var reader = new FileReader();
+						var fileName = scoringSaleQuestionChoiceClone.DropFile().name;
+						scoringSaleQuestionChoiceClone.QuestionChoiceStatementImgPath("@Constants.PATH_SCORING_QUESTION_IMAGE" + fileName);
+
+						reader.onload = function (e) {
+							scoringSaleQuestionChoiceClone.ImageSrc(e.target.result);
+						}
+
+						reader.readAsDataURL(scoringSaleQuestionChoiceClone.DropFile());
+						scoringSaleQuestionChoiceClone.UploadFile(null);
+						scoringSaleQuestionChoiceClone.FileName(fileName);
+					}
+				} else {
+					if (!!scoringSaleQuestionChoiceClone.UploadFile()) {
+						var reader = new FileReader();
+						var fileName = scoringSaleQuestionChoiceClone.UploadFile().name;
+						scoringSaleQuestionChoiceClone.QuestionChoiceStatementImgPath("@Constants.PATH_SCORING_QUESTION_IMAGE" + fileName);
+
+						reader.onload = function (e) {
+							scoringSaleQuestionChoiceClone.ImageSrc(e.target.result);
+						}
+
+						reader.readAsDataURL(scoringSaleQuestionChoiceClone.UploadFile());
+						scoringSaleQuestionChoiceClone.DropFile(null);
+						scoringSaleQuestionChoiceClone.FileName(fileName);
+					}
+				}
+
+				set_score_axis_to_choice(scoringSaleQuestionChoiceClone);
+				data.ScoringSaleQuestionChoiceList.push(scoringSaleQuestionChoiceClone);
+				slide_check.ini();
+				scoring_sale_question_choice_sort_table();
+			},
+			get_file_name_image: function (data) {
+				var result = ko.pureComputed(function () {
+					if (data.IsDropFile()) {
+						if (!!data.DropFile()) {
+							var reader = new FileReader();
+							var fileName = data.DropFile().name;
+
+							data.QuestionChoiceStatementImgPath("@Constants.PATH_SCORING_QUESTION_IMAGE" + fileName);
+
+							reader.onload = function (e) {
+								data.ImageSrc(e.target.result);
+							}
+							reader.readAsDataURL(data.DropFile());
+							data.UploadFile(null);
+							return fileName;
+						}
+					} else {
+						if (!!data.UploadFile()) {
+							var reader = new FileReader();
+							var fileName = data.UploadFile().name;
+
+							data.QuestionChoiceStatementImgPath("@Constants.PATH_SCORING_QUESTION_IMAGE" + fileName);
+
+							reader.onload = function (e) {
+								data.ImageSrc(e.target.result);
+							}
+							reader.readAsDataURL(data.UploadFile());
+							data.DropFile(null);
+							return fileName;
+						}
+					}
+
+					return data.ImageSrc().substring(data.ImageSrc().lastIndexOf('/') + 1);
+				});
+				return result;
+			},
+			show_image_list_modal: function (data) {
+				image_search();
+				scoringSaleQuestionChoiceCurrent = data;
+				//parentScoringSaleQuestionChoice = parent;
+				modal.open('#modal-imagelist-select', 'modal-size-l modal-item-list');
+			},
+			set_image: function (imageSrc, fileName, imagePath) {
+				scoringSaleQuestionChoiceCurrent.IsCopyImage(true);
+				scoringSaleQuestionChoiceCurrent.IsDropFile(false),
+				scoringSaleQuestionChoiceCurrent.UploadFile(null),
+				scoringSaleQuestionChoiceCurrent.DropFile(null),
+				scoringSaleQuestionChoiceCurrent.ImageSrc(imageSrc);
+				scoringSaleQuestionChoiceCurrent.FileName(fileName);
+				scoringSaleQuestionChoiceCurrent.QuestionChoiceStatementImgPath(imagePath);
+
+				modal.close();
+			},
+			set_score_axis_list: function (data) {
+				viewModel.ScoreAxisList([]);
+				data.forEach(function (item) {
+					viewModel.ScoreAxisList.push(item);
+				});
+			},
+			is_answer_type_image: function (answerType) {
+				var isAnswerTypeImage = ((answerType == '@Constants.FLG_SCORINGSALE_QUESTION_TYPE_IMAGE_TEXT_SINGLE')
+					|| (answerType == '@Constants.FLG_SCORINGSALE_QUESTION_TYPE_IMAGE_TEXT_MULTIPLE'));
+				return isAnswerTypeImage;
+			},
+			is_visible_choice: function (data) {
+				var isVisible = true;
+				var index = viewModel.ScoringSaleQuestionChoiceList().indexOf(data);
+				isVisible = (viewModel.AnswerType() == '@Constants.FLG_SCORINGSALE_QUESTION_TYPE_CHART')
+					? (index < '@Constants.CONST_SCORING_SALE_QUESTION_ANSWER_TYPE_CHART_CHOICE_AMOUNT_MAX')
+					: (index < '@Constants.CONST_SCORING_SALE_QUESTION_ANSWER_TYPE_OTHER_CHOICE_AMOUNT_MAX')
+
+				return isVisible;
+			},
+			score_axis_button_text: function (value) {
+				var result = ko.pureComputed(function () {
+					if (value && Object.keys(value).length > 0) return '@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.change.name@@")';
+					return '@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.select.name@@")';
+				});
+				return result;
+			},
+			score_axis_button_class: function (value) {
+				var result = ko.pureComputed(function () {
+					if (value && Object.keys(value).length > 0) return 'btn btn-sub btn-size-m';
+					return 'btn btn-main btn-size-m';
+				});
+				return result;
+			},
+			register: function () {
+				loading_animation.start();
+
+				var url = '@Url.Action("Register")';
+				var postData = create_post_input();
+
+				exec_post_data(url, postData, regiter_successful, false);
+			},
+			update: function () {
+				var message = check_setting();
+
+				if (message.length > 0) {
+					notification.show(message, 'warning', 'fadeout');
+					return;
+				}
+
+				checkOtherOperatorFileOpening('QuestionId' + viewModel.QuestionId()).done(function (result) {
+					if (result !== "") {
+						notification.show(result, 'warning', 'fixed');
+						return;
+					} else {
+						loading_animation.start();
+						var url = '@Url.Action("Update")';
+						var postData = create_post_input();
+						exec_post_data(url, postData, update_successful, false);
+					}
+				});
+			},
+			delete: function () {
+				if (confirm('@WebMessages.ConfirmDeletedMessage')) {
+					checkOtherOperatorFileOpening('QuestionId' + viewModel.QuestionId()).done(function (result) {
+						if (result !== "") {
+							notification.show(result, 'warning', 'fixed');
+							return;
+						} else {
+							var url = '@Url.Action("Delete")';
+							var postData = { QuestionId: viewModel.QuestionId() };
+							exec_post_data(url, postData, delete_successful);
+						}
+					});
+				}
+			},
+			copy_new: function () {
+				var url = '@Url.Action("GetScoringSaleQuestionDetailViewModel")';
+				var postData = { QuestionId: viewModel.QuestionId() };
+				exec_post_data(url, postData, change_view_model, true, false, true).then(scoring_sale_question_choice_sort_table);
+				$(".selected-low").removeClass("selected-low");
+			},
+			reset: function () {
+				if (viewModel.IsModify()) {
+					viewModel.AnswerType(null);
+				}
+			},
+			score_axis_exsits: function (value) {
+				var result = ko.pureComputed(function () {
+					if (value && Object.keys(value).length > 0) return true;
+					return false;
+				});
+				return result;
+			},
+		}
+
+		// Set score axis to choice
+		function set_score_axis_to_choice(scoringSaleQuestionChoice, choiceViewModel) {
+			var index = 1;
+
+			scoringSaleQuestionChoice.Items([]);
+			Object.keys(viewModel.ScoreAxis()).forEach(function (item) {
+				if ((item.indexOf('AxisName') != -1) && (viewModel.ScoreAxis()[item] != '')) {
+					var axisAdditional = choiceViewModel
+						? choiceViewModel['AxisAdditional' + index]
+						: "0";
+					scoringSaleQuestionChoice.Items.push({
+						AxisName: viewModel.ScoreAxis()[item],
+						AxisAdditional: ko.observable(axisAdditional)
+					})
+
+					index++;
+				}
+			});
+		}
+
+		// Get scoringSale question list
+		function get_scoring_sale_question_list() {
+			loading_animation.start();
+
+			var postData = {
+				searchWord: viewModel.SearchWord(),
+			};
+			var url = '@Url.Action("GetScoringSaleQuestionListViewModel")';
+
+			exec_post_data(url, postData, change_list_view_model).then(function () {
+				setTimeout(function () { loading_animation.end(); }, 200);
+			});
+		}
+
+		// Set detail datas
+		function set_detail_datas(questionId) {
+			loading_animation.start();
+			$(".selected-low").removeClass("selected-low");
+			clearInterval(intervalSendOpeningFileName);
+
+			var postData = { QuestionId: questionId };
+			var url = '@Url.Action("GetScoringSaleQuestionDetailViewModel")';
+
+			exec_post_data(url, postData, change_view_model, true, true, false).then(function () {
+				setTimeout(function () { loading_animation.end(); }, 200);
+			}).then(scoring_sale_question_choice_sort_table);
+		}
+
+		// Exec post data
+		function exec_post_data(
+			url,
+			postData,
+			action,
+			isDataTypeJson,
+			isCheckOtherOperator,
+			isCopyInsert) {
+			var data = (isDataTypeJson == false)
+				? object_to_form_data(postData)
+				: JSON.stringify(postData)
+			var contentType = (isDataTypeJson == false)
+				? isDataTypeJson
+				: 'application/json';
+
+			return $.ajax({
+				url: url,
+				type: 'POST',
+				data: data,
+				processData: false,
+				contentType: contentType,
+			}).then(
+				function (data) {
+					if (isCheckOtherOperator) {
+						checkOtherOperatorFileOpening('QuestionId' + data.QuestionId).done(function (result) {
+							$("#" + data.QuestionId).addClass("selected-low");
+							$("#search_keyword").addClass("placeholder-display-none");
+							$('input[value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.update.name@@")"]').attr('disabled', false);
+							if (result !== "") {
+								notification.show(result, 'warning', 'fixed');
+								$('input[value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.update.name@@")"]').attr('disabled', true);
+							} else {
+								sendOpeningFileName('QuestionId' + data.QuestionId);
+								intervalSendOpeningFileName = setInterval(function () { sendOpeningFileName('QuestionId' + data.QuestionId) }, 10 * 1000);
+							}
+						});
+					}
+
+					action(data, isCopyInsert);
+				},
+				function () { to_error(); }
+			);
+			}
+
+		// Change list view model
+		function change_list_view_model(data) {
+			viewModel.ScoringSaleQuestionList.splice(viewModel.ScoringSaleQuestionList.length);
+
+			data.Items.forEach(function (item) {
+				viewModel.ScoringSaleQuestionList.push(item);
+			});
+
+			if (viewModel.AnswerTypeSettings().length == 0) {
+				data.AnswerTypeSettings.forEach(function (setting) {
+					viewModel.AnswerTypeSettings.push(setting);
+				});
+			}
+		}
+
+		// Change view model
+		function change_view_model(data, isCopyInsert) {
+			if (!data.QuestionId) {
+				notification.show('@WebMessages.ScoringsaleQuestionNotExistError', 'warning', 'fadeout');
+				return;
+			}
+
+			var scoreAxis = data.ScoreAxis
+				? data.ScoreAxis
+				: {};
+			var questionId = isCopyInsert
+				? ""
+				: data.QuestionId;
+			var questionTitle = isCopyInsert
+				? data.QuestionTitle + '@Constants.COPY_NEW_SUFFIX'
+				: data.QuestionTitle;
+
+			viewModel.QuestionId(questionId);
+			viewModel.QuestionTitle(questionTitle);
+			viewModel.ScoreAxisId(data.ScoreAxisId);
+			viewModel.AnswerType(data.AnswerType);
+			viewModel.QuestionStatement(data.QuestionStatement);
+			viewModel.IsRegister(isCopyInsert);
+			viewModel.IsModify(!isCopyInsert);
+			viewModel.ScoreAxis(scoreAxis);
+			viewModel.ScoringSaleQuestionChoiceList([]);
+
+			data.ScoringSaleQuestionChoiceList.forEach(function (scoringSaleQuestionChoice) {
+				var scoringSaleQuestionChoiceClone = {
+					QuestionId: ko.observable(questionId),
+					BranchNo: ko.observable(scoringSaleQuestionChoice.BranchNo),
+					QuestionChoiceStatement: ko.observable(scoringSaleQuestionChoice.QuestionChoiceStatement),
+					QuestionChoiceStatementImgPath: ko.observable(scoringSaleQuestionChoice.QuestionChoiceStatementImgPath),
+					Items: ko.observableArray([]),
+					IsCopyImage: ko.observable(false),
+					IsDropFile: ko.observable(false),
+					UploadFile: ko.observable(),
+					DropFile: ko.observable(),
+					FileName: ko.observable(),
+					ImageSrc: ko.observable(scoringSaleQuestionChoice.ImageSrc),
+				};
+
+				set_score_axis_to_choice(scoringSaleQuestionChoiceClone, scoringSaleQuestionChoice);
+
+				viewModel.ScoringSaleQuestionChoiceList.push(scoringSaleQuestionChoiceClone);
+			});
+
+			if (isCopyInsert == false) {
+				list.open();
+			}
+		}
+
+		// Create post input
+		function create_post_input() {
+			var postData = {
+				QuestionId: viewModel.QuestionId(),
+				QuestionTitle: viewModel.QuestionTitle(),
+				ScoreAxisId: viewModel.ScoreAxisId(),
+				AnswerType: viewModel.AnswerType(),
+				QuestionStatement: viewModel.QuestionStatement(),
+				ScoringSaleQuestionChoiceList: [],
+			};
+
+			viewModel.ScoringSaleQuestionChoiceList().forEach(function (scoringSaleQuestionChoice, choiceIndex) {
+				if (viewModel.AnswerType() == '@Constants.FLG_SCORINGSALE_QUESTION_TYPE_CHART'
+					&& choiceIndex >= '@Constants.CONST_SCORING_SALE_QUESTION_ANSWER_TYPE_CHART_CHOICE_AMOUNT_MAX') {
+						return;
+					}
+
+				if (viewModel.AnswerType() != '@Constants.FLG_SCORINGSALE_QUESTION_TYPE_CHART'
+					&& choiceIndex >= '@Constants.CONST_SCORING_SALE_QUESTION_ANSWER_TYPE_OTHER_CHOICE_AMOUNT_MAX') {
+						return;
+					}
+
+				var isAnswerTypeImage = scoringSaleQuestionListPage.is_answer_type_image(viewModel.AnswerType());
+				var questionChoiceStatementImgPath = isAnswerTypeImage
+					? scoringSaleQuestionChoice.QuestionChoiceStatementImgPath() != null
+						? scoringSaleQuestionChoice.QuestionChoiceStatementImgPath()
+						: ''
+					: null;
+				var isCopyImage = isAnswerTypeImage
+					? scoringSaleQuestionChoice.IsCopyImage()
+					: false;
+				var uploadFile = isAnswerTypeImage
+					? ((!!scoringSaleQuestionChoice.DropFile()) && scoringSaleQuestionChoice.IsDropFile())
+						? scoringSaleQuestionChoice.DropFile()
+						: scoringSaleQuestionChoice.UploadFile()
+					: undefined;
+				var scoringSaleQuestionChoiceTemp = {
+					QuestionId: scoringSaleQuestionChoice.QuestionId(),
+					BranchNo: (choiceIndex + 1),
+					QuestionChoiceStatement: scoringSaleQuestionChoice.QuestionChoiceStatement(),
+					QuestionChoiceStatementImgPath: questionChoiceStatementImgPath,
+					IsCopyImage: isCopyImage,
+					UploadFile: uploadFile,
+				};
+
+				scoringSaleQuestionChoice.Items().forEach(function (item, axisIndex) {
+					scoringSaleQuestionChoiceTemp["AxisAdditional" + (axisIndex + 1)] = item.AxisAdditional();
+				});
+
+				postData.ScoringSaleQuestionChoiceList.push(scoringSaleQuestionChoiceTemp);
+			});
+
+			return postData;
+		}
+
+		// Regiter sccessful
+		function regiter_successful(data) {
+			loading_animation.end();
+			if (data.result === '@Constants.CONST_RESPONSE_KEY_RESULT_NG') {
+				notification.show(data.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('@WebMessages.RegisteredMessage', 'info', 'fadeout');
+				get_scoring_sale_question_list();
+				set_detail_datas(data.id);
+			}
+		}
+
+		// Update successful
+		function update_successful(data) {
+			loading_animation.end();
+			if (data.result === '@Constants.CONST_RESPONSE_KEY_RESULT_NG') {
+				notification.show(data.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('@WebMessages.UpdatedMessage', 'info', 'fadeout');
+				get_scoring_sale_question_list();
+				set_detail_datas(data.id);
+			}
+		}
+
+		// Delete successful
+		function delete_successful(data) {
+			if (data.result === '@Constants.CONST_RESPONSE_KEY_RESULT_NG') {
+				notification.show(data.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('@WebMessages.DeletedMessage', 'info', 'fadeout');
+				get_scoring_sale_question_list();
+				list.close();
+				$("#search_keyword").removeClass("placeholder-display-none");
+			}
+		}
+
+		// To error
+		function to_error() {
+			window.location.href = '@this.Url.Action("", Constants.CONTROLLER_W2CMS_MANAGER_ERROR, new { ErrorPageLayout = Constants.LAYOUT_PATH_DEFAULT, })';
+		}
+
+		// Scoring sale question choice sort table
+		function scoring_sale_question_choice_sort_table() {
+			setTimeout(function () {
+				$(".feature-selected-item-list-body").each(function () {
+					var elements = $(this);
+
+					elements.each(function () {
+						var startIndex;
+
+						$(this).sortable({
+							start: function (e, ui) {
+								ui.placeholder.height(ui.item.height());
+								startIndex = ui.item.index();
+							},
+							handle: ".list-col-drag",
+							axis: "y",
+							placeholder: "ui-state-highlight",
+							update: function (e, ui) {
+								var endIndex = ui.item.index();
+								shift_scoring_sale_question_choice(startIndex, endIndex);
+							},
+						});
+					});
+				});
+			}, 200);
+		}
+
+		// Shift scoring sale question choice
+		function shift_scoring_sale_question_choice(startIndex, endIndex) {
+			var scoringSaleQuestionChoiceTarget = viewModel.ScoringSaleQuestionChoiceList()[startIndex];
+			viewModel.ScoringSaleQuestionChoiceList.splice(startIndex, 1);
+			viewModel.ScoringSaleQuestionChoiceList.splice(endIndex, 0, scoringSaleQuestionChoiceTarget);
+			refresh_data_in_array(viewModel.ScoringSaleQuestionChoiceList);
+		}
+
+		// Check setting
+		function check_setting() {
+			var message = '';
+
+			if (Object.keys(viewModel.ScoreAxis()).length == 0) {
+				message += '@WebMessages.ScoreAxisIsNotSetError'
+			}
+
+			if (!viewModel.AnswerType()) {
+				message = ((message.length > 0) ? message + '<br />' : message);
+				message += '@WebMessages.ScoringSaleQuestionAnswerTypeIsNotSetError';
+			}
+
+			return message;
+		}
+
+		// Refresh data in array
+		function refresh_data_in_array(datas) {
+			var refreshData = datas().slice(0);
+			datas([]);
+			datas(refreshData);
+		}
+
+		// Object to form data
+		function object_to_form_data(obj, rootName, ignoreList) {
+			var formData = new FormData();
+
+			// Append form data
+			function append_form_data(data, root) {
+				if (!ignore(root)) {
+					root = root || '';
+					if (data instanceof File) {
+						formData.append(root, data);
+					} else if (Array.isArray(data)) {
+						for (var item = 0; item < data.length; item++) {
+							append_form_data(data[item], root + '[' + item + ']');
+						}
+					} else if (typeof data === 'object' && data) {
+						for (var key in data) {
+							if (data.hasOwnProperty(key)) {
+								if (root === '') {
+									append_form_data(data[key], key);
+								} else {
+									append_form_data(data[key], root + '.' + key);
+								}
+							}
+						}
+					} else {
+						if (data !== null && typeof data !== 'undefined') {
+							formData.append(root, data);
+						}
+					}
+				}
+			}
+
+			// Ignore
+			function ignore(root) {
+				return Array.isArray(ignoreList)
+					&& ignoreList.some(function (item) { return item === root; });
+			}
+
+			append_form_data(obj, rootName);
+
+			return formData;
+		}
+	})();
+
+	scoringSaleQuestionListPage.ini();
+	keyword_ini();
+
+	// Add score axis
+	function add_score_axis(id, title) {
+		scoringSaleQuestionListPage.add_score_axis(id, title);
+	}
+
+	// Set image
+	function set_image(imageSrc, fileName, imagePath) {
+		scoringSaleQuestionListPage.set_image(imageSrc, fileName, imagePath);
+	}
+
+	// Set score axis list
+	function set_score_axis_list(data) {
+		scoringSaleQuestionListPage.set_score_axis_list(data);
+	}
+
+	// Keyword initialization
+	function keyword_ini() {
+		$('#search_keyword').off("keydown").on("keydown", function (e) {
+			if ((e.which && e.which === 13) || (e.keyCode && e.keyCode === 13)) {
+				$('#search_keyword').blur();
+				scoringSaleQuestionListPage.get_scoring_sale_question_list();
+				$('#search_keyword').focus();
+				return false;
+			}
+
+			return true;
+		});
+	}
+</script>

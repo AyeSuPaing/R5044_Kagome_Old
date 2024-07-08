@@ -1,0 +1,184 @@
+﻿@*
+=========================================================================================================
+  Module      : オペレータ情報登録・編集ページ(Register.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.ViewModels.ShopOperator
+@using w2.Common.Util
+@{
+	ViewBag.Title = "オペレータ情報";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+	var sessionWrapper = new SessionWrapper(this.Session);
+}
+@model w2.Cms.Manager.ViewModels.ShopOperator.RegisterViewModel
+@helper CreateMenuAccessLevelDropDownList(RegisterViewModel vm, int? loginOperatorMenuAccessLevel)
+{
+	var list = new List<SelectListItem>();
+	list.Add(new SelectListItem
+	{
+		Text = ValueText.GetValueText(Constants.TABLE_MENUAUTHORITY,
+			Constants.FIELD_MENUAUTHORITY_MENU_AUTHORITY_NAME,
+			StringUtility.ToEmpty(Constants.KBN_OPERATOR_LEVEL_UNACCESSABLEUSER)),
+		Value = StringUtility.ToEmpty(Constants.KBN_OPERATOR_LEVEL_UNACCESSABLEUSER)
+	});
+	if (loginOperatorMenuAccessLevel == Constants.KBN_OPERATOR_LEVEL_SUPERUSER) // スーパーユーザはスーパーユーザの時のみ表示
+	{
+			list.Add(new SelectListItem
+			{
+				Text = ValueText.GetValueText(Constants.TABLE_MENUAUTHORITY,
+					Constants.FIELD_MENUAUTHORITY_MENU_AUTHORITY_NAME,
+					Constants.KBN_OPERATOR_LEVEL_SUPERUSER),
+				Value = Constants.KBN_OPERATOR_LEVEL_SUPERUSER.ToString()
+			});
+	}
+	list.AddRange(vm.MenuAuthorities.Select(ma => new SelectListItem { Text = ma.MenuAuthorityName, Value = ma.MenuAuthorityLevel.ToString() }));
+	list.ForEach(li => li.Selected = (li.Value == vm.MenuAccessLevel.ToString()));
+	@Html.DropDownListFor(model => model.MenuAccessLevel, list)
+}
+@helper TopButtomControls()
+{
+	<input onclick="javascript: history.back();" type="button" value="  戻る  " class="btn btn-main"/>
+	if (this.Model.IsActionStatusInsert)
+	{
+		<input type="button" value="  確認する  " class="btn btn-main" onclick="return validate('confirm',{ name: 'isInsert', value: true });">
+	}
+	if (this.Model.IsActionStatusUpdate)
+	{
+		<input type="button" value="  確認する  " class="btn btn-main" onclick="return validate('confirm', { name: 'isInsert', value: false });">
+	}
+	<input type="submit" id="confirm" style="display: none;">
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<!--▽ タイトル ▽-->
+	<tr><td><h1 class="page-title">オペレーター情報</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	<tr>
+		<td>
+			<h2 class="cmn-hed-h2">
+				オペレーター情報
+				@if (this.Model.IsActionStatusInsert)
+				{
+					@:登録
+				}
+				@if (this.Model.IsActionStatusUpdate)
+				{
+					@:編集
+				}
+			</h2>
+		</td>
+	</tr>
+	<!--△ タイトル △-->
+	<!--▽ 編集入力 ▽-->
+	<tr>
+	<td>
+		<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+		<tr>
+		<td>
+		<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+		<tr>
+		<td align="center">
+		<table cellspacing="0" cellpadding="0" border="0">
+		<tr>
+		<td>
+			@using (Html.BeginForm(
+				"Register",
+				Constants.CONTROLLER_W2CMS_MANAGER_OPERATOR,
+				new
+				{
+					this.Model.ActionStatus,
+					this.Model.OperatorId,
+				},
+				FormMethod.Post,
+				new { name = "Register", Id="input_form" }))
+			{
+				@Html.Hidden(Constants.REQUEST_KEY_SHOP_ID, sessionWrapper.LoginOperator.ShopId)
+				<div class="action_part_top">
+					@TopButtomControls()
+				</div>
+				<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					@if (this.Model.IsActionStatusUpdate)
+					{
+						<tr runat="server">
+							<td class="edit_title_bg" align="left" width="30%">オペレータID</td>
+							<td class="edit_item_bg" align="left">
+								@this.Model.OperatorId
+								@Html.Hidden("operatorId", this.Model.OperatorId)
+							</td>
+						</tr>
+					}
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">オペレータ名<span class="notice">*</span></td>
+						<td class="edit_item_bg" align="left">
+							@Html.TextBox("name", this.Model.Name, new {maxlength="20", style="width: 180px"})
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">メニュー権限<span class="notice">*</span></td>
+						<td class="edit_item_bg" align="left">
+							@CreateMenuAccessLevelDropDownList(this.Model, sessionWrapper.LoginMenuAccessInfo.MenuAccessLevel)
+						</td>
+					</tr>
+					@if (Constants.TWO_STEP_AUTHENTICATION_OPTION_ENABLED)
+					{
+						<tr>
+							<td class="edit_title_bg" align="left" width="30%">メールアドレス<span class="notice">*</span></td>
+							<td class="edit_item_bg" align="left">
+								@Html.TextBox("mailaddr", this.Model.MailAddr, new { maxlength = "256", style = "width: 150px" })
+							</td>
+						</tr>
+					}
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">ログインＩＤ<span class="notice">*</span></td>
+						<td class="edit_item_bg" align="left">
+							@Html.TextBox("loginid", this.Model.LoginId, new {maxlength="16", style="width: 150px"})
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">パスワード<span class="notice">*</span><br/>
+							@if (this.Model.IsActionStatusUpdate)
+							{
+								@:（変更する場合のみ入力してください）
+							}
+						</td>
+						<td class="edit_item_bg" align="left">
+							@Html.Password("password", this.Model.Password, new {maxlength="16", style="width: 150px;"})
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">有効フラグ</td>
+						<td class="edit_item_bg" align="left">
+							@Html.CheckBox("validFlg", this.Model.IsValid)
+							@Html.Label("validFlg", "有効")
+						</td>
+					</tr>
+				</table>
+				<div class="action_part_bottom">
+					@TopButtomControls()
+				</div>
+			}
+		</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+	</td>
+	</tr>
+	<!--△ 詳細 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		// エンターキーによるsubmit禁止
+		prohibit_submission();
+	</script>
+}

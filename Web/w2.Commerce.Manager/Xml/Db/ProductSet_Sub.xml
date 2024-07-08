@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品セット系SQLサブステートメントXML(ProductSet_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductSet_Sub>
+
+  <!-- 商品セット情報一覧取得用WHERE文 -->
+  <PRODUCTSET_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_ProductSet.shop_id = @shop_id
+           AND  (
+                  (@product_set_id_like_escaped = '' OR w2_ProductSet.product_set_id LIKE @product_set_id_like_escaped + '%' ESCAPE '#')
+                  AND 
+                  (@product_set_name_like_escaped = '' OR w2_ProductSet.product_set_name LIKE '%' + @product_set_name_like_escaped + '%' ESCAPE '#')
+                )
+      ]]>
+    </Statement>
+  </PRODUCTSET_SEARCH_WHERE>
+
+  <!-- 商品セット情報一覧取得用ORDER_BY -->
+  <PRODUCTSET_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_ProductSet.product_set_id
+            WHEN  2 THEN w2_ProductSet.product_set_name
+            ELSE '1'
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_ProductSet.product_set_id
+            WHEN  3 THEN w2_ProductSet.product_set_name
+            ELSE '1'
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_ProductSet.shop_id ASC, w2_ProductSet.product_set_id ASC
+      ]]>
+    </Statement>
+  </PRODUCTSET_SEARCH_ORDER_BY>
+
+</ProductSet_Sub>

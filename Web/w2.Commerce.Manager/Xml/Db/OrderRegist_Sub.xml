@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文情報登録系SQLサブステートメントXML(OrderRegist_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderRegist_Sub>
+
+  <!-- ユーザ情報一覧取得用WHERE文 -->
+  <USER_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (@user_id_like_escaped = '' OR w2_User.user_id LIKE @user_id_like_escaped + '%'  ESCAPE '#')      -- ユーザーID
+                  AND
+                  (@user_kbn = '' OR w2_User.user_kbn = @user_kbn)        -- 顧客区分
+                  AND
+                  (@name_like_escaped = '' OR w2_User.name LIKE '%' + @name_like_escaped + '%' ESCAPE '#')        -- 氏名
+                  AND
+                    (
+                      @mail_addr_like_escaped = ''
+                      OR
+                      w2_User.mail_addr2 LIKE '%' + @mail_addr_like_escaped + '%' ESCAPE '#'    -- メールアドレス
+                      OR
+                      w2_User.mail_addr LIKE '%' + @mail_addr_like_escaped + '%' ESCAPE '#'    -- モバイルメールアドレス
+                    )
+                  AND
+                  (@name_kana_like_escaped = '' OR w2_User.name_kana LIKE @name_kana_like_escaped + '%' ESCAPE '#')        -- 氏名かな
+                  AND
+                  (
+                    w2_User.tel1 LIKE @tel1_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_User.tel1_1 + w2_User.tel1_2 + w2_User.tel1_3 LIKE '%' + @tel1_like_escaped + '%' ESCAPE '#'      -- 電話番号1
+                    OR
+                    w2_User.tel2 LIKE @tel1_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_User.tel2_1 + w2_User.tel2_2 + w2_User.tel2_3 LIKE '%' + @tel1_like_escaped + '%' ESCAPE '#'      -- Telephone 2
+                  )
+                )
+           AND  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0') -- 未退会・未統合ユーザーのみ対象とする
+      ]]>
+    </Statement>
+  </USER_SEARCH_WHERE>
+
+  <!-- ユーザ情報一覧取得用ORDER_BY -->
+  <USER_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_User.user_id ASC
+      ]]>
+    </Statement>
+  </USER_SEARCH_ORDER_BY>
+
+</OrderRegist_Sub>

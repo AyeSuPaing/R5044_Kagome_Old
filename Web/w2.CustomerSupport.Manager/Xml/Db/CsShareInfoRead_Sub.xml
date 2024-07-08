@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 共有情報既読管理系サブSQLステートメントXML(CsShareInfoRead_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsShareInfoRead_Sub>
+
+  <!-- 検索（共有情報も取得）WHERE -->
+  <SearchWithShareInfo_Where>
+    <Statement>
+      <![CDATA[
+        w2_CsShareInfo.dept_id = @dept_id
+        AND
+        w2_CsShareInfoRead.operator_id = @operator_id
+        AND
+        (@info_text_like_escaped = '' OR w2_CsShareInfo.info_text like '%' + @info_text_like_escaped + '%'  ESCAPE '#')
+        AND 
+        (@sender = '' OR w2_CsShareInfo.sender = @sender)
+        AND
+        (@info_importance IS NULL OR w2_CsShareInfo.info_importance = @info_importance)
+        AND
+        (@info_kbn = '' OR w2_CsShareInfo.info_kbn = @info_kbn)
+        AND
+        (
+          (@read_flg = '' OR w2_CsShareInfoRead.read_flg = @read_flg)
+          OR
+          (@pinned_flg = '' OR w2_CsShareInfoRead.pinned_flg = @pinned_flg)
+        )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="read_flg" Type="nvarchar" Size="1" />
+      <Input Name="pinned_flg" Type="nvarchar" Size="1" />
+      <Input Name="sender" Type="nvarchar" Size="20" />
+      <Input Name="info_text_like_escaped" Type="nvarchar" Size="MAX" />
+      <Input Name="info_kbn" Type="nvarchar" Size="10" />
+      <Input Name="info_importance" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchWithShareInfo_Where>
+
+  <!-- 検索（共有情報も取得）ORDER BY -->
+  <SearchWithShareInfo_OrderBy>
+    <Statement>
+      <![CDATA[
+          CASE @sort_kbn
+            WHEN 0 THEN w2_CsShareInfoRead.date_created
+            WHEN 2 THEN w2_CsShareInfo.info_importance
+            ELSE NULL
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN 1 THEN w2_CsShareInfoRead.date_created
+            WHEN 3 THEN w2_CsShareInfo.info_importance
+            ELSE NULL
+          END 
+          DESC,
+          w2_CsShareInfoRead.date_created DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </SearchWithShareInfo_OrderBy>
+  
+</CsShareInfoRead_Sub>

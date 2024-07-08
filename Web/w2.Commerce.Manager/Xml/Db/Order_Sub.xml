@@ -1,0 +1,2400 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文系SQLサブステートメントXML(Order_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<Order_Sub>
+
+  <!-- 注文情報一覧取得用WHERE文 -->
+  <ORDER_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  1 = 1
+                  <@@hasval:order_date_from_to@@>
+                  <@@hasval:order_date_from@@>
+                    AND
+                  -- 注文日
+                  (w2_Order.order_date >= @order_date_from)
+                  </@@hasval:order_date_from@@>
+                  <@@hasval:order_date_to@@>
+                    AND
+                  (w2_Order.order_date < @order_date_to)
+                  </@@hasval:order_date_to@@>
+                  </@@hasval:order_date_from_to@@>
+                  <@@hasval:replacement_order_id_like_escaped@@>
+                    AND
+                    -- 注文ID(置換モード)
+                    (
+                      w2_Order.order_id like '@@ replacement_order_id_like_escaped @@' + '%' ESCAPE '#'
+                      OR
+                      w2_Order.order_id IN ('@@ multi_order_id @@')
+                    )
+                  </@@hasval:replacement_order_id_like_escaped@@>
+                  <@@hasval:order_id_like_escaped@@>
+                    AND
+                    -- 注文ID
+                    (
+                    w2_Order.order_id like @order_id_like_escaped + '%' ESCAPE '#'
+                      OR
+                      w2_Order.order_id IN ('@@ multi_order_id @@')
+                    )
+                  </@@hasval:order_id_like_escaped@@>
+                  <@@hasval:order_id_identical@@>
+                    AND
+                    -- 注文ID
+                    (
+                    w2_Order.order_id = @order_id_identical
+                      OR
+                      w2_Order.order_id IN ('@@ multi_order_id @@')
+                    )
+                  </@@hasval:order_id_identical@@>
+                  <@@hasval:subscription_box_course_id_like_escaped@@>
+                    AND
+                    -- 頒布会コースID
+                    EXISTS
+                    (
+                      SELECT  w2_Order.order_id
+                        FROM  w2_OrderItem
+                       WHERE  w2_OrderItem.order_id = w2_Order.order_id
+                         AND  (
+                                CASE
+                                  WHEN  w2_Order.combined_org_order_ids = '' THEN w2_Order.subscription_box_course_id
+                                  ELSE  w2_OrderItem.subscription_box_course_id
+                                END
+                              ) LIKE @subscription_box_course_id_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:subscription_box_course_id_like_escaped@@>
+                  <@@hasval:user_id_like_escaped@@>
+                    AND
+                    -- ユーザーID
+                    w2_Order.user_id like @user_id_like_escaped + '%' ESCAPE '#'
+                  </@@hasval:user_id_like_escaped@@>
+                  <@@hasval:order_status@@>
+                    AND
+                    -- 注文ステータス
+                    w2_Order.order_status = @order_status
+                  </@@hasval:order_status@@>
+                  <@@hasval:order_recognition_date_from@@>
+                    AND
+                    -- 受注承認日
+                    w2_Order.order_recognition_date >= @order_recognition_date_from
+                  </@@hasval:order_recognition_date_from@@>
+                  <@@hasval:order_recognition_date_to@@>
+                    AND
+                    -- 受注承認日
+                    w2_Order.order_recognition_date < @order_recognition_date_to
+                  </@@hasval:order_recognition_date_to@@>
+                  <@@hasval:order_stockreserved_date_from@@>
+                    AND
+                    -- 在庫引当日
+                    w2_Order.order_stockreserved_date >= @order_stockreserved_date_from
+                  </@@hasval:order_stockreserved_date_from@@>
+                  <@@hasval:order_stockreserved_date_to@@>
+                    AND
+                    -- 在庫引当日
+                    w2_Order.order_stockreserved_date < @order_stockreserved_date_to
+                  </@@hasval:order_stockreserved_date_to@@>
+                  <@@hasval:order_shipping_date_from@@>
+                    AND
+                    -- 出荷手配日
+                    w2_Order.order_shipping_date >= @order_shipping_date_from
+                  </@@hasval:order_shipping_date_from@@>
+                  <@@hasval:order_shipping_date_to@@>
+                    AND
+                    -- 出荷手配日
+                    w2_Order.order_shipping_date < @order_shipping_date_to
+                  </@@hasval:order_shipping_date_to@@>
+                  <@@hasval:order_shipped_date_from@@>
+                    AND
+                    -- 出荷完了日
+                    w2_Order.order_shipped_date >= @order_shipped_date_from
+                  </@@hasval:order_shipped_date_from@@>
+                  <@@hasval:order_shipped_date_to@@>
+                    AND
+                    -- 出荷完了日
+                    w2_Order.order_shipped_date < @order_shipped_date_to
+                  </@@hasval:order_shipped_date_to@@>
+                  <@@hasval:order_delivering_date_from@@>
+                    AND
+                    -- 配送完了日
+                    w2_Order.order_delivering_date >= @order_delivering_date_from
+                  </@@hasval:order_delivering_date_from@@>
+                  <@@hasval:order_delivering_date_to@@>
+                    AND
+                    -- 配送完了日
+                    w2_Order.order_delivering_date < @order_delivering_date_to
+                  </@@hasval:order_delivering_date_to@@>
+                  <@@hasval:order_cancel_date_from@@>
+                    AND
+                    -- キャンセル日
+                    w2_Order.order_cancel_date >= @order_cancel_date_from
+                  </@@hasval:order_cancel_date_from@@>
+                  <@@hasval:order_cancel_date_to@@>
+                    AND
+                    -- キャンセル日
+                    w2_Order.order_cancel_date < @order_cancel_date_to
+                  </@@hasval:order_cancel_date_to@@>
+                  <@@hasval:order_payment_date_from@@>
+                    AND
+                    -- 入金日
+                    w2_Order.order_payment_date >= @order_payment_date_from
+                  </@@hasval:order_payment_date_from@@>
+                  <@@hasval:order_payment_date_to@@>
+                    AND
+                    -- 入金日
+                    w2_Order.order_payment_date < @order_payment_date_to
+                  </@@hasval:order_payment_date_to@@>
+                  <@@hasval:demand_date_from@@>
+                    AND
+                    -- 督促日
+                    w2_Order.demand_date >= @demand_date_from
+                  </@@hasval:demand_date_from@@>
+                  <@@hasval:demand_date_to@@>
+                    AND
+                    -- 督促日
+                    w2_Order.demand_date < @demand_date_to
+                  </@@hasval:demand_date_to@@>
+                  <@@hasval:order_payment_status@@>
+                    AND
+                    -- 入金ステータス
+                    w2_Order.order_payment_status = @order_payment_status
+                  </@@hasval:order_payment_status@@>
+                  <@@hasval:order_kbn@@>
+                    AND
+                    -- 注文区分
+                    w2_Order.order_kbn = @order_kbn
+                    </@@hasval:order_kbn@@>
+                  <@@hasval:owner_name_like_escaped@@>
+                    AND
+                    -- 注文者氏名
+                    w2_OrderOwner.owner_name like '%' + @owner_name_like_escaped + '%' ESCAPE '#'
+                  </@@hasval:owner_name_like_escaped@@>
+                  <@@hasval:owner_name_kana_like_escaped@@>
+                    AND
+                    -- 注文者氏名かな
+                    w2_OrderOwner.owner_name_kana like '%' + @owner_name_kana_like_escaped + '%' ESCAPE '#'
+                  </@@hasval:owner_name_kana_like_escaped@@>
+                  <@@hasval:owner_mail_addr_like_escaped@@>
+                    AND
+                    (
+                      w2_OrderOwner.owner_mail_addr like '%' + @owner_mail_addr_like_escaped + '%' ESCAPE '#'      -- メールアドレス
+                      OR
+                      w2_OrderOwner.owner_mail_addr2 like '%' + @owner_mail_addr_like_escaped + '%' ESCAPE '#'      -- モバイルメールアドレス
+                    )
+                  </@@hasval:owner_mail_addr_like_escaped@@>
+                  <@@hasval:member_rank_id@@>
+                    AND
+                    -- 注文時会員ランク
+                    w2_Order.member_rank_id = @member_rank_id
+                  </@@hasval:member_rank_id@@>
+                  <@@hasval:owner_zip_like_escaped@@>
+                    AND
+                    -- 注文者郵便番号
+                    REPLACE(w2_OrderOwner.owner_zip, '-', '') like REPLACE(@owner_zip_like_escaped, '-', '') + '%' ESCAPE '#'
+                  </@@hasval:owner_zip_like_escaped@@>
+                  <@@hasval:owner_addr_like_escaped@@>
+                    AND
+                    -- 注文者住所
+                    w2_OrderOwner.owner_addr1 + w2_OrderOwner.owner_addr2 + w2_OrderOwner.owner_addr3 + w2_OrderOwner.owner_addr4 + w2_OrderOwner.owner_addr5 + w2_OrderOwner.owner_addr_country_name LIKE '%' + @owner_addr_like_escaped + '%' ESCAPE '#'
+                  </@@hasval:owner_addr_like_escaped@@>
+                  <@@hasval:owner_tel1_like_escaped@@>
+                    AND
+                    -- 注文者電話番号
+                    REPLACE(w2_OrderOwner.owner_tel1, '-', '') LIKE REPLACE(@owner_tel1_like_escaped, '-', '') + '%' ESCAPE '#'
+                  </@@hasval:owner_tel1_like_escaped@@>
+                  <@@hasval:owner_kbn@@>
+                    AND
+                    -- 注文者区分
+                    w2_OrderOwner.owner_kbn LIKE '%' + @owner_kbn + '%' ESCAPE '#'
+                  </@@hasval:owner_kbn@@>
+                  <@@hasval:demand_status@@>
+                    AND
+                    -- 督促ステータス
+                    w2_Order.demand_status = @demand_status
+                  </@@hasval:demand_status@@>
+                  <@@hasval:extend_status1@@>
+                    AND
+                    -- 拡張ステータス１
+                    w2_Order.extend_status1 = @extend_status1
+                  </@@hasval:extend_status1@@>
+                  <@@hasval:extend_status2@@>
+                    AND
+                    -- 拡張ステータス２
+                    w2_Order.extend_status2 = @extend_status2
+                  </@@hasval:extend_status2@@>
+                  <@@hasval:extend_status3@@>
+                    AND
+                    -- 拡張ステータス３
+                    w2_Order.extend_status3 = @extend_status3
+                  </@@hasval:extend_status3@@>
+                  <@@hasval:extend_status4@@>
+                    AND
+                    -- 拡張ステータス４
+                    w2_Order.extend_status4 = @extend_status4
+                  </@@hasval:extend_status4@@>
+                  <@@hasval:extend_status5@@>
+                    AND
+                    -- 拡張ステータス５
+                    w2_Order.extend_status5 = @extend_status5
+                  </@@hasval:extend_status5@@>
+                  <@@hasval:extend_status6@@>
+                    AND
+                    -- 拡張ステータス６
+                    w2_Order.extend_status6 = @extend_status6
+                  </@@hasval:extend_status6@@>
+                  <@@hasval:extend_status7@@>
+                    AND
+                    -- 拡張ステータス７
+                    w2_Order.extend_status7 = @extend_status7
+                  </@@hasval:extend_status7@@>
+                  <@@hasval:extend_status8@@>
+                    AND
+                    -- 拡張ステータス８
+                    w2_Order.extend_status8 = @extend_status8
+                  </@@hasval:extend_status8@@>
+                  <@@hasval:extend_status9@@>
+                    AND
+                    -- 拡張ステータス９
+                    w2_Order.extend_status9 = @extend_status9
+                  </@@hasval:extend_status9@@>
+                  <@@hasval:extend_status10@@>
+                    AND
+                    -- 拡張ステータス１０
+                    w2_Order.extend_status10 = @extend_status10
+                  </@@hasval:extend_status10@@>
+                  <@@hasval:extend_status11@@>
+                    AND
+                    -- 拡張ステータス１１
+                    w2_Order.extend_status11 = @extend_status11
+                  </@@hasval:extend_status11@@>
+                  <@@hasval:extend_status12@@>
+                    AND
+                    -- 拡張ステータス１２
+                    w2_Order.extend_status12 = @extend_status12
+                  </@@hasval:extend_status12@@>
+                  <@@hasval:extend_status13@@>
+                    AND
+                    -- 拡張ステータス１３
+                    w2_Order.extend_status13 = @extend_status13
+                  </@@hasval:extend_status13@@>
+                  <@@hasval:extend_status14@@>
+                    AND
+                    -- 拡張ステータス１４
+                    w2_Order.extend_status14 = @extend_status14
+                  </@@hasval:extend_status14@@>
+                  <@@hasval:extend_status15@@>
+                    AND
+                    -- 拡張ステータス１５
+                    w2_Order.extend_status15 = @extend_status15
+                  </@@hasval:extend_status15@@>
+                  <@@hasval:extend_status16@@>
+                    AND
+                    -- 拡張ステータス１６
+                    w2_Order.extend_status16 = @extend_status16
+                  </@@hasval:extend_status16@@>
+                  <@@hasval:extend_status17@@>
+                    AND
+                    -- 拡張ステータス１７
+                    w2_Order.extend_status17 = @extend_status17
+                  </@@hasval:extend_status17@@>
+                  <@@hasval:extend_status18@@>
+                    AND
+                    -- 拡張ステータス１８
+                    w2_Order.extend_status18 = @extend_status18
+                  </@@hasval:extend_status18@@>
+                  <@@hasval:extend_status19@@>
+                    AND
+                    -- 拡張ステータス１９
+                    w2_Order.extend_status19 = @extend_status19
+                  </@@hasval:extend_status19@@>
+                  <@@hasval:extend_status20@@>
+                    AND
+                    -- 拡張ステータス２０
+                    w2_Order.extend_status20 = @extend_status20
+                  </@@hasval:extend_status20@@>
+                  <@@hasval:extend_status21@@>
+                    AND
+                    -- 拡張ステータス２１
+                    w2_Order.extend_status21 = @extend_status21
+                  </@@hasval:extend_status21@@>
+                  <@@hasval:extend_status22@@>
+                    AND
+                    -- 拡張ステータス２２
+                    w2_Order.extend_status22 = @extend_status22
+                  </@@hasval:extend_status22@@>
+                  <@@hasval:extend_status23@@>
+                    AND
+                    -- 拡張ステータス２３
+                    w2_Order.extend_status23 = @extend_status23
+                  </@@hasval:extend_status23@@>
+                  <@@hasval:extend_status24@@>
+                    AND
+                    -- 拡張ステータス２４
+                    w2_Order.extend_status24 = @extend_status24
+                  </@@hasval:extend_status24@@>
+                  <@@hasval:extend_status25@@>
+                    AND
+                    -- 拡張ステータス２５
+                    w2_Order.extend_status25 = @extend_status25
+                  </@@hasval:extend_status25@@>
+                  <@@hasval:extend_status26@@>
+                    AND
+                    -- 拡張ステータス２６
+                    w2_Order.extend_status26 = @extend_status26
+                  </@@hasval:extend_status26@@>
+                  <@@hasval:extend_status27@@>
+                    AND
+                    -- 拡張ステータス２７
+                    w2_Order.extend_status27 = @extend_status27
+                  </@@hasval:extend_status27@@>
+                  <@@hasval:extend_status28@@>
+                    AND
+                    -- 拡張ステータス２８
+                    w2_Order.extend_status28 = @extend_status28
+                  </@@hasval:extend_status28@@>
+                  <@@hasval:extend_status29@@>
+                    AND
+                    -- 拡張ステータス２９
+                    w2_Order.extend_status29 = @extend_status29
+                  </@@hasval:extend_status29@@>
+                  <@@hasval:extend_status30@@>
+                    AND
+                    -- 拡張ステータス３０
+                    w2_Order.extend_status30 = @extend_status30
+                  </@@hasval:extend_status30@@>
+                  <@@hasval:extend_status31@@>
+                    AND
+                    -- 拡張ステータス３１
+                    w2_Order.extend_status31 = @extend_status31
+                  </@@hasval:extend_status31@@>
+                  <@@hasval:extend_status32@@>
+                    AND
+                    -- 拡張ステータス３２
+                    w2_Order.extend_status32 = @extend_status32
+                  </@@hasval:extend_status32@@>
+                  <@@hasval:extend_status33@@>
+                    AND
+                    -- 拡張ステータス３３
+                    w2_Order.extend_status33 = @extend_status33
+                  </@@hasval:extend_status33@@>
+                  <@@hasval:extend_status34@@>
+                    AND
+                    -- 拡張ステータス３４
+                    w2_Order.extend_status34 = @extend_status34
+                  </@@hasval:extend_status34@@>
+                  <@@hasval:extend_status35@@>
+                    AND
+                    -- 拡張ステータス３５
+                    w2_Order.extend_status35 = @extend_status35
+                  </@@hasval:extend_status35@@>
+                  <@@hasval:extend_status36@@>
+                    AND
+                    -- 拡張ステータス３６
+                    w2_Order.extend_status36 = @extend_status36
+                  </@@hasval:extend_status36@@>
+                  <@@hasval:extend_status37@@>
+                    AND
+                    -- 拡張ステータス３７
+                    w2_Order.extend_status37 = @extend_status37
+                  </@@hasval:extend_status37@@>
+                  <@@hasval:extend_status38@@>
+                    AND
+                    -- 拡張ステータス３８
+                    w2_Order.extend_status38 = @extend_status38
+                  </@@hasval:extend_status38@@>
+                  <@@hasval:extend_status39@@>
+                    AND
+                    -- 拡張ステータス３９
+                    w2_Order.extend_status39 = @extend_status39
+                  </@@hasval:extend_status39@@>
+                  <@@hasval:extend_status40@@>
+                    AND
+                    -- 拡張ステータス４０
+                    w2_Order.extend_status40 = @extend_status40
+                  </@@hasval:extend_status40@@>
+                  <@@hasval:extend_status41@@>
+                    AND
+                    -- 拡張ステータス４１
+                    w2_Order.extend_status41 = @extend_status41
+                  </@@hasval:extend_status41@@>
+                  <@@hasval:extend_status42@@>
+                    AND
+                    -- 拡張ステータス４２
+                    w2_Order.extend_status42 = @extend_status42
+                  </@@hasval:extend_status42@@>
+                  <@@hasval:extend_status43@@>
+                    AND
+                    -- 拡張ステータス４３
+                    w2_Order.extend_status43 = @extend_status43
+                  </@@hasval:extend_status43@@>
+                  <@@hasval:extend_status44@@>
+                    AND
+                    -- 拡張ステータス４４
+                    w2_Order.extend_status44 = @extend_status44
+                  </@@hasval:extend_status44@@>
+                  <@@hasval:extend_status45@@>
+                    AND
+                    -- 拡張ステータス４５
+                    w2_Order.extend_status45 = @extend_status45
+                  </@@hasval:extend_status45@@>
+                  <@@hasval:extend_status46@@>
+                    AND
+                    -- 拡張ステータス４６
+                    w2_Order.extend_status46 = @extend_status46
+                  </@@hasval:extend_status46@@>
+                  <@@hasval:extend_status47@@>
+                    AND
+                    -- 拡張ステータス４７
+                    w2_Order.extend_status47 = @extend_status47
+                  </@@hasval:extend_status47@@>
+                  <@@hasval:extend_status48@@>
+                    AND
+                    -- 拡張ステータス４８
+                    w2_Order.extend_status48 = @extend_status48
+                  </@@hasval:extend_status48@@>
+                  <@@hasval:extend_status49@@>
+                    AND
+                    -- 拡張ステータス４９
+                    w2_Order.extend_status49 = @extend_status49
+                  </@@hasval:extend_status49@@>
+                  <@@hasval:extend_status50@@>
+                    AND
+                    -- 拡張ステータス５０
+                    w2_Order.extend_status50 = @extend_status50
+                  </@@hasval:extend_status50@@>
+                  <@@hasval:extend_status_date1_from@@>
+                  AND
+                    -- 拡張ステータス1更新日
+                    w2_Order.extend_status_date1 >= @extend_status_date1_from
+                  </@@hasval:extend_status_date1_from@@>
+                  <@@hasval:extend_status_date1_to@@>
+                    AND
+                    -- 拡張ステータス1更新日
+                    w2_Order.extend_status_date1 < @extend_status_date1_to
+                  </@@hasval:extend_status_date1_to@@>
+                  <@@hasval:extend_status_date2_from@@>
+                    AND
+                    -- 拡張ステータス2更新日
+                    w2_Order.extend_status_date2 >= @extend_status_date2_from
+                  </@@hasval:extend_status_date2_from@@>
+                  <@@hasval:extend_status_date2_to@@>
+                    AND
+                    -- 拡張ステータス2更新日
+                    w2_Order.extend_status_date2 < @extend_status_date2_to
+                  </@@hasval:extend_status_date2_to@@>
+                  <@@hasval:extend_status_date3_from@@>
+                    AND
+                    -- 拡張ステータス3更新日
+                    w2_Order.extend_status_date3 >= @extend_status_date3_from
+                  </@@hasval:extend_status_date3_from@@>
+                  <@@hasval:extend_status_date3_to@@>
+                    AND
+                    -- 拡張ステータス3更新日
+                    w2_Order.extend_status_date3 < @extend_status_date3_to
+                  </@@hasval:extend_status_date3_to@@>
+                  <@@hasval:extend_status_date4_from@@>
+                    AND
+                    -- 拡張ステータス4更新日
+                    w2_Order.extend_status_date4 >= @extend_status_date4_from
+                  </@@hasval:extend_status_date4_from@@>
+                  <@@hasval:extend_status_date4_to@@>
+                    AND
+                    -- 拡張ステータス4更新日
+                    w2_Order.extend_status_date4 < @extend_status_date4_to
+                  </@@hasval:extend_status_date4_to@@>
+                  <@@hasval:extend_status_date5_from@@>
+                    AND
+                    -- 拡張ステータス5更新日
+                    w2_Order.extend_status_date5 >= @extend_status_date5_from
+                  </@@hasval:extend_status_date5_from@@>
+                  <@@hasval:extend_status_date5_to@@>
+                    AND
+                    -- 拡張ステータス5更新日
+                    w2_Order.extend_status_date5 < @extend_status_date5_to
+                  </@@hasval:extend_status_date5_to@@>
+                  <@@hasval:extend_status_date6_from@@>
+                    AND
+                    -- 拡張ステータス6更新日
+                    w2_Order.extend_status_date6 >= @extend_status_date6_from
+                  </@@hasval:extend_status_date6_from@@>
+                  <@@hasval:extend_status_date6_to@@>
+                    AND
+                    -- 拡張ステータス6更新日
+                    w2_Order.extend_status_date6 < @extend_status_date6_to
+                  </@@hasval:extend_status_date6_to@@>
+                  <@@hasval:extend_status_date7_from@@>
+                    AND
+                    -- 拡張ステータス7更新日
+                    w2_Order.extend_status_date7 >= @extend_status_date7_from
+                  </@@hasval:extend_status_date7_from@@>
+                  <@@hasval:extend_status_date7_to@@>
+                    AND
+                    -- 拡張ステータス7更新日
+                    w2_Order.extend_status_date7 < @extend_status_date7_to
+                  </@@hasval:extend_status_date7_to@@>
+                  <@@hasval:extend_status_date8_from@@>
+                    AND
+                    -- 拡張ステータス8更新日
+                    w2_Order.extend_status_date8 >= @extend_status_date8_from
+                  </@@hasval:extend_status_date8_from@@>
+                  <@@hasval:extend_status_date8_to@@>
+                    AND
+                    -- 拡張ステータス8更新日
+                    w2_Order.extend_status_date8 < @extend_status_date8_to
+                  </@@hasval:extend_status_date8_to@@>
+                  <@@hasval:extend_status_date9_from@@>
+                    AND
+                    -- 拡張ステータス9更新日
+                    w2_Order.extend_status_date9 >= @extend_status_date9_from
+                  </@@hasval:extend_status_date9_from@@>
+                  <@@hasval:extend_status_date9_to@@>
+                    AND
+                    -- 拡張ステータス9更新日
+                    w2_Order.extend_status_date9 < @extend_status_date9_to
+                  </@@hasval:extend_status_date9_to@@>
+                  <@@hasval:extend_status_date10_from@@>
+                    AND
+                    -- 拡張ステータス10更新日
+                    w2_Order.extend_status_date10 >= @extend_status_date10_from
+                  </@@hasval:extend_status_date10_from@@>
+                  <@@hasval:extend_status_date10_to@@>
+                    AND
+                    -- 拡張ステータス10更新日
+                    w2_Order.extend_status_date10 < @extend_status_date10_to
+                  </@@hasval:extend_status_date10_to@@>
+                  <@@hasval:extend_status_date11_from@@>
+                    AND
+                    -- 拡張ステータス11更新日
+                    w2_Order.extend_status_date11 >= @extend_status_date11_from
+                  </@@hasval:extend_status_date11_from@@>
+                  <@@hasval:extend_status_date11_to@@>
+                    AND
+                    -- 拡張ステータス11更新日
+                    w2_Order.extend_status_date11 < @extend_status_date11_to
+                  </@@hasval:extend_status_date11_to@@>
+                  <@@hasval:extend_status_date12_from@@>
+                    AND
+                    -- 拡張ステータス12更新日
+                    w2_Order.extend_status_date12 >= @extend_status_date12_from
+                  </@@hasval:extend_status_date12_from@@>
+                  <@@hasval:extend_status_date12_to@@>
+                    AND
+                    -- 拡張ステータス12更新日
+                    w2_Order.extend_status_date12 < @extend_status_date12_to
+                  </@@hasval:extend_status_date12_to@@>
+                  <@@hasval:extend_status_date13_from@@>
+                    AND
+                    -- 拡張ステータス13更新日
+                    w2_Order.extend_status_date13 >= @extend_status_date13_from
+                  </@@hasval:extend_status_date13_from@@>
+                  <@@hasval:extend_status_date13_to@@>
+                    AND
+                    -- 拡張ステータス13更新日
+                    w2_Order.extend_status_date13 < @extend_status_date13_to
+                  </@@hasval:extend_status_date13_to@@>
+                  <@@hasval:extend_status_date14_from@@>
+                    AND
+                    -- 拡張ステータス14更新日
+                    w2_Order.extend_status_date14 >= @extend_status_date14_from
+                  </@@hasval:extend_status_date14_from@@>
+                  <@@hasval:extend_status_date14_to@@>
+                    AND
+                    -- 拡張ステータス14更新日
+                    w2_Order.extend_status_date14 < @extend_status_date14_to
+                  </@@hasval:extend_status_date14_to@@>
+                  <@@hasval:extend_status_date15_from@@>
+                    AND
+                    -- 拡張ステータス15更新日
+                    w2_Order.extend_status_date15 >= @extend_status_date15_from
+                  </@@hasval:extend_status_date15_from@@>
+                  <@@hasval:extend_status_date15_to@@>
+                    AND
+                    -- 拡張ステータス15更新日
+                    w2_Order.extend_status_date15 < @extend_status_date15_to
+                  </@@hasval:extend_status_date15_to@@>
+                  <@@hasval:extend_status_date16_from@@>
+                    AND
+                    -- 拡張ステータス16更新日
+                    w2_Order.extend_status_date16 >= @extend_status_date16_from
+                  </@@hasval:extend_status_date16_from@@>
+                  <@@hasval:extend_status_date16_to@@>
+                    AND
+                    -- 拡張ステータス16更新日
+                    w2_Order.extend_status_date16 < @extend_status_date16_to
+                  </@@hasval:extend_status_date16_to@@>
+                  <@@hasval:extend_status_date17_from@@>
+                    AND
+                    -- 拡張ステータス17更新日
+                    w2_Order.extend_status_date17 >= @extend_status_date17_from
+                  </@@hasval:extend_status_date17_from@@>
+                  <@@hasval:extend_status_date17_to@@>
+                    AND
+                    -- 拡張ステータス17更新日
+                    w2_Order.extend_status_date17 < @extend_status_date17_to
+                  </@@hasval:extend_status_date17_to@@>
+                  <@@hasval:extend_status_date18_from@@>
+                    AND
+                    -- 拡張ステータス18更新日
+                    w2_Order.extend_status_date18 >= @extend_status_date18_from
+                  </@@hasval:extend_status_date18_from@@>
+                  <@@hasval:extend_status_date18_to@@>
+                    AND
+                    -- 拡張ステータス18更新日
+                    w2_Order.extend_status_date18 < @extend_status_date18_to
+                  </@@hasval:extend_status_date18_to@@>
+                  <@@hasval:extend_status_date19_from@@>
+                    AND
+                    -- 拡張ステータス19更新日
+                    w2_Order.extend_status_date19 >= @extend_status_date19_from
+                  </@@hasval:extend_status_date19_from@@>
+                  <@@hasval:extend_status_date19_to@@>
+                    AND
+                    -- 拡張ステータス19更新日
+                    w2_Order.extend_status_date19 < @extend_status_date19_to
+                  </@@hasval:extend_status_date19_to@@>
+                  <@@hasval:extend_status_date20_from@@>
+                    AND
+                    -- 拡張ステータス20更新日
+                    w2_Order.extend_status_date20 >= @extend_status_date20_from
+                  </@@hasval:extend_status_date20_from@@>
+                  <@@hasval:extend_status_date20_to@@>
+                    AND
+                    -- 拡張ステータス20更新日
+                    w2_Order.extend_status_date20 < @extend_status_date20_to
+                  </@@hasval:extend_status_date20_to@@>
+                                    <@@hasval:extend_status_date21_from@@>
+                    AND
+                    -- 拡張ステータス21更新日
+                    w2_Order.extend_status_date21 >= @extend_status_date21_from
+                  </@@hasval:extend_status_date21_from@@>
+                  <@@hasval:extend_status_date21_to@@>
+                    AND
+                    -- 拡張ステータス21更新日
+                    w2_Order.extend_status_date21 < @extend_status_date21_to
+                  </@@hasval:extend_status_date21_to@@>
+                  <@@hasval:extend_status_date22_from@@>
+                    AND
+                    -- 拡張ステータス22更新日
+                    w2_Order.extend_status_date22 >= @extend_status_date22_from
+                  </@@hasval:extend_status_date22_from@@>
+                  <@@hasval:extend_status_date22_to@@>
+                    AND
+                    -- 拡張ステータス22更新日
+                    w2_Order.extend_status_date22 < @extend_status_date22_to
+                  </@@hasval:extend_status_date22_to@@>
+                  <@@hasval:extend_status_date23_from@@>
+                    AND
+                    -- 拡張ステータス23更新日
+                    w2_Order.extend_status_date23 >= @extend_status_date23_from
+                  </@@hasval:extend_status_date23_from@@>
+                  <@@hasval:extend_status_date23_to@@>
+                    AND
+                    -- 拡張ステータス23更新日
+                    w2_Order.extend_status_date23 < @extend_status_date23_to
+                  </@@hasval:extend_status_date23_to@@>
+                  <@@hasval:extend_status_date24_from@@>
+                    AND
+                    -- 拡張ステータス24更新日
+                    w2_Order.extend_status_date24 >= @extend_status_date24_from
+                  </@@hasval:extend_status_date24_from@@>
+                  <@@hasval:extend_status_date24_to@@>
+                    AND
+                    -- 拡張ステータス24更新日
+                    w2_Order.extend_status_date24 < @extend_status_date24_to
+                  </@@hasval:extend_status_date24_to@@>
+                  <@@hasval:extend_status_date25_from@@>
+                    AND
+                    -- 拡張ステータス25更新日
+                    w2_Order.extend_status_date25 >= @extend_status_date25_from
+                  </@@hasval:extend_status_date25_from@@>
+                  <@@hasval:extend_status_date25_to@@>
+                    AND
+                    -- 拡張ステータス25更新日
+                    w2_Order.extend_status_date25 < @extend_status_date25_to
+                  </@@hasval:extend_status_date25_to@@>
+                  <@@hasval:extend_status_date26_from@@>
+                    AND
+                    -- 拡張ステータス26更新日
+                    w2_Order.extend_status_date26 >= @extend_status_date26_from
+                  </@@hasval:extend_status_date26_from@@>
+                  <@@hasval:extend_status_date26_to@@>
+                    AND
+                    -- 拡張ステータス26更新日
+                    w2_Order.extend_status_date26 < @extend_status_date26_to
+                  </@@hasval:extend_status_date26_to@@>
+                  <@@hasval:extend_status_date27_from@@>
+                    AND
+                    -- 拡張ステータス27更新日
+                    w2_Order.extend_status_date27 >= @extend_status_date27_from
+                  </@@hasval:extend_status_date27_from@@>
+                  <@@hasval:extend_status_date27_to@@>
+                    AND
+                    -- 拡張ステータス27更新日
+                    w2_Order.extend_status_date27 < @extend_status_date27_to
+                  </@@hasval:extend_status_date27_to@@>
+                  <@@hasval:extend_status_date28_from@@>
+                    AND
+                    -- 拡張ステータス28更新日
+                    w2_Order.extend_status_date28 >= @extend_status_date28_from
+                  </@@hasval:extend_status_date28_from@@>
+                  <@@hasval:extend_status_date28_to@@>
+                    AND
+                    -- 拡張ステータス28更新日
+                    w2_Order.extend_status_date28 < @extend_status_date28_to
+                  </@@hasval:extend_status_date28_to@@>
+                  <@@hasval:extend_status_date29_from@@>
+                    AND
+                    -- 拡張ステータス29更新日
+                    w2_Order.extend_status_date29 >= @extend_status_date29_from
+                  </@@hasval:extend_status_date29_from@@>
+                  <@@hasval:extend_status_date29_to@@>
+                    AND
+                    -- 拡張ステータス29更新日
+                    w2_Order.extend_status_date29 < @extend_status_date29_to
+                  </@@hasval:extend_status_date29_to@@>
+                  <@@hasval:extend_status_date30_from@@>
+                    AND
+                    -- 拡張ステータス30更新日
+                    w2_Order.extend_status_date30 >= @extend_status_date30_from
+                  </@@hasval:extend_status_date30_from@@>
+                  <@@hasval:extend_status_date30_to@@>
+                    AND
+                    -- 拡張ステータス30更新日
+                    w2_Order.extend_status_date30 < @extend_status_date30_to
+                  </@@hasval:extend_status_date30_to@@>
+                                    <@@hasval:extend_status_date31_from@@>
+                    AND
+                    -- 拡張ステータス31更新日
+                    w2_Order.extend_status_date31 >= @extend_status_date31_from
+                  </@@hasval:extend_status_date31_from@@>
+                  <@@hasval:extend_status_date31_to@@>
+                    AND
+                    -- 拡張ステータス31更新日
+                    w2_Order.extend_status_date31 < @extend_status_date31_to
+                  </@@hasval:extend_status_date31_to@@>
+                  <@@hasval:extend_status_date32_from@@>
+                    AND
+                    -- 拡張ステータス32更新日
+                    w2_Order.extend_status_date32 >= @extend_status_date32_from
+                  </@@hasval:extend_status_date32_from@@>
+                  <@@hasval:extend_status_date32_to@@>
+                    AND
+                    -- 拡張ステータス32更新日
+                    w2_Order.extend_status_date32 < @extend_status_date32_to
+                  </@@hasval:extend_status_date32_to@@>
+                  <@@hasval:extend_status_date33_from@@>
+                    AND
+                    -- 拡張ステータス33更新日
+                    w2_Order.extend_status_date33 >= @extend_status_date33_from
+                  </@@hasval:extend_status_date33_from@@>
+                  <@@hasval:extend_status_date33_to@@>
+                    AND
+                    -- 拡張ステータス33更新日
+                    w2_Order.extend_status_date33 < @extend_status_date33_to
+                  </@@hasval:extend_status_date33_to@@>
+                  <@@hasval:extend_status_date34_from@@>
+                    AND
+                    -- 拡張ステータス34更新日
+                    w2_Order.extend_status_date34 >= @extend_status_date34_from
+                  </@@hasval:extend_status_date34_from@@>
+                  <@@hasval:extend_status_date34_to@@>
+                    AND
+                    -- 拡張ステータス34更新日
+                    w2_Order.extend_status_date34 < @extend_status_date34_to
+                  </@@hasval:extend_status_date34_to@@>
+                  <@@hasval:extend_status_date35_from@@>
+                    AND
+                    -- 拡張ステータス35更新日
+                    w2_Order.extend_status_date35 >= @extend_status_date35_from
+                  </@@hasval:extend_status_date35_from@@>
+                  <@@hasval:extend_status_date35_to@@>
+                    AND
+                    -- 拡張ステータス35更新日
+                    w2_Order.extend_status_date35 < @extend_status_date35_to
+                  </@@hasval:extend_status_date35_to@@>
+                  <@@hasval:extend_status_date36_from@@>
+                    AND
+                    -- 拡張ステータス36更新日
+                    w2_Order.extend_status_date36 >= @extend_status_date36_from
+                  </@@hasval:extend_status_date36_from@@>
+                  <@@hasval:extend_status_date36_to@@>
+                    AND
+                    -- 拡張ステータス36更新日
+                    w2_Order.extend_status_date36 < @extend_status_date36_to
+                  </@@hasval:extend_status_date36_to@@>
+                  <@@hasval:extend_status_date37_from@@>
+                    AND
+                    -- 拡張ステータス37更新日
+                    w2_Order.extend_status_date37 >= @extend_status_date37_from
+                  </@@hasval:extend_status_date37_from@@>
+                  <@@hasval:extend_status_date37_to@@>
+                    AND
+                    -- 拡張ステータス37更新日
+                    w2_Order.extend_status_date37 < @extend_status_date37_to
+                  </@@hasval:extend_status_date37_to@@>
+                  <@@hasval:extend_status_date38_from@@>
+                    AND
+                    -- 拡張ステータス38更新日
+                    w2_Order.extend_status_date38 >= @extend_status_date38_from
+                  </@@hasval:extend_status_date38_from@@>
+                  <@@hasval:extend_status_date38_to@@>
+                    AND
+                    -- 拡張ステータス38更新日
+                    w2_Order.extend_status_date38 < @extend_status_date38_to
+                  </@@hasval:extend_status_date38_to@@>
+                  <@@hasval:extend_status_date39_from@@>
+                    AND
+                    -- 拡張ステータス39更新日
+                    w2_Order.extend_status_date39 >= @extend_status_date39_from
+                  </@@hasval:extend_status_date39_from@@>
+                  <@@hasval:extend_status_date39_to@@>
+                    AND
+                    -- 拡張ステータス39更新日
+                    w2_Order.extend_status_date39 < @extend_status_date39_to
+                  </@@hasval:extend_status_date39_to@@>
+                  <@@hasval:extend_status_date40_from@@>
+                    AND
+                    -- 拡張ステータス40更新日
+                    w2_Order.extend_status_date40 >= @extend_status_date40_from
+                  </@@hasval:extend_status_date40_from@@>
+                  <@@hasval:extend_status_date40_to@@>
+                    AND
+                    -- 拡張ステータス40更新日
+                    w2_Order.extend_status_date40 < @extend_status_date40_to
+                  </@@hasval:extend_status_date40_to@@>
+                  <@@hasval:extend_status_date41_from@@>
+                    AND
+                    -- 拡張ステータス41更新日
+                    w2_Order.extend_status_date41 >= @extend_status_date41_from
+                  </@@hasval:extend_status_date41_from@@>
+                  <@@hasval:extend_status_date41_to@@>
+                    AND
+                    -- 拡張ステータス41更新日
+                    w2_Order.extend_status_date41 < @extend_status_date41_to
+                  </@@hasval:extend_status_date41_to@@>
+                  <@@hasval:extend_status_date42_from@@>
+                    AND
+                    -- 拡張ステータス42更新日
+                    w2_Order.extend_status_date42 >= @extend_status_date42_from
+                  </@@hasval:extend_status_date42_from@@>
+                  <@@hasval:extend_status_date42_to@@>
+                    AND
+                    -- 拡張ステータス42更新日
+                    w2_Order.extend_status_date42 < @extend_status_date42_to
+                  </@@hasval:extend_status_date42_to@@>
+                  <@@hasval:extend_status_date43_from@@>
+                    AND
+                    -- 拡張ステータス43更新日
+                    w2_Order.extend_status_date43 >= @extend_status_date43_from
+                  </@@hasval:extend_status_date43_from@@>
+                  <@@hasval:extend_status_date43_to@@>
+                    AND
+                    -- 拡張ステータス43更新日
+                    w2_Order.extend_status_date43 < @extend_status_date43_to
+                  </@@hasval:extend_status_date43_to@@>
+                  <@@hasval:extend_status_date44_from@@>
+                    AND
+                    -- 拡張ステータス44更新日
+                    w2_Order.extend_status_date44 >= @extend_status_date44_from
+                  </@@hasval:extend_status_date44_from@@>
+                  <@@hasval:extend_status_date44_to@@>
+                    AND
+                    -- 拡張ステータス44更新日
+                    w2_Order.extend_status_date44 < @extend_status_date44_to
+                  </@@hasval:extend_status_date44_to@@>
+                  <@@hasval:extend_status_date45_from@@>
+                    AND
+                    -- 拡張ステータス45更新日
+                    w2_Order.extend_status_date45 >= @extend_status_date45_from
+                  </@@hasval:extend_status_date45_from@@>
+                  <@@hasval:extend_status_date45_to@@>
+                    AND
+                    -- 拡張ステータス45更新日
+                    w2_Order.extend_status_date45 < @extend_status_date45_to
+                  </@@hasval:extend_status_date45_to@@>
+                  <@@hasval:extend_status_date46_from@@>
+                    AND
+                    -- 拡張ステータス46更新日
+                    w2_Order.extend_status_date46 >= @extend_status_date46_from
+                  </@@hasval:extend_status_date46_from@@>
+                  <@@hasval:extend_status_date46_to@@>
+                    AND
+                    -- 拡張ステータス46更新日
+                    w2_Order.extend_status_date46 < @extend_status_date46_to
+                  </@@hasval:extend_status_date46_to@@>
+                  <@@hasval:extend_status_date47_from@@>
+                    AND
+                    -- 拡張ステータス47更新日
+                    w2_Order.extend_status_date47 >= @extend_status_date47_from
+                  </@@hasval:extend_status_date47_from@@>
+                  <@@hasval:extend_status_date47_to@@>
+                    AND
+                    -- 拡張ステータス47更新日
+                    w2_Order.extend_status_date47 < @extend_status_date47_to
+                  </@@hasval:extend_status_date47_to@@>
+                  <@@hasval:extend_status_date48_from@@>
+                    AND
+                    -- 拡張ステータス48更新日
+                    w2_Order.extend_status_date48 >= @extend_status_date48_from
+                  </@@hasval:extend_status_date48_from@@>
+                  <@@hasval:extend_status_date48_to@@>
+                    AND
+                    -- 拡張ステータス48更新日
+                    w2_Order.extend_status_date48 < @extend_status_date48_to
+                  </@@hasval:extend_status_date48_to@@>
+                  <@@hasval:extend_status_date49_from@@>
+                    AND
+                    -- 拡張ステータス49更新日
+                    w2_Order.extend_status_date49 >= @extend_status_date49_from
+                  </@@hasval:extend_status_date49_from@@>
+                  <@@hasval:extend_status_date49_to@@>
+                    AND
+                    -- 拡張ステータス49更新日
+                    w2_Order.extend_status_date49 < @extend_status_date49_to
+                  </@@hasval:extend_status_date49_to@@>
+                  <@@hasval:extend_status_date50_from@@>
+                    AND
+                    -- 拡張ステータス50更新日
+                    w2_Order.extend_status_date50 >= @extend_status_date50_from
+                  </@@hasval:extend_status_date50_from@@>
+                  <@@hasval:extend_status_date50_to@@>
+                    AND
+                    -- 拡張ステータス50更新日
+                    w2_Order.extend_status_date50 < @extend_status_date50_to
+                  </@@hasval:extend_status_date50_to@@>
+                  <@@hasval:order_payment_kbn@@>
+                    AND
+                    -- 決済種別ID
+                    (
+                    w2_Order.order_payment_kbn = @order_payment_kbn
+                    <@@val:order_payment_kbn:K81@@>
+                    OR
+                    w2_Order.order_payment_kbn = 'K80'
+                    </@@val:order_payment_kbn:K81@@>
+                    )
+                  </@@hasval:order_payment_kbn@@>
+                  <@@hasval:external_payment_status@@>
+                    AND
+                    -- 外部決済ステータス
+                    w2_Order.external_payment_status = @external_payment_status
+                  </@@hasval:external_payment_status@@>
+                  AND
+                  (
+                    (
+                      1 = 1
+                      <@@hasval:external_payment_auth_date_from@@>
+                      AND
+                      (w2_Order.external_payment_auth_date >= @external_payment_auth_date_from)
+                      </@@hasval:external_payment_auth_date_from@@>
+                      <@@hasval:external_payment_auth_date_to@@>
+                      AND
+                      (w2_Order.external_payment_auth_date < @external_payment_auth_date_to)
+                      </@@hasval:external_payment_auth_date_to@@>
+                    )
+                    <@@hasval:external_payment_auth_date_none@@>
+                    OR
+                    (
+                      @external_payment_auth_date_none = '1' AND w2_Order.external_payment_auth_date IS NULL
+                    )
+                    </@@hasval:external_payment_auth_date_none@@>
+
+                  ) -- 最終与信日
+                  <@@hasval:shipping_id@@>
+                    AND
+                    -- 配送料設定ID
+                    w2_Order.shipping_id = @shipping_id
+                  </@@hasval:shipping_id@@>
+                  <@@hasval:scheduled_shipping_date_fromto@@>
+                    -- 出荷予定日（FROMまたはTOがある）
+                    AND
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND
+                           (
+                             (
+                               1 = 1
+                               <@@hasval:scheduled_shipping_date_from@@>
+                               AND
+                               w2_OrderShipping.scheduled_shipping_date >= @scheduled_shipping_date_from
+                               </@@hasval:scheduled_shipping_date_from@@>
+                               <@@hasval:scheduled_shipping_date_to@@>
+                               AND
+                               w2_OrderShipping.scheduled_shipping_date < @scheduled_shipping_date_to
+                               </@@hasval:scheduled_shipping_date_to@@>
+                             )
+                             OR
+                             (
+                               @scheduled_shipping_date_none = '1'
+                               AND
+                               w2_OrderShipping.scheduled_shipping_date IS NULL
+                             )
+                           )
+                    )
+                  </@@hasval:scheduled_shipping_date_fromto@@>
+                  -- 配送希望日（FROMまたはTOがある）
+                  AND
+                  (
+                    1 = 1
+                    <@@hasval:shipping_date_fromto@@>
+                    AND
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND
+                         (
+                            1 = 1
+                            <@@hasval:shipping_date_from@@>
+                            AND
+                            w2_OrderShipping.shipping_date >= @shipping_date_from
+                            </@@hasval:shipping_date_from@@>
+                            <@@hasval:shipping_date_to@@>
+                            AND
+                            w2_OrderShipping.shipping_date < @shipping_date_to
+                            </@@hasval:shipping_date_to@@>
+                         )
+                    )
+                    </@@hasval:shipping_date_fromto@@>
+                    <@@hasval:shipping_date_none_unchecked@@>
+                    -- 配送希望日（配送希望日（from または to）に指定なし&「指定なしを含む」未チェック）
+                    AND
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND  w2_OrderShipping.shipping_date IS NOT NULL
+                    )
+                    </@@hasval:shipping_date_none_unchecked@@>
+                    <@@hasval:shipping_date_none_checked@@>
+                    -- 配送希望日（配送希望日（from または to）に指定あり&「指定なしを含む」チェックあり）
+                    OR
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND  w2_OrderShipping.shipping_date IS NULL
+                    )
+                    </@@hasval:shipping_date_none_checked@@>
+                  )
+                  <@@hasval:shipping_name_like_escaped@@>
+                    -- 配送者名
+                    AND
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND  w2_OrderShipping.shipping_name like '%' + @shipping_name_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:shipping_name_like_escaped@@>
+                  <@@hasval:shipping_name_kana_like_escaped@@>
+                    -- 配送者名かな
+                    AND
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND  w2_OrderShipping.shipping_name_kana like '%' + @shipping_name_kana_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:shipping_name_kana_like_escaped@@>
+                  <@@hasval:shipping_zip_like_escaped@@>
+                    -- 配送先郵便番号
+                    AND
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND  REPLACE(w2_OrderShipping.shipping_zip, '-', '') like REPLACE(@shipping_zip_like_escaped, '-', '') + '%' ESCAPE '#'
+                    )
+                  </@@hasval:shipping_zip_like_escaped@@>
+                  <@@hasval:shipping_tel1_like_escaped@@>
+                    -- 配送者電話番号
+                    AND
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND  REPLACE(w2_OrderShipping.shipping_tel1, '-', '') like REPLACE(@shipping_tel1_like_escaped, '-', '') + '%' ESCAPE '#'
+                    )
+                  </@@hasval:shipping_tel1_like_escaped@@>
+                  <@@hasval:shipping_addr_like_escaped@@>
+                    -- 配送先住所
+                    AND
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND  (w2_OrderShipping.shipping_addr1 + w2_OrderShipping.shipping_addr2 + w2_OrderShipping.shipping_addr3 + w2_OrderShipping.shipping_addr4 + w2_OrderShipping.shipping_addr5 + w2_OrderShipping.shipping_country_name) like '%' + @shipping_addr_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:shipping_addr_like_escaped@@>
+                  <@@hasval:shipping_price_separate_estimates_flg@@>
+                    AND
+                    -- 配送料の別見積もりフラグ
+                    w2_Order.shipping_price_separate_estimates_flg = @shipping_price_separate_estimates_flg
+                  </@@hasval:shipping_price_separate_estimates_flg@@>
+                  <@@hasval:order_stockreserved_status@@>
+                    AND
+                    -- 在庫引当ステータス
+                    w2_Order.order_stockreserved_status = @order_stockreserved_status
+                  </@@hasval:order_stockreserved_status@@>
+                  <@@hasval:order_shipped_status@@>
+                    AND
+                    -- 出荷ステータス
+                    w2_Order.order_shipped_status = @order_shipped_status
+                  </@@hasval:order_shipped_status@@>
+                  <@@hasval:shipping_check_no_like_escaped@@>
+                    AND
+                    -- 配送伝票番号
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderShipping
+                        WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                          AND  w2_OrderShipping.shipping_check_no like '%' + @shipping_check_no_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:shipping_check_no_like_escaped@@>
+                  <@@hasval:another_shipping_flg@@>
+                    AND
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderShipping
+                        WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                          AND
+                          (
+                            (
+                              @another_shipping_flg = 2
+                              AND
+                              w2_OrderShipping.shipping_receiving_store_flg = 1
+                            )
+                            OR
+                            (
+                              @another_shipping_flg != 2
+                              AND
+                              w2_OrderShipping.another_shipping_flg = @another_shipping_flg
+                            )
+                          )
+                    )
+                  </@@hasval:another_shipping_flg@@>
+                  <@@hasval:shipping_method@@>
+                    AND
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderShipping
+                        WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                          AND  w2_OrderShipping.shipping_method = @shipping_method
+                    )
+                  </@@hasval:shipping_method@@>
+                  <@@hasval:shipped_changed_kbn@@>
+                    AND
+                    -- 出荷後変更区分
+                    w2_Order.shipped_changed_kbn = @shipped_changed_kbn
+                  </@@hasval:shipped_changed_kbn@@>
+                  AND
+                  (
+                    1 = 1
+                    <@@hasval:return_exchange_flg_off@@>
+                      -- 以下「返品交換を含む」にチェックがない場合の条件
+                      -- ※通常注文のみ
+                      AND
+                      w2_Order.return_exchange_kbn = '00'
+                    </@@hasval:return_exchange_flg_off@@>
+                    <@@hasval:return_exchange_flg_on@@>
+                      -- 以下「返品交換を含む」にチェックがある場合の条件
+                      <@@hasval:return_exchange_kbn@@>
+                        AND
+                        -- 返品交換区分
+                        w2_Order.return_exchange_kbn = @return_exchange_kbn
+                      </@@hasval:return_exchange_kbn@@>
+                      <@@hasval:return_exchange_reason_kbn@@>
+                        AND
+                        -- 返品交換都合区分
+                        w2_Order.return_exchange_reason_kbn = @return_exchange_reason_kbn
+                      </@@hasval:return_exchange_reason_kbn@@>
+                      <@@hasval:order_return_exchange_status@@>
+                        AND
+                        -- 返品交換ステータス
+                        w2_Order.order_return_exchange_status = @order_return_exchange_status
+                      </@@hasval:order_return_exchange_status@@>
+                      <@@hasval:order_repayment_status@@>
+                        AND
+                        -- 返金ステータス
+                        w2_Order.order_repayment_status = @order_repayment_status
+                      </@@hasval:order_repayment_status@@>
+                      <@@hasval:order_return_exchange_receipt_date_from@@>
+                        AND
+                        -- 返品交換受付日時
+                        w2_Order.order_return_exchange_receipt_date >= @order_return_exchange_receipt_date_from
+                      </@@hasval:order_return_exchange_receipt_date_from@@>
+                      <@@hasval:order_return_exchange_receipt_date_to@@>
+                        AND
+                        -- 返品交換受付日時
+                        w2_Order.order_return_exchange_receipt_date < @order_return_exchange_receipt_date_to
+                      </@@hasval:order_return_exchange_receipt_date_to@@>
+                      <@@hasval:order_return_exchange_arrival_date_from@@>
+                        AND
+                        -- 返品交換商品到着日時
+                        w2_Order.order_return_exchange_arrival_date >= @order_return_exchange_arrival_date_from
+                      </@@hasval:order_return_exchange_arrival_date_from@@>
+                      <@@hasval:order_return_exchange_arrival_date_to@@>
+                        AND
+                        -- 返品交換商品到着日時
+                        w2_Order.order_return_exchange_arrival_date < @order_return_exchange_arrival_date_to
+                      </@@hasval:order_return_exchange_arrival_date_to@@>
+                      <@@hasval:order_return_exchange_complete_date_from@@>
+                        AND
+                        -- 返品交換完了日時
+                        w2_Order.order_return_exchange_complete_date >= @order_return_exchange_complete_date_from
+                      </@@hasval:order_return_exchange_complete_date_from@@>
+                      <@@hasval:order_return_exchange_complete_date_to@@>
+                        AND
+                        -- 返品交換完了日時
+                        w2_Order.order_return_exchange_complete_date < @order_return_exchange_complete_date_to
+                      </@@hasval:order_return_exchange_complete_date_to@@>
+                      <@@hasval:order_repayment_date_from@@>
+                        AND
+                        -- 返金日時
+                        w2_Order.order_repayment_date >= @order_repayment_date_from
+                      </@@hasval:order_repayment_date_from@@>
+                      <@@hasval:order_repayment_date_to@@>
+                        AND
+                        -- 返金日時
+                        w2_Order.order_repayment_date < @order_repayment_date_to
+                      </@@hasval:order_repayment_date_to@@>
+                    </@@hasval:return_exchange_flg_on@@>
+                    <@@hasval:exclude_return_flg@@>
+                        -- 返品を除外
+                        AND
+                        (
+                          w2_Order.return_exchange_kbn = '00'
+                          OR
+                          w2_Order.return_exchange_kbn = '10'
+                        )
+                    </@@hasval:exclude_return_flg@@>
+                  )
+                  <@@hasval:mall_id@@>
+                    AND
+                    -- サイト
+                    w2_Order.mall_id = @mall_id
+                  </@@hasval:mall_id@@>
+                  <@@hasval:product_id_like_escaped@@>
+                    AND
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderItem
+                       WHERE  w2_OrderItem.order_id = w2_Order.order_id
+                         AND  w2_OrderItem.variation_id like @product_id_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:product_id_like_escaped@@>
+                  <@@hasval:product_name_like_escaped@@>
+                    AND
+                    -- 商品名
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderItem
+                        WHERE  w2_OrderItem.order_id = w2_Order.order_id
+                          AND  w2_OrderItem.product_name like '%' + @product_name_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:product_name_like_escaped@@>
+                  <@@hasval:setpromotion_id@@>
+                    AND
+                    -- セットプロモーションID
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderSetPromotion
+                       WHERE  w2_OrderSetPromotion.order_id = w2_Order.order_id
+                         AND  w2_OrderSetPromotion.setpromotion_id LIKE @setpromotion_id + '%'
+                    )
+                  </@@hasval:setpromotion_id@@>
+                  <@@hasval:novelty_id_like_escaped@@>
+                    AND
+                    -- ノベルティID
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderItem
+                       WHERE  w2_OrderItem.order_id = w2_Order.order_id
+                         AND  w2_OrderItem.novelty_id like @novelty_id_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:novelty_id_like_escaped@@>
+                  <@@hasval:recommend_id_like_escaped@@>
+                    AND
+                    -- レコメンドID
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderItem
+                       WHERE  w2_OrderItem.order_id = w2_Order.order_id
+                         AND  w2_OrderItem.recommend_id like @recommend_id_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:recommend_id_like_escaped@@>
+                  <@@hasval:fixed_purchase_id@@>
+                    AND
+                    (
+                      -- 定期購買商品
+                      (
+                        @fixed_purchase_id = '1'
+                        AND
+                        w2_Order.fixed_purchase_id <> ''
+                      )
+                      OR
+                      (
+                        @fixed_purchase_id = '0'
+                        AND
+                        w2_Order.fixed_purchase_id = ''
+                      )
+                    )
+                  </@@hasval:fixed_purchase_id@@>
+                  <@@hasval:fixed_purchase_order_count_from@@>
+                    -- 定期購入回数(注文時点)
+                    AND (w2_Order.fixed_purchase_order_count >= @fixed_purchase_order_count_from)
+                  </@@hasval:fixed_purchase_order_count_from@@>
+                  <@@hasval:fixed_purchase_order_count_to@@>
+                    -- 定期購入回数(注文時点)
+                    AND (w2_Order.fixed_purchase_order_count <= @fixed_purchase_order_count_to)
+                  </@@hasval:fixed_purchase_order_count_to@@>
+                  <@@hasval:fixed_purchase_shipped_count_from@@>
+                    -- 定期購入回数(出荷時点)
+                    AND (w2_Order.fixed_purchase_shipped_count >= @fixed_purchase_shipped_count_from)
+                  </@@hasval:fixed_purchase_shipped_count_from@@>
+                  <@@hasval:fixed_purchase_shipped_count_to@@>
+                    -- 定期購入回数(出荷時点)
+                    AND (w2_Order.fixed_purchase_shipped_count <= @fixed_purchase_shipped_count_to)
+                  </@@hasval:fixed_purchase_shipped_count_to@@>
+                  <@@hasval:order_subscription_box_order_count_from@@>
+                    -- 頒布会購入回数
+                    AND (w2_Order.order_subscription_box_order_count >= @order_subscription_box_order_count_from)
+                  </@@hasval:order_subscription_box_order_count_from@@>
+                  <@@hasval:order_subscription_box_order_count_to@@>
+                    -- 頒布会購入回数
+                    AND (w2_Order.order_subscription_box_order_count <= @order_subscription_box_order_count_to)
+                  </@@hasval:order_subscription_box_order_count_to@@>
+                  <@@hasval:memo@@>
+                    AND
+                    (
+                      (
+                        -- 注文メモありのみ
+                        @memo = '1'
+                        AND
+                        w2_Order.memo <> ''
+                        AND
+                        w2_Order.memo like '%' + @memo_like_escaped + '%' ESCAPE '#'
+                      )
+                      OR
+                      (
+                        -- 注文メモなしのみ
+                        @memo = '0'
+                        AND
+                        w2_Order.memo = ''
+                      )
+                    )
+                  </@@hasval:memo@@>
+                  <@@hasval:product_option_texts@@>
+                    AND
+                    (
+                      -- 付帯情報ありのみ
+                      @product_option_texts = '1'
+                      AND
+                      EXISTS
+                      (
+                        SELECT  *
+                          FROM  w2_OrderItem
+                         WHERE  w2_OrderItem.order_id = w2_Order.order_id
+                           AND  w2_OrderItem.product_option_texts <> ''
+                           AND  (w2_OrderItem.product_option_texts like '%' + @product_option_texts_like_escaped + '%' ESCAPE '#')
+                      )
+                    )
+                    OR
+                    (
+                      -- 付帯情報なしのみ
+                      @product_option_texts = '0'
+                      AND
+                      NOT EXISTS
+                      (
+                        SELECT  *
+                          FROM  w2_OrderItem
+                         WHERE  w2_OrderItem.order_id = w2_Order.order_id
+                           AND  w2_OrderItem.product_option_texts <> ''
+                      )
+                    )
+                  </@@hasval:product_option_texts@@>
+                  <@@hasval:management_memo@@>
+                    AND
+                    (
+                      (
+                        -- 管理メモありのみ
+                        @management_memo = '1'
+                        AND
+                        w2_Order.management_memo <> ''
+                        AND
+                        (w2_Order.management_memo like '%' + @management_memo_like_escaped + '%' ESCAPE '#')
+                      )
+                      OR
+                      (
+                        -- 管理メモなしのみ
+                        @management_memo = '0'
+                        AND
+                        w2_Order.management_memo = ''
+                      )
+                    )
+                  </@@hasval:management_memo@@>
+                  <@@hasval:shipping_memo@@>
+                    AND
+                    (
+                      (
+                        -- 配送メモありのみ
+                        @shipping_memo = '1'
+                        AND
+                        w2_Order.shipping_memo <> ''
+                        AND
+                        (w2_Order.shipping_memo LIKE '%' + @shipping_memo_like_escaped + '%' ESCAPE '#')
+                      )
+                      OR
+                      (
+                        -- 配送メモなしのみ
+                        @shipping_memo = '0'
+                        AND
+                        w2_Order.shipping_memo = ''
+                      )
+                    )
+                  </@@hasval:shipping_memo@@>
+                  <@@hasval:payment_memo@@>
+                    AND
+                    (
+                      (
+                        -- 決済連携メモありのみ
+                        @payment_memo = '1'
+                        AND
+                        w2_Order.payment_memo <> ''
+                        AND
+                        (w2_Order.payment_memo like '%' + @payment_memo_like_escaped + '%' ESCAPE '#')
+                      )
+                      OR
+                      (
+                        -- 決済連携メモなしのみ
+                        @payment_memo = '0'
+                        AND
+                        w2_Order.payment_memo = ''
+                      )
+                    )
+                  </@@hasval:payment_memo@@>
+                  <@@hasval:relation_memo@@>
+                    AND
+                    (
+                      (
+                        -- 外部連携メモありのみ
+                        @relation_memo = '1'
+                        AND
+                        w2_Order.relation_memo <> ''
+                        AND
+                        (w2_Order.relation_memo like '%' + @relation_memo_like_escaped + '%' ESCAPE '#')
+                      )
+                      OR
+                      (
+                        -- 外部連携メモなしのみ
+                        @relation_memo = '0'
+                        AND
+                        w2_Order.relation_memo = ''
+                      )
+                    )
+                  </@@hasval:relation_memo@@>
+                  <@@hasval:user_memo@@>
+                    AND
+                    (
+                      (
+                        -- Have User Memo
+                        @user_memo = '1'
+                        AND
+                        w2_User.user_memo <> ''
+                        AND
+                        (w2_User.user_memo like '%' + @user_memo_like_escaped + '%' ESCAPE '#')
+                      )
+                      OR
+                      (
+                        -- Not Have User Memo
+                        @user_memo = '0'
+                        AND
+                        w2_User.user_memo = ''
+                      )
+                    )
+                  </@@hasval:user_memo@@>
+                  <@@hasval:gift_flg@@>
+                    AND
+                    -- ギフト購入フラグ
+                    w2_Order.gift_flg = @gift_flg
+                  </@@hasval:gift_flg@@>
+                  <@@hasval:digital_contents_flg@@>
+                    AND
+                    -- デジタルコンテンツ商品フラグ
+                    w2_order.digital_contents_flg = @digital_contents_flg
+                  </@@hasval:digital_contents_flg@@>
+                  <@@hasval:owner_company_name_like_escaped@@>
+                    AND
+                    -- 注文者の企業名
+                    w2_OrderOwner.owner_company_name like '%' + @owner_company_name_like_escaped + '%' ESCAPE '#'
+                  </@@hasval:owner_company_name_like_escaped@@>
+                  <@@hasval:user_management_level_id@@>
+                    AND
+                    (
+                      (
+                        @user_management_level_exclude = '0' AND w2_User.user_management_level_id = @user_management_level_id
+                      )
+                      OR
+                      (
+                        @user_management_level_exclude = '1' AND w2_User.user_management_level_id <> @user_management_level_id
+                      )
+                    )
+                  </@@hasval:user_management_level_id@@>
+                  <@@hasval:productsale_id_like_escaped@@>
+                    AND
+                    -- 商品セールID
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderItem
+                       WHERE  w2_OrderItem.order_id = w2_Order.order_id
+                         AND  w2_OrderItem.productsale_id like @productsale_id_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:productsale_id_like_escaped@@>
+                  <@@hasval:coupon_code_like_escaped@@>
+                    AND
+                    -- クーポンコード
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderCoupon
+                       WHERE  w2_OrderCoupon.order_id = w2_Order.order_id
+                         AND  w2_OrderCoupon.coupon_code like @coupon_code_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:coupon_code_like_escaped@@>
+                  <@@hasval:coupon_name_like_escaped@@>
+                    AND
+                    -- クーポンコード（管理用名称）
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderCoupon
+                       WHERE  w2_OrderCoupon.order_id = w2_Order.order_id
+                         AND  w2_OrderCoupon.coupon_name LIKE '%' + @coupon_name_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:coupon_name_like_escaped@@>
+                  <@@hasval:advcode@@>
+                    AND
+                    (
+                      -- AdvCode
+                      (
+                        -- AdvCode First
+                        @advcode = '1'
+                        AND
+                        w2_Order.advcode_first <> ''
+                        AND
+                        w2_Order.advcode_first LIKE '%' + @advcode_like_escaped + '%' ESCAPE '#'
+                      )
+                      OR
+                      (
+                        -- AdvCode New
+                        @advcode = '2'
+                        AND
+                        w2_Order.advcode_new <> ''
+                        AND
+                        w2_Order.advcode_new LIKE '%' + @advcode_like_escaped + '%' ESCAPE '#'
+                      )
+                      OR
+                      (
+                        -- AdvCode First Or AdvCode New
+                        @advcode = '3'
+                        AND
+                        (
+                          (
+                             w2_Order.advcode_new <> ''
+                             AND
+                             w2_Order.advcode_new LIKE '%' + @advcode_like_escaped + '%' ESCAPE '#'
+                          )
+                          OR
+                          (
+                             w2_Order.advcode_first <> ''
+                             AND
+                             w2_Order.advcode_first LIKE '%' + @advcode_like_escaped + '%' ESCAPE '#'
+                          )
+                        )
+                      )
+                    )
+                  </@@hasval:advcode@@>
+                  <@@hasval:product_bundle_id_like_escaped@@>
+                    AND
+                    -- 商品同梱ID
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderItem
+                       WHERE  w2_Order.order_id = w2_OrderItem.order_id
+                         AND  w2_OrderItem.product_bundle_id LIKE @product_bundle_id_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:product_bundle_id_like_escaped@@>
+                  <@@hasval:product_bundle_id_like_escaped@@>
+                    AND
+                    -- 商品同梱ID
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_OrderItem
+                       WHERE  w2_Order.order_id = w2_OrderItem.order_id
+                         AND  w2_OrderItem.product_bundle_id LIKE @product_bundle_id_like_escaped + '%' ESCAPE '#'
+                    )
+                  </@@hasval:product_bundle_id_like_escaped@@>
+                  <@@hasval:external_order_id_like_escaped@@>
+                    AND
+                    -- 外部連携取込ステータス
+                    w2_Order.external_order_id LIKE @external_order_id_like_escaped + '%' ESCAPE '#'
+                  </@@hasval:external_order_id_like_escaped@@>
+                  <@@hasval:external_import_status@@>
+                    AND
+                    -- 外部連携取込ステータス
+                    w2_Order.external_import_status = @external_import_status
+                  </@@hasval:external_import_status@@>
+                  <@@hasval:mall_link_status@@>
+                    AND
+                    -- モール連携ステータス
+                    w2_Order.mall_link_status = @mall_link_status
+                  </@@hasval:mall_link_status@@>
+                   <@@hasval:payment_order_id_like_escaped@@>
+                    AND
+                    -- 決済注文ID
+                    w2_Order.payment_order_id LIKE @payment_order_id_like_escaped + '%' ESCAPE '#'
+                  </@@hasval:payment_order_id_like_escaped@@>
+                  <@@hasval:card_tran_id_like_escaped@@>
+                    AND
+                    -- 決済取引ID
+                    w2_Order.card_tran_id LIKE @card_tran_id_like_escaped + '%' ESCAPE '#'
+                  </@@hasval:card_tran_id_like_escaped@@>
+                  <@@hasval:order_count_order_from@@>
+                    -- 購入回数(注文時点)
+                    AND (w2_Order.order_count_order >= @order_count_order_from)
+                  </@@hasval:order_count_order_from@@>
+                  <@@hasval:order_count_order_to@@>
+                    -- 購入回数(注文時点)
+                    AND (w2_Order.order_count_order <= @order_count_order_to)
+                  </@@hasval:order_count_order_to@@>
+                  <@@hasval:receipt_flg@@>
+                    AND
+                    -- 領収書希望フラグ
+                    w2_Order.receipt_flg = @receipt_flg
+                  </@@hasval:receipt_flg@@>
+                  <@@hasval:invoice_bundle_flg@@>
+                    AND
+                    -- 請求書同梱フラグ
+                    w2_Order.invoice_bundle_flg = @invoice_bundle_flg
+                  </@@hasval:invoice_bundle_flg@@>
+                  <@@hasval:tw_invoice_no@@>
+                    AND
+                    -- TwInvoiceNo
+                    w2_TwOrderInvoice.tw_invoice_no = @tw_invoice_no
+                  </@@hasval:tw_invoice_no@@>
+                  <@@hasval:tw_invoice_status@@>
+                    AND
+                    -- TwInvoiceStatus
+                    w2_TwOrderInvoice.tw_invoice_status = @tw_invoice_status
+                  </@@hasval:tw_invoice_status@@>
+                  <@@hasval:shipping_status@@>
+                    AND
+                    EXISTS
+                    (
+                      SELECT  w2_OrderShipping.*
+                        FROM  w2_OrderShipping
+                        WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                          AND  w2_OrderShipping.shipping_status = @shipping_status
+                    )
+                  </@@hasval:shipping_status@@>
+                  <@@hasval:shipping_addr1@@>
+                    AND
+                    EXISTS
+                    (
+                      SELECT  w2_OrderShipping.order_id
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND  w2_OrderShipping.shipping_addr1 IN ('@@ order_shipping_addr1 @@')
+                    )
+                  </@@hasval:shipping_addr1@@>
+                  <@@hasval:order_extend_flg@@>
+                  AND
+                  (
+                    <@@val:order_extend_flg:1@@>
+                      <@@hasnoval:order_extend_like_escaped@@>
+                        (@@ order_extend_field_name @@ <> '' AND @@ order_extend_field_name @@ IS NOT NULL)
+                      </@@hasnoval:order_extend_like_escaped@@>
+                      <@@hasval:order_extend_like_escaped@@>
+                        <@@val:order_extend_type:TB@@>
+                          @@ order_extend_field_name @@ LIKE '%' + @order_extend_like_escaped + '%'  ESCAPE '#'
+                        </@@val:order_extend_type:TB@@>
+                        <@@val:order_extend_type:CB@@>
+                          (
+                            -- 1カラムに複数の値が格納されている場合にもマッチングさせる
+                            @@ order_extend_field_name @@ = @order_extend_like_escaped
+                            OR
+                            @@ order_extend_field_name @@ LIKE '%,' + @order_extend_like_escaped + ',%' ESCAPE '#'
+                            OR
+                            @@ order_extend_field_name @@ LIKE + @order_extend_like_escaped + ',%' ESCAPE '#'
+                            OR
+                            @@ order_extend_field_name @@ LIKE '%,' + @order_extend_like_escaped ESCAPE '#'
+                          )
+                        </@@val:order_extend_type:CB@@>
+                        <@@val:order_extend_type:DDL,RB@@>
+                          (
+                            @@ order_extend_field_name @@ = @order_extend_like_escaped
+                          )
+                        </@@val:order_extend_type:DDL,RB@@>
+                      </@@hasval:order_extend_like_escaped@@>
+                    </@@val:order_extend_flg:1@@>
+                    <@@val:order_extend_flg:0@@>
+                      (
+                        @@ order_extend_field_name @@ = ''
+                        OR
+                        @@ order_extend_field_name @@ IS NULL
+                      )
+                    </@@val:order_extend_flg:0@@>
+                  )
+                  </@@hasval:order_extend_flg@@>
+                  <@@hasval:shipping_status_code@@>
+                    -- 完了状態コード
+                    AND
+                    EXISTS
+                    (
+                      SELECT  w2_OrderShipping.*
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND  w2_OrderShipping.shipping_status_code = @shipping_status_code
+                )
+                  </@@hasval:shipping_status_code@@>
+                  <@@hasval:shipping_current_status@@>
+                    -- 現在の状態
+                    AND
+                    EXISTS
+                    (
+                      SELECT  w2_OrderShipping.*
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND  w2_OrderShipping.shipping_current_status = @shipping_current_status
+                    )
+                  </@@hasval:shipping_current_status@@>
+                  <@@hasval:storepickup_status@@>
+                    AND
+                    (
+                      @storepickup_status = '1'
+                      OR
+                      w2_Order.storepickup_status = @storepickup_status
+                    )
+                    @@ real_shop_ids_condition @@
+                  </@@hasval:storepickup_status@@>
+                  <@@hasval:real_shop_id_like_escaped@@>
+                    AND
+                    -- 受取店舗ID
+                    w2_RealShop.real_shop_id like '%' + @real_shop_id_like_escaped + '%' ESCAPE '#'
+                  </@@hasval:real_shop_id_like_escaped@@>
+                  <@@hasval:name_like_escaped@@>
+                    AND
+                    -- 受取店舗
+                    w2_RealShop.name like '%' + @name_like_escaped + '%' ESCAPE '#'
+                  </@@hasval:name_like_escaped@@>
+                  )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="order_id_identical" Type="nvarchar" Size="60" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="owner_name_like_escaped" Type="nvarchar" Size="80" />
+      <Input Name="owner_name_kana_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="owner_mail_addr_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="owner_zip_like_escaped" Type="nvarchar" Size="16" />
+      <Input Name="owner_addr_like_escaped" Type="nvarchar" Size="400" />
+      <Input Name="owner_tel1_like_escaped" Type="nvarchar" Size="32" />
+      <Input Name="owner_kbn" Type="nvarchar" Size="10" />
+      <Input Name="order_status" Type="nvarchar" Size="30" />
+      <Input Name="order_date_from" Type="datetime" />
+      <Input Name="order_date_to" Type="datetime" />
+      <Input Name="order_recognition_date_from" Type="datetime" />
+      <Input Name="order_recognition_date_to" Type="datetime" />
+      <Input Name="order_stockreserved_date_from" Type="datetime" />
+      <Input Name="order_stockreserved_date_to" Type="datetime" />
+      <Input Name="order_shipping_date_from" Type="datetime" />
+      <Input Name="order_shipping_date_to" Type="datetime" />
+      <Input Name="order_shipping_date_fromto" Type="datetime" />
+      <Input Name="order_shipped_date_from" Type="datetime" />
+      <Input Name="order_shipped_date_to" Type="datetime" />
+      <Input Name="order_delivering_date_from" Type="datetime" />
+      <Input Name="order_delivering_date_to" Type="datetime" />
+      <Input Name="order_cancel_date_from" Type="datetime" />
+      <Input Name="order_cancel_date_to" Type="datetime" />
+      <Input Name="order_payment_date_from" Type="datetime" />
+      <Input Name="order_payment_date_to" Type="datetime" />
+      <Input Name="demand_date_from" Type="datetime" />
+      <Input Name="demand_date_to" Type="datetime" />
+      <Input Name="order_payment_status" Type="nvarchar" Size="10" />
+      <Input Name="order_kbn" Type="nvarchar" Size="10" />
+      <Input Name="demand_status" Type="nvarchar" Size="1" />
+      <Input Name="order_payment_kbn" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="order_stockreserved_status" Type="nvarchar" Size="10" />
+      <Input Name="order_shipped_status" Type="nvarchar" Size="10" />
+      <Input Name="shipping_check_no_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="shipped_changed_kbn" Type="nvarchar" Size="10" />
+      <Input Name="return_exchange_flg" Type="nvarchar" Size="1" />
+      <Input Name="return_exchange_kbn" Type="nvarchar" Size="10" />
+      <Input Name="return_exchange_reason_kbn" Type="nvarchar" Size="10" />
+      <Input Name="extend_status1" Type="nvarchar" Size="10" />
+      <Input Name="extend_status2" Type="nvarchar" Size="10" />
+      <Input Name="extend_status3" Type="nvarchar" Size="10" />
+      <Input Name="extend_status4" Type="nvarchar" Size="10" />
+      <Input Name="extend_status5" Type="nvarchar" Size="10" />
+      <Input Name="extend_status6" Type="nvarchar" Size="10" />
+      <Input Name="extend_status7" Type="nvarchar" Size="10" />
+      <Input Name="extend_status8" Type="nvarchar" Size="10" />
+      <Input Name="extend_status9" Type="nvarchar" Size="10" />
+      <Input Name="extend_status10" Type="nvarchar" Size="10" />
+      <Input Name="extend_status11" Type="nvarchar" Size="10" />
+      <Input Name="extend_status12" Type="nvarchar" Size="10" />
+      <Input Name="extend_status13" Type="nvarchar" Size="10" />
+      <Input Name="extend_status14" Type="nvarchar" Size="10" />
+      <Input Name="extend_status15" Type="nvarchar" Size="10" />
+      <Input Name="extend_status16" Type="nvarchar" Size="10" />
+      <Input Name="extend_status17" Type="nvarchar" Size="10" />
+      <Input Name="extend_status18" Type="nvarchar" Size="10" />
+      <Input Name="extend_status19" Type="nvarchar" Size="10" />
+      <Input Name="extend_status20" Type="nvarchar" Size="10" />
+      <Input Name="extend_status21" Type="nvarchar" Size="10" />
+      <Input Name="extend_status22" Type="nvarchar" Size="10" />
+      <Input Name="extend_status23" Type="nvarchar" Size="10" />
+      <Input Name="extend_status24" Type="nvarchar" Size="10" />
+      <Input Name="extend_status25" Type="nvarchar" Size="10" />
+      <Input Name="extend_status26" Type="nvarchar" Size="10" />
+      <Input Name="extend_status27" Type="nvarchar" Size="10" />
+      <Input Name="extend_status28" Type="nvarchar" Size="10" />
+      <Input Name="extend_status29" Type="nvarchar" Size="10" />
+      <Input Name="extend_status30" Type="nvarchar" Size="10" />
+      <Input Name="extend_status31" Type="nvarchar" Size="10" />
+      <Input Name="extend_status32" Type="nvarchar" Size="10" />
+      <Input Name="extend_status33" Type="nvarchar" Size="10" />
+      <Input Name="extend_status34" Type="nvarchar" Size="10" />
+      <Input Name="extend_status35" Type="nvarchar" Size="10" />
+      <Input Name="extend_status36" Type="nvarchar" Size="10" />
+      <Input Name="extend_status37" Type="nvarchar" Size="10" />
+      <Input Name="extend_status38" Type="nvarchar" Size="10" />
+      <Input Name="extend_status39" Type="nvarchar" Size="10" />
+      <Input Name="extend_status40" Type="nvarchar" Size="10" />
+      <Input Name="extend_status41" Type="nvarchar" Size="10" />
+      <Input Name="extend_status42" Type="nvarchar" Size="10" />
+      <Input Name="extend_status43" Type="nvarchar" Size="10" />
+      <Input Name="extend_status44" Type="nvarchar" Size="10" />
+      <Input Name="extend_status45" Type="nvarchar" Size="10" />
+      <Input Name="extend_status46" Type="nvarchar" Size="10" />
+      <Input Name="extend_status47" Type="nvarchar" Size="10" />
+      <Input Name="extend_status48" Type="nvarchar" Size="10" />
+      <Input Name="extend_status49" Type="nvarchar" Size="10" />
+      <Input Name="extend_status50" Type="nvarchar" Size="10" />
+      <Input Name="extend_status_date1_from" Type="datetime" />
+      <Input Name="extend_status_date1_to" Type="datetime" />
+      <Input Name="extend_status_date2_from" Type="datetime" />
+      <Input Name="extend_status_date2_to" Type="datetime" />
+      <Input Name="extend_status_date3_from" Type="datetime" />
+      <Input Name="extend_status_date3_to" Type="datetime" />
+      <Input Name="extend_status_date4_from" Type="datetime" />
+      <Input Name="extend_status_date4_to" Type="datetime" />
+      <Input Name="extend_status_date5_from" Type="datetime" />
+      <Input Name="extend_status_date5_to" Type="datetime" />
+      <Input Name="extend_status_date6_from" Type="datetime" />
+      <Input Name="extend_status_date6_to" Type="datetime" />
+      <Input Name="extend_status_date7_from" Type="datetime" />
+      <Input Name="extend_status_date7_to" Type="datetime" />
+      <Input Name="extend_status_date8_from" Type="datetime" />
+      <Input Name="extend_status_date8_to" Type="datetime" />
+      <Input Name="extend_status_date9_from" Type="datetime" />
+      <Input Name="extend_status_date9_to" Type="datetime" />
+      <Input Name="extend_status_date10_from" Type="datetime" />
+      <Input Name="extend_status_date10_to" Type="datetime" />
+      <Input Name="extend_status_date11_from" Type="datetime" />
+      <Input Name="extend_status_date11_to" Type="datetime" />
+      <Input Name="extend_status_date12_from" Type="datetime" />
+      <Input Name="extend_status_date12_to" Type="datetime" />
+      <Input Name="extend_status_date13_from" Type="datetime" />
+      <Input Name="extend_status_date13_to" Type="datetime" />
+      <Input Name="extend_status_date14_from" Type="datetime" />
+      <Input Name="extend_status_date14_to" Type="datetime" />
+      <Input Name="extend_status_date15_from" Type="datetime" />
+      <Input Name="extend_status_date15_to" Type="datetime" />
+      <Input Name="extend_status_date16_from" Type="datetime" />
+      <Input Name="extend_status_date16_to" Type="datetime" />
+      <Input Name="extend_status_date17_from" Type="datetime" />
+      <Input Name="extend_status_date17_to" Type="datetime" />
+      <Input Name="extend_status_date18_from" Type="datetime" />
+      <Input Name="extend_status_date18_to" Type="datetime" />
+      <Input Name="extend_status_date19_from" Type="datetime" />
+      <Input Name="extend_status_date19_to" Type="datetime" />
+      <Input Name="extend_status_date20_from" Type="datetime" />
+      <Input Name="extend_status_date20_to" Type="datetime" />
+      <Input Name="extend_status_date21_from" Type="datetime" />
+      <Input Name="extend_status_date21_to" Type="datetime" />
+      <Input Name="extend_status_date22_from" Type="datetime" />
+      <Input Name="extend_status_date22_to" Type="datetime" />
+      <Input Name="extend_status_date23_from" Type="datetime" />
+      <Input Name="extend_status_date23_to" Type="datetime" />
+      <Input Name="extend_status_date24_from" Type="datetime" />
+      <Input Name="extend_status_date24_to" Type="datetime" />
+      <Input Name="extend_status_date25_from" Type="datetime" />
+      <Input Name="extend_status_date25_to" Type="datetime" />
+      <Input Name="extend_status_date26_from" Type="datetime" />
+      <Input Name="extend_status_date26_to" Type="datetime" />
+      <Input Name="extend_status_date27_from" Type="datetime" />
+      <Input Name="extend_status_date27_to" Type="datetime" />
+      <Input Name="extend_status_date28_from" Type="datetime" />
+      <Input Name="extend_status_date28_to" Type="datetime" />
+      <Input Name="extend_status_date29_from" Type="datetime" />
+      <Input Name="extend_status_date29_to" Type="datetime" />
+      <Input Name="extend_status_date30_from" Type="datetime" />
+      <Input Name="extend_status_date30_to" Type="datetime" />
+      <Input Name="extend_status_date31_from" Type="datetime" />
+      <Input Name="extend_status_date31_to" Type="datetime" />
+      <Input Name="extend_status_date32_from" Type="datetime" />
+      <Input Name="extend_status_date32_to" Type="datetime" />
+      <Input Name="extend_status_date33_from" Type="datetime" />
+      <Input Name="extend_status_date33_to" Type="datetime" />
+      <Input Name="extend_status_date34_from" Type="datetime" />
+      <Input Name="extend_status_date34_to" Type="datetime" />
+      <Input Name="extend_status_date35_from" Type="datetime" />
+      <Input Name="extend_status_date35_to" Type="datetime" />
+      <Input Name="extend_status_date36_from" Type="datetime" />
+      <Input Name="extend_status_date36_to" Type="datetime" />
+      <Input Name="extend_status_date37_from" Type="datetime" />
+      <Input Name="extend_status_date37_to" Type="datetime" />
+      <Input Name="extend_status_date38_from" Type="datetime" />
+      <Input Name="extend_status_date38_to" Type="datetime" />
+      <Input Name="extend_status_date39_from" Type="datetime" />
+      <Input Name="extend_status_date39_to" Type="datetime" />
+      <Input Name="extend_status_date40_from" Type="datetime" />
+      <Input Name="extend_status_date40_to" Type="datetime" />
+      <Input Name="extend_status_date41_from" Type="datetime" />
+      <Input Name="extend_status_date41_to" Type="datetime" />
+      <Input Name="extend_status_date42_from" Type="datetime" />
+      <Input Name="extend_status_date42_to" Type="datetime" />
+      <Input Name="extend_status_date43_from" Type="datetime" />
+      <Input Name="extend_status_date43_to" Type="datetime" />
+      <Input Name="extend_status_date44_from" Type="datetime" />
+      <Input Name="extend_status_date44_to" Type="datetime" />
+      <Input Name="extend_status_date45_from" Type="datetime" />
+      <Input Name="extend_status_date45_to" Type="datetime" />
+      <Input Name="extend_status_date46_from" Type="datetime" />
+      <Input Name="extend_status_date46_to" Type="datetime" />
+      <Input Name="extend_status_date47_from" Type="datetime" />
+      <Input Name="extend_status_date47_to" Type="datetime" />
+      <Input Name="extend_status_date48_from" Type="datetime" />
+      <Input Name="extend_status_date48_to" Type="datetime" />
+      <Input Name="extend_status_date49_from" Type="datetime" />
+      <Input Name="extend_status_date49_to" Type="datetime" />
+      <Input Name="extend_status_date50_from" Type="datetime" />
+      <Input Name="extend_status_date50_to" Type="datetime" />
+      <Input Name="order_return_exchange_status" Type="nvarchar" Size="10" />
+      <Input Name="order_return_exchange_receipt_date_from" Type="datetime" />
+      <Input Name="order_return_exchange_receipt_date_to" Type="datetime" />
+      <Input Name="order_return_exchange_arrival_date_from" Type="datetime" />
+      <Input Name="order_return_exchange_arrival_date_to" Type="datetime" />
+      <Input Name="order_return_exchange_complete_date_from" Type="datetime" />
+      <Input Name="order_return_exchange_complete_date_to" Type="datetime" />
+      <Input Name="order_repayment_status" Type="nvarchar" Size="10" />
+      <Input Name="order_repayment_date_from" Type="datetime" />
+      <Input Name="order_repayment_date_to" Type="datetime" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="product_name_like_escaped" Type="nvarchar" Size="400" />
+      <Input Name="setpromotion_id" Type="nvarchar" Size="10" />
+      <Input Name="novelty_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="recommend_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_order_count_from" Type="int" />
+      <Input Name="fixed_purchase_order_count_to" Type="int" />
+      <Input Name="fixed_purchase_shipped_count_from" Type="int" />
+      <Input Name="fixed_purchase_shipped_count_to" Type="int" />
+      <Input Name="memo" Type="nvarchar" Size="1" />
+      <Input Name="management_memo" Type="nvarchar" Size="1" />
+      <Input Name="shipping_memo" Type="nvarchar" Size="1" />
+      <Input Name="payment_memo" Type="nvarchar" Size="1" />
+      <Input Name="relation_memo" Type="nvarchar" Size="1" />
+      <Input Name="memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="management_memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="shipping_memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="payment_memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="relation_memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="product_option_texts" Type="nvarchar" Size="1" />
+      <Input Name="product_option_texts_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="gift_flg" Type="nvarchar" Size="1" />
+      <Input Name="wrapping_paper_type" Type="nvarchar" Size="1" />
+      <Input Name="wrapping_bag_type" Type="nvarchar" Size="1" />
+      <Input Name="digital_contents_flg" Type="nvarchar" Size="2" />
+      <Input Name="owner_company_name_like_escaped" Type="nvarchar" Size="80" />
+      <Input Name="shipping_price_separate_estimates_flg" Type="nvarchar" Size="1" />
+      <Input Name="user_management_level_id" Type="nvarchar" Size="30" />
+      <Input Name="user_management_level_exclude" Type="nvarchar" Size="1" />
+      <Input Name="scheduled_shipping_date_from" Type="datetime" />
+      <Input Name="scheduled_shipping_date_to" Type="datetime" />
+      <Input Name="scheduled_shipping_date_fromto" Type="datetime" />
+      <Input Name="scheduled_shipping_date_none" Type="nvarchar" Size="1" />
+      <Input Name="shipping_date_from" Type="datetime" />
+      <Input Name="shipping_date_to" Type="datetime" />
+      <Input Name="shipping_date_none" Type="nvarchar" Size="1" />
+      <Input Name="another_shipping_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_name_like_escaped" Type="nvarchar" Size="80"/>
+      <Input Name="shipping_name_kana_like_escaped" Type="nvarchar" Size="120"/>
+      <Input Name="shipping_zip_like_escaped" Type="nvarchar" Size="16"/>
+      <Input Name="shipping_tel1_like_escaped" Type="nvarchar" Size="32"/>
+      <Input Name="shipping_addr_like_escaped" Type="nvarchar" Size="400"/>
+      <Input Name="coupon_code_like_escaped" Type="nvarchar" Size="60"/>
+      <Input Name="coupon_name_like_escaped" Type="nvarchar" Size="60"/>
+      <Input Name="productsale_id_like_escaped" Type="nvarchar" Size="20"/>
+      <Input Name="user_memo" Type="nvarchar" Size="1" />
+      <Input Name="user_memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="advcode" Type="nvarchar" Size="1" />
+      <Input Name="advcode_like_escaped" Type="nvarchar" Size="60"/>
+      <Input Name="product_bundle_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="external_payment_status" Type="nvarchar" Size="30" />
+      <Input Name="external_payment_auth_date_from" Type="datetime" />
+      <Input Name="external_payment_auth_date_to" Type="datetime" />
+      <Input Name="external_payment_auth_date_none" Type="nvarchar" Size="1" />
+      <Input Name="external_order_id_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="external_import_status" Type="nvarchar" Size="10" />
+      <Input Name="mall_link_status" Type="nvarchar" Size="20" />
+      <Input Name="shipping_method" Type="nvarchar" Size="10" />
+      <Input Name="card_tran_id_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="payment_order_id_like_escaped" Type="nvarchar" Size="50" />
+      <Input Name="order_count_order_from" Type="int" />
+      <Input Name="order_count_order_to" Type="int" />
+      <Input Name="receipt_flg" Type="nvarchar" Size="1" />
+      <Input Name="invoice_bundle_flg" Type="nvarchar" Size="1" />
+      <Input Name="tw_invoice_no" Type="nvarchar" Size="16" />
+      <Input Name="tw_invoice_status" Type="nvarchar" Size="2" />
+      <Input Name="shipping_status" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_type" Type="nvarchar" Size="3" />
+      <Input Name="order_extend_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="order_extend_flg" Type="nvarchar" Size="1"/>
+      <Input Name="shipping_status_code" Type="nvarchar" Size="5" />
+      <Input Name="shipping_current_status" Type="nvarchar" Size="30" />
+      <Input Name="subscription_box_course_id_like_escaped" Type="nvarchar" Size="520" />
+      <Input Name="order_subscription_box_order_count_from" Type="int" />
+      <Input Name="order_subscription_box_order_count_to" Type="int" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="real_shop_id_like_escaped" Type="nvarchar" Size="30" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="400" />
+      <Input Name="storepickup_status" Type="nvarchar" Size="30" />
+      <Input Name="exclude_return_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </ORDER_SEARCH_WHERE>
+
+  <!-- 注文ワークフロー情報一覧取得用WHERE文 -->
+  <ORDERWORKFLOW_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                @@ where @@        -- 条件文に置換
+                )
+                <@@hasval:memo@@>
+                  AND
+                  (
+                    -- 注文メモ
+                    (
+                      -- 注文メモありのみ
+                      @memo = '1'
+                      AND
+                      w2_Order.memo <> ''
+                      AND
+                      w2_Order.memo like '%' + @memo_like_escaped + '%' ESCAPE '#'
+                    )
+                    OR
+                    (
+                      -- 注文メモなしのみ
+                      @memo = '0'
+                      AND
+                      (
+                        w2_Order.memo = ''
+                      )
+                    )
+                  )
+                </@@hasval:memo@@>
+                <@@hasval:management_memo@@>
+                  AND
+                  (
+                    -- 管理メモ
+                    (
+                      -- 管理メモありのみ
+                      @management_memo = '1'
+                      AND
+                      w2_Order.management_memo <> ''
+                      AND
+                      (w2_Order.management_memo like '%' + @management_memo_like_escaped + '%' ESCAPE '#')
+                    )
+                    OR
+                    (
+                      -- 管理メモなしのみ
+                      @management_memo = '0'
+                      AND
+                      w2_Order.management_memo = ''
+                    )
+                  )
+                </@@hasval:management_memo@@>
+                <@@hasval:shipping_memo@@>
+                  AND
+                  (
+                    -- 配送メモ
+                    (
+                      -- 配送メモありのみ
+                      @shipping_memo = '1'
+                      AND
+                      w2_Order.shipping_memo <> ''
+                      AND
+                      (w2_Order.shipping_memo LIKE '%' + @shipping_memo_like_escaped + '%' ESCAPE '#')
+                    )
+                    OR
+                    (
+                      -- 配送メモなしのみ
+                      @shipping_memo = '0'
+                      AND
+                      w2_Order.shipping_memo = ''
+                    )
+                  )
+                </@@hasval:shipping_memo@@>
+                <@@hasval:payment_memo@@>
+                  AND
+                  (
+                    -- 決済連携メモ
+                    (
+                      -- 決済連携メモありのみ
+                      @payment_memo = '1'
+                      AND
+                      w2_Order.payment_memo <> ''
+                      AND
+                      (w2_Order.payment_memo like '%' + @payment_memo_like_escaped + '%' ESCAPE '#')
+                    )
+                    OR
+                    (
+                      -- 決済連携メモなしのみ
+                      @payment_memo = '0'
+                      AND
+                      w2_Order.payment_memo = ''
+                    )
+                  )
+                </@@hasval:payment_memo@@>
+                <@@hasval:relation_memo@@>
+                  AND
+                  (
+                    -- 外部連携メモ
+                    (
+                      -- 外部連携メモありのみ
+                      @relation_memo = '1'
+                      AND
+                      w2_Order.relation_memo <> ''
+                      AND
+                      (w2_Order.relation_memo like '%' + @relation_memo_like_escaped + '%' ESCAPE '#')
+                    )
+                    OR
+                    (
+                      -- 外部連携メモなしのみ
+                      @relation_memo = '0'
+                      AND
+                      w2_Order.relation_memo = ''
+                    )
+                  )
+                </@@hasval:relation_memo@@>
+                <@@hasval:product_option_texts@@>
+                  AND
+                  EXISTS
+                  (
+                    SELECT  *
+                      FROM  w2_OrderItem
+                      WHERE  w2_OrderItem.order_id = w2_Order.order_id
+                      AND
+                      (
+                        (
+                          -- 付帯情報ありのみ
+                          @product_option_texts = '1'
+                          AND
+                          w2_OrderItem.product_option_texts <> ''
+                          AND
+                          (w2_OrderItem.product_option_texts like '%' + @product_option_texts_like_escaped + '%' ESCAPE '#')
+                        )
+                        OR
+                        (
+                          -- 付帯情報なしのみ
+                          @product_option_texts = '0'
+                          AND
+                          w2_OrderItem.product_option_texts = ''
+                        )
+                      )
+                  )
+                </@@hasval:product_option_texts@@>
+                <@@hasval:user_memo@@>
+                  AND
+                  (
+                    -- User Memo
+                    (
+                      -- Have User Memo
+                      @user_memo = '1'
+                      AND
+                      w2_User.user_memo <> ''
+                      AND
+                      (w2_User.user_memo like '%' + @user_memo_like_escaped + '%' ESCAPE '#')
+                    )
+                    OR
+                    (
+                      -- Not Have User Memo
+                      @user_memo = '0'
+                      AND
+                      w2_User.user_memo = ''
+                    )
+                  )
+                </@@hasval:user_memo@@>
+                <@@hasval:receipt_flg@@>
+                  AND
+                  -- 領収書希望フラグ
+                  w2_Order.receipt_flg = @receipt_flg
+                </@@hasval:receipt_flg@@>
+                  <@@hasval:shipping_addr1@@>
+                    AND
+                    EXISTS
+                    (
+                      SELECT  w2_OrderShipping.order_id
+                        FROM  w2_OrderShipping
+                       WHERE  w2_OrderShipping.order_id = w2_Order.order_id
+                         AND  w2_OrderShipping.shipping_addr1 IN ('@@ order_shipping_addr1 @@')
+                    )
+                  </@@hasval:shipping_addr1@@>
+                  <@@hasval:order_extend_name@@>
+                  <@@hasval:order_extend_flg@@>
+                  AND
+                  (
+                    <@@val:order_extend_flg:1@@>
+                      <@@hasnoval:order_extend_like_escaped@@>
+                        (@@ order_extend_field_name @@ <> '' AND @@ order_extend_field_name @@ IS NOT NULL)
+                      </@@hasnoval:order_extend_like_escaped@@>
+                      <@@hasval:order_extend_like_escaped@@>
+                        <@@val:order_extend_type:TB@@>
+                          @@ order_extend_field_name @@ LIKE '%' + @order_extend_like_escaped + '%'  ESCAPE '#'
+                        </@@val:order_extend_type:TB@@>
+                        <@@val:order_extend_type:CB@@>
+                          (
+                            -- 1カラムに複数の値が格納されている場合にもマッチングさせる
+                            @@ order_extend_field_name @@ = @order_extend_like_escaped
+                            OR
+                            @@ order_extend_field_name @@ LIKE '%,' + @order_extend_like_escaped + ',%' ESCAPE '#'
+                            OR
+                            @@ order_extend_field_name @@ LIKE + @order_extend_like_escaped + ',%' ESCAPE '#'
+                            OR
+                            @@ order_extend_field_name @@ LIKE '%,' + @order_extend_like_escaped ESCAPE '#'
+                          )
+                        </@@val:order_extend_type:CB@@>
+                        <@@val:order_extend_type:DDL,RB@@>
+                          (
+                            @@ order_extend_field_name @@ = @order_extend_like_escaped
+                          )
+                        </@@val:order_extend_type:DDL,RB@@>
+                      </@@hasval:order_extend_like_escaped@@>
+                    </@@val:order_extend_flg:1@@>
+                    <@@val:order_extend_flg:0@@>
+                      (
+                        @@ order_extend_field_name @@ = ''
+                        OR
+                        @@ order_extend_field_name @@ IS NULL
+                      )
+                    </@@val:order_extend_flg:0@@>
+                  )
+                  </@@hasval:order_extend_flg@@>
+                  </@@hasval:order_extend_name@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="memo" Type="nvarchar" Size="1" />
+      <Input Name="management_memo" Type="nvarchar" Size="1" />
+      <Input Name="shipping_memo" Type="nvarchar" Size="1" />
+      <Input Name="payment_memo" Type="nvarchar" Size="1" />
+      <Input Name="relation_memo" Type="nvarchar" Size="1" />
+      <Input Name="memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="management_memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="shipping_memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="payment_memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="relation_memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="user_memo" Type="nvarchar" Size="1" />
+      <Input Name="user_memo_like_escaped" Type="nvarchar" Size="max" />
+      <Input Name="product_option_texts" Type="nvarchar" Size="1" />
+      <Input Name="product_option_texts_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="receipt_flg" Type="nvarchar" Size="1" />
+      <Input Name="order_extend_name" Type="nvarchar" Size="20" />
+      <Input Name="order_extend_type" Type="nvarchar" Size="3" />
+      <Input Name="order_extend_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="order_extend_flg" Type="nvarchar" Size="1"/>
+    </Parameter>
+  </ORDERWORKFLOW_SEARCH_WHERE>
+
+  <!-- 会員ランク価格取得SQL（バリエーション単位） -->
+  <MEMBER_RANK_PRICE_PRODUCTVARIATION>
+    <Statement>
+      <![CDATA[
+        (
+          SELECT  TOP 1
+                  w2_ProductPrice.member_rank_price
+            FROM  w2_ProductPrice
+                  LEFT JOIN w2_MemberRank ON
+                  (
+                      w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                  )
+            WHERE  w2_ProductPrice.shop_id = w2_ProductView.shop_id
+              AND  w2_ProductPrice.product_id = w2_ProductView.product_id
+              AND  (w2_ProductPrice.variation_id = w2_ProductView.variation_id OR ((w2_ProductView.use_variation_flg = '0') AND (w2_ProductPrice.variation_id = '')))
+              AND  @member_rank_id <> ''
+              AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = @member_rank_id AND valid_flg = 'ON')
+              AND  w2_MemberRank.valid_flg = 'ON'
+          ORDER BY w2_MemberRank.member_rank_order
+        ) AS member_rank_price_variation
+      ]]>
+    </Statement>
+  </MEMBER_RANK_PRICE_PRODUCTVARIATION>
+
+  <!-- 闇市価格取得SQL（バリエーション単位） -->
+  <CLOSED_MARKET_PRICE>
+    <Statement>
+      <![CDATA[
+        (
+          SELECT  TOP 1
+                  w2_ProductSalePrice.sale_price
+            FROM  w2_ProductSale
+                  LEFT JOIN [dbo].[w2_ProductSalePrice] ON
+                  (
+                    w2_ProductSale.shop_id = w2_ProductSalePrice.shop_id
+                    AND
+                    w2_ProductSale.productsale_id  = w2_ProductSalePrice.productsale_id
+                  )
+           WHERE  w2_ProductSale.shop_id = w2_ProductView.shop_id
+             AND  w2_ProductSale.productsale_id = @productsale_id
+             AND  w2_ProductSale.productsale_kbn = 'CM'
+             AND  w2_ProductSale.valid_flg = '1'
+             AND  w2_ProductSalePrice.product_id = w2_ProductView.product_id
+             AND  w2_ProductSalePrice.variation_id = w2_ProductView.variation_id
+        ) AS closed_market_price
+      ]]>
+    </Statement>
+  </CLOSED_MARKET_PRICE>
+
+</Order_Sub>

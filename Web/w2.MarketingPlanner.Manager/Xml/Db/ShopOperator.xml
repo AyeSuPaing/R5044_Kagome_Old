@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : オペレータ系SQLステートメントXML(ShopOperator.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ShopOperator>
+
+  <!-- オペレータ一覧を取得する -->
+  <GetOperatorList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_ShopOperator.operator_id), 0)
+          FROM  w2_ShopOperator
+                [[ SHOPOPERATOR_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_ShopOperator.*,
+                MenuAuthority.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ShopOperator.shop_id,
+                          w2_ShopOperator.operator_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ SHOPOPERATOR_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ShopOperator
+                          [[ SHOPOPERATOR_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ShopOperator ON
+                (
+                  RowIndex.shop_id = w2_ShopOperator.shop_id
+                  AND
+                  RowIndex.operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT JOIN
+                (
+                  SELECT  DISTINCT
+                          w2_MenuAuthority.menu_authority_level,
+                          w2_MenuAuthority.menu_authority_name
+                    FROM  w2_MenuAuthority
+                   WHERE  w2_MenuAuthority.pkg_kbn = '2'  -- w2MarketingPlanner
+                     AND  w2_MenuAuthority.shop_id = @shop_id
+                ) AS MenuAuthority
+                ON
+                (
+                  w2_ShopOperator.menu_access_level2 = MenuAuthority.menu_authority_level
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="menu_access_level2" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetOperatorList>
+  
+  <!-- オペレータ情報を取得する -->
+  <GetOperator>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ShopOperator.*,
+            w2_MenuAuthority.menu_authority_name AS menu_access_level2_name
+          FROM  w2_ShopOperator LEFT JOIN w2_MenuAuthority
+          ON  (
+            w2_ShopOperator.shop_id = w2_MenuAuthority.shop_id
+            AND
+            w2_ShopOperator.menu_access_level2 = w2_MenuAuthority.menu_authority_level
+            AND
+            w2_MenuAuthority.pkg_kbn = '2'  -- w2MarketingPlanner
+            )
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+           AND  w2_ShopOperator.operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetOperator>
+
+  <!-- オペレータ情報を取得する(パスワード条件含む) -->
+  <GetOperatorPassWord>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ShopOperator
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+           AND  w2_ShopOperator.operator_id = @operator_id
+           AND  w2_ShopOperator.password = @password
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="password" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetOperatorPassWord>
+
+  <!-- オペレータを登録する -->
+  <InsertOperator>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ShopOperator
+            (
+            
+            shop_id,
+            operator_id,
+            name,
+            menu_access_level2,
+            login_id,
+            password,
+            valid_flg,
+            <@@hasval:mail_addr@@>
+            mail_addr,
+            </@@hasval:mail_addr@@>
+            last_changed
+            )
+         VALUES  (
+            @shop_id,
+            @operator_id,
+            @name,
+            @menu_access_level2,
+            @login_id,
+            @password,
+            @valid_flg,
+            <@@hasval:mail_addr@@>
+            @mail_addr,
+            </@@hasval:mail_addr@@>
+            @last_changed
+            )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="name" Type="nvarchar" Size="20" />
+      <Input Name="menu_access_level2" Type="int" />
+      <Input Name="login_id" Type="nvarchar" Size="20" />
+      <Input Name="password" Type="nvarchar" Size="20" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertOperator>
+
+  <!-- オペレータを更新する -->
+  <UpdateOperator>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ShopOperator
+           SET  w2_ShopOperator.name = @name,
+            w2_ShopOperator.menu_access_level2 = @menu_access_level2,
+            w2_ShopOperator.login_id = @login_id,
+            w2_ShopOperator.password = ISNULL(@password,w2_ShopOperator.password),  -- nullの場合は変更しない
+            w2_ShopOperator.valid_flg = @valid_flg,
+            w2_ShopOperator.date_changed = getdate(),
+            <@@hasval:mail_addr@@>
+            w2_ShopOperator.mail_addr = @mail_addr,
+            </@@hasval:mail_addr@@>
+            w2_ShopOperator.last_changed = @last_changed
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+           AND  w2_ShopOperator.operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="name" Type="nvarchar" Size="20" />
+      <Input Name="menu_access_level2" Type="int" />
+      <Input Name="login_id" Type="nvarchar" Size="20" />
+      <Input Name="password" Type="nvarchar" Size="20" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateOperator>
+
+  <!-- オペレータの閲覧可能な広告コードを更新する -->
+  <UpdateOperatorAdvAuthority>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ShopOperator
+           SET  w2_ShopOperator.usable_advcode_nos_in_report = @usable_advcode_nos_in_report,
+                w2_ShopOperator.date_changed = GETDATE(),
+                w2_ShopOperator.last_changed = @last_changed
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+           AND  w2_ShopOperator.operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="usable_advcode_nos_in_report" Type="nvarchar" Size="MAX"/>
+    </Parameter>
+  </UpdateOperatorAdvAuthority>
+  
+  <!-- オペレータのパスワードを更新する -->
+  <ChangeOperatorPassword>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ShopOperator
+           SET  w2_ShopOperator.password = @password,
+            w2_ShopOperator.date_changed = getdate(),
+            w2_ShopOperator.last_changed = @last_changed
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+           AND  w2_ShopOperator.operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="password" Type="nvarchar" Size="20" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </ChangeOperatorPassword>
+
+  <!-- オペレータ情報を削除する -->
+  <DeleteOperator>
+    <Statement>
+      <![CDATA[
+        DELETE  
+          FROM  w2_ShopOperator
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+           AND  w2_ShopOperator.operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </DeleteOperator>
+
+  <!-- 登録用ログインID重複チェック -->
+  <CheckDuplicationRegistLoginId>
+    <Statement>
+      <![CDATA[
+      SELECT  count(operator_id) AS count
+        FROM  w2_ShopOperator
+       WHERE  w2_ShopOperator.shop_id = @shop_id
+         AND  w2_ShopOperator.login_id = @login_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="login_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </CheckDuplicationRegistLoginId>
+  
+  <!-- 更新用ログインID重複チェック -->
+  <CheckDuplicationModifyLoginId>
+    <Statement>
+      <![CDATA[
+      SELECT  count(operator_id) AS count
+        FROM  w2_ShopOperator
+       WHERE  w2_ShopOperator.shop_id = @shop_id
+         AND  w2_ShopOperator.operator_id <> @operator_id
+         AND  w2_ShopOperator.login_id = @login_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="login_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </CheckDuplicationModifyLoginId>
+  
+</ShopOperator>

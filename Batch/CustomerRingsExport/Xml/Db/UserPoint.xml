@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザーポイント出力SQLステートメントXML(UserPoint.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<UserPoint>
+  <!-- 差分出力 -->
+  <ExportDifferential>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        [[ TABLE_CTE ]],
+          targetUser AS
+          (
+            SELECT  user_id
+              FROM  w2_User
+             WHERE  w2_User.date_changed >= @date_changed
+          ),
+          targetExtend AS
+          (
+            SELECT  user_id
+              FROM  w2_UserExtend
+             WHERE  w2_UserExtend.date_changed >= @date_changed
+          ),
+          targetAttribute AS
+          (
+            SELECT  user_id
+              FROM  w2_UserAttribute
+             WHERE  w2_UserAttribute.date_changed >= @date_changed
+          ),
+          targetPoint AS
+          (
+            SELECT  user_id
+              FROM  w2_UserPoint
+             WHERE  w2_UserPoint.date_changed >= @date_changed
+               AND  w2_UserPoint.point_type = '01'
+          ),
+          targetUserIds AS
+          (
+            SELECT DISTINCT user_id
+              FROM
+              (
+                  SELECT * FROM targetUser
+                  UNION ALL
+                  SELECT * FROM targetExtend
+                  UNION ALL
+                  SELECT * FROM targetAttribute
+                  UNION ALL
+                  SELECT * FROM targetPoint
+              ) AS tt
+          )
+        
+        SELECT  @@ EXPORT_FIELDS @@
+          FROM  targetUserIds
+                LEFT JOIN UserPoint_CTE ON
+                (
+                  UserPoint_CTE.user_id = targetUserIds.user_id
+                )
+        ORDER BY targetUserIds.user_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date_changed" Type="datetime" />
+    </Parameter>
+  </ExportDifferential>
+
+  <!-- 全件出力 -->
+  <ExportAll>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        [[ TABLE_CTE ]]
+        
+        SELECT  @@ EXPORT_FIELDS @@
+          FROM  w2_User targetUserIds
+                LEFT JOIN UserPoint_CTE ON 
+                (
+                  UserPoint_CTE.user_id = targetUserIds.user_id
+                )
+        ORDER BY targetUserIds.user_id ASC
+      ]]>
+    </Statement>
+  </ExportAll>
+</UserPoint>

@@ -1,0 +1,146 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メール振分設定アイテム系SQLステートメントXML(CsMailAssignSettingItem.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsMailAssignSettingItem>
+  
+  <!-- すべて取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMailAssignSettingItem.*
+          FROM  w2_CsMailAssignSettingItem
+         WHERE  w2_CsMailAssignSettingItem.dept_id = @dept_id
+           AND  w2_CsMailAssignSettingItem.mail_assign_id = @mail_assign_id
+      ORDER BY  w2_CsMailAssignSettingItem.item_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_assign_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAll>
+  
+  <!-- 登録用アイテム取得 -->
+  <GetRegistItemNo>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MAX(item_no),0) + 1
+          FROM  w2_CsMailAssignSettingItem
+         WHERE  w2_CsMailAssignSettingItem.dept_id = @dept_id
+           AND  w2_CsMailAssignSettingItem.mail_assign_id = @mail_assign_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_assign_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetRegistItemNo>
+  
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT w2_CsMailAssignSettingItem
+            (
+               dept_id,
+               mail_assign_id,
+               item_no,
+               matching_target,
+               matching_value,
+               ignore_case,
+               matching_type,
+               last_changed
+            )
+            VALUES
+            (
+              @dept_id,
+              @mail_assign_id,
+              @item_no,
+              @matching_target,
+              @matching_value,
+              @ignore_case,
+              @matching_type,
+              @last_changed
+            )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_assign_id" Type="nvarchar" Size="10" />
+      <Input Name="item_no" Type="int" />
+      <Input Name="matching_target" Type="nvarchar" Size="10" />
+      <Input Name="matching_value" Type="nvarchar" Size="2048" />
+      <Input Name="ignore_case" Type="nvarchar" />
+      <Input Name="matching_type" Type="nvarchar" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+  
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMailAssignSettingItem
+           SET  w2_CsMailAssignSettingItem.matching_target = @matching_target,
+                w2_CsMailAssignSettingItem.matching_value = @matching_value,
+                w2_CsMailAssignSettingItem.ignore_case = @ignore_case,
+                w2_CsMailAssignSettingItem.matching_type = @matching_type,
+                w2_CsMailAssignSettingItem.date_changed = getdate(),
+                w2_CsMailAssignSettingItem.last_changed = @last_changed
+         WHERE  w2_CsMailAssignSettingItem.dept_id = @dept_id
+           AND  w2_CsMailAssignSettingItem.mail_assign_id = @mail_assign_id
+           AND  w2_CsMailAssignSettingItem.item_no = @item_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_assign_id" Type="nvarchar" Size="10" />
+      <Input Name="item_no" Type="int" />
+      <Input Name="matching_target" Type="nvarchar" Size="10" />
+      <Input Name="matching_value" Type="nvarchar" Size="2048" />
+      <Input Name="ignore_case" Type="nvarchar" />
+      <Input Name="matching_type" Type="nvarchar" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE 
+          FROM  w2_CsMailAssignSettingItem
+         WHERE  w2_CsMailAssignSettingItem.dept_id = @dept_id 
+           AND  w2_CsMailAssignSettingItem.mail_assign_id = @mail_assign_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_assign_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+
+  <!-- 以降削除 -->
+  <DeleteAfter>
+    <Statement>
+      <![CDATA[
+        DELETE 
+          FROM  w2_CsMailAssignSettingItem
+         WHERE  w2_CsMailAssignSettingItem.dept_id = @dept_id 
+           AND  w2_CsMailAssignSettingItem.mail_assign_id = @mail_assign_id
+           AND  w2_CsMailAssignSettingItem.item_no >= @item_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_assign_id" Type="nvarchar" Size="10" />
+      <Input Name="item_no" Type="int" />
+    </Parameter>
+  </DeleteAfter>
+  
+</CsMailAssignSettingItem>

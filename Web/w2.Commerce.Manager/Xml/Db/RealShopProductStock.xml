@@ -1,0 +1,241 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : リアル店舗商品在庫SQLステートメントXML(RealShopProductStock.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<RealShopProductStock>
+  <!-- リアル店舗商品在庫一覧取得 -->
+  <GetRealShopProductStockList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_RealShopProductStock.*,
+                w2_ProductView.name,
+                w2_ProductView.variation_name1,
+                w2_ProductView.variation_name2,
+                w2_ProductView.variation_name3
+          FROM  (
+                  SELECT  w2_RealShopProductStock.real_shop_id,
+                          w2_RealShopProductStock.product_id,
+                          w2_RealShopProductStock.variation_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ REALSHOPPRODUCTSTOCK_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_RealShopProductStock
+                        LEFT JOIN w2_RealShop ON
+                        (
+                          w2_RealShopProductStock.real_shop_id = w2_RealShop.real_shop_id
+                        )
+                        LEFT JOIN w2_ProductView ON
+                        (
+                          w2_ProductView.product_id = w2_RealShopProductStock.product_id
+                          AND
+                          w2_ProductView.variation_id = w2_RealShopProductStock.variation_id
+                        )
+                          [[ REALSHOPPRODUCTSTOCK_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_RealShopProductStock ON
+                (
+                  RowIndex.real_shop_id = w2_RealShopProductStock.real_shop_id
+                  AND
+                  RowIndex.product_id = w2_RealShopProductStock.product_id
+                  AND
+                  RowIndex.variation_id = w2_RealShopProductStock.variation_id
+                )
+                LEFT JOIN w2_RealShop ON
+                (
+                  w2_RealShopProductStock.real_shop_id = w2_RealShop.real_shop_id
+                )
+                LEFT JOIN w2_ProductView ON
+                (
+                  w2_ProductView.product_id = w2_RealShopProductStock.product_id
+                  AND
+                  w2_ProductView.variation_id = w2_RealShopProductStock.variation_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="real_shop_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="product_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="variation_id_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="real_shop_stock" Type="int"/>
+      <Input Name="real_shop_stock_type" Type="int" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetRealShopProductStockList>
+
+  <!-- リアル店舗商品在庫情報該当件数取得 -->
+  <GetRealShopProductStockCount>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(COUNT(w2_RealShopProductStock.real_shop_id), 0) AS row_count
+          FROM  w2_RealShopProductStock
+                LEFT JOIN w2_RealShop ON
+                (
+                  w2_RealShopProductStock.real_shop_id = w2_RealShop.real_shop_id
+                )
+                LEFT JOIN w2_ProductView ON
+                (
+                  w2_RealShopProductStock.product_id = w2_ProductView.product_id
+                  AND
+                  w2_RealShopProductStock.variation_id = w2_ProductView.variation_id
+                )
+                [[ REALSHOPPRODUCTSTOCK_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="real_shop_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="product_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="variation_id_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="real_shop_stock" Type="int"/>
+      <Input Name="real_shop_stock_type" Type="int" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetRealShopProductStockCount>
+
+  <!-- リアル店舗商品在庫情報マスタ取得 -->
+  <GetRealShopProductStockMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_RealShopProductStock
+                LEFT JOIN w2_RealShop ON
+                (
+                  w2_RealShopProductStock.real_shop_id = w2_RealShop.real_shop_id
+                )
+                LEFT JOIN w2_ProductView ON
+                (
+                  w2_RealShopProductStock.product_id = w2_ProductView.product_id
+                  AND
+                  w2_RealShopProductStock.variation_id = w2_ProductView.variation_id
+                )
+                [[ REALSHOPPRODUCTSTOCK_SEARCH_WHERE ]]
+                [[ REALSHOPPRODUCTSTOCK_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="real_shop_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="product_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="variation_id_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="real_shop_stock" Type="int"/>
+      <Input Name="real_shop_stock_type" Type="int" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetRealShopProductStockMaster>
+
+  <!--リアル店舗商品在庫挿入 -->
+  <InsertRealShopProductStock>
+    <Statement>
+      <![CDATA[
+      INSERT INTO w2_RealShopProductStock(
+                  w2_RealShopProductStock.real_shop_id,
+                  w2_RealShopProductStock.product_id,
+                  w2_RealShopProductStock.variation_id,
+                  w2_RealShopProductStock.real_shop_stock,
+                  w2_RealShopProductStock.date_created,
+                  w2_RealShopProductStock.date_changed)
+          VALUES (
+                  @real_shop_id,
+                  @product_id,
+                  @variation_id,
+                  @real_shop_stock,
+                  GETDATE(),
+                  GETDATE())
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="real_shop_stock" Type="int" />
+    </Parameter>
+  </InsertRealShopProductStock>
+
+  <!--リアル店舗商品在庫更新 -->
+  <UpdateRealShopProductStock>
+    <Statement>
+      <![CDATA[
+        UPDATE w2_RealShopProductStock
+           SET w2_RealShopProductStock.real_shop_stock = w2_RealShopProductStock.real_shop_stock + @real_shop_stock,
+               w2_RealShopProductStock.last_changed = @last_changed,
+               w2_RealShopProductStock.date_changed = GETDATE()
+         WHERE w2_RealShopProductStock.real_shop_id = @real_shop_id
+           AND w2_RealShopProductStock.product_id = @product_id
+           AND w2_RealShopProductStock.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="real_shop_stock" Type="int"/>
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateRealShopProductStock>
+
+  <!--リアル店舗商品在庫削除 -->
+  <DeleteRealShopProductStock>
+    <Statement>
+      <![CDATA[
+      DELETE  FROM w2_RealShopProductStock
+       WHERE  w2_RealShopProductStock.real_shop_id = @real_shop_id
+         AND  w2_RealShopProductStock.product_id = @product_id
+         AND  w2_RealShopProductStock.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </DeleteRealShopProductStock>
+
+  <!-- リアル店舗情報削除 -->
+  <DeleteRealShopProductStockAll>
+    <Statement>
+      <![CDATA[
+          DELETE w2_RealShopProductStock
+           WHERE w2_RealShopProductStock.real_shop_id= @real_shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteRealShopProductStockAll>
+
+  <!-- リアル店舗商品在庫存在かどうかチェックする -->
+  <CheckExistRealShopProductStock>
+    <Statement>
+      <![CDATA[
+        SELECT COUNT(w2_RealShopProductStock.real_shop_id) AS 'count'
+          FROM w2_RealShopProductStock
+         WHERE w2_RealShopProductStock.real_shop_id = @real_shop_id 
+           AND w2_RealShopProductStock.product_id = @product_id 
+           AND (@variation_id = '' OR w2_RealShopProductStock.variation_id = @product_id + @variation_id)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </CheckExistRealShopProductStock>
+
+</RealShopProductStock>

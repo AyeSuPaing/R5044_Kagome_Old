@@ -1,0 +1,217 @@
+﻿@*
+=========================================================================================================
+  Module      : スタッフ情報登録・編集ページ(Register.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@{
+	ViewBag.Title = "スタッフ情報";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+	var sessionWrapper = new SessionWrapper(this.Session);
+}
+@model w2.Cms.Manager.ViewModels.Staff.RegisterViewModel
+@helper TopButtomControls()
+{
+	<input onclick="javascript: history.back();" type="button" value="  戻る  " class="btn btn-main"/>
+	if (this.Model.IsActionStatusInsert)
+	{
+		<input type="button" value="  確認する  " class="btn btn-main" onclick="return validate('confirm', { name: 'isInsert', value: true });">
+	}
+	if (this.Model.IsActionStatusUpdate)
+	{
+		<input type="button" value="  確認する  " class="btn btn-main" onclick="return validate('confirm', { name: 'isInsert', value: false });">
+	}
+	<input type="submit" id="confirm" style="display: none;">
+}
+@{
+	var shopOperatorLink = Url.Action("Confirm", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_OPERATOR, new
+	{
+		ActionStatus = ActionStatus.Detail,
+		PageLayout = Constants.POPUP_LAYOUT_PATH_DEFAULT
+	});
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<!--▽ タイトル ▽-->
+	<tr><td><h1 class="page-title">スタッフ情報</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	<tr>
+		<td>
+			<h2 class="cmn-hed-h2">
+				スタッフ情報
+				@if (this.Model.IsActionStatusInsert)
+				{
+					@:登録
+				}
+				@if (this.Model.IsActionStatusUpdate)
+				{
+					@:編集
+				}
+			</h2>
+		</td>
+	</tr>
+	<tr>
+	<!--△ タイトル △-->
+	<!--▽ 編集入力 ▽-->
+	<tr>
+	<td>
+		<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+		<tr>
+		<td>
+		<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+		<tr>
+		<td align="center">
+		<table cellspacing="0" cellpadding="0" border="0">
+		<tr>
+		<td>
+			@using (Html.BeginForm(
+				"Register",
+				Constants.CONTROLLER_W2CMS_MANAGER_STAFF,
+				new
+				{
+					this.Model.ActionStatus,
+					this.Model.StaffId,
+				},
+				FormMethod.Post,
+				new { name = "Register", Id="input_form"}))
+			{
+				<div class="action_part_top">
+					@TopButtomControls()
+				</div>
+				<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					@if (this.Model.IsActionStatusUpdate)
+					{
+						<tr runat="server">
+							<td class="edit_title_bg" align="left" width="30%">スタッフID</td>
+							<td class="edit_item_bg" align="left">
+								@this.Model.StaffId
+							</td>
+						</tr>
+					}
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">スタッフ名<span class="notice">*</span></td>
+						<td class="edit_item_bg" align="left">
+							@Html.TextBox("staffName", this.Model.StaffName, new {maxlength="30", style="width: 120px"})
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">性別</td>
+						<td class="edit_item_bg">
+						@foreach (var staffSex in this.Model.StaffSexList)
+						{
+							<label>
+							@Html.RadioButton("staffSex", staffSex.Value)
+							@staffSex.Text
+							</label>
+						}
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">身長(cm)<span class="notice">*</span></td>
+						<td class="edit_item_bg" align="left">
+							@Html.TextBox("staffHeight", this.Model.StaffHeight, new { maxlength="3", style="width: 40px"})
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">リアル店舗ID
+							@if (this.Model.IsRequiredRealShopId)
+							{
+								<span class="notice">*</span>
+							}
+						</td>
+						<td class="edit_item_bg" align="left">
+							<datalist id="realShopname">
+								@foreach (var shop in Model.RealShopList)
+								{
+									<option value="@shop.Value" label="@shop.Text"></option>
+								}
+							</datalist>
+							@Html.TextBox("realShopId", @Model.RealShopId,new
+							{
+								autocomplete ="on", 
+								list="realShopname",
+								style="width: 120px"
+							})
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">プロフィールテキスト</td>
+						<td class="edit_item_bg" align="left">
+							@Html.TextArea("staffProfile", this.Model.StaffProfile, new { rows = "8", cols = "80" })
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">インスタグラムID</td>
+						<td class="edit_item_bg" align="left">
+							@Html.Label("@ ")@Html.TextBox("staffInstagramId", this.Model.StaffInstagramId, new {maxlength="30", style="width: 120px"})
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">オペレータID</td>
+						<td class="edit_item_bg" align="left">
+							@Html.TextBox("operatorId", this.Model.OperatorId, new {maxlength="20", style="width: 120px",OnChange ="set_operator_name();",})
+							<a id="operatorName"></a>
+						</td>
+					</tr>
+					<tr style="display: none;">
+						<td class="edit_title_bg" align="left" width="30%">コーディネートモデルフラグ</td>
+						<td class="edit_item_bg">
+							@Html.CheckBox("modelFlg", this.Model.IsModel)
+							@Html.Label("modelFlg", "有効")
+						</td>
+					</tr>
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">有効フラグ</td>
+						<td class="edit_item_bg" align="left">
+							@Html.CheckBox("validFlg", this.Model.IsValid)
+							@Html.Label("validFlg", "有効")
+						</td>
+					</tr>
+				</table>
+				<div class="action_part_bottom">
+					@TopButtomControls()
+				</div>
+			}
+		</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+	</td>
+	</tr>
+	<!--△ 詳細 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		// オペレータ名をセット
+		function set_operator_name() {
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("SetOperatorName", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_STAFF)",
+				data: { 'operatorId': $('#operatorId').val() }
+			}).done(function (link) {
+				$('#operatorName').html(link);
+			});
+		}
+
+		// オペレータ情報画面
+		function open_shop_operator(operatorId) {
+			var link = '@Html.Raw(shopOperatorLink)&operatorId=' + operatorId;
+			open_window(link, '',
+				'width=1200,height=850,top=50,left=200,status=yes,scrollbars=yes,resizable=yes');
+		}
+
+		// エンターキーによるsubmit禁止
+		prohibit_submission();
+		set_operator_name();
+	</script>
+}

@@ -1,0 +1,547 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期購入系SQLサブステートメントXML(FixedPurchase_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchase_Sub>
+
+  <!-- 検索用WHERE文 -->
+  <FIXEDPURCHASE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (@fixed_purchase_id_like_escaped = '' OR w2_FixedPurchase.fixed_purchase_id LIKE @fixed_purchase_id_like_escaped + '%' ESCAPE '#' )  -- 注文ID
+                  AND 
+                  (@user_id_like_escaped = ''  OR w2_FixedPurchase.user_id LIKE @user_id_like_escaped + '%' ESCAPE '#')  -- ユーザーID
+                  AND 
+                  (
+                    (@name_like_escaped = '' OR w2_User.name LIKE '%' + @name_like_escaped + '%' ESCAPE '#') -- 注文者氏名
+                     OR 
+                    (@name_like_escaped = '' OR w2_User.name_kana LIKE '%' + @name_like_escaped + '%' ESCAPE '#')  -- 注文者氏名
+                  )
+                  AND
+                  (@fixed_purchase_status = '' OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)  -- ステータス
+                  AND
+                  (
+                    @management_memo_flg = ''
+                    OR
+                    (
+                      -- 管理メモありのみ
+                      @management_memo_flg = '1'
+                      AND
+                      DATALENGTH(w2_FixedPurchase.fixed_purchase_management_memo) <> 0
+                      AND
+                      (CONVERT(NVARCHAR(MAX),w2_FixedPurchase.fixed_purchase_management_memo) LIKE '%' + @management_memo_like_escaped + '%' ESCAPE '#')
+                    )
+                    OR
+                    (
+                      -- 管理メモなしのみ
+                      @management_memo_flg = '0'
+                      AND
+                      DATALENGTH(w2_FixedPurchase.fixed_purchase_management_memo) = 0
+                    )
+                  )
+                  -- 配送メモ
+                  AND
+                  (
+                    @shipping_memo_flg = ''
+                    OR
+                    (
+                      -- 配送メモありのみ
+                      @shipping_memo_flg = '1'
+                      AND
+                      w2_FixedPurchase.shipping_memo <> ''
+                      AND
+                      (w2_FixedPurchase.shipping_memo LIKE '%' + @shipping_memo_like_escaped + '%' ESCAPE '#')
+                    )
+                    OR
+                    (
+                      -- 配送メモなしのみ
+                      @shipping_memo_flg = '0'
+                      AND
+                      w2_FixedPurchase.shipping_memo = ''
+                    )
+                  )
+                  AND
+                  (@fixed_purchase_kbn = '' OR w2_FixedPurchase.fixed_purchase_kbn = @fixed_purchase_kbn) --定期購入区分
+                  AND
+                  (@payment_status = '' OR w2_FixedPurchase.payment_status = @payment_status) --決済ステータス
+                  AND
+                  (@order_count_from is null OR w2_FixedPurchase.order_count >= @order_count_from) --購入回数(注文基準)From
+                  AND
+                  (@order_count_to is null OR w2_FixedPurchase.order_count <= @order_count_to) --購入回数(注文基準)To
+                  AND
+                  (@shipped_count_from is null OR w2_FixedPurchase.shipped_count >= @shipped_count_from) --購入回数(出荷基準)From
+                  AND
+                  (@shipped_count_to is null OR w2_FixedPurchase.shipped_count <= @shipped_count_to) --購入回数(出荷基準)To
+                  AND
+                  (@order_kbn = '' OR w2_FixedPurchase.order_kbn = @order_kbn) --注文区分
+                  AND
+                  (@extend_status1 IS NULL OR w2_FixedPurchase.extend_status1 = @extend_status1)
+                  AND
+                  (@extend_status2 IS NULL OR w2_FixedPurchase.extend_status2 = @extend_status2)
+                  AND
+                  (@extend_status3 IS NULL OR w2_FixedPurchase.extend_status3 = @extend_status3)
+                  AND
+                  (@extend_status4 IS NULL OR w2_FixedPurchase.extend_status4 = @extend_status4)
+                  AND
+                  (@extend_status5 IS NULL OR w2_FixedPurchase.extend_status5 = @extend_status5)
+                  AND
+                  (@extend_status6 IS NULL OR w2_FixedPurchase.extend_status6 = @extend_status6)
+                  AND
+                  (@extend_status7 IS NULL OR w2_FixedPurchase.extend_status7 = @extend_status7)
+                  AND
+                  (@extend_status8 IS NULL OR w2_FixedPurchase.extend_status8 = @extend_status8)
+                  AND
+                  (@extend_status9 IS NULL OR w2_FixedPurchase.extend_status9 = @extend_status9)
+                  AND
+                  (@extend_status10 IS NULL OR w2_FixedPurchase.extend_status10 = @extend_status10)
+                  AND
+                  (@extend_status11 IS NULL OR w2_FixedPurchase.extend_status11 = @extend_status11)
+                  AND
+                  (@extend_status12 IS NULL OR w2_FixedPurchase.extend_status12 = @extend_status12)
+                  AND
+                  (@extend_status13 IS NULL OR w2_FixedPurchase.extend_status13 = @extend_status13)
+                  AND
+                  (@extend_status14 IS NULL OR w2_FixedPurchase.extend_status14 = @extend_status14)
+                  AND
+                  (@extend_status15 IS NULL OR w2_FixedPurchase.extend_status15 = @extend_status15)
+                  AND
+                  (@extend_status16 IS NULL OR w2_FixedPurchase.extend_status16 = @extend_status16)
+                  AND
+                  (@extend_status17 IS NULL OR w2_FixedPurchase.extend_status17 = @extend_status17)
+                  AND
+                  (@extend_status18 IS NULL OR w2_FixedPurchase.extend_status18 = @extend_status18)
+                  AND
+                  (@extend_status19 IS NULL OR w2_FixedPurchase.extend_status19 = @extend_status19)
+                  AND
+                  (@extend_status20 IS NULL OR w2_FixedPurchase.extend_status20 = @extend_status20)
+                  AND
+                  (@extend_status21 IS NULL OR w2_FixedPurchase.extend_status21 = @extend_status21)
+                  AND
+                  (@extend_status22 IS NULL OR w2_FixedPurchase.extend_status22 = @extend_status22)
+                  AND
+                  (@extend_status23 IS NULL OR w2_FixedPurchase.extend_status23 = @extend_status23)
+                  AND
+                  (@extend_status24 IS NULL OR w2_FixedPurchase.extend_status24 = @extend_status24)
+                  AND
+                  (@extend_status25 IS NULL OR w2_FixedPurchase.extend_status25 = @extend_status25)
+                  AND
+                  (@extend_status26 IS NULL OR w2_FixedPurchase.extend_status26 = @extend_status26)
+                  AND
+                  (@extend_status27 IS NULL OR w2_FixedPurchase.extend_status27 = @extend_status27)
+                  AND
+                  (@extend_status28 IS NULL OR w2_FixedPurchase.extend_status28 = @extend_status28)
+                  AND
+                  (@extend_status29 IS NULL OR w2_FixedPurchase.extend_status29 = @extend_status29)
+                  AND
+                  (@extend_status30 IS NULL OR w2_FixedPurchase.extend_status30 = @extend_status30)
+                  AND
+                  (@extend_status31 IS NULL OR w2_FixedPurchase.extend_status31 = @extend_status31)
+                  AND
+                  (@extend_status32 IS NULL OR w2_FixedPurchase.extend_status32 = @extend_status32)
+                  AND
+                  (@extend_status33 IS NULL OR w2_FixedPurchase.extend_status33 = @extend_status33)
+                  AND
+                  (@extend_status34 IS NULL OR w2_FixedPurchase.extend_status34 = @extend_status34)
+                  AND
+                  (@extend_status35 IS NULL OR w2_FixedPurchase.extend_status35 = @extend_status35)
+                  AND
+                  (@extend_status36 IS NULL OR w2_FixedPurchase.extend_status36 = @extend_status36)
+                  AND
+                  (@extend_status37 IS NULL OR w2_FixedPurchase.extend_status37 = @extend_status37)
+                  AND
+                  (@extend_status38 IS NULL OR w2_FixedPurchase.extend_status38 = @extend_status38)
+                  AND
+                  (@extend_status39 IS NULL OR w2_FixedPurchase.extend_status39 = @extend_status39)
+                  AND
+                  (@extend_status40 IS NULL OR w2_FixedPurchase.extend_status40 = @extend_status40)
+                  AND
+                  (
+                    @order_payment_kbn = ''
+                      OR w2_FixedPurchase.order_payment_kbn = @order_payment_kbn
+                      OR w2_FixedPurchase.order_payment_kbn =
+                        CASE @order_payment_kbn
+                          WHEN 'K81' THEN 'K80'
+                        END
+                  )
+                  AND
+                  (
+                    --バリエーションID
+                    @variation_id_like_escaped = ''
+                    OR
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_FixedPurchaseItem
+                       WHERE  w2_FixedPurchase.fixed_purchase_id =  w2_FixedPurchaseItem.fixed_purchase_id
+                         AND  w2_FixedPurchaseItem.variation_id LIKE @variation_id_like_escaped + '%' ESCAPE '#'
+                    )
+                  )
+                  AND
+                  (
+                    --配送先
+                    @shipping_compare_kbn = ''
+                    OR
+                    CHARINDEX(
+                       w2_User.name + w2_User.zip + w2_User.addr1 + w2_User.addr2 + w2_User.addr3 + w2_User.addr4 + w2_User.addr5 + w2_User.addr_country_name + w2_User.tel1
+                      ,(
+                        SELECT  w2_FixedPurchaseShipping.shipping_name
+                                + w2_FixedPurchaseShipping.shipping_zip
+                                + w2_FixedPurchaseShipping.shipping_addr1
+                                + w2_FixedPurchaseShipping.shipping_addr2
+                                + w2_FixedPurchaseShipping.shipping_addr3
+                                + w2_FixedPurchaseShipping.shipping_addr4
+                                + w2_FixedPurchaseShipping.shipping_addr5
+                                + w2_FixedPurchaseShipping.shipping_country_name
+                                + w2_FixedPurchaseShipping.shipping_tel1
+                         FROM  w2_FixedPurchaseShipping
+                        WHERE  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                       )
+                    ) = @shipping_compare_kbn
+                  )
+                <@@hasval:shipping_method@@>
+                  --配送方法
+                  AND
+                  EXISTS
+                  (
+                    SELECT  *
+                      FROM  w2_FixedPurchaseShipping
+                     WHERE  w2_FixedPurchase.fixed_purchase_id =  w2_FixedPurchaseShipping.fixed_purchase_id
+                       AND  w2_FixedPurchaseShipping.shipping_method = @shipping_method
+                  )
+                </@@hasval:shipping_method@@>
+                <@@hasval:receipt_flg@@>
+                  AND
+                  -- 領収書希望フラグ
+                  w2_FixedPurchase.receipt_flg = @receipt_flg
+                </@@hasval:receipt_flg@@>
+                <@@hasval:order_extend_name@@>
+                  <@@hasval:order_extend_flg@@>
+                  AND
+                  (
+                    <@@val:order_extend_flg:1@@>
+                      <@@hasnoval:order_extend_like_escaped@@>
+                        (@@ order_extend_field_name @@ <> '' AND @@ order_extend_field_name @@ IS NOT NULL)
+                      </@@hasnoval:order_extend_like_escaped@@>
+                      <@@hasval:order_extend_like_escaped@@>
+                        <@@val:order_extend_type:TB@@>
+                          @@ order_extend_field_name @@ LIKE '%' + @order_extend_like_escaped + '%'  ESCAPE '#'
+                        </@@val:order_extend_type:TB@@>
+                        <@@val:order_extend_type:CB@@>
+                          (
+                            -- 1カラムに複数の値が格納されている場合にもマッチングさせる
+                            @@ order_extend_field_name @@ = @order_extend_like_escaped
+                            OR
+                            @@ order_extend_field_name @@ LIKE '%,' + @order_extend_like_escaped + ',%' ESCAPE '#'
+                            OR
+                            @@ order_extend_field_name @@ LIKE + @order_extend_like_escaped + ',%' ESCAPE '#'
+                            OR
+                            @@ order_extend_field_name @@ LIKE '%,' + @order_extend_like_escaped ESCAPE '#'
+                          )
+                        </@@val:order_extend_type:CB@@>
+                        <@@val:order_extend_type:DDL,RB@@>
+                          (
+                            @@ order_extend_field_name @@ = @order_extend_like_escaped
+                          )
+                        </@@val:order_extend_type:DDL,RB@@>
+                      </@@hasval:order_extend_like_escaped@@>
+                    </@@val:order_extend_flg:1@@>
+                    <@@val:order_extend_flg:0@@>
+                      (
+                        @@ order_extend_field_name @@ = ''
+                        OR
+                        @@ order_extend_field_name @@ IS NULL
+                      )
+                    </@@val:order_extend_flg:0@@>
+                  )
+                  </@@hasval:order_extend_flg@@>
+                  </@@hasval:order_extend_name@@>
+                  <@@hasval:subscription_box_course_id@@>
+                  AND
+                  w2_FixedPurchase.subscription_box_course_id LIKE @subscription_box_course_id + '%' ESCAPE '#'
+                  </@@hasval:subscription_box_course_id@@>
+                  <@@hasval:is_subscription_box@@>
+                  AND
+                  w2_FixedPurchase.subscription_box_course_id IS NULL
+                  </@@hasval:is_subscription_box@@>
+                  <@@hasval:subscription_box_order_count_from@@>
+                  AND
+                  w2_FixedPurchase.subscription_box_order_count >= @@subscription_box_order_count_from@@
+                  </@@hasval:subscription_box_order_count_from@@>
+                  <@@hasval:subscription_box_order_count_to@@>
+                  AND
+                  w2_FixedPurchase.subscription_box_order_count <= @@subscription_box_order_count_to@@
+                  </@@hasval:subscription_box_order_count_to@@>
+                  AND
+                  (
+                    @date_type = ''
+                    OR
+                    (
+                      (
+                        --日付検索範囲From
+                        @date_from IS NULL 
+                        OR
+                        @date_from <= 
+                          CASE @date_type
+                            WHEN '1' THEN w2_FixedPurchase.date_created
+                            WHEN '2' THEN w2_FixedPurchase.date_changed
+                            WHEN '3' THEN w2_FixedPurchase.next_shipping_date
+                            WHEN '4' THEN w2_FixedPurchase.next_next_shipping_date
+                            WHEN '5' THEN w2_FixedPurchase.fixed_purchase_date_bgn
+                            WHEN '6' THEN w2_FixedPurchase.last_order_date
+                            WHEN '7' THEN w2_FixedPurchase.cancel_date
+                            WHEN '8' THEN w2_FixedPurchase.restart_date
+                          END
+                      )
+                      AND
+                      (
+                        --日付検索範囲To
+                        @date_to IS NULL
+                        OR
+                        @date_to >
+                          CASE @date_type
+                            WHEN '1' THEN w2_FixedPurchase.date_created
+                            WHEN '2' THEN w2_FixedPurchase.date_changed
+                            WHEN '3' THEN w2_FixedPurchase.next_shipping_date
+                            WHEN '4' THEN w2_FixedPurchase.next_next_shipping_date
+                            WHEN '5' THEN w2_FixedPurchase.fixed_purchase_date_bgn
+                            WHEN '6' THEN w2_FixedPurchase.last_order_date
+                            WHEN '7' THEN w2_FixedPurchase.cancel_date
+                            WHEN '8' THEN w2_FixedPurchase.restart_date
+                          END
+                      )
+                    )
+                  )
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="fixed_purchase_status" Type="nvarchar" Size="10" />
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="order_count_from" Type="int" />
+      <Input Name="order_count_to" Type="int" />
+      <Input Name="shipped_count_from" Type="int" />
+      <Input Name="shipped_count_to" Type="int" />
+      <Input Name="order_kbn" Type="nvarchar" Size="10" />
+      <Input Name="order_payment_kbn" Type="nvarchar" Size="10" />
+      <Input Name="payment_status" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_kbn" Type="nvarchar" Size="10" />
+      <Input Name="shipping_compare_kbn" Type="int"/>
+      <Input Name="variation_id_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="management_memo_flg" Type="nvarchar" Size="1" />
+      <Input Name="management_memo_like_escaped" Type="nvarchar" Size="max" />
+      <Input Name="shipping_memo_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="date_type" Type="nvarchar" Size="1" />
+      <Input Name="date_from" Type="datetime" />
+      <Input Name="date_to" Type="datetime" />
+      <Input Name="extend_status1" Type="nvarchar" Size="10" />
+      <Input Name="extend_status2" Type="nvarchar" Size="10" />
+      <Input Name="extend_status3" Type="nvarchar" Size="10" />
+      <Input Name="extend_status4" Type="nvarchar" Size="10" />
+      <Input Name="extend_status5" Type="nvarchar" Size="10" />
+      <Input Name="extend_status6" Type="nvarchar" Size="10" />
+      <Input Name="extend_status7" Type="nvarchar" Size="10" />
+      <Input Name="extend_status8" Type="nvarchar" Size="10" />
+      <Input Name="extend_status9" Type="nvarchar" Size="10" />
+      <Input Name="extend_status10" Type="nvarchar" Size="10" />
+      <Input Name="extend_status11" Type="nvarchar" Size="10" />
+      <Input Name="extend_status12" Type="nvarchar" Size="10" />
+      <Input Name="extend_status13" Type="nvarchar" Size="10" />
+      <Input Name="extend_status14" Type="nvarchar" Size="10" />
+      <Input Name="extend_status15" Type="nvarchar" Size="10" />
+      <Input Name="extend_status16" Type="nvarchar" Size="10" />
+      <Input Name="extend_status17" Type="nvarchar" Size="10" />
+      <Input Name="extend_status18" Type="nvarchar" Size="10" />
+      <Input Name="extend_status19" Type="nvarchar" Size="10" />
+      <Input Name="extend_status20" Type="nvarchar" Size="10" />
+      <Input Name="extend_status21" Type="nvarchar" Size="10" />
+      <Input Name="extend_status22" Type="nvarchar" Size="10" />
+      <Input Name="extend_status23" Type="nvarchar" Size="10" />
+      <Input Name="extend_status24" Type="nvarchar" Size="10" />
+      <Input Name="extend_status25" Type="nvarchar" Size="10" />
+      <Input Name="extend_status26" Type="nvarchar" Size="10" />
+      <Input Name="extend_status27" Type="nvarchar" Size="10" />
+      <Input Name="extend_status28" Type="nvarchar" Size="10" />
+      <Input Name="extend_status29" Type="nvarchar" Size="10" />
+      <Input Name="extend_status30" Type="nvarchar" Size="10" />
+      <Input Name="extend_status31" Type="nvarchar" Size="10" />
+      <Input Name="extend_status32" Type="nvarchar" Size="10" />
+      <Input Name="extend_status33" Type="nvarchar" Size="10" />
+      <Input Name="extend_status34" Type="nvarchar" Size="10" />
+      <Input Name="extend_status35" Type="nvarchar" Size="10" />
+      <Input Name="extend_status36" Type="nvarchar" Size="10" />
+      <Input Name="extend_status37" Type="nvarchar" Size="10" />
+      <Input Name="extend_status38" Type="nvarchar" Size="10" />
+      <Input Name="extend_status39" Type="nvarchar" Size="10" />
+      <Input Name="extend_status40" Type="nvarchar" Size="10" />
+      <Input Name="shipping_method" Type="nvarchar" Size="10" />
+      <Input Name="receipt_flg" Type="nvarchar" Size="1" />
+      <Input Name="order_extend_name" Type="nvarchar" Size="20" />
+      <Input Name="order_extend_type" Type="nvarchar" Size="3" />
+      <Input Name="order_extend_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="order_extend_flg" Type="nvarchar" Size="1"/>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="100"/>
+      <Input Name="is_subscription_box" Type="nvarchar" Size="10"/>
+      <Input Name="subscription_box_order_count_from" Type="int"/>
+      <Input Name="subscription_box_order_count_to" Type="int"/>
+    </Parameter>
+  </FIXEDPURCHASE_SEARCH_WHERE>
+
+  <!-- 検索用ORDER BY -->
+  <FIXEDPURCHASE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_FixedPurchase.date_created
+            WHEN  2 THEN w2_FixedPurchase.date_changed
+            WHEN  6 THEN w2_FixedPurchase.next_shipping_date
+            WHEN  8 THEN w2_FixedPurchase.next_next_shipping_date
+            WHEN  10 THEN w2_FixedPurchase.fixed_purchase_date_bgn
+            WHEN  12 THEN w2_FixedPurchase.last_order_date
+            ELSE NULL
+          END ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_FixedPurchase.date_created
+            WHEN  3 THEN w2_FixedPurchase.date_changed
+            WHEN  7 THEN w2_FixedPurchase.next_shipping_date
+            WHEN  9 THEN w2_FixedPurchase.next_next_shipping_date
+            WHEN  11 THEN w2_FixedPurchase.fixed_purchase_date_bgn
+            WHEN  13 THEN w2_FixedPurchase.last_order_date
+            ELSE NULL
+          END DESC,
+          CASE @sort_kbn
+            WHEN  4 THEN w2_FixedPurchase.fixed_purchase_id
+            ELSE '1'
+          END ASC,
+          CASE @sort_kbn
+            WHEN  5 THEN w2_FixedPurchase.fixed_purchase_id
+            ELSE '1'
+          END DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_FixedPurchase.fixed_purchase_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sort_kbn" Type="nvarchar" Size="2" />
+    </Parameter>
+  </FIXEDPURCHASE_SEARCH_ORDER_BY>
+
+  <!-- 定期ワークフロー情報一覧取得用WHERE文 -->
+  <FIXEDPURCHASEWORKFLOW_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                @@ where @@        -- 条件文に置換
+                )
+                <@@hasval:fixed_purchase_management_memo@@>
+                  AND
+                  (
+                    -- 管理メモ
+                    (
+                      -- 管理メモありのみ
+                      @fixed_purchase_management_memo = '1'
+                      AND
+                      w2_FixedPurchase.fixed_purchase_management_memo <> ''
+                      AND
+                      (w2_FixedPurchase.fixed_purchase_management_memo like '%' + @fixed_purchase_management_memo_like_escaped + '%' ESCAPE '#')
+                    )
+                    OR
+                    (
+                      -- 管理メモなしのみ
+                      @fixed_purchase_management_memo = '0'
+                      AND
+                      w2_FixedPurchase.fixed_purchase_management_memo = ''
+                    )
+                  )
+                </@@hasval:fixed_purchase_management_memo@@>
+                <@@hasval:shipping_memo@@>
+                  AND
+                  (
+                    -- 配送メモ
+                    (
+                      -- 配送メモありのみ
+                      @shipping_memo = '1'
+                      AND
+                      w2_FixedPurchase.shipping_memo <> ''
+                      AND
+                      (w2_FixedPurchase.shipping_memo LIKE '%' + @shipping_memo_like_escaped + '%' ESCAPE '#')
+                    )
+                    OR
+                    (
+                      -- 配送メモなしのみ
+                      @shipping_memo = '0'
+                      AND
+                      w2_FixedPurchase.shipping_memo = ''
+                    )
+                  )
+                </@@hasval:shipping_memo@@>
+                <@@hasval:receipt_flg@@>
+                  AND
+                  -- 領収書希望フラグ
+                  w2_FixedPurchase.receipt_flg = @receipt_flg
+                </@@hasval:receipt_flg@@>
+                <@@hasval:order_extend_name@@>
+                <@@hasval:order_extend_flg@@>
+                AND
+                (
+                  <@@val:order_extend_flg:1@@>
+                    <@@hasnoval:order_extend_like_escaped@@>
+                      (@@ order_extend_field_name @@ <> '' AND @@ order_extend_field_name @@ IS NOT NULL)
+                    </@@hasnoval:order_extend_like_escaped@@>
+                    <@@hasval:order_extend_like_escaped@@>
+                      <@@val:order_extend_type:TB@@>
+                        @@ order_extend_field_name @@ LIKE '%' + @order_extend_like_escaped + '%'  ESCAPE '#'
+                      </@@val:order_extend_type:TB@@>
+                      <@@val:order_extend_type:CB@@>
+                        (
+                          -- 1カラムに複数の値が格納されている場合にもマッチングさせる
+                          @@ order_extend_field_name @@ = @order_extend_like_escaped
+                          OR
+                          @@ order_extend_field_name @@ LIKE '%,' + @order_extend_like_escaped + ',%' ESCAPE '#'
+                          OR
+                          @@ order_extend_field_name @@ LIKE + @order_extend_like_escaped + ',%' ESCAPE '#'
+                          OR
+                          @@ order_extend_field_name @@ LIKE '%,' + @order_extend_like_escaped ESCAPE '#'
+                        )
+                      </@@val:order_extend_type:CB@@>
+                      <@@val:order_extend_type:DDL,RB@@>
+                        (
+                          @@ order_extend_field_name @@ = @order_extend_like_escaped
+                        )
+                      </@@val:order_extend_type:DDL,RB@@>
+                    </@@hasval:order_extend_like_escaped@@>
+                  </@@val:order_extend_flg:1@@>
+                  <@@val:order_extend_flg:0@@>
+                    (
+                      @@ order_extend_field_name @@ = ''
+                      OR
+                      @@ order_extend_field_name @@ IS NULL
+                    )
+                  </@@val:order_extend_flg:0@@>
+                )
+                </@@hasval:order_extend_flg@@>
+                </@@hasval:order_extend_name@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_management_memo" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_management_memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="shipping_memo" Type="nvarchar" Size="1" />
+      <Input Name="shipping_memo_like_escaped" Type="nvarchar" Size="max"/>
+      <Input Name="receipt_flg" Type="nvarchar" Size="1" />
+      <Input Name="order_extend_name" Type="nvarchar" Size="20" />
+      <Input Name="order_extend_type" Type="nvarchar" Size="3" />
+      <Input Name="order_extend_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="order_extend_flg" Type="nvarchar" Size="1"/>
+    </Parameter>
+  </FIXEDPURCHASEWORKFLOW_SEARCH_WHERE>
+
+</FixedPurchase_Sub>

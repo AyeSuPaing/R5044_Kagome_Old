@@ -1,0 +1,268 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 電子発票情報系SQLステートメントXML (TwInvoice.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<TwInvoice>
+
+  <!-- Get Invoice New -->
+  <GetInvoiceNew>
+    <Statement>
+      <![CDATA[
+      SELECT  TOP 1 w2_TwInvoice.*
+        FROM  w2_TwInvoice
+    ORDER BY  w2_TwInvoice.date_created DESC
+      ]]>
+    </Statement>
+  </GetInvoiceNew>
+
+  <!-- Get Invoice For Order -->
+  <GetInvoiceForOrder>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_TwInvoice.*
+          FROM  w2_TwInvoice
+         WHERE  CAST(w2_TwInvoice.tw_invoice_date_start AS DATE) <= CAST(@current_date AS DATE)
+                AND
+                CAST(w2_TwInvoice.tw_invoice_date_end AS DATE) >= CAST(@current_date AS DATE)
+                AND
+                (
+                  w2_TwInvoice.tw_invoice_no IS NULL
+                  OR
+                  w2_TwInvoice.tw_invoice_no < w2_TwInvoice.tw_invoice_no_end
+                )
+      ORDER BY  w2_TwInvoice.date_created ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="current_date" Type="datetime" />
+    </Parameter>
+  </GetInvoiceForOrder>
+
+  <!-- Insert After Get Api -->
+  <InsertAfterGetApi>
+    <Statement>
+      <![CDATA[
+        IF NOT EXISTS
+        (
+          SELECT  w2_TwInvoice.*
+            FROM  w2_TwInvoice
+           WHERE  w2_TwInvoice.tw_invoice_code_name = @tw_invoice_code_name
+             AND  w2_TwInvoice.tw_invoice_code = @tw_invoice_code
+             AND  @tw_invoice_no_start = (w2_TwInvoice.tw_invoice_no_end + 1)
+             AND  @tw_invoice_date_start = w2_TwInvoice.tw_invoice_date_start
+             AND  @tw_invoice_date_end = w2_TwInvoice.tw_invoice_date_end
+         )
+        BEGIN
+        INSERT  w2_TwInvoice
+                (
+                  tw_invoice_id
+                  ,tw_invoice_date_start
+                  ,tw_invoice_date_end
+                  ,tw_invoice_code
+                  ,tw_invoice_type_name
+                  ,tw_invoice_code_name
+                  ,tw_invoice_no_start
+                  ,tw_invoice_no_end
+                  ,tw_invoice_no
+                  ,tw_invoice_alert_count
+                  ,date_created
+                  ,date_changed
+                )
+        VALUES  (
+                  @tw_invoice_id
+                  ,@tw_invoice_date_start
+                  ,@tw_invoice_date_end
+                  ,@tw_invoice_code
+                  ,@tw_invoice_type_name
+                  ,@tw_invoice_code_name
+                  ,@tw_invoice_no_start
+                  ,@tw_invoice_no_end
+                  ,@tw_invoice_no
+                  ,@tw_invoice_alert_count
+                  ,GETDATE()
+                  ,GETDATE()
+                )
+         END
+         ELSE
+         BEGIN
+           UPDATE  w2_TwInvoice
+              SET  w2_TwInvoice.tw_invoice_no_end = @tw_invoice_no_end
+            WHERE  w2_TwInvoice.tw_invoice_code_name = @tw_invoice_code_name
+              AND  w2_TwInvoice.tw_invoice_code = @tw_invoice_code
+              AND  @tw_invoice_no_start = (w2_TwInvoice.tw_invoice_no_end + 1)
+         END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tw_invoice_id" Type="nvarchar" />
+      <Input Name="tw_invoice_date_start" Type="datetime" />
+      <Input Name="tw_invoice_date_end" Type="datetime" />
+      <Input Name="tw_invoice_code" Type="nvarchar" Size="10" />
+      <Input Name="tw_invoice_type_name" Type="nvarchar" Size="50" />
+      <Input Name="tw_invoice_code_name" Type="nvarchar" Size="10" />
+      <Input Name="tw_invoice_no_start" Type="decimal" />
+      <Input Name="tw_invoice_no_end" Type="decimal" />
+      <Input Name="tw_invoice_no" Type="decimal" />
+      <Input Name="tw_invoice_alert_count" Type="int" />
+    </Parameter>
+  </InsertAfterGetApi>
+
+  <!-- Get Current Alert Count Invoice -->
+  <GetCurrentAlertCountInvoice>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1 *
+          FROM  w2_TwInvoice
+         WHERE  CAST(w2_TwInvoice.tw_invoice_date_start AS DATE) <= CAST(@current_date AS DATE)
+                AND
+                CAST(w2_TwInvoice.tw_invoice_date_end AS DATE) >= CAST(@current_date AS DATE)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="current_date" Type="datetime" />
+    </Parameter>
+  </GetCurrentAlertCountInvoice>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_TwInvoice.*
+          FROM  w2_TwInvoice
+         WHERE  tw_invoice_id = @tw_invoice_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tw_invoice_id" Type="nvarchar" />
+    </Parameter>
+  </Get>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_TwInvoice
+                (
+                  tw_invoice_id
+                  ,tw_invoice_date_start
+                  ,tw_invoice_date_end
+                  ,tw_invoice_code
+                  ,tw_invoice_type_name
+                  ,tw_invoice_code_name
+                  ,tw_invoice_no_start
+                  ,tw_invoice_no_end
+                  ,tw_invoice_no
+                  ,tw_invoice_alert_count
+                  ,date_created
+                  ,date_changed
+                )
+        VALUES  (
+                  @tw_invoice_id
+                  ,@tw_invoice_date_start
+                  ,@tw_invoice_date_end
+                  ,@tw_invoice_code
+                  ,@tw_invoice_type_name
+                  ,@tw_invoice_code_name
+                  ,@tw_invoice_no_start
+                  ,@tw_invoice_no_end
+                  ,@tw_invoice_no
+                  ,@tw_invoice_alert_count
+                  ,GETDATE()
+                  ,GETDATE()
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tw_invoice_id" Type="nvarchar" />
+      <Input Name="tw_invoice_date_start" Type="datetime" />
+      <Input Name="tw_invoice_date_end" Type="datetime" />
+      <Input Name="tw_invoice_code" Type="nvarchar" Size="10" />
+      <Input Name="tw_invoice_type_name" Type="nvarchar" Size="50" />
+      <Input Name="tw_invoice_code_name" Type="nvarchar" Size="10" />
+      <Input Name="tw_invoice_no_start" Type="decimal" />
+      <Input Name="tw_invoice_no_end" Type="decimal" />
+      <Input Name="tw_invoice_no" Type="decimal" />
+      <Input Name="tw_invoice_alert_count" Type="int" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_TwInvoice
+           SET  w2_TwInvoice.tw_invoice_date_start = @tw_invoice_date_start,
+                w2_TwInvoice.tw_invoice_date_end = @tw_invoice_date_end,
+                w2_TwInvoice.tw_invoice_code = @tw_invoice_code,
+                w2_TwInvoice.tw_invoice_type_name = @tw_invoice_type_name,
+                w2_TwInvoice.tw_invoice_code_name = @tw_invoice_code_name,
+                w2_TwInvoice.tw_invoice_no_start = @tw_invoice_no_start,
+                w2_TwInvoice.tw_invoice_no_end = @tw_invoice_no_end,
+                w2_TwInvoice.tw_invoice_no = @tw_invoice_no,
+                w2_TwInvoice.tw_invoice_alert_count = @tw_invoice_alert_count,
+                w2_TwInvoice.date_changed = GETDATE()
+         WHERE  tw_invoice_id = @tw_invoice_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tw_invoice_id" Type="nvarchar" />
+      <Input Name="tw_invoice_date_start" Type="datetime" />
+      <Input Name="tw_invoice_date_end" Type="datetime" />
+      <Input Name="tw_invoice_code" Type="nvarchar" Size="10" />
+      <Input Name="tw_invoice_type_name" Type="nvarchar" Size="50" />
+      <Input Name="tw_invoice_code_name" Type="nvarchar" Size="10" />
+      <Input Name="tw_invoice_no_start" Type="decimal" />
+      <Input Name="tw_invoice_no_end" Type="decimal" />
+      <Input Name="tw_invoice_no" Type="decimal" />
+      <Input Name="tw_invoice_alert_count" Type="int" />
+    </Parameter>
+  </Update>
+
+  <!-- Get All -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_TwInvoice.*
+          FROM  w2_TwInvoice
+      ORDER BY  tw_invoice_date_end DESC,
+                date_created,
+                tw_invoice_code_name DESC,
+                tw_invoice_no_start DESC
+      ]]>
+    </Statement>
+  </GetAll>
+
+  <!-- Update Invoice Alert Count For Valid Invoice -->
+  <UpdateInvoiceAlertCountForValidInvoice>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_TwInvoice
+           SET  w2_TwInvoice.tw_invoice_alert_count = @tw_invoice_alert_count
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tw_invoice_alert_count" Type="int" />
+    </Parameter>
+  </UpdateInvoiceAlertCountForValidInvoice>
+
+  <!-- 来期電子発票の存在チェック -->
+  <CheckNextPeriodInvoiceExists>
+    <Statement>
+      <![CDATA[
+      SELECT  *
+        FROM  w2_TwInvoice
+       WHERE  date_created >= @date_created
+         AND  tw_invoice_date_start = @tw_invoice_date_start
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tw_invoice_date_start" Type="datetime" />
+      <Input Name="date_created" Type="datetime" />
+    </Parameter>
+  </CheckNextPeriodInvoiceExists>
+
+</TwInvoice>

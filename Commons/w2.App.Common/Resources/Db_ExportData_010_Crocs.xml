@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 010_Crocs基幹連携用データ取得SQLステートメントXML(Db_ExportData_010_Crocs.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<ExportData>
+
+  <!-- 注文商品マスタ情報取得(E1連携データ出力用) -->
+  <Statement>
+    <![CDATA[
+        SELECT  *
+           FROM  w2_Order,
+                w2_OrderOwner,
+                w2_OrderShipping,
+                w2_OrderItem,
+                w2_Payment,
+                w2_ShopShipping
+         WHERE  w2_Order.shop_id = '0'
+           AND  w2_Order.order_id = w2_OrderOwner.order_id 
+           AND  w2_Order.order_id = w2_OrderShipping.order_id 
+             AND  w2_Order.order_id = w2_OrderItem.order_id 
+             AND  w2_Order.shop_id = w2_Payment.shop_id 
+             AND  w2_Order.order_payment_kbn = w2_Payment.payment_id 
+             AND  w2_Order.shop_id = w2_ShopShipping.shop_id 
+             AND  w2_Order.shipping_id = w2_ShopShipping.shipping_id 
+             AND  (w2_Order.order_payment_kbn = 'K10' OR w2_Order.order_payment_kbn = 'K20')  -- 代引きとクレジット決済のみ出力
+             --AND  (w2_Order.order_date = GETDATE())
+      ]]>
+  </Statement>
+
+</ExportData>

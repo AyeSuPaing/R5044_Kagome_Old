@@ -1,0 +1,99 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+      
+      if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_GlobalSMSDistText]'))
+        BEGIN
+        	CREATE TABLE [dbo].[w2_GlobalSMSDistText] (
+				[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+				[mailtext_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+				[phone_carrier] [nvarchar] (30) NOT NULL DEFAULT (N''),
+				[sms_text] [nvarchar] (max) NOT NULL DEFAULT (N''),
+				[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+				[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+				[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+			) ON [PRIMARY]
+
+			ALTER TABLE [dbo].[w2_GlobalSMSDistText] WITH NOCHECK ADD
+				CONSTRAINT [PK_w2_GlobalSMSDistText] PRIMARY KEY  CLUSTERED
+				(
+					[dept_id],
+					[mailtext_id],
+					[phone_carrier]
+				) ON [PRIMARY]
+        END
+        
+        if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_GlobalSMSStatus]'))
+        BEGIN
+        	CREATE TABLE [dbo].[w2_GlobalSMSStatus] (
+				[message_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+				[global_tel_no] [nvarchar] (30) NOT NULL DEFAULT (N''),
+				[sms_status] [nvarchar] (20) NOT NULL DEFAULT (N''),
+				[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+				[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+				[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+			) ON [PRIMARY]
+
+			ALTER TABLE [dbo].[w2_GlobalSMSStatus] WITH NOCHECK ADD
+				CONSTRAINT [PK_w2_GlobalSMSStatus] PRIMARY KEY  CLUSTERED
+				(
+					[message_id]
+				) ON [PRIMARY]
+        END
+        
+        if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_GlobalSMSTemplate]'))
+        BEGIN
+        	CREATE TABLE [dbo].[w2_GlobalSMSTemplate] (
+				[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+				[mail_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+				[phone_carrier] [nvarchar] (30) NOT NULL DEFAULT (N''),
+				[sms_text] [nvarchar] (max) NOT NULL DEFAULT (N''),
+				[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+				[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+				[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+			) ON [PRIMARY]
+
+			ALTER TABLE [dbo].[w2_GlobalSMSTemplate] WITH NOCHECK ADD
+				CONSTRAINT [PK_w2_GlobalSMSTemplate] PRIMARY KEY  CLUSTERED
+				(
+					[shop_id],
+					[mail_id],
+					[phone_carrier]
+				) ON [PRIMARY]
+        END
+        
+        if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_SMSErrorPointGlobalTelNo]'))
+        BEGIN
+			CREATE TABLE [dbo].[w2_SMSErrorPointGlobalTelNo](
+				[global_tel_no] [nvarchar](30) NOT NULL DEFAULT (N''),
+				[error_point] [int] NOT NULL DEFAULT ((0)),
+				[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+				[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+				[last_changed] [nvarchar](20) NOT NULL DEFAULT (N''),
+			 CONSTRAINT [PK_w2_SMSErrorPointGlobalTelNo] PRIMARY KEY CLUSTERED 
+			(
+				[global_tel_no] ASC
+			)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+			) ON [PRIMARY]
+        END
+        GO
+
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_MailDistText' AND column_name = 'sms_use_flg')
+          ALTER TABLE [w2_MailDistText] ADD [sms_use_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+        GO
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_MailDistTextGlobal' AND column_name = 'sms_use_flg')
+          ALTER TABLE [w2_MailDistTextGlobal] ADD [sms_use_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+        GO
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_MailTemplate' AND column_name = 'sms_use_flg')
+          ALTER TABLE [w2_MailTemplate] ADD [sms_use_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+        GO
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_MailTemplateGlobal' AND column_name = 'sms_use_flg')
+          ALTER TABLE [w2_MailTemplateGlobal] ADD [sms_use_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+        GO
+
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+-- 会員ランクマスタ
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_MemberRank]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_MemberRank]
+GO
+
+CREATE TABLE [dbo].[w2_MemberRank] (
+	[member_rank_id] [nvarchar] (30) NOT NULL,
+	[member_rank_order] [int] NOT NULL,
+	[member_rank_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[order_discount_type] [nvarchar] (10) NOT NULL DEFAULT (N'NONE'),
+	[order_discount_value] [decimal],
+	[order_discount_threshold_price] [decimal],
+	[point_add_type] [nvarchar] (10) NOT NULL DEFAULT (N'NONE'),
+	[point_add_value] [decimal],
+	[shipping_discount_type] [nvarchar] (10) NOT NULL DEFAULT (N'NONE'),
+	[shipping_discount_value] [decimal],
+	[default_member_rank_setting_flg] [nvarchar] (10) NOT NULL DEFAULT (N'OFF'),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'ON'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_MemberRank] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_MemberRank] PRIMARY KEY  NONCLUSTERED
+	(
+		[member_rank_id]
+	) ON [PRIMARY]
+GO
+
+CREATE CLUSTERED INDEX [IX_w2_MemberRank_1] ON [dbo].[w2_MemberRank]([member_rank_order]) ON [PRIMARY]
+GO
+
+
+-- 会員ランク付与ルール情報
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_MemberRankRule]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_MemberRankRule]
+GO
+
+CREATE TABLE [dbo].[w2_MemberRankRule] (
+	[member_rank_rule_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[member_rank_rule_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[status] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[last_count] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[last_exec_date] [datetime],
+	[target_extract_type] [nvarchar] (10) NOT NULL DEFAULT (N'DURING'),
+	[target_extract_start] [datetime],
+	[target_extract_end] [datetime],
+	[target_extract_days_ago] [int],
+	[target_extract_total_price_from] [decimal],
+	[target_extract_total_price_to] [decimal],
+	[target_extract_total_count_from] [int],
+	[target_extract_total_count_to] [int],
+	[target_extract_old_rank_flg] [nvarchar] (10) NOT NULL DEFAULT (N'OFF'),
+	[rank_change_type] [nvarchar] (10) NOT NULL DEFAULT (N'UP'),
+	[rank_change_rank_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mail_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[exec_timing] [nvarchar] (10) NOT NULL DEFAULT (N'01'),
+	[schedule_kbn] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[schedule_day_of_week] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[schedule_year] [int],
+	[schedule_month] [int],
+	[schedule_day] [int],
+	[schedule_hour] [int],
+	[schedule_minute] [int],
+	[schedule_second] [int],
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'ON'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_MemberRankRule] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_MemberRankRule] PRIMARY KEY  CLUSTERED
+	(
+		[member_rank_rule_id]
+	) ON [PRIMARY]
+GO
+
+
+-- 会員ランク更新履歴情報
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_UserMemberRankHistory]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_UserMemberRankHistory]
+GO
+
+CREATE TABLE [dbo].[w2_UserMemberRankHistory] (
+	[history_no] [int] IDENTITY (1, 1) NOT NULL,
+	[user_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[before_rank_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[after_rank_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mail_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[changed_by] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate())
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_UserMemberRankHistory] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_UserMemberRankHistory] PRIMARY KEY  NONCLUSTERED
+	(
+		[history_no]
+	) ON [PRIMARY]
+GO
+
+CREATE CLUSTERED INDEX [IX_w2_UserMemberRankHistory_1] ON [dbo].[w2_UserMemberRankHistory]([user_id], [date_created]) ON [PRIMARY]
+GO
+
+
+-- ユーザマスタ
+ALTER TABLE [dbo].[w2_User] ADD
+	[member_rank_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+
+GO
+
+ALTER TABLE [dbo].[w2_WorkUser] ADD
+	[member_rank_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+			]]>
+    </Statement>
+  </Up>
+</Migration>

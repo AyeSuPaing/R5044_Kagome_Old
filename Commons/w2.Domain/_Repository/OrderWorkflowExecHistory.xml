@@ -1,0 +1,260 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 受注ワークフロー実行履歴系SQLステートメントXML (OrderWorkflowExecHistory.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderWorkflowExecHistory>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_OrderWorkflowExecHistory
+                [[ ORDERWORKFLOWEXECHISTORY_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" />
+      <Input Name="workflow_kbn" Type="nvarchar" />
+      <Input Name="workflow_no" Type="int" />
+      <Input Name="scenario_setting_id" Type="nvarchar" />
+      <Input Name="exec_status" Type="nvarchar" />
+      <Input Name="workflow_type" Type="nvarchar" />
+      <Input Name="exec_place" Type="nvarchar" />
+      <Input Name="exec_timing" Type="nvarchar" />
+      <Input Name="date_from" Type="nvarchar" />
+      <Input Name="date_to" Type="nvarchar" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetSearchHitCount>
+  
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_OrderWorkflowExecHistory.*
+          FROM  (
+                  SELECT  w2_OrderWorkflowExecHistory.order_workflow_exec_history_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ ORDERWORKFLOWEXECHISTORY_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_OrderWorkflowExecHistory
+                          [[ ORDERWORKFLOWEXECHISTORY_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_OrderWorkflowExecHistory ON
+                (
+                  RowIndex.order_workflow_exec_history_id = w2_OrderWorkflowExecHistory.order_workflow_exec_history_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" />
+      <Input Name="workflow_kbn" Type="nvarchar" />
+      <Input Name="workflow_no" Type="int" />
+      <Input Name="scenario_setting_id" Type="nvarchar" />
+      <Input Name="exec_status" Type="nvarchar" />
+      <Input Name="workflow_type" Type="nvarchar" />
+      <Input Name="exec_place" Type="nvarchar" />
+      <Input Name="exec_timing" Type="nvarchar" />
+      <Input Name="date_from" Type="nvarchar" />
+      <Input Name="date_to" Type="nvarchar" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_OrderWorkflowExecHistory
+         WHERE  order_workflow_exec_history_id = @order_workflow_exec_history_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_workflow_exec_history_id" Type="bigint" />
+    </Parameter>
+  </Get>
+
+  <!-- シナリオ設定IDで取得 -->
+  <GetByScenarioId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_OrderWorkflowExecHistory
+         WHERE  scenario_setting_id = @scenario_setting_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scenario_setting_id" Type="bigint" />
+    </Parameter>
+  </GetByScenarioId>
+
+  <!-- 実行ステータスで取得 -->
+  <GetByExecStatus>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_OrderWorkflowExecHistory
+         WHERE  exec_status = @exec_status
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="exec_status" Type="nvarchar" />
+    </Parameter>
+  </GetByExecStatus>
+
+  <!-- 実行ステータスのRunningかHoldのデータを取得 -->
+  <GetByExecStatusForRunningOrHold>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_OrderWorkflowExecHistory
+         WHERE  exec_status = 'Running'
+            OR  exec_status = 'Hold'
+      ]]>
+    </Statement>
+  </GetByExecStatusForRunningOrHold>
+
+  <!-- 一番新しいレコードを取得 -->
+  <GetByNewest>
+    <Statement>
+      <![CDATA[
+        SELECT *
+          FROM w2_OrderWorkflowExecHistory
+         WHERE order_workflow_exec_history_id =
+            (
+               SELECT max(order_workflow_exec_history_id) as order_workflow_exec_history_id
+               FROM w2_OrderWorkflowExecHistory
+            )
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetByNewest>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_OrderWorkflowExecHistory
+                (
+                  shop_id
+                  ,workflow_kbn
+                  ,workflow_no
+                  ,scenario_setting_id
+                  ,workflow_name
+                  ,scenario_name
+                  ,exec_status
+                  ,success_rate
+                  ,workflow_type
+                  ,exec_place
+                  ,exec_timing
+                  ,message
+                  ,date_begin
+                  ,date_end
+                  ,date_created
+                  ,last_changed
+                )
+        VALUES  (
+                  @shop_id
+                  ,@workflow_kbn
+                  ,@workflow_no
+                  ,@scenario_setting_id
+                  ,@workflow_name
+                  ,@scenario_name
+                  ,@exec_status
+                  ,@success_rate
+                  ,@workflow_type
+                  ,@exec_place
+                  ,@exec_timing
+                  ,@message
+                  ,@date_begin
+                  ,@date_end
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_workflow_exec_history_id" Type="bigint" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+      <Input Name="scenario_setting_id" Type="nvarchar" Size="30" />
+      <Input Name="workflow_name" Type="nvarchar" Size="50" />
+      <Input Name="scenario_name" Type="nvarchar" Size="50" />
+      <Input Name="exec_status" Type="nvarchar" Size="30" />
+      <Input Name="success_rate" Type="nvarchar" Size="30" />
+      <Input Name="workflow_type" Type="nvarchar" Size="30" />
+      <Input Name="exec_place" Type="nvarchar" Size="20" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="message" Type="nvarchar" Size="MAX" />
+      <Input Name="date_begin" Type="datetime" />
+      <Input Name="date_end" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_OrderWorkflowExecHistory
+           SET  shop_id = @shop_id
+                ,workflow_kbn = @workflow_kbn
+                ,workflow_no = @workflow_no
+                ,scenario_setting_id = @scenario_setting_id
+                ,exec_status = @exec_status
+                ,success_rate = @success_rate
+                ,exec_place = @exec_place
+                ,exec_timing = @exec_timing
+                ,message = @message
+                ,date_begin = @date_begin
+                ,date_end = @date_end
+                ,last_changed = @last_changed
+         WHERE  order_workflow_exec_history_id = @order_workflow_exec_history_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_workflow_exec_history_id" Type="bigint" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+      <Input Name="scenario_setting_id" Type="nvarchar" Size="30" />
+      <Input Name="exec_status" Type="nvarchar" Size="30" />
+      <Input Name="success_rate" Type="nvarchar" Size="30" />
+      <Input Name="exec_place" Type="nvarchar" Size="20" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="message" Type="nvarchar" Size="MAX" />
+      <Input Name="date_begin" Type="datetime" />
+      <Input Name="date_end" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_OrderWorkflowExecHistory
+         WHERE  order_workflow_exec_history_id = @order_workflow_exec_history_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_workflow_exec_history_id" Type="bigint" />
+    </Parameter>
+  </Delete>
+
+</OrderWorkflowExecHistory>

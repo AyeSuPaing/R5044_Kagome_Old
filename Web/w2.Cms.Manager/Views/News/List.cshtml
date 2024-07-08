@@ -1,0 +1,380 @@
+﻿@*
+=========================================================================================================
+  Module      : お知らせ設定ページ(List.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.News.ListViewModel
+@{
+	ViewBag.Title = "お知らせ設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+
+@helper TopButtomControls()
+{
+	using (Html.BeginForm("Register", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_NEWS, FormMethod.Get))
+	{
+	<input type="hidden" name="actionStatus" value="@ActionStatus.Insert"/>
+	<input type="submit" value="  新規登録  " class="btn btn-main"/>
+	}
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<!--▽ タイトル ▽-->
+	<tr><td><h1 class="page-title">お知らせ設定</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	<tr><td><h2 class="cmn-hed-h2">お知らせ設定一覧</h2></td></tr>
+	<!--△ タイトル △-->
+	<!--▽ 検索 ▽-->
+	<tr>
+	<td style="width: 792px">
+	<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+	<tr>
+	<td class="search_box_bg">
+	@using (Html.BeginForm("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_NEWS, FormMethod.Get))
+	{
+		<table cellspacing="0" cellpadding="0" width="100%" border="0">
+		<tr>
+		<td align="center">
+		<table cellspacing="0" cellpadding="0" border="0">
+			@LayoutHelper.PaddingTr(10)
+			<tr>
+				<td class="search_table">
+				<table cellspacing="1" cellpadding="2" width="758" border="0">
+					<tr>
+						<td class="search_title_bg">
+							本文
+						</td>
+						<td class="search_item_bg">
+							<input type="text" name="NewsText" value="@Model.ParamModel.NewsText" style="width: 90%"/>
+						</td>
+						<td class="search_title_bg">
+							TOP表示
+						</td>
+						<td class="search_item_bg">
+							@Html.DropDownListFor(model => model.ParamModel.Disp, new SelectList(Model.DispItems, "Value", "Text"), "", new
+						{
+							Name = "Disp"
+						})
+						</td>
+						<td class="search_title_bg">
+							有効フラグ
+						</td>
+						<td class="search_item_bg">
+							@Html.DropDownListFor(model => model.ParamModel.Valid, new SelectList(Model.ValidItems, "Value", "Text"), "", new
+						{
+							Name = "Valid"
+						})
+						</td>
+						<td class="search_title_bg">
+							並び順
+						</td>
+						<td class="search_item_bg">
+							@Html.DropDownListFor(model => model.ParamModel.SortKbn, new SelectList(Model.SortKbnItems, "Value", "Text", "Selected"), new
+						{
+							Name = "SortKbn"
+						})
+						</td>
+						<td class="search_btn_bg" width="83" rowspan="5">
+							<div class="search_btn_main">
+								<input type="submit" name="search" value="  検索  " class="btn btn-main"/>
+							</div>
+							<div class="search_btn_sub">
+								@Html.ActionLink("クリア", "List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_NEWS)
+							</div>
+							@if (Constants.GLOBAL_OPTION_ENABLE)
+							{
+								<div class="search_btn_sub">
+									<a href="NameTranslationSettingExport">翻訳データ出力</a>
+								</div>
+							}
+						</td>
+					</tr>
+					<tr>
+						<td class="search_title_bg" width="95">
+							開始日時
+						</td>
+						<td class="search_item_bg" width="130" colspan="7">
+							@Html.DropDownListFor(model => model.ParamModel.Dates.BeginYearFrom, new SelectList(Model.YearItems, "Value", "Text"), "----", new
+						{
+							Id = "BeginYearFrom",
+							Name = "Dates.BeginYearFrom"
+						})/
+						@Html.DropDownListFor(model => model.ParamModel.Dates.BeginMonthFrom, new SelectList(Model.MonthItems, "Value", "Text"), "--", new
+						{
+							Id = "BeginMonthFrom",
+							Name = "Dates.BeginMonthFrom"
+						})/
+						@Html.DropDownListFor(model => model.ParamModel.Dates.BeginDayFrom, new SelectList(Model.DayItems, "Value", "Text"), "--", new
+						{
+							Id = "BeginDayFrom",
+							Name = "Dates.BeginDayFrom"
+						})
+							～
+						@Html.DropDownListFor(model => model.ParamModel.Dates.BeginYearTo, new SelectList(Model.YearItems, "Value", "Text"), "----", new
+						{
+							Id = "BeginYearTo",
+							Name = "Dates.BeginYearTo"
+						})/
+						@Html.DropDownListFor(model => model.ParamModel.Dates.BeginMonthTo, new SelectList(Model.MonthItems, "Value", "Text"), "--", new
+						{
+							Id = "BeginMonthTo",
+							Name = "Dates.BeginMonthTo"
+						})/
+						@Html.DropDownListFor(model => model.ParamModel.Dates.BeginDayTo, new SelectList(Model.DayItems, "Value", "Text"), "--", new
+						{
+							Id = "BeginDayTo",
+							Name = "Dates.BeginDayTo"
+						})
+							<span class="search_btn_sub">
+								(<a href="Javascript:SetToday('date_from');">今日</a>｜<a href="Javascript:SetThisMonth('date_from');">今月</a>)
+							</span>
+						</td>
+					</tr>
+					<tr>
+						<td class="search_title_bg" width="95">
+							終了日時
+						</td>
+						<td class="search_item_bg" width="130" colspan="7">
+							@Html.DropDownListFor(model => model.ParamModel.Dates.EndYearFrom, new SelectList(Model.YearItems, "Value", "Text"), "----", new
+						{
+							Id = "EndYearFrom",
+							Name = "Dates.EndYearFrom"
+						})/
+						@Html.DropDownListFor(model => model.ParamModel.Dates.EndMonthFrom, new SelectList(Model.MonthItems, "Value", "Text"), "--", new
+						{
+							Id = "EndMonthFrom",
+							Name = "Dates.EndMonthFrom"
+						})/
+						@Html.DropDownListFor(model => model.ParamModel.Dates.EndDayFrom, new SelectList(Model.DayItems, "Value", "Text"), "--", new
+						{
+							Id = "EndDayFrom",
+							Name = "Dates.EndDayFrom"
+						})
+							～
+						@Html.DropDownListFor(model => model.ParamModel.Dates.EndYearTo, new SelectList(Model.YearItems, "Value", "Text"), "----", new
+						{
+							Id = "EndYearTo",
+							Name = "Dates.EndYearTo"
+						})/
+						@Html.DropDownListFor(model => model.ParamModel.Dates.EndMonthTo, new SelectList(Model.MonthItems, "Value", "Text"), "--", new
+						{
+							Id = "EndMonthTo",
+							Name = "Dates.EndMonthTo"
+						})/
+						@Html.DropDownListFor(model => model.ParamModel.Dates.EndDayTo, new SelectList(Model.DayItems, "Value", "Text"), "--", new
+						{
+							Id = "EndDayTo",
+							Name = "Dates.EndDayTo"
+						})
+							<span class="search_btn_sub">
+								(<a href="Javascript:SetToday('date_to');">今日</a>｜<a href="Javascript:SetThisMonth('date_to');">今月</a>)
+							</span>
+						</td>
+					</tr>
+				</table>
+				</td>
+			</tr>
+			@LayoutHelper.PaddingTr(10)
+		</table>
+		</td>
+		</tr>
+		</table>
+	}
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 検索 △-->
+	@LayoutHelper.PaddingTr(10)
+	<!--▽ 一覧 ▽-->
+	<tr>
+	<td>
+		<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+		<tr>
+		<td>
+		<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+		<tr>
+			<td align="center">
+				<table cellspacing="0" cellpadding="0" border="0">
+					@LayoutHelper.PaddingTr(6)
+					<tr>
+						<td>
+							<div class="action_part_top">
+							<!--▽ ページング ▽-->
+							<table class="list_pager" cellspacing="0" cellpadding="0" width="758" border="0">
+								<tr>
+									<td width="675" style="height: 22px">
+										@Html.Raw(Model.PagerHtml)
+									</td>
+									<td width="83" class="action_list_sp" style="text-align: right">
+										@TopButtomControls()
+									</td>
+								</tr>
+							</table>
+							<!--△ ページング △-->
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<table class="list_table" cellspacing="1" cellpadding="3" width="758" border="0">
+								<tr class="list_title_bg">
+									<td align="center" width="16%">開始日時<br />
+										終了日時</td>
+									<td align="center" width="39%">本文</td>
+									@if (w2.App.Common.Constants.PRODUCT_BRAND_ENABLED)
+									{
+										<td align="center" width="9%">ブランドID</td>
+									}
+									<td align="center" width="8%">有効フラグ</td>
+									<td align="center" width="8%">並び順</td>
+									<td align="center" width="8%">TOP表示</td>
+								</tr>
+								@{ var lineNo = 1; }
+								@for (var index = 0; index < Model.SearchResultListViewModel.Length; index++)
+								{
+									 lineNo = (lineNo + 1) % 2;
+									 var lineNoTemp = ((Model.SearchResultListViewModel[index].DispFlg) ? (lineNo + 1).ToString() : "3");
+									 var listItemBgClass = "list_item_bg" + lineNoTemp;
+									 var listSelectMoutClass = string.Format("listselect_mout{0}(this)", lineNoTemp);
+
+									<tr id="trItem" class="@listItemBgClass" onmouseover="listselect_mover(this)" onmouseout="@listSelectMoutClass" onmousedown="listselect_mdown(this)">
+										<td align="center" onclick="listselect_mclick(document.getElementById('trItem'), '@Model.SearchResultListViewModel[index].RegisterUrl')">
+											@Model.SearchResultListViewModel[index].DisplayDateFrom<br>
+											@Model.SearchResultListViewModel[index].DisplayDateTo
+										</td>
+										<td align="left" title="@Model.SearchResultListViewModel[index].NewsText"
+										onclick="listselect_mclick(document.getElementById('trItem'), '@Model.SearchResultListViewModel[index].RegisterUrl')">
+											@Model.SearchResultListViewModel[index].NewsText
+										</td>
+										@if (w2.App.Common.Constants.PRODUCT_BRAND_ENABLED)
+										{
+											<td align="center" onclick="listselect_mclick(document.getElementById('trItem'), '@Model.SearchResultListViewModel[index].RegisterUrl')">
+												@Model.SearchResultListViewModel[index].BrandId
+											</td>
+										}
+										<td align="center" onclick="listselect_mclick(document.getElementById('trItem'), '@Model.SearchResultListViewModel[index].RegisterUrl')">
+											@Model.SearchResultListViewModel[index].ValidFlg
+										</td>
+										<td align="center" onclick="listselect_mclick(document.getElementById('trItem'), '@Model.SearchResultListViewModel[index].RegisterUrl')">
+											@Model.SearchResultListViewModel[index].DisplayOrder
+										</td>
+										<td align="center">
+											@{ var Id = string.Format("cb{0}", Model.SearchResultListViewModel[index].NewsId); }
+											@{ var function = string.Format("RegistDispFlg('{0}', '{1}', '{2}')", Model.SearchResultListViewModel[index].NewsId, Id, (lineNo + 1));}
+											@Html.CheckBoxFor(m => m.SearchResultListViewModel[index].DispFlg, new
+										{
+											Id = Id,
+											Onchange = function
+										})
+										</td>
+									</tr>
+								}
+								@if (string.IsNullOrEmpty(Model.ErrorMessage) == false)
+								{
+									<tr class="list_alert">
+										<td colspan="6">@Model.ErrorMessage</td>
+									</tr>
+								}
+							</table>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div class="action_part_bottom">
+							@TopButtomControls()
+							</div>
+						</td>
+					</tr>
+					@LayoutHelper.PaddingTr(10)
+				</table>
+			</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+	</td>
+	</tr>
+	<!--△ 一覧 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		function RegistDispFlg(id, checkBoxId, lineNo) {
+			var check = document.getElementById(checkBoxId).checked;
+			var selecter = $("#" + checkBoxId).parents('#trItem');
+			if (check) {
+				selecter.attr("onmouseout", "listselect_mout" + lineNo + "(this)");
+			} else {
+				selecter.attr("onmouseout", "listselect_mout3(this)");
+			}
+
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("DispFlgModifyOfList", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_NEWS)",
+				data: {
+					"NewsId": id,
+					"Disp": check
+				},
+			}).done(function() {
+				console.log("成功");
+			}).fail(function() {
+				console.log("失敗");
+			});
+		}
+
+		// 今日設定
+		function SetToday(set_date) {
+			// 開始日時
+			if (set_date == 'date_from') {
+				document.getElementById('BeginYearFrom').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('BeginMonthFrom').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('BeginDayFrom').value = '@DateTime.Now.ToString("dd")';
+				document.getElementById('BeginYearTo').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('BeginMonthTo').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('BeginDayTo').value = '@DateTime.Now.ToString("dd")';
+			}
+			// 終了日時
+			else if (set_date == 'date_to') {
+				document.getElementById('EndYearFrom').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('EndMonthFrom').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('EndDayFrom').value = '@DateTime.Now.ToString("dd")';
+				document.getElementById('EndYearTo').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('EndMonthTo').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('EndDayTo').value = '@DateTime.Now.ToString("dd")';
+			}
+		}
+
+// 今月設定
+		function SetThisMonth(set_date) {
+			// 開始日時
+			if (set_date == 'date_from') {
+				document.getElementById('BeginYearFrom').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('BeginMonthFrom').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('BeginDayFrom').value = '01';
+				document.getElementById('BeginYearTo').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('BeginMonthTo').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('BeginDayTo').value =
+					'@DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month)';
+			}
+			// 終了日時
+			else if (set_date == 'date_to') {
+				document.getElementById('EndYearFrom').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('EndMonthFrom').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('EndDayFrom').value = '01';
+				document.getElementById('EndYearTo').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('EndMonthTo').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('EndDayTo').value =
+					'@DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month)';
+			}
+		}
+	</script>
+}

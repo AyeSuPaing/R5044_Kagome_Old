@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_LandingPageDesign]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+begin
+	CREATE TABLE [dbo].[w2_LandingPageDesign] (
+		[page_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+		[page_title] [nvarchar] (256) NOT NULL DEFAULT (N''),
+		[page_file_name] [nvarchar] (256) NOT NULL DEFAULT (N''),
+		[public_status] [nvarchar] (20) NOT NULL DEFAULT (N'0'),
+		[public_start_datetime] [datetime],
+		[public_end_datetime] [datetime],
+		[buy_type] [nvarchar] (20) NOT NULL DEFAULT (N'NORMAL'),
+		[product_choose_type] [nvarchar] (20) NOT NULL DEFAULT (N'DONOTCHOOSE'),
+		[user_registration_type] [nvarchar] (20) NOT NULL DEFAULT (N'AUTO'),
+		[login_form_type] [nvarchar] (20) NOT NULL DEFAULT (N'VISIBLE'),
+		[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+		[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+		[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+	) ON [PRIMARY]
+
+	ALTER TABLE [dbo].[w2_LandingPageDesign] WITH NOCHECK ADD
+		CONSTRAINT [PK_w2_LandingPageDesign] PRIMARY KEY  CLUSTERED
+		(
+			[page_id]
+		) ON [PRIMARY]
+end
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_LandingPageDesignBlock]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+begin
+	CREATE TABLE [dbo].[w2_LandingPageDesignBlock] (
+		[page_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+		[design_type] [nvarchar] (20) NOT NULL DEFAULT (N'PC'),
+		[block_index] [int] NOT NULL DEFAULT (0),
+		[block_class_name] [nvarchar] (512) NOT NULL DEFAULT (0),
+		[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+		[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+		[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+	) ON [PRIMARY]
+
+	ALTER TABLE [dbo].[w2_LandingPageDesignBlock] WITH NOCHECK ADD
+		CONSTRAINT [PK_w2_LandingPageDesignBlock] PRIMARY KEY  CLUSTERED
+		(
+			[page_id],
+			[design_type],
+			[block_index]
+		) ON [PRIMARY]
+end
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_LandingPageDesignElement]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+begin
+	CREATE TABLE [dbo].[w2_LandingPageDesignElement] (
+		[page_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+		[design_type] [nvarchar] (20) NOT NULL DEFAULT (N'PC'),
+		[block_index] [int] NOT NULL DEFAULT (0),
+		[element_index] [int] NOT NULL DEFAULT (0),
+		[element_place_holder_name] [nvarchar] (256) NOT NULL DEFAULT (N''),
+		[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+		[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+		[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+	) ON [PRIMARY]
+
+	ALTER TABLE [dbo].[w2_LandingPageDesignElement] WITH NOCHECK ADD
+		CONSTRAINT [PK_w2_LandingPageDesignElement] PRIMARY KEY  CLUSTERED
+		(
+			[page_id],
+			[design_type],
+			[block_index],
+			[element_index]
+		) ON [PRIMARY]
+end
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_LandingPageDesignAttribute]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+begin
+	CREATE TABLE [dbo].[w2_LandingPageDesignAttribute] (
+		[page_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+		[design_type] [nvarchar] (20) NOT NULL DEFAULT (N'PC'),
+		[block_index] [int] NOT NULL DEFAULT (0),
+		[element_index] [int] NOT NULL DEFAULT (0),
+		[attribute] [nvarchar] (256) NOT NULL DEFAULT (N''),
+		[value] [nvarchar] (max) NOT NULL DEFAULT (N''),
+		[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+		[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+		[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+	) ON [PRIMARY]
+
+	ALTER TABLE [dbo].[w2_LandingPageDesignAttribute] WITH NOCHECK ADD
+		CONSTRAINT [PK_w2_LandingPageDesignAttribute] PRIMARY KEY  CLUSTERED
+		(
+			[page_id],
+			[design_type],
+			[block_index],
+			[element_index],
+			[attribute]
+		) ON [PRIMARY]
+end
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_LandingPageProduct]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+begin
+	CREATE TABLE [dbo].[w2_LandingPageProduct] (
+		[page_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+		[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+		[product_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+		[variation_id] [nvarchar] (60) NOT NULL DEFAULT (N''),
+		[quantity] [int] NOT NULL DEFAULT (0),
+		[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+		[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+		[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+	) ON [PRIMARY]
+
+	ALTER TABLE [dbo].[w2_LandingPageProduct] WITH NOCHECK ADD
+		CONSTRAINT [PK_w2_LandingPageProduct] PRIMARY KEY  CLUSTERED
+		(
+			[page_id],
+			[shop_id],
+			[product_id],
+			[variation_id]
+		) ON [PRIMARY]
+end
+
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

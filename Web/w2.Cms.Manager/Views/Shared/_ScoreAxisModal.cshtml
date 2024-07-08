@@ -1,0 +1,163 @@
+﻿@*
+=========================================================================================================
+  Module      : Score Axis Modal (_ScoreAxisModal.cshtml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Web.Page
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.Common
+
+<style>
+	.break-word {
+		word-wrap: break-word;
+	}
+	.item-search-result-head-score-axis-id,
+	.item-search-result-list-score-axis-id {
+		width: 7%;
+		display: block;
+		word-wrap: break-word;
+		text-align: center;
+		z-index: 1000 !important;
+	}
+	.item-search-result-head-score-axis-title {
+		width: 68%;
+		display: block;
+		word-wrap: break-word;
+		text-align: left !important;
+	}
+	.item-search-result-list-score-axis-title {
+		width: 60%;
+		display: block;
+		word-wrap: break-word;
+		padding-left: 30px !important;
+		text-align: left !important;
+	}
+	.item-search-result-head-score-axis-date {
+		width: 23%;
+		display: block;
+		word-wrap: break-word;
+		text-align: center !important;
+	}
+	.item-search-result-list-score-axis-date {
+		width: 23%;
+		display: block;
+		word-wrap: break-word;
+		padding-left: 5em !important;
+		text-align: center !important;
+	}
+</style>
+
+<div class="modal-content-hide">
+	<div id="modal-score-axis-list">
+		<p class="modal-inner-ttl under-text">@CommonPage.ReplaceTag("@@ScoreAxis.modal_list_head.title_top.name@@")</p>
+		<p class="modal-inner-ttl-under-text">@CommonPage.ReplaceTag("@@ScoreAxis.modal_list_head.title_bottom.name@@")</p>
+		<div class="score-axis-result">
+			<div class="pager-content">
+				<p class="pager-content-info hide-list-detail" data-bind="text: ($data.ScoreAxisList().length > 0) ? $data.ScoreAxisList()[0].CountHtml : ''"></p>
+				<span id="previous" class="pager-content-previous icon-arrow-down icon-arrow-down-left" onclick="before_score_axis_page();"></span>
+				<span id="next" class="pager-content-next icon-arrow-down icon-arrow-down-right" onclick="next_score_axis_page();"></span>
+			</div>
+			<div class="item-search-result-head">
+				<div class="item-search-result-head-score-axis-id"></div>
+				<div class="item-search-result-head-score-axis-title">@CommonPage.ReplaceTag("@@ScoreAxis.modal_list_head.score_axis_title.name@@")</div>
+				<div class="item-search-result-head-score-axis-date">@CommonPage.ReplaceTag("@@ScoreAxis.modal_list_head.date_changed.name@@")</div>
+			</div>
+			<div class="item-search-result-contents custom-scroll-area" data-bind="foreach: ScoreAxisList">
+				<div class="item-search-result-content">
+					<div class="item-search-result-list-score-axis-id">
+						<input type="radio" name="scoreAxisId" data-bind="attr: { id: $data.ScoreAxisId, value: $data.ScoreAxisTitle }" />
+					</div>
+					<div class="item-search-result-list-score-axis-title" data-bind="text: $data.ScoreAxisTitle"></div>
+					<div class="item-search-result-list-score-axis-date" data-bind="text: $data.DateChanged"></div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer-action">
+			<input type="button" class="btn btn-main btn-size-m" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.set.name@@")" onclick="add_score_axis_click()" />
+		</div>
+		<div style="text-align: right;">
+			<input type="button" class="btn btn-main btn-size-m" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.close.name@@")" onclick="modal.close();" />
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	var score_axis_pager_no = 1;
+	var selectedScoreAxis = [];
+
+	// Get score axis list
+	function get_score_axis_list() {
+		loading_animation.start();
+
+		$.ajax({
+			type: "POST",
+			url: '@Url.Action("SearchScoreAxis", Constants.CONTROLLER_W2CMS_MANAGER_SCORE_AXIS)',
+			data: { 'ParamModel.PagerNo': score_axis_pager_no }
+		}).done(function (result) {
+			set_score_axis_list(result);
+
+			check_for_selected_axis();
+		});
+
+		loading_animation.end();
+	}
+
+	// Check for selected axis
+	function check_for_selected_axis()
+	{
+		var score_axis_elements = $("[name='scoreAxisId']");
+		if ((selectedScoreAxis.length === 0)
+			|| (score_axis_elements.length === 0))
+		{
+			return;
+		}
+
+		for (var index = 0; index < score_axis_elements.length; index++) {
+			var element = score_axis_elements[index];
+
+			// Set checked
+			if (selectedScoreAxis[0].id == element.id) element.checked = true;
+		}
+	}
+
+	// Add score axis click
+	function add_score_axis_click() {
+		var selectedScoreAxis = $("[name='scoreAxisId']:checked");
+
+		if (selectedScoreAxis.length === 0) {
+			notification.show('@WebMessages.ScoreAxisSetItemOneItemError', 'warning', 'fadeout');
+			return;
+		}
+
+		add_score_axis(selectedScoreAxis[0].id, selectedScoreAxis[0].value);
+	}
+
+	// Next page
+	function next_score_axis_page() {
+		if($("[name='scoreAxisId']:checked").length != 0){
+			selectedScoreAxis = $("[name='scoreAxisId']:checked");
+		}
+		$.ajax({
+			type: "POST",
+			url: '@Url.Action("GetSearchHitCount", Constants.CONTROLLER_W2CMS_MANAGER_SCORE_AXIS)',
+		}).done(function (count) {
+			if (count > (score_axis_pager_no * @Constants.CONST_DISP_CONTENTS_DEFAULT_LIST)) {
+				score_axis_pager_no++;
+				get_score_axis_list();
+			}
+		});
+	}
+
+	// Previous page
+	function before_score_axis_page() {
+		if($("[name='scoreAxisId']:checked").length != 0){
+			selectedScoreAxis = $("[name='scoreAxisId']:checked");
+		}
+		if (score_axis_pager_no > 1) {
+			score_axis_pager_no--;
+			get_score_axis_list();
+		}
+	}
+</script>

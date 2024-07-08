@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ContentsLog]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+begin
+/*
+=========================================================================================================
+  Module      : コンテンツログ (w2_ContentsLog.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ContentsLog] (
+	[log_no] [bigint] IDENTITY(1,1) NOT NULL,
+	[date] [datetime] DEFAULT (getdate()),
+	[report_type] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[access_kbn] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[contents_type] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[contents_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[price] [decimal] (23,3) NOT NULL DEFAULT (0)
+) ON [PRIMARY]
+
+
+ALTER TABLE [dbo].[w2_ContentsLog] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ContentsLog] PRIMARY KEY  CLUSTERED
+	(
+		[log_no]
+	) ON [PRIMARY]
+
+
+CREATE INDEX [IX_w2_ContentsLog_1] ON [dbo].[w2_ContentsLog]([date], [report_type], [access_kbn], [contents_type], [contents_id]) ON [PRIMARY]
+
+
+end
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ContentsSummaryAnalysis]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+begin
+/*
+=========================================================================================================
+  Module      : コンテンツ解析 (w2_ContentsSummaryAnalysis.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ContentsSummaryAnalysis] (
+	[data_no] [bigint] IDENTITY(1,1) NOT NULL,
+	[date] [datetime] NOT NULL,
+	[tgt_year] AS DATEPART(year, date) PERSISTED NOT NULL,
+	[tgt_month] AS DATEPART(month, date) PERSISTED NOT NULL,
+	[tgt_day] AS DATEPART(day, date) PERSISTED NOT NULL,
+	[report_type] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[access_kbn] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[contents_type] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[contents_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[count] [bigint] NOT NULL DEFAULT (0),
+	[price] [decimal] (23,3) NOT NULL DEFAULT (0)
+) ON [PRIMARY]
+
+
+ALTER TABLE [dbo].[w2_ContentsSummaryAnalysis] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ContentsSummaryAnalysis] PRIMARY KEY  CLUSTERED
+	(
+		[data_no]
+	) ON [PRIMARY]
+
+
+CREATE INDEX [IX_w2_ContentsSummaryAnalysis_1] ON [dbo].[w2_ContentsSummaryAnalysis]([date], [report_type], [access_kbn], [contents_type], [contents_id]) ON [PRIMARY]
+
+
+end
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

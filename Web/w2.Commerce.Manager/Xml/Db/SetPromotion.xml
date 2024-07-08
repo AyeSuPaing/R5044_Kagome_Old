@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : セットプロモーション系SQLステートメントXML(SetPromotion.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<SetPromotion>
+
+  <!-- 対象商品データ取得（設定登録時のマスタチェック用） -->
+  <GetTargetProductData>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Product.product_id AS item,
+                w2_Product.shipping_type,
+                w2_Product.valid_flg
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+                AND
+                w2_Product.product_id IN
+                (
+                  @@ where_target_data @@
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetTargetProductData>
+
+  <!-- 対象商品バリエーションデータ取得（設定登録時のマスタチェック用） -->
+  <GetTargetVariationData>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductView.product_id + ',' + w2_ProductView.variation_id AS item,
+                w2_ProductView.shipping_type,
+                w2_ProductView.valid_flg
+          FROM  w2_ProductView
+         WHERE  w2_ProductView.shop_id = @shop_id
+                AND
+                (
+                  @@ where_target_data @@
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetTargetVariationData>
+
+  <!-- 対象商品カテゴリデータ取得（設定登録時のマスタチェック用） -->
+  <GetTargetCategoryData>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductCategory.category_id AS item
+          FROM  w2_ProductCategory
+         WHERE  w2_ProductCategory.shop_id = @shop_id
+                AND
+                w2_ProductCategory.category_id IN
+                (
+                  @@ where_target_data @@
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetTargetCategoryData>
+</SetPromotion>

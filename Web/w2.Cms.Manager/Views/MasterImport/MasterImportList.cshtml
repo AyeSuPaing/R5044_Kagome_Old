@@ -1,0 +1,215 @@
+﻿@*
+=========================================================================================================
+  Module      : マスタアップロードページ(MasterImportList.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+
+@model w2.Cms.Manager.ViewModels.MasterImport.ListViewModel
+@{
+	ViewBag.Title = "マスタアップロード";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+@helper UploadButtomControls()
+{
+	<input type="submit" value="  データアップロード  " disabled="@(this.Model.UploadEnabled == false)" onclick="return validate_master_import();" class="btn btn-main"/>
+}
+@section Style
+{
+	<style>
+		.trEnableUploadMessageInfo {
+			display: block;
+			font-size: 16px;
+			font-weight: bold;
+			background: #ECECEC;
+			border-radius: 5px;
+			padding: 50px 0;
+			line-height: 1;
+			border: none;
+		}
+	</style>
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<!--▽ タイトル ▽-->
+	<tr>
+	<td><h1 class="page-title">マスタアップロード</h1></td>
+	</tr>
+	@LayoutHelper.PaddingTr(10)
+	<!--△ タイトル △-->
+	<!--▽  ファイルアップロードフォーム ▽-->
+	<tr>
+	<td>
+	@using (Html.BeginForm(
+		"Upload",
+		Constants.CONTROLLER_W2CMS_MANAGER_MASTER_IMPORT,
+		FormMethod.Post,
+		new { enctype="multipart/form-data"}))
+	{
+	<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+	<tr>
+	<td>
+	<table class="info_box_bg" cellspacing="0" cellpadding="0" border="0" width="100%">
+	<tr>
+	<td align="center">
+	<table cellspacing="0" cellpadding="0" border="0">
+	@LayoutHelper.PaddingTr(10)
+	<tr>
+	<td>
+		<table class="info_table" width="758" border="0" cellspacing="1" cellpadding="3">
+			<tr>
+				<td class="info_item_bg">
+					<div class="list_detail">マスタデータ(ＣＳＶファイル)のアップロードをします。ファイルは各マスタ種別に対して１個のみアップロード可能です。
+						<br/>
+						アップロード可能なファイルの最大サイズは
+						<b>
+							@this.Model.MaxRequestLength
+							MB</b> です。
+					</div>
+				</td>
+			</tr>
+		</table>
+	</td>
+	</tr>
+	@LayoutHelper.PaddingTr(4)
+	<tr>
+	<td>
+		<table class="search_table" cellspacing="1" cellpadding="2" width="758" border="0">
+			<tr>
+				<td class="list_title_bg" width="120">
+					マスタ種別</td>
+				<td class="list_item_bg1">
+					@Html.DropDownListFor(model => model.MasterType, this.Model.MasterItems, new { onchange = "SelectedIndexChanged()" })
+					<input id="SelectedIndexChangeBtn" name="SelectedIndexChangeBtn" type="submit" style="display: none;"/>
+				</td>
+			</tr>
+			<tr>
+				<td class="list_title_bg" width="120">
+					ファイルパス<span class="notice">*</span></td>
+				<td class="list_item_bg1">
+					<input id="fUpload" contentEditable="false" size="90" type="file" name="fUpload" />
+				</td>
+			</tr>
+		</table>
+	</td>
+	</tr>
+	<tr>
+		<td>
+			<div class="action_part_bottom">@UploadButtomControls()</div>
+		</td >
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	}
+	</td>
+	</tr>
+	<!--△ ファイルアップロードフォーム △-->
+	@LayoutHelper.PaddingTr(10)
+	<!--▽ アップロードファイル一覧 ▽-->
+	<tr>
+	<td><h2 class="cmn-hed-h2">アップロード済ファイル一覧</h2></td>
+	</tr>
+	<tr>
+	<td>
+	<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+	<tr>
+	<td align="center">
+	<table class="list_box_bg" cellspacing="0" cellpadding="0" border="0" width="100%">
+	@LayoutHelper.PaddingTr(6)
+	<tr>
+	<td align="center">
+		<table cellspacing="0" cellpadding="0" width="100%" border="0">
+		@if (this.Model.UploadEnabled)
+		{
+			<tr>
+				<td align="center">
+					<span class="trEnableUploadMessageInfo">現在アップロードされているファイルはありません。<br/>
+						ファイルのアップロードが可能です。<br/>
+					</span>
+				</td>
+			</tr>
+		}
+		else
+		{
+			<tr>
+				<td align="center">
+					<span>
+						別ファイルアップロードのためにはファイルの取込又は削除を行ってください。</span><br/>
+				</td>
+			</tr>
+			<tr>
+				<td align="center">
+				@using (Html.BeginForm(
+					"ImportFile",
+					Constants.CONTROLLER_W2CMS_MANAGER_MASTER_IMPORT,
+					FormMethod.Post))
+				{
+					<table class="list_table" cellspacing="1" cellpadding="3" width="50%" border="0">
+						<tr class="list_title_bg">
+							<td align="left" style="height: 17px">ファイル名</td>
+							<td align="left" style="height: 17px">操作</td>
+						</tr>
+						@foreach (var fileName in this.Model.UploadFileNames)
+						{
+						<tr class="list_item_bg1">
+							<td align="left">
+								@Html.Encode(fileName)
+							</td>
+							<td align="center">
+								<input type="submit" value="  取込実行  " onclick="document.getElementById('fileName').value = '@fileName';return confirm('取り込んでもよろしいですか？');" class="btn btn-main"/>
+								&nbsp;
+								<input name="DeleteFileBtn" type="submit" value="  削除  " onclick="document.getElementById('fileName').value = '@fileName';return confirm('削除してもよろしいですか？');" class="btn btn-main"/>
+								@Html.Hidden("fileName", "")
+							</td>
+						</tr>
+						}
+					</table>
+				}
+				</td>
+			</tr>
+		}
+		</table>
+	</td>
+	</tr>
+	@LayoutHelper.PaddingTr(10)
+	</table>
+	</td>
+	</tr>
+	</table>
+	<!--△ アップロードファイル一覧 △-->
+	</td>
+	</tr>
+	@LayoutHelper.PaddingTr(10)
+</table>
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		function SelectedIndexChanged() {
+			document.getElementById("SelectedIndexChangeBtn").click();
+		}
+
+		function validate_master_import() {
+			$('.notification-message-warning').remove();
+
+			if ($("#fUpload")[0].files.length === 0 ) {
+				notification.show("アップロードするファイルを選択してください。", 'warning', 'fixed');
+				return false;
+			}
+
+			if ($("#fUpload")[0].files[0].name.match(/.(csv)$/i) === null) {
+				notification.show("アップ可能なファイルは*.csvのみです。", 'warning', 'fixed');
+				return false;
+			}
+
+			return true;
+		}
+	</script>
+}

@@ -1,0 +1,2 @@
+﻿[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Test.w2.Commerce.Batch.MasterFileImport")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Test.Commerce.Batch.MasterFileImport")]

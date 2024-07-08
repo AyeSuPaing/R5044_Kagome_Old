@@ -1,0 +1,258 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 入荷通知メール情報系SQLサブステートメントXML(UserProductArrivalMail_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<UserProductArrivalMail_Sub>
+  <!-- 商品別区分別の登録件数テーブル作成 -->
+  <USERPRODUCTARRIVALMAIL_ARRIVAL_MAIL_COUNT_TABLE_CREATE>
+    <Statement>
+      <![CDATA[            
+        -- 商品別区分別の登録件数取得
+        DECLARE @arrival_mail_count TABLE(
+          shop_id nvarchar(10),
+          product_id nvarchar(30),
+          variation_id nvarchar(60),
+          arrival_mail_count int,
+          release_mail_count int,
+          resale_mail_count int
+          )
+            
+        INSERT INTO @arrival_mail_count
+          (
+            shop_id,
+            product_id,
+            variation_id,
+            arrival_mail_count,
+            release_mail_count,
+            resale_mail_count
+           )
+        SELECT  ISNULL(ArrivalCount.shop_id,ISNULL(ReleaseCount.shop_id,ResaleCount.shop_id)) AS shop_id,
+                ISNULL(ArrivalCount.product_id,ISNULL(ReleaseCount.product_id,ResaleCount.product_id)) AS product_id,
+                ISNULL(ArrivalCount.variation_id,ISNULL(ReleaseCount.variation_id,ResaleCount.variation_id)) AS variation_id,
+                ISNULL(ArrivalCount.count,0) AS arrival_mail_count,
+                ISNULL(ReleaseCount.count,0) AS release_mail_count,
+                ISNULL(ResaleCount.count,0) AS resale_mail_count
+          FROM  (
+                  -- 再入荷通知件数
+                  SELECT  w2_UserProductArrivalMail.shop_id,
+                          w2_UserProductArrivalMail.product_id,
+                          w2_UserProductArrivalMail.variation_id,
+                          COUNT(mail_no) AS count
+                    FROM  w2_UserProductArrivalMail
+               LEFT JOIN  w2_User ON
+                          (
+                            w2_UserProductArrivalMail.user_id = w2_User.user_id
+                          )                    
+                   WHERE  w2_UserProductArrivalMail.arrival_mail_kbn = 'ARRIVAL'
+                     AND  w2_UserProductArrivalMail.mail_send_status = '0'
+                     AND  w2_UserProductArrivalMail.date_expired >= GETDATE()
+                     AND  (
+                            (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+                            OR
+                            (w2_UserProductArrivalMail.user_id = 'GUEST')
+                          )
+                  GROUP BY w2_UserProductArrivalMail.shop_id,
+                           w2_UserProductArrivalMail.product_id,
+                           w2_UserProductArrivalMail.variation_id
+                ) ArrivalCount
+                FULL OUTER JOIN
+                (
+                  -- 販売開始通知件数
+                  SELECT  w2_UserProductArrivalMail.shop_id,
+                          w2_UserProductArrivalMail.product_id,
+                          w2_UserProductArrivalMail.variation_id,
+                          COUNT(mail_no) AS count
+                    FROM  w2_UserProductArrivalMail
+               LEFT JOIN  w2_User ON
+                          (
+                            w2_UserProductArrivalMail.user_id = w2_User.user_id
+                          )
+                   WHERE  w2_UserProductArrivalMail.arrival_mail_kbn = 'RELEASE'
+                     AND  w2_UserProductArrivalMail.mail_send_status = '0'
+                     AND  w2_UserProductArrivalMail.date_expired >= GETDATE()
+                     AND  (
+                            (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+                            OR
+                            (w2_UserProductArrivalMail.user_id = 'GUEST')
+                          )
+                  GROUP BY w2_UserProductArrivalMail.shop_id,
+                           w2_UserProductArrivalMail.product_id,
+                           w2_UserProductArrivalMail.variation_id
+                ) ReleaseCount
+                ON
+                (
+                  ArrivalCount.shop_id = ReleaseCount.shop_id
+                  AND
+                  ArrivalCount.product_id = ReleaseCount.product_id
+                  AND
+                  ArrivalCount.variation_id = ReleaseCount.variation_id
+                )
+                FULL OUTER JOIN
+                (
+                  -- 再販売通知件数
+                  SELECT  w2_UserProductArrivalMail.shop_id,
+                          w2_UserProductArrivalMail.product_id,
+                          w2_UserProductArrivalMail.variation_id,
+                          COUNT(mail_no) AS count
+                    FROM  w2_UserProductArrivalMail
+               LEFT JOIN  w2_User ON
+                          (
+                            w2_UserProductArrivalMail.user_id = w2_User.user_id
+                          )
+                   WHERE  w2_UserProductArrivalMail.arrival_mail_kbn = 'RESALE'
+                     AND  w2_UserProductArrivalMail.mail_send_status = '0'
+                     AND  w2_UserProductArrivalMail.date_expired >= GETDATE()
+                     AND  (
+                            (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+                            OR
+                            (w2_UserProductArrivalMail.user_id = 'GUEST')
+                          )
+                  GROUP BY w2_UserProductArrivalMail.shop_id,
+                           w2_UserProductArrivalMail.product_id,
+                           w2_UserProductArrivalMail.variation_id
+                ) ResaleCount
+                ON
+                (
+                  (
+                    ArrivalCount.shop_id = ResaleCount.shop_id
+                    AND
+                    ArrivalCount.product_id = ResaleCount.product_id
+                    AND
+                    ArrivalCount.variation_id = ResaleCount.variation_id
+                  )
+                  OR
+                  (
+                    ReleaseCount.shop_id = ResaleCount.shop_id
+                    AND
+                    ReleaseCount.product_id = ResaleCount.product_id
+                    AND
+                    ReleaseCount.variation_id = ResaleCount.variation_id
+                  )
+                )
+      ]]>
+    </Statement>
+  </USERPRODUCTARRIVALMAIL_ARRIVAL_MAIL_COUNT_TABLE_CREATE>    
+
+  <!-- 入荷通知メール情報一覧取得用WHERE文 -->
+  <USERPRODUCTARRIVALMAIL_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE w2_ProductView.shop_id = @shop_id       -- 店舗ID
+              AND
+              (@product_id_like_escaped = '' OR w2_ProductView.product_id like @product_id_like_escaped + '%' ESCAPE '#')      -- 商品ID
+              AND
+              (@name_like_escaped = '' OR w2_ProductView.name like '%' + @name_like_escaped + '%' ESCAPE '#')          -- 商品名
+              AND
+              (@stock IS NULL OR w2_ProductView.stock >= @stock)                                                        -- 在庫数
+              AND
+              (@sell_from_from IS NULL OR w2_ProductView.sell_from >= @sell_from_from)              -- 販売開始日(From)
+              AND
+              (@sell_from_to IS NULL OR w2_ProductView.sell_from < @sell_from_to)  -- 販売開始日(To)
+              AND
+              (@sell_to_from IS NULL OR (w2_ProductView.sell_to IS NULL) OR (w2_ProductView.sell_to >= @sell_to_from))                    -- 販売終了日(From)
+              AND
+              (@sell_to_to IS NULL OR (w2_ProductView.sell_to IS NULL) OR (w2_ProductView.sell_to < @sell_to_to))        -- 販売終了日(To)
+              AND
+              (@sales_period IS NULL OR (w2_ProductView.sell_to IS NULL) OR (@sales_period >= w2_ProductView.sell_from AND @sales_period <= w2_ProductView.sell_to))                         -- 販売期間
+              AND
+              (@display_period IS NULL OR (w2_ProductView.display_to IS NULL) OR (@display_period >= w2_ProductView.display_from AND @display_period <= w2_ProductView.display_to))          -- 表示期間
+              AND
+              (@valid_flg = '' OR (@valid_flg = w2_ProductView.valid_flg))                    -- 商品有効フラグ
+              AND
+              (
+                ArrivalMailCount.arrival_mail_count > CASE @arrival_mail_kbn_arrival WHEN '1' THEN 0 ELSE ArrivalMailCount.arrival_mail_count END   -- 再入荷通知メール
+                OR
+                ArrivalMailCount.release_mail_count > CASE @arrival_mail_kbn_release WHEN '1' THEN 0 ELSE ArrivalMailCount.release_mail_count END   -- 販売開始通知メール
+                OR
+                ArrivalMailCount.resale_mail_count > CASE @arrival_mail_kbn_resale WHEN '1' THEN 0 ELSE ArrivalMailCount.resale_mail_count END      -- 再販売通知メール
+              )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sales_period" Type="datetime" />
+      <Input Name="display_period" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1"/>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="stock" Type="int" />
+      <Input Name="sell_from_from" Type="datetime" />
+      <Input Name="sell_from_to" Type="datetime" />
+      <Input Name="sell_to_from" Type="datetime" />
+      <Input Name="sell_to_to" Type="datetime" />
+      <Input Name="sales_period" Type="datetime" />
+      <Input Name="display_period" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1"/>
+      <Input Name="arrival_mail_kbn_arrival" Type="nvarchar" Size="1" />
+      <Input Name="arrival_mail_kbn_release" Type="nvarchar" Size="1" />
+      <Input Name="arrival_mail_kbn_resale" Type="nvarchar" Size="1" />
+    </Parameter>
+  </USERPRODUCTARRIVALMAIL_SEARCH_WHERE>
+
+  <!-- 入荷通知メール情報一覧取得用ORDER_BY -->
+  <USERPRODUCTARRIVALMAIL_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_ProductView.product_id 
+            ELSE  '1'
+          END ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_ProductView.product_id 
+            ELSE  '1'
+          END DESC,
+          CASE @sort_kbn
+            WHEN  2 THEN w2_ProductView.sell_from
+            ELSE NULL
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN  3 THEN w2_ProductView.sell_from
+            ELSE NULL
+          END 
+          DESC,
+          CASE @sort_kbn
+            WHEN  4 THEN ArrivalMailCount.arrival_mail_count
+            ELSE NULL
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  5 THEN ArrivalMailCount.arrival_mail_count
+            ELSE NULL
+          END 
+          DESC,
+          CASE @sort_kbn
+            WHEN  6 THEN ArrivalMailCount.release_mail_count
+            ELSE NULL
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  7 THEN ArrivalMailCount.release_mail_count
+            ELSE NULL
+          END 
+          DESC,
+          CASE @sort_kbn
+            WHEN  8 THEN ArrivalMailCount.resale_mail_count
+            ELSE NULL
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  9 THEN ArrivalMailCount.resale_mail_count
+            ELSE NULL
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_ProductView.shop_id ASC, w2_ProductView.product_id ASC, w2_ProductView.variation_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </USERPRODUCTARRIVALMAIL_SEARCH_ORDER_BY>
+
+</UserProductArrivalMail_Sub>

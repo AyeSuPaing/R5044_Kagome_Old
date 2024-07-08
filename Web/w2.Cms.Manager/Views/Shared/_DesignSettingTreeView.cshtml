@@ -1,0 +1,126 @@
+﻿@*
+=========================================================================================================
+  Module      : ツリービューパーツ(DesignSettingTreeView.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@model IEnumerable<w2.Cms.Manager.Codes.TreeView.TreeNode>
+@using w2.Cms.Manager.Codes.TreeView
+@{
+	ViewBag.Title = "ツリービューパーツ";
+}
+@(Html.TreeView(Model).EmptyContent("").Children(m => m.Childs).HtmlAttributes(
+	new
+	{
+		id = "contents_tree"
+	}
+	).ChildrenHtmlAttributes(
+		new
+		{
+			@class = "child_node"
+		}
+	).ItemText(m => m.Text).ItemTemplate(
+		@<text>
+			<div id="@item.Value" class="tree_view_li 
+				@{
+					if (item.IsOpen){
+						@:open 
+					}if (item.IsDir){
+						@:dir
+					}
+				}">
+				<div class="expansion_icon" @if (item.IsDir == false){@:style = "cursor: default;";
+				}>
+					@if (string.IsNullOrEmpty(item.ErrorMessage) == false)
+					{
+						<script>notification.show('@item.ErrorMessage', 'warning', 'fixed');</script>
+					}
+					@if (item.IsDir)
+					{
+						if (item.IsOpen)
+						{
+							<img src="~/Images/Directory/minus.gif"/>
+						}
+						else
+						{
+							<img src="~/Images/Directory/plus.gif"/>
+						}
+					}
+					else
+					{
+						<img src="~/Images/Directory/minus.gif" style="visibility:hidden"/>
+					}
+				</div>
+				<div class="directory_or_file">
+					<img src="~/@item.ImageUrl" style="width: 14px;">
+					@if (item.IsSelected)
+					{
+						<div class="selected_link">
+							&nbsp;@item.Text
+						</div>
+					}
+					else
+					{
+						@:&nbsp;@item.Text
+					}
+				</div>
+			</div>
+		</text>
+	)
+)
+<script type="text/javascript">
+	$(function () {
+		// クリック共通処理
+		function click(id) {
+			if (id === "") {
+				// ROOTが選択されたらダウンロードと削除とリネームを使用不可に
+				set_disabled_attribute(true);
+			} else {
+				set_disabled_attribute(false);
+			}
+			// リネームの横のテキストボックスに値セット
+			var regexp = /([^\\]+?)?\\$/;
+			var name = regexp.exec(id);
+
+			if (name == null) {
+				regexp = /([^\\]+?)?$/;
+				name = regexp.exec(id);
+				$('#rename').val(name[0]);
+			} else {
+				$('#rename').val(name[1]);
+			}
+		}
+
+		// アイコン・ディレクトリ名・ファイル名クリック
+		$(".directory_or_file").click(function () {
+			var id = $(this).parent().attr("id");
+			click(id);
+
+			$('input[name="openDirPathList"]').val(getTreeOpenDirPathText());
+			$('input[name="clickPath"]').val(id);
+			$('input[name="clickDir"]').val("False");
+			$('form[name="treeView"]').submit();
+		});
+		// +や-アイコンクリック
+		$(".expansion_icon").click(function() {
+			var id = $(this).parent().attr("id");
+			click(id);
+
+			$('input[name="openDirPathList"]').val(getTreeOpenDirPathText());
+			$('input[name="clickPath"]').val(id);
+			$('input[name="clickDir"]').val("True");
+			$('form[name="treeView"]').submit();
+		});
+
+		// 現在展開しているディレクトリのパスを取得
+		function getTreeOpenDirPathText() {
+			var pathList = [''];
+			$("#tree_view").find('.tree_view_li.dir.open').each(function (index, e) {
+				pathList.push(e.id);
+			});
+			var output = pathList.join('：');
+			return output;
+		}
+	});
+</script>

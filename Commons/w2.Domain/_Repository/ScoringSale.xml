@@ -1,0 +1,986 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Scoring Sale XML (ScoringSale.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+-->
+<ScoringSale>
+
+  <!-- Get search hit count scoring sale question -->
+  <GetSearchHitCountScoringSaleQuestion>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(question_id)
+          FROM  w2_ScoringSaleQuestion
+         WHERE  CHARINDEX('_', w2_ScoringSaleQuestion.question_id) = 0
+           AND  w2_ScoringSaleQuestion.score_axis_id = @score_axis_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="score_axis_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetSearchHitCountScoringSaleQuestion>
+
+  <!-- Search scoring sale -->
+  <SearchScoringSale>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSale.*
+          FROM  w2_ScoringSale
+         WHERE  1 = 1
+         <@@hasval:publish_status@@>
+           AND  w2_ScoringSale.publish_status = @publish_status
+         </@@hasval:publish_status@@>
+         <@@hasval:scoring_sale_title@@>
+           AND  (
+                  w2_ScoringSale.scoring_sale_title LIKE '%' + @scoring_sale_title + '%'
+                  OR
+                  w2_ScoringSale.top_page_title LIKE '%' + @scoring_sale_title + '%'
+                  OR
+                  w2_ScoringSale.result_page_title LIKE '%' + @scoring_sale_title + '%'
+                )
+         </@@hasval:scoring_sale_title@@>
+         <@@notval:public_date_kbn:UNSELECTED@@>
+           AND  (
+                  <@@val:public_date_kbn:DAY@@>
+                  CAST(public_start_datetime AS DATE) >= CONVERT (date, GETDATE())
+                  AND
+                  CAST(public_start_datetime AS DATE) <= DATEADD(DAY, 1, GETDATE())
+                  </@@val:public_date_kbn:DAY@@>
+                  <@@val:public_date_kbn:WEEK@@>
+                  CAST(public_start_datetime AS DATE) >= CONVERT (date, GETDATE())
+                  AND
+                  CAST(public_start_datetime AS DATE) <= DATEADD(DAY, 7, CAST(GETDATE() AS DATE))
+                  </@@val:public_date_kbn:WEEK@@>
+                  <@@val:public_date_kbn:MONTH@@>
+                  CAST(public_start_datetime AS DATE) >= CONVERT (date, GETDATE())
+                  AND
+                  CAST(public_start_datetime AS DATE) <= DATEADD(MONTH, 1, CAST(GETDATE() AS DATE))
+                  </@@val:public_date_kbn:MONTH@@>
+                  <@@val:public_date_kbn:THREEMONTH@@>
+                  CAST(public_start_datetime AS DATE) >= CONVERT (date, GETDATE())
+                  AND
+                  CAST(public_start_datetime AS DATE) <= DATEADD(MONTH, 3, CAST(GETDATE() AS DATE))
+                  </@@val:public_date_kbn:THREEMONTH@@>
+                  <@@val:public_date_kbn:AFTERTHREEMONTH@@>
+                  CAST(public_start_datetime AS DATE) >= DATEADD(MONTH, 3, CAST(GETDATE() AS DATE))
+                  </@@val:public_date_kbn:AFTERTHREEMONTH@@>
+                )
+         </@@notval:public_date_kbn:UNSELECTED@@>
+        ORDER BY w2_ScoringSale.date_changed DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_title" Type="nvarchar" Size="256" />
+      <Input Name="public_date_kbn" Type="nvarchar" Size="20" />
+      <Input Name="publish_status" Type="nvarchar" Size="20" />
+    </Parameter>
+  </SearchScoringSale>
+
+  <!-- Search scoring sale question -->
+  <SearchScoringSaleQuestion>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleQuestion.*
+          FROM  (
+                  SELECT  w2_ScoringSaleQuestion.question_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                  ORDER BY w2_ScoringSaleQuestion.date_changed DESC
+                          ) AS row_num
+                    FROM  w2_ScoringSaleQuestion
+                   WHERE  CHARINDEX('_', w2_ScoringSaleQuestion.question_id) = 0
+                     AND  w2_ScoringSaleQuestion.score_axis_id = @score_axis_id
+                ) AS RowIndex
+                INNER JOIN w2_ScoringSaleQuestion ON
+                (
+                  RowIndex.question_id = w2_ScoringSaleQuestion.question_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="score_axis_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </SearchScoringSaleQuestion>
+
+  <!-- Search scoring sale question by search word -->
+  <SearchScoringSaleQuestionBySearchWord>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleQuestion.*
+          FROM  w2_ScoringSaleQuestion
+         WHERE  CHARINDEX('_', w2_ScoringSaleQuestion.question_id) = 0
+           <@@hasval:search_word@@>
+           AND  w2_ScoringSaleQuestion.question_title LIKE '%' + @search_word + '%'
+           </@@hasval:search_word@@>
+        ORDER BY w2_ScoringSaleQuestion.date_changed DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="search_word" Type="nvarchar" Size="max" />
+    </Parameter>
+  </SearchScoringSaleQuestionBySearchWord>
+
+  <!-- Get scoring sale -->
+  <GetScoringSale>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSale.*
+          FROM  w2_ScoringSale
+         WHERE  scoring_sale_id = @scoring_sale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </GetScoringSale>
+
+  <!-- Get scoring sale question -->
+  <GetScoringSaleQuestion>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleQuestion.*
+          FROM  w2_ScoringSaleQuestion
+         WHERE  w2_ScoringSaleQuestion.question_id = @question_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="question_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </GetScoringSaleQuestion>
+
+  <!-- Get scoring sale question page name -->
+  <GetScoringSaleQuestionPageName>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleQuestionPage.*
+          FROM  w2_ScoringSaleQuestionPage
+                INNER JOIN w2_ScoringSale ON
+                (
+                  w2_ScoringSale.scoring_sale_id = w2_ScoringSaleQuestionPage.scoring_sale_id
+                  AND
+                  w2_ScoringSale.scoring_sale_id = @scoring_sale_id
+                )
+        ORDER BY w2_ScoringSaleQuestionPage.page_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetScoringSaleQuestionPageName>
+
+  <!-- Get scoring sale question choice -->
+  <GetScoringSaleQuestionChoice>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleQuestionChoice.*
+          FROM  w2_ScoringSaleQuestionChoice
+         WHERE  w2_ScoringSaleQuestionChoice.question_id = @question_id
+           AND  w2_ScoringSaleQuestionChoice.branch_no = @branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="question_id" Type="nvarchar" Size="32" />
+      <Input Name="branch_no" Type="int" />
+    </Parameter>
+  </GetScoringSaleQuestionChoice>
+
+  <!-- Get scoring sale question choices -->
+  <GetScoringSaleQuestionChoices>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleQuestionChoice.*
+          FROM  w2_ScoringSaleQuestionChoice
+         WHERE  question_id = @question_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="question_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </GetScoringSaleQuestionChoices>
+
+  <!-- Get scoring sale question page -->
+  <GetScoringSaleQuestionPage>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleQuestionPage.*
+          FROM  w2_ScoringSaleQuestionPage
+         WHERE  w2_ScoringSaleQuestionPage.scoring_sale_id = @scoring_sale_id
+           AND  w2_ScoringSaleQuestionPage.page_no = @page_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="page_no" Type="int" />
+    </Parameter>
+  </GetScoringSaleQuestionPage>
+    
+  <!-- Get scoring sale question pages -->
+  <GetScoringSaleQuestionPages>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleQuestionPage.*
+          FROM  w2_ScoringSaleQuestionPage
+         WHERE  w2_ScoringSaleQuestionPage.scoring_sale_id = @scoring_sale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </GetScoringSaleQuestionPages>
+
+  <!-- Get scoring sale products -->
+  <GetScoringSaleProducts>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleProduct.*
+          FROM  w2_ScoringSaleProduct
+         WHERE  w2_ScoringSaleProduct.scoring_sale_id = @scoring_sale_id
+           AND  w2_ScoringSaleProduct.shop_id = @shop_id
+        ORDER BY w2_ScoringSaleProduct.branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetScoringSaleProducts>
+
+  <!-- Get scoring sale question page item -->
+  <GetScoringSaleQuestionPageItem>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleQuestionPageItem.*
+          FROM  w2_ScoringSaleQuestionPageItem
+         WHERE  w2_ScoringSaleQuestionPageItem.question_id = @question_id
+           AND  w2_ScoringSaleQuestionPageItem.scoring_sale_id = @scoring_sale_id
+           AND  w2_ScoringSaleQuestionPageItem.page_no = @page_no
+           AND  w2_ScoringSaleQuestionPageItem.branch_no = @branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="question_id" Type="nvarchar" Size="32" />
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="page_no" Type="int" />
+      <Input Name="branch_no" Type="int" />
+    </Parameter>
+  </GetScoringSaleQuestionPageItem>
+
+   <!-- Get scoring sale question page items -->
+  <GetScoringSaleQuestionPageItems>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleQuestionPageItem.*
+          FROM  w2_ScoringSaleQuestionPageItem
+         WHERE  w2_ScoringSaleQuestionPageItem.scoring_sale_id = @scoring_sale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </GetScoringSaleQuestionPageItems>
+
+  <!-- Get scoring sale product -->
+  <GetScoringSaleProduct>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleProduct.*
+          FROM  w2_ScoringSaleProduct
+         WHERE  w2_ScoringSaleProduct.scoring_sale_id = @scoring_sale_id
+           AND  w2_ScoringSaleProduct.branch_no = @branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="branch_no" Type="int" />
+    </Parameter>
+  </GetScoringSaleProduct>
+
+  <!-- Get scoring sale products -->
+  <GetScoringSaleProducts>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleProduct.*
+          FROM  w2_ScoringSaleProduct
+         WHERE  w2_ScoringSaleProduct.scoring_sale_id = @scoring_sale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </GetScoringSaleProducts>
+
+  <!-- Get scoring sale result condition -->
+  <GetScoringSaleResultCondition>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleResultCondition.*
+          FROM  w2_ScoringSaleResultCondition
+         WHERE  w2_ScoringSaleResultCondition.scoring_sale_id = @scoring_sale_id
+           AND  w2_ScoringSaleResultCondition.branch_no = @branch_no
+           AND  w2_ScoringSaleResultCondition.condition_branch_no = @condition_branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="condition_branch_no" Type="int" />
+    </Parameter>
+  </GetScoringSaleResultCondition>
+    
+  <!-- Get scoring sale result conditions -->
+  <GetScoringSaleResultConditions>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleResultCondition.*
+          FROM  w2_ScoringSaleResultCondition
+         WHERE  w2_ScoringSaleResultCondition.scoring_sale_id = @scoring_sale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </GetScoringSaleResultConditions>
+
+  <!-- Get scoring sale questions -->
+  <GetScoringSaleQuestions>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ScoringSaleQuestion.*
+          FROM  w2_ScoringSaleQuestion
+         WHERE  w2_ScoringSaleQuestion.question_id IN (@@ question_ids @@)
+      ]]>
+    </Statement>
+  </GetScoringSaleQuestions>
+
+  <!-- Insert scoring sale -->
+  <InsertScoringSale>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ScoringSale
+                (
+                  scoring_sale_id,
+                  scoring_sale_title,
+                  publish_status,
+                  public_start_datetime,
+                  public_end_datetime,
+                  score_axis_id,
+                  theme_color,
+                  top_page_use_flg,
+                  top_page_title,
+                  top_page_sub_title,
+                  top_page_body,
+                  top_page_img_path,
+                  top_page_btn_caption,
+                  result_page_title,
+                  result_page_body_above,
+                  result_page_body_below,
+                  radar_chart_use_flg,
+                  radar_chart_title,
+                  result_page_btn_caption,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @scoring_sale_id,
+                  @scoring_sale_title,
+                  @publish_status,
+                  @public_start_datetime,
+                  @public_end_datetime,
+                  @score_axis_id,
+                  @theme_color,
+                  @top_page_use_flg,
+                  @top_page_title,
+                  @top_page_sub_title,
+                  @top_page_body,
+                  @top_page_img_path,
+                  @top_page_btn_caption,
+                  @result_page_title,
+                  @result_page_body_above,
+                  @result_page_body_below,
+                  @radar_chart_use_flg,
+                  @radar_chart_title,
+                  @result_page_btn_caption,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="scoring_sale_title" Type="nvarchar" Size="256" />
+      <Input Name="publish_status" Type="nvarchar" Size="20" />
+      <Input Name="public_start_datetime" Type="datetime" />
+      <Input Name="public_end_datetime" Type="datetime" />
+      <Input Name="score_axis_id" Type="nvarchar" Size="20" />
+      <Input Name="theme_color" Type="nvarchar" Size="50" />
+      <Input Name="top_page_use_flg" Type="nvarchar" Size="5" />
+      <Input Name="top_page_title" Type="nvarchar" Size="250" />
+      <Input Name="top_page_sub_title" Type="nvarchar" Size="250" />
+      <Input Name="top_page_body" Type="nvarchar" Size="MAX" />
+      <Input Name="top_page_img_path" Type="nvarchar" Size="360" />
+      <Input Name="top_page_btn_caption" Type="nvarchar" Size="40" />
+      <Input Name="result_page_title" Type="nvarchar" Size="256" />
+      <Input Name="result_page_body_above" Type="nvarchar" Size="MAX" />
+      <Input Name="result_page_body_below" Type="nvarchar" Size="MAX" />
+      <Input Name="radar_chart_use_flg" Type="nvarchar" Size="5" />
+      <Input Name="radar_chart_title" Type="nvarchar" Size="50" />
+      <Input Name="result_page_btn_caption" Type="nvarchar" Size="40" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertScoringSale>
+
+  <!-- Insert scoring sale question -->
+  <InsertScoringSaleQuestion>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ScoringSaleQuestion
+                (
+                  question_id,
+                  question_title,
+                  score_axis_id,
+                  answer_type,
+                  question_statement,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @question_id,
+                  @question_title,
+                  @score_axis_id,
+                  @answer_type,
+                  @question_statement,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="question_id" Type="nvarchar" Size="32" />
+      <Input Name="question_title" Type="nvarchar" Size="256" />
+      <Input Name="score_axis_id" Type="nvarchar" Size="20" />
+      <Input Name="answer_type" Type="nvarchar" Size="20" />
+      <Input Name="question_statement" Type="nvarchar" Size="256" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertScoringSaleQuestion>
+
+  <!-- Insert scoring sale question choice -->
+  <InsertScoringSaleQuestionChoice>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ScoringSaleQuestionChoice
+                (
+                  question_id,
+                  branch_no,
+                  question_choice_statement,
+                  question_choice_statement_img_path,
+                  axis_additional1,
+                  axis_additional2,
+                  axis_additional3,
+                  axis_additional4,
+                  axis_additional5,
+                  axis_additional6,
+                  axis_additional7,
+                  axis_additional8,
+                  axis_additional9,
+                  axis_additional10,
+                  axis_additional11,
+                  axis_additional12,
+                  axis_additional13,
+                  axis_additional14,
+                  axis_additional15
+                )
+        VALUES  (
+                  @question_id,
+                  @branch_no,
+                  @question_choice_statement,
+                  @question_choice_statement_img_path,
+                  @axis_additional1,
+                  @axis_additional2,
+                  @axis_additional3,
+                  @axis_additional4,
+                  @axis_additional5,
+                  @axis_additional6,
+                  @axis_additional7,
+                  @axis_additional8,
+                  @axis_additional9,
+                  @axis_additional10,
+                  @axis_additional11,
+                  @axis_additional12,
+                  @axis_additional13,
+                  @axis_additional14,
+                  @axis_additional15
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="question_id" Type="nvarchar" Size="32" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="question_choice_statement" Type="nvarchar" Size="256" />
+      <Input Name="question_choice_statement_img_path" Type="nvarchar" Size="360" />
+      <Input Name="axis_additional1" Type="int" />
+      <Input Name="axis_additional2" Type="int" />
+      <Input Name="axis_additional3" Type="int" />
+      <Input Name="axis_additional4" Type="int" />
+      <Input Name="axis_additional5" Type="int" />
+      <Input Name="axis_additional6" Type="int" />
+      <Input Name="axis_additional7" Type="int" />
+      <Input Name="axis_additional8" Type="int" />
+      <Input Name="axis_additional9" Type="int" />
+      <Input Name="axis_additional10" Type="int" />
+      <Input Name="axis_additional11" Type="int" />
+      <Input Name="axis_additional12" Type="int" />
+      <Input Name="axis_additional13" Type="int" />
+      <Input Name="axis_additional14" Type="int" />
+      <Input Name="axis_additional15" Type="int" />
+    </Parameter>
+  </InsertScoringSaleQuestionChoice>
+
+  <!-- Insert scoring sale question page -->
+  <InsertScoringSaleQuestionPage>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ScoringSaleQuestionPage
+                (
+                  scoring_sale_id,
+                  page_no,
+                  previous_page_btn_caption,
+                  next_page_btn_caption,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @scoring_sale_id,
+                  @page_no,
+                  @previous_page_btn_caption,
+                  @next_page_btn_caption,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="page_no" Type="int" />
+      <Input Name="previous_page_btn_caption" Type="nvarchar" Size="40" />
+      <Input Name="next_page_btn_caption" Type="nvarchar" Size="40" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertScoringSaleQuestionPage>
+
+  <!-- Insert scoring sale question page item -->
+  <InsertScoringSaleQuestionPageItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ScoringSaleQuestionPageItem
+                (
+                  scoring_sale_id,
+                  page_no,
+                  branch_no,
+                  question_id
+                )
+        VALUES  (
+                  @scoring_sale_id,
+                  @page_no,
+                  @branch_no,
+                  @question_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="page_no" Type="int" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="question_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </InsertScoringSaleQuestionPageItem>
+
+  <!-- Insert scoring sale page product -->
+  <InsertScoringSaleProduct>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ScoringSaleProduct
+                (
+                  scoring_sale_id,
+                  branch_no,
+                  shop_id,
+                  product_id,
+                  variation_id,
+                  quantity
+                )
+        VALUES  (
+                  @scoring_sale_id,
+                  @branch_no,
+                  @shop_id,
+                  @product_id,
+                  @variation_id,
+                  @quantity
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="quantity" Type="int" />
+    </Parameter>
+  </InsertScoringSaleProduct>
+
+  <!-- Insert scoring sale result condition -->
+  <InsertScoringSaleResultCondition>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ScoringSaleResultCondition
+                (
+                  scoring_sale_id,
+                  branch_no,
+                  condition_branch_no,
+                  score_axis_axis_no,
+                  score_axis_axis_value_from,
+                  score_axis_axis_value_to,
+                  condition,
+                  group_no
+                )
+        VALUES  (
+                  @scoring_sale_id,
+                  @branch_no,
+                  @condition_branch_no,
+                  @score_axis_axis_no,
+                  @score_axis_axis_value_from,
+                  @score_axis_axis_value_to,
+                  @condition,
+                  @group_no
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="condition_branch_no" Type="int" />
+      <Input Name="score_axis_axis_no" Type="int" />
+      <Input Name="score_axis_axis_value_from" Type="int" />
+      <Input Name="score_axis_axis_value_to" Type="int" />
+      <Input Name="condition" Type="nvarchar" Size="10" />
+      <Input Name="group_no" Type="nvarchar" Size="10" />
+    </Parameter>
+  </InsertScoringSaleResultCondition>
+
+  <!-- Update scoring sale -->
+  <UpdateScoringSale>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ScoringSale
+           SET  scoring_sale_title = @scoring_sale_title,
+                publish_status = @publish_status,
+                public_start_datetime = @public_start_datetime,
+                public_end_datetime = @public_end_datetime,
+                score_axis_id = @score_axis_id,
+                theme_color = @theme_color,
+                top_page_use_flg = @top_page_use_flg,
+                top_page_title = @top_page_title,
+                top_page_sub_title = @top_page_sub_title,
+                top_page_body = @top_page_body,
+                top_page_img_path = @top_page_img_path,
+                top_page_btn_caption = @top_page_btn_caption,
+                result_page_title = @result_page_title,
+                result_page_body_above = @result_page_body_above,
+                result_page_body_below = @result_page_body_below,
+                radar_chart_use_flg = @radar_chart_use_flg,
+                radar_chart_title = @radar_chart_title,
+                result_page_btn_caption = @result_page_btn_caption,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  scoring_sale_id = @scoring_sale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="scoring_sale_title" Type="nvarchar" Size="256" />
+      <Input Name="publish_status" Type="nvarchar" Size="20" />
+      <Input Name="public_start_datetime" Type="datetime" />
+      <Input Name="public_end_datetime" Type="datetime" />
+      <Input Name="score_axis_id" Type="nvarchar" Size="20" />
+      <Input Name="theme_color" Type="nvarchar" Size="50" />
+      <Input Name="top_page_use_flg" Type="nvarchar" Size="5" />
+      <Input Name="top_page_title" Type="nvarchar" Size="250" />
+      <Input Name="top_page_sub_title" Type="nvarchar" Size="250" />
+      <Input Name="top_page_body" Type="nvarchar" Size="MAX" />
+      <Input Name="top_page_img_path" Type="nvarchar" Size="360" />
+      <Input Name="top_page_btn_caption" Type="nvarchar" Size="40" />
+      <Input Name="result_page_title" Type="nvarchar" Size="256" />
+      <Input Name="result_page_body_above" Type="nvarchar" Size="MAX" />
+      <Input Name="result_page_body_below" Type="nvarchar" Size="MAX" />
+      <Input Name="radar_chart_use_flg" Type="nvarchar" Size="5" />
+      <Input Name="radar_chart_title" Type="nvarchar" Size="50" />
+      <Input Name="result_page_btn_caption" Type="nvarchar" Size="40" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateScoringSale>
+
+  <!-- Update scoring sale question -->
+  <UpdateScoringSaleQuestion>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ScoringSaleQuestion
+           SET  question_title = @question_title,
+                score_axis_id = @score_axis_id,
+                answer_type = @answer_type,
+                question_statement = @question_statement,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  question_id = @question_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="question_id" Type="nvarchar" Size="32" />
+      <Input Name="question_title" Type="nvarchar" Size="256" />
+      <Input Name="score_axis_id" Type="nvarchar" Size="20" />
+      <Input Name="answer_type" Type="nvarchar" Size="20" />
+      <Input Name="question_statement" Type="nvarchar" Size="256" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateScoringSaleQuestion>
+
+  <!-- Update scoring sale question choice -->
+  <UpdateScoringSaleQuestionChoice>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ScoringSaleQuestionChoice
+           SET  question_choice_statement = @question_choice_statement,
+                question_choice_statement_img_path = @question_choice_statement_img_path,
+                axis_additional1 = @axis_additional1,
+                axis_additional2 = @axis_additional2,
+                axis_additional3 = @axis_additional3,
+                axis_additional4 = @axis_additional4,
+                axis_additional5 = @axis_additional5,
+                axis_additional6 = @axis_additional6,
+                axis_additional7 = @axis_additional7,
+                axis_additional8 = @axis_additional8,
+                axis_additional9 = @axis_additional9,
+                axis_additional10 = @axis_additional10,
+                axis_additional11 = @axis_additional11,
+                axis_additional12 = @axis_additional12,
+                axis_additional13 = @axis_additional13,
+                axis_additional14 = @axis_additional14,
+                axis_additional15 = @axis_additional15
+         WHERE  question_id = @question_id
+           AND  branch_no = @branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="question_id" Type="nvarchar" Size="32" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="question_choice_statement" Type="nvarchar" Size="256" />
+      <Input Name="question_choice_statement_img_path" Type="nvarchar" Size="360" />
+      <Input Name="axis_additional1" Type="int" />
+      <Input Name="axis_additional2" Type="int" />
+      <Input Name="axis_additional3" Type="int" />
+      <Input Name="axis_additional4" Type="int" />
+      <Input Name="axis_additional5" Type="int" />
+      <Input Name="axis_additional6" Type="int" />
+      <Input Name="axis_additional7" Type="int" />
+      <Input Name="axis_additional8" Type="int" />
+      <Input Name="axis_additional9" Type="int" />
+      <Input Name="axis_additional10" Type="int" />
+      <Input Name="axis_additional11" Type="int" />
+      <Input Name="axis_additional12" Type="int" />
+      <Input Name="axis_additional13" Type="int" />
+      <Input Name="axis_additional14" Type="int" />
+      <Input Name="axis_additional15" Type="int" />
+    </Parameter>
+  </UpdateScoringSaleQuestionChoice>
+
+  <!-- Update scoring sale question page -->
+  <UpdateScoringSaleQuestionPage>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ScoringSaleQuestionPage
+           SET  previous_page_btn_caption = @previous_page_btn_caption,
+                next_page_btn_caption = @next_page_btn_caption,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  scoring_sale_id = @scoring_sale_id
+           AND  page_no = @page_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="page_no" Type="int" />
+      <Input Name="previous_page_btn_caption" Type="nvarchar" Size="40" />
+      <Input Name="next_page_btn_caption" Type="nvarchar" Size="40" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateScoringSaleQuestionPage>
+
+  <!-- Update scoring sale product -->
+  <UpdateScoringSaleProduct>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ScoringSaleProduct
+           SET  shop_id = @shop_id,
+                product_id = @product_id,
+                variation_id = @variation_id,
+                quantity = @quantity
+         WHERE  w2_ScoringSaleProduct.scoring_sale_id = @scoring_sale_id
+           AND  w2_ScoringSaleProduct.branch_no = @branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="quantity" Type="int" />
+    </Parameter>
+  </UpdateScoringSaleProduct>
+
+  <!-- Update scoring sale result condition -->
+  <UpdateScoringSaleResultCondition>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ScoringSaleResultCondition
+           SET  score_table_column_no = @score_table_column_no,
+                score_table_column_additional = @score_table_column_additional,
+                condition = @condition
+         WHERE  w2_ScoringSaleResultCondition.scoring_sale_id = @scoring_sale_id
+           AND  w2_ScoringSaleResultCondition.branch_no = @branch_no
+           AND  w2_ScoringSaleResultCondition.condition_branch_no = @condition_branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="condition_branch_no" Type="int" />
+      <Input Name="score_table_column_no" Type="int" />
+      <Input Name="score_table_column_additional" Type="int" />
+      <Input Name="condition" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateScoringSaleResultCondition>
+
+  <!-- Delete scoring sale -->
+  <DeleteScoringSale>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ScoringSale
+         WHERE  w2_ScoringSale.scoring_sale_id = @scoring_sale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </DeleteScoringSale>
+
+  <!-- Delete scoring sale question -->
+  <DeleteScoringSaleQuestion>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ScoringSaleQuestion
+         WHERE  question_id = @question_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="question_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </DeleteScoringSaleQuestion>
+
+  <!-- Delete scoring sale question choice -->
+  <DeleteScoringSaleQuestionChoice>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ScoringSaleQuestionChoice
+         WHERE  w2_ScoringSaleQuestionChoice.question_id = @question_id
+           AND  w2_ScoringSaleQuestionChoice.branch_no = @branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="question_id" Type="nvarchar" Size="32" />
+      <Input Name="branch_no" Type="int" />
+    </Parameter>
+  </DeleteScoringSaleQuestionChoice>
+
+  <!-- Delete scoring sale question choices -->
+  <DeleteScoringSaleQuestionChoices>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ScoringSaleQuestionChoice
+         WHERE  w2_ScoringSaleQuestionChoice.question_id = @question_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="question_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </DeleteScoringSaleQuestionChoices>
+
+  <!-- Delete scoring sale question page -->
+  <DeleteScoringSaleQuestionPage>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ScoringSaleQuestionPage
+         WHERE  w2_ScoringSaleQuestionPage.scoring_sale_id = @scoring_sale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </DeleteScoringSaleQuestionPage>
+
+  <!-- Delete scoring sale question page item -->
+  <DeleteScoringSaleQuestionPageItem>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ScoringSaleQuestionPageItem
+         WHERE  w2_ScoringSaleQuestionPageItem.scoring_sale_id = @scoring_sale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </DeleteScoringSaleQuestionPageItem>
+
+  <!-- Delete scoring sale product -->
+  <DeleteScoringSaleProduct>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ScoringSaleProduct
+         WHERE  w2_ScoringSaleProduct.scoring_sale_id = @scoring_sale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </DeleteScoringSaleProduct>
+
+  <!-- Delete scoring sale result condition -->
+  <DeleteScoringSaleResultCondition>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ScoringSaleResultCondition
+         WHERE  w2_ScoringSaleResultCondition.scoring_sale_id = @scoring_sale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </DeleteScoringSaleResultCondition>
+
+</ScoringSale>

@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : サイトマップ作成系SQLステートメントXML(CreateSitemapXml.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<CreateSitemapXml>
+  <!-- 商品カテゴリ情報取得(下位カテゴリ判定のため無効カテゴリも取得) -->
+  <GetProductCategory>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductCategory.*
+          FROM  w2_ProductCategory
+      ]]>
+    </Statement>
+  </GetProductCategory>
+  
+  <!-- 商品一覧のデフォルトのソート区分を取得 -->
+  <GetProductListDispSettingDefault>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1 w2_ProductListDispSetting.*
+          FROM  w2_ProductListDispSetting
+         WHERE  w2_ProductListDispSetting.default_disp_flg = 'ON'
+      ]]>
+    </Statement>
+  </GetProductListDispSettingDefault>
+  
+  <!-- 商品情報取得 -->
+  <GetProduct>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Product.*
+          FROM  w2_Product
+         WHERE  w2_Product.valid_flg = '1'                -- 有効
+           AND  w2_Product.display_from <= GETDATE()      -- 商品表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= GETDATE()))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.display_member_rank = ''       -- 閲覧可能会員ランク指定なし
+           AND  w2_Product.shop_id = @shop_id             -- デフォルト店舗ID
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProduct>
+</CreateSitemapXml>
+

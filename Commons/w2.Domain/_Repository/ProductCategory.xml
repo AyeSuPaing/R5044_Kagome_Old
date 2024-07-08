@@ -1,0 +1,175 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品カテゴリマスタ系SQLステートメントXML (ProductCategory.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductCategory>
+
+  <!-- 全て取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductCategory
+      ]]>
+    </Statement>
+  </GetAll>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductCategory
+         WHERE  category_id = @category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- 取得 -->
+  <GetByCategoryIds>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductCategory
+         WHERE  category_id IN (@@ ids @@)
+      ]]>
+    </Statement>
+  </GetByCategoryIds>
+
+  <!-- 商品カテゴリマスタ情報取得(CSV出力用) -->
+  <GetProductCategoryMaster>
+    <Statement>
+      <![CDATA[
+          WITH  sort
+            AS  (
+                  SELECT  first_cat.shop_id,
+                          first_cat.category_id,
+                          first_cat.child_category_sort_kbn,
+                          CAST(RIGHT('000' + CAST(RANK() OVER (ORDER BY
+                            CASE @root_category_sort_kbn
+                              WHEN '0' THEN first_cat.category_id
+                              WHEN '1' THEN first_cat.name
+                              WHEN '2' THEN first_cat.name_kana END ASC,
+                            CASE @root_category_sort_kbn
+                              WHEN '3' THEN first_cat.display_order END ASC,
+                            first_cat.category_id ASC) as nvarchar(3)), 3) as nvarchar(30)) as sort_id
+                    FROM  w2_ProductCategory as first_cat
+                   WHERE  first_cat.parent_category_id = 'ROOT'
+               UNION ALL
+                  SELECT  rec_cat.shop_id,
+                          rec_cat.category_id,
+                          rec_cat.child_category_sort_kbn,
+                          CAST(sort.sort_id + RIGHT('000' + CAST(RANK() OVER (ORDER BY
+                            CASE sort.child_category_sort_kbn
+                              WHEN '0' THEN rec_cat.category_id
+                              WHEN '1' THEN rec_cat.name
+                              WHEN '2' THEN rec_cat.name_kana END ASC,
+                            CASE sort.child_category_sort_kbn
+                              WHEN '3' THEN rec_cat.display_order END ASC,
+                            rec_cat.category_id ASC) as nvarchar(3)), 3) as nvarchar(30)) as sort_id
+                    FROM  w2_ProductCategory as rec_cat
+                          INNER JOIN sort ON
+                          (
+                            sort.shop_id = rec_cat.shop_id
+                            AND
+                            sort.category_id = rec_cat.parent_category_id
+                          )
+                )
+        
+        -- 該当情報取得
+        SELECT  @@ fields @@
+          FROM  (
+                  SELECT  w2_ProductCategory.shop_id,
+                          w2_ProductCategory.category_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            ORDER BY sort.sort_id
+                          ) AS row_num
+                    FROM  w2_ProductCategory
+                          INNER JOIN sort ON
+                          (
+                            w2_ProductCategory.shop_id = sort.shop_id
+                            AND
+                            w2_ProductCategory.category_id = sort.category_id
+                          )
+                          [[ PRODUCTCATEGORY_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductCategory ON
+                (
+                  RowIndex.shop_id = w2_ProductCategory.shop_id
+                  AND
+                  RowIndex.category_id = w2_ProductCategory.category_id
+                )
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="srch_key" Type="int" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="parent_category_id" Type="nvarchar" Size="30" />
+      <Input Name="root_category_sort_kbn" Type="nvarchar" Size="2" />
+    </Parameter>
+  </GetProductCategoryMaster>
+
+  <!-- 商品カテゴリマスタフィールドチェック -->
+  <CheckProductCategoryFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ProductCategory
+           WHERE  w2_ProductCategory.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductCategoryFields>
+
+  <!-- CheckC ategory By FixedPurchase Member Flg -->
+  <CheckCategoryByFixedPurchaseMemberFlg>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductCategory
+         WHERE  category_id = @category_id
+                AND
+                (
+                  @only_fixed_purchase_member_flg = '1'
+                  OR
+                  w2_ProductCategory.only_fixed_purchase_member_flg = '0'
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="only_fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </CheckCategoryByFixedPurchaseMemberFlg>
+
+  <!-- カテゴリID存在チェック -->
+  <CheckValidProductCategory>
+    <Statement>
+      <![CDATA[
+      SELECT  w2_ProductCategory.category_id
+        FROM  w2_ProductCategory
+       WHERE  w2_ProductCategory.shop_id = @shop_id
+         AND  w2_ProductCategory.valid_flg = '1' -- 有効
+         AND  w2_ProductCategory.category_id IN (@@ category_ids @@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckValidProductCategory>
+
+</ProductCategory>

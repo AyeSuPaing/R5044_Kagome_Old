@@ -1,0 +1,208 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 業務フロー集計SQLステートメントXML(CsReportWorkflow.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsReportWorkflow>
+  
+  <!-- オペレータ別 依頼数 -->
+  <GetOperatorRequestReport>
+    <Statement>
+      <![CDATA[
+         -- オペレータ別 依頼
+        SELECT  ISNULL(operator.operator_id, '') AS [OperatorId],
+                ISNULL(operator.name, '') AS [Name],
+                ISNULL(request_count.request_type, '') AS [request_type],
+                ISNULL(request_count.request_status, '') AS [request_status],
+                ISNULL(request_count.Count, 0) AS [Count],
+                operator.valid_flg AS [valid_flg]
+          FROM  (
+                  SELECT  w2_CsMessageRequest.dept_id,
+                          w2_CsMessageRequest.request_operator_id,
+                          w2_CsMessageRequest.request_type,
+                          w2_CsMessageRequest.request_status,
+                          COUNT(1) AS [Count]
+                    FROM  w2_CsMessageRequest
+                   WHERE  w2_CsMessageRequest.dept_id = @dept_id
+                     AND  w2_CsMessageRequest.request_status NOT IN ('APPR_DRAFT', 'SEND_DRAFT')  -- 下書きではない
+                     AND  w2_CsMessageRequest.date_created >=  @inquiry_reply_date_bgn  -- 作成日を見る
+                     AND  w2_CsMessageRequest.date_created <= @inquiry_reply_date_end
+                     AND  EXISTS(
+                            SELECT  dept_id
+                              FROM  w2_CsMessage
+                             WHERE  w2_CsMessage.dept_id = w2_CsMessageRequest.dept_id
+                               AND  w2_CsMessage.incident_id = w2_CsMessageRequest.incident_id
+                               AND  w2_CsMessage.message_no = w2_CsMessageRequest.message_no
+                               AND  w2_CsMessage.valid_flg = '1'  -- メッセージが削除されていない
+                          )                     
+                  GROUP BY w2_CsMessageRequest.dept_id, w2_CsMessageRequest.request_operator_id, w2_CsMessageRequest.request_type,  w2_CsMessageRequest.request_status
+                ) AS request_count
+                FULL OUTER JOIN
+                ( 
+                  SELECT  w2_CsOperator.dept_id,
+                          w2_ShopOperator.operator_id,
+                          w2_ShopOperator.name,
+                          w2_ShopOperator.valid_flg,
+                          w2_CsOperator.display_order
+                    FROM  w2_ShopOperator
+                          INNER JOIN w2_CsOperator ON
+                          (
+                            w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                            AND
+                            w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                          )
+                ) operator
+                ON
+                (
+                  request_count.dept_id = operator.dept_id
+                  AND
+                  request_count.request_operator_id = operator.operator_id
+                )
+        ORDER BY operator.display_order, operator.operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="inquiry_reply_date_bgn" Type="datetime" />
+      <Input Name="inquiry_reply_date_end" Type="datetime" />
+    </Parameter>
+  </GetOperatorRequestReport>
+
+  <!-- オペレータ別依頼取り下げ済レポート取得 -->
+  <GetOperatorRequestCancelledReport>
+    <Statement>
+      <![CDATA[
+         -- オペレータ別 依頼（取り下げ数（_CNCL））
+        SELECT  ISNULL(operator.operator_id, '') AS [OperatorId],
+                ISNULL(operator.name, '') AS [Name],
+                ISNULL(request_count.request_type, '') AS [request_type],
+                ISNULL(request_count.request_status, '') AS [request_status],
+                ISNULL(request_count.Count, 0) AS [Count],
+                operator.valid_flg AS [valid_flg]
+          FROM  (
+                  SELECT  w2_CsMessageRequest.dept_id,
+                          w2_CsMessageRequest.request_operator_id,
+                          w2_CsMessageRequest.request_type,
+                          w2_CsMessageRequest.request_status,
+                          COUNT(1) AS [Count]
+                    FROM  w2_CsMessageRequest
+                   WHERE  w2_CsMessageRequest.dept_id = @dept_id
+                     AND  w2_CsMessageRequest.request_status IN ('APPR_CNCL', 'SEND_CNCL')  -- キャンセルされている
+                     AND  w2_CsMessageRequest.date_changed >=  @inquiry_reply_date_bgn  -- 変更日を見る
+                     AND  w2_CsMessageRequest.date_changed <= @inquiry_reply_date_end
+                     AND  EXISTS(
+                            SELECT  dept_id
+                              FROM  w2_CsMessage
+                             WHERE  w2_CsMessage.dept_id = w2_CsMessageRequest.dept_id
+                               AND  w2_CsMessage.incident_id = w2_CsMessageRequest.incident_id
+                               AND  w2_CsMessage.message_no = w2_CsMessageRequest.message_no
+                               AND  w2_CsMessage.valid_flg = '1'    -- メッセージが削除されていない
+                          )                     
+                  GROUP BY w2_CsMessageRequest.dept_id, w2_CsMessageRequest.request_operator_id, w2_CsMessageRequest.request_type,  w2_CsMessageRequest.request_status
+                ) AS request_count
+                 FULL OUTER JOIN
+                (
+                  SELECT  w2_CsOperator.dept_id,
+                          w2_ShopOperator.operator_id,
+                          w2_ShopOperator.name,
+                          w2_ShopOperator.valid_flg,
+                          w2_CsOperator.display_order
+                    FROM  w2_ShopOperator
+                          INNER JOIN w2_CsOperator ON
+                          (
+                            w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                            AND
+                            w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                          )
+                ) operator
+                ON
+                (
+                  operator.dept_id = request_count.dept_id
+                  AND
+                  operator.operator_id = request_count.request_operator_id
+                )
+        ORDER BY operator.display_order, operator.operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="inquiry_reply_date_bgn" Type="datetime" />
+      <Input Name="inquiry_reply_date_end" Type="datetime" />
+    </Parameter>
+  </GetOperatorRequestCancelledReport>
+
+  <!-- オペレータ別依頼結果レポート取得 -->
+  <GetOperatorRequestResultReport>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(operator.operator_id, '') AS [OperatorId],
+                ISNULL(operator.name, '') AS [Name],
+                ISNULL(result_count.result_status, '') AS [result_status],
+                ISNULL(result_count.request_type, '') AS [request_type],
+                ISNULL(result_count.Count, 0) AS [Count],
+                operator.valid_flg AS [valid_flg]
+          FROM  (
+                  SELECT  w2_CsMessageRequestItem.dept_id,
+                          w2_CsMessageRequestItem.appr_operator_id,
+                          w2_CsMessageRequestItem.result_status,
+                          w2_CsMessageRequest.request_type,
+                          COUNT(1) AS [Count]
+                    FROM  w2_CsMessageRequest
+                          INNER JOIN w2_CsMessageRequestItem ON
+                          (
+                            w2_CsMessageRequest.dept_id = w2_CsMessageRequestItem.dept_id
+                            AND
+                            w2_CsMessageRequest.incident_id = w2_CsMessageRequestItem.incident_id
+                            AND
+                            w2_CsMessageRequest.message_no = w2_CsMessageRequestItem.message_no
+                            AND
+                            w2_CsMessageRequest.request_no = w2_CsMessageRequestItem.request_no
+                          )
+                   WHERE  w2_CsMessageRequest.dept_id = @dept_id
+                     AND  w2_CsMessageRequestItem.date_changed >=  @inquiry_reply_date_bgn  -- 変更日を見る
+                     AND  w2_CsMessageRequestItem.date_changed <= @inquiry_reply_date_end
+                     AND  EXISTS(
+                            SELECT  dept_id
+                              FROM  w2_CsMessage
+                             WHERE  w2_CsMessage.dept_id = w2_CsMessageRequest.dept_id
+                               AND  w2_CsMessage.incident_id = w2_CsMessageRequest.incident_id
+                               AND  w2_CsMessage.message_no = w2_CsMessageRequest.message_no
+                               AND  w2_CsMessage.valid_flg = '1'  -- メッセージが削除されていない
+                          )
+                  GROUP BY w2_CsMessageRequestItem.dept_id, w2_CsMessageRequestItem.appr_operator_id, w2_CsMessageRequestItem.result_status, w2_CsMessageRequest.request_type
+                ) AS result_count
+                FULL OUTER JOIN
+                ( 
+                  SELECT  w2_CsOperator.dept_id,
+                          w2_ShopOperator.operator_id,
+                          w2_ShopOperator.name,
+                          w2_ShopOperator.valid_flg,
+                          w2_CsOperator.display_order
+                    FROM  w2_ShopOperator
+                          INNER JOIN w2_CsOperator ON
+                          (
+                            w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                            AND
+                            w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                          )
+                ) operator
+                ON
+                (
+                  result_count.dept_id = operator.dept_id
+                  AND
+                  result_count.appr_operator_id = operator.operator_id
+                )
+        ORDER BY operator.display_order, operator.operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="inquiry_reply_date_bgn" Type="datetime" />
+      <Input Name="inquiry_reply_date_end" Type="datetime" />
+    </Parameter>
+  </GetOperatorRequestResultReport>
+
+</CsReportWorkflow>

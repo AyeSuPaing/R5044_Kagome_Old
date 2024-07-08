@@ -1,0 +1,1002 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メッセージ系SQLステートメントXML(CsMessage.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsMessage>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMessage.*,
+                w2_CsIncident.user_id,
+                cre.name AS operator_name,
+                rep.name AS reply_operator_name
+          FROM  w2_CsMessage
+                LEFT JOIN w2_CsIncident ON
+                (
+                  w2_CsMessage.dept_id = w2_CsIncident.dept_id
+                  AND
+                  w2_CsMessage.incident_id = w2_CsIncident.incident_id
+                )
+                LEFT JOIN w2_ShopOperator AS cre ON
+                (
+                  w2_CsMessage.dept_id = cre.shop_id
+                  AND
+                  w2_CsMessage.operator_id = cre.operator_id
+                )
+                LEFT JOIN w2_ShopOperator AS rep ON
+                (
+                  w2_CsMessage.dept_id = rep.shop_id
+                  AND
+                  w2_CsMessage.reply_operator_id = rep.operator_id
+                )
+         WHERE  w2_CsMessage.dept_id = @dept_id
+           AND  w2_CsMessage.incident_id = @incident_id
+           AND  w2_CsMessage.message_no = @message_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+    </Parameter>
+  </Get>
+
+  <!-- 件数取得 -->
+  <GetCount>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMessage.message_status,
+                w2_CsMessage.operator_id,
+                w2_CsMessage.valid_flg,
+                COUNT(*) as row_count
+          FROM  w2_CsMessage
+         WHERE  w2_CsMessage.dept_id = @dept_id
+           AND  w2_CsMessage.operator_id = @operator_id
+           AND  w2_CsMessage.valid_flg = '1'
+      GROUP BY  w2_CsMessage.message_status,
+                w2_CsMessage.operator_id,
+                w2_CsMessage.valid_flg
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="operator_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCount>
+
+  <!-- 件数取得（メッセージ依頼単位） -->
+  <GetCountByRequest>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMessage.message_status,
+                w2_CsMessageRequest.request_operator_id,
+                w2_CsMessage.valid_flg,
+                COUNT(*) as row_count
+          FROM  w2_CsMessage
+                INNER JOIN w2_CsMessageRequest ON
+                (
+                  w2_CsMessageRequest.dept_id = w2_CsMessage.dept_id
+                  AND
+                  w2_CsMessageRequest.incident_id = w2_CsMessage.incident_id
+                  AND
+                  w2_CsMessageRequest.message_no = w2_CsMessage.message_no
+                  AND
+                  w2_CsMessageRequest.request_no =
+                  (
+                    SELECT  MAX(w2_CsMessageRequest.request_no)
+                      FROM  w2_CsMessageRequest
+                     WHERE  w2_CsMessageRequest.dept_id = w2_CsMessage.dept_id
+                       AND  w2_CsMessageRequest.incident_id = w2_CsMessage.incident_id
+                       AND  w2_CsMessageRequest.message_no = w2_CsMessage.message_no
+                  )
+                )
+         WHERE  w2_CsMessage.dept_id = @dept_id
+           AND  w2_CsMessageRequest.request_operator_id = @request_operator_id
+           AND  w2_CsMessage.valid_flg = '1'
+      GROUP BY  w2_CsMessage.message_status,
+                w2_CsMessageRequest.request_operator_id,
+                w2_CsMessage.valid_flg
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="request_operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetCountByRequest>
+
+  <!-- 件数取得（メッセージ依頼アイテム単位） -->
+  <GetCountByRequestItem>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMessage.message_status,
+                w2_CsMessageRequestItem.appr_operator_id,
+                w2_CsMessage.valid_flg,
+                COUNT(*) as row_count
+          FROM  w2_CsMessage
+                INNER JOIN w2_CsMessageRequest ON
+                (
+                  w2_CsMessageRequest.dept_id = w2_CsMessage.dept_id
+                  AND
+                  w2_CsMessageRequest.incident_id = w2_CsMessage.incident_id
+                  AND
+                  w2_CsMessageRequest.message_no = w2_CsMessage.message_no
+                  AND
+                  w2_CsMessageRequest.request_no =
+                  (
+                    SELECT  MAX(w2_CsMessageRequest.request_no)
+                      FROM  w2_CsMessageRequest
+                     WHERE  w2_CsMessageRequest.dept_id = w2_CsMessage.dept_id
+                       AND  w2_CsMessageRequest.incident_id = w2_CsMessage.incident_id
+                       AND  w2_CsMessageRequest.message_no = w2_CsMessage.message_no
+                  )
+                )
+                INNER JOIN w2_CsMessageRequestItem ON
+                (
+                  w2_CsMessageRequest.dept_id = w2_CsMessageRequestItem.dept_id
+                  AND
+                  w2_CsMessageRequest.incident_id = w2_CsMessageRequestItem.incident_id
+                  AND
+                  w2_CsMessageRequest.message_no = w2_CsMessageRequestItem.message_no
+                  AND
+                  w2_CsMessageRequest.request_no = w2_CsMessageRequestItem.request_no
+                  AND
+                  w2_CsMessageRequestItem.result_status = ''
+                )
+         WHERE  w2_CsMessage.dept_id = @dept_id
+           AND  w2_CsMessageRequestItem.appr_operator_id = @appr_operator_id
+           AND  w2_CsMessage.valid_flg = '1'
+      GROUP BY  w2_CsMessage.message_status,
+                w2_CsMessageRequestItem.appr_operator_id,
+                w2_CsMessage.valid_flg
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="appr_operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetCountByRequestItem>
+
+  <!-- メッセージ検索 -->
+  <SearchMessage>
+    <Statement>
+      <![CDATA[
+        -- Create table temp
+        @@ table_temp @@
+
+        DECLARE @row_count int;
+        SELECT  @row_count = ISNULL(COUNT(1), 0)
+          FROM  w2_CsMessage
+        @@ where @@
+        @@ keywords_search @@
+        
+        SELECT  w2_CsMessage.*,
+                RowIndex.operator_name,
+                RowIndex.reply_operator_name,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_CsMessage.dept_id,
+                          w2_CsMessage.incident_id,
+                          w2_CsMessage.message_no,
+                          create_operator.name AS operator_name,
+                          reply_operator.name AS reply_operator_name,
+                          ROW_NUMBER() OVER (@@ orderby @@) AS row_num
+                    FROM  w2_CsMessage
+                          LEFT JOIN w2_ShopOperator AS create_operator ON
+                          (
+                            w2_CsMessage.dept_id = create_operator.shop_id
+                            AND
+                            w2_CsMessage.operator_id = create_operator.operator_id
+                          )
+                          LEFT JOIN w2_ShopOperator AS reply_operator ON
+                          (
+                            w2_CsMessage.dept_id = reply_operator.shop_id
+                            AND
+                            w2_CsMessage.reply_operator_id = reply_operator.operator_id
+                          )
+                          LEFT JOIN w2_CsMessageMail as ReceiveMail ON
+                          (
+                            w2_CsMessage.dept_id = ReceiveMail.dept_id
+                            AND
+                            w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+                          )
+                          LEFT JOIN w2_CsMessageMail as SendMail ON
+                          (
+                            w2_CsMessage.dept_id = SendMail.dept_id
+                            AND
+                            w2_CsMessage.send_mail_id = SendMail.mail_id
+                          )
+                          @@ join_table_temp @@
+                  @@ where @@
+                  @@ keywords_search @@
+                ) AS RowIndex
+                INNER JOIN w2_CsMessage ON
+                (
+                  RowIndex.dept_id = w2_CsMessage.dept_id
+                  AND
+                  RowIndex.incident_id = w2_CsMessage.incident_id
+                  AND
+                  RowIndex.message_no = w2_CsMessage.message_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int"  />
+      <Input Name="end_row_num" Type="int"  />
+    </Parameter>
+  </SearchMessage>
+
+  <!-- メッセージ依頼検索 -->
+  <SearchRequest>
+    <Statement>
+      <![CDATA[
+        -- Create table temp
+        @@ table_temp @@
+
+        DECLARE @row_count int;
+        SELECT  @row_count = ISNULL(COUNT(1), 0)
+          FROM  w2_CsMessage
+        @@ where @@
+        
+        SELECT  w2_CsMessage.*,
+                RowIndex.operator_name,
+                RowIndex.request_no,
+                RowIndex.urgency_flg,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_CsMessage.dept_id,
+                          w2_CsMessage.incident_id,
+                          w2_CsMessage.message_no,
+                          req_max.request_no,
+                          create_operator.name AS operator_name,
+                          w2_CsMessageRequest.urgency_flg,
+                          ROW_NUMBER() OVER (@@ orderby @@) AS row_num
+                    FROM  w2_CsMessage
+                          INNER JOIN
+                          (
+                            SELECT  w2_CsMessageRequest.dept_id,
+                                    w2_CsMessageRequest.incident_id,
+                                    w2_CsMessageRequest.message_no,
+                                    MAX(w2_CsMessageRequest.request_no) AS request_no
+                              FROM  w2_CsMessageRequest
+                              GROUP BY w2_CsMessageRequest.dept_id, w2_CsMessageRequest.incident_id, w2_CsMessageRequest.message_no
+                          ) req_max ON
+                          (
+                            req_max.dept_id = w2_CsMessage.dept_id
+                            AND
+                            req_max.incident_id = w2_CsMessage.incident_id
+                            AND
+                            req_max.message_no = w2_CsMessage.message_no
+                          )
+                          INNER JOIN w2_CsMessageRequest ON
+                          (
+                            w2_CsMessageRequest.dept_id = req_max.dept_id
+                            AND
+                            w2_CsMessageRequest.incident_id = req_max.incident_id
+                            AND
+                            w2_CsMessageRequest.message_no = req_max.message_no
+                            AND
+                            w2_CsMessageRequest.request_no = req_max.request_no
+                          )
+                          LEFT JOIN w2_CsMessageMail as ReceiveMail ON
+                          (
+                            w2_CsMessage.dept_id = ReceiveMail.dept_id
+                            AND
+                            w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+                          )
+                          LEFT JOIN w2_CsMessageMail as SendMail ON
+                          (
+                            w2_CsMessage.dept_id = SendMail.dept_id
+                            AND
+                            w2_CsMessage.send_mail_id = SendMail.mail_id
+                          )
+                          LEFT JOIN w2_ShopOperator AS create_operator ON
+                          (
+                            w2_CsMessage.dept_id = create_operator.shop_id
+                            AND
+                            w2_CsMessage.operator_id = create_operator.operator_id
+                          )
+                          LEFT JOIN w2_ShopOperator AS reply_operator ON
+                          (
+                            w2_CsMessage.dept_id = reply_operator.shop_id
+                            AND
+                            w2_CsMessage.reply_operator_id = reply_operator.operator_id
+                          )
+                          @@ join_table_temp @@
+                  @@ where @@
+                  @@ keywords_search @@
+                ) AS RowIndex
+                INNER JOIN w2_CsMessage ON
+                (
+                  RowIndex.dept_id = w2_CsMessage.dept_id
+                  AND
+                  RowIndex.incident_id = w2_CsMessage.incident_id
+                  AND
+                  RowIndex.message_no = w2_CsMessage.message_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int"  />
+      <Input Name="end_row_num" Type="int"  />
+    </Parameter>
+  </SearchRequest>
+
+  <!-- メッセージ詳細検索 -->
+  <SearchAdvanced>
+    <Statement>
+      <![CDATA[
+        -- Create table temp
+        @@ table_temp @@
+
+        DECLARE @row_count int;
+
+        SELECT  @row_count = ISNULL(COUNT(1), 0)
+          FROM  w2_CsMessage
+                LEFT JOIN w2_CsIncident ON
+                (
+                  w2_CsMessage.incident_id = w2_CsIncident.incident_id
+                )
+                LEFT JOIN w2_CsMessageMail as ReceiveMail ON
+                (
+                  w2_CsMessage.dept_id = ReceiveMail.dept_id
+                  AND
+                  w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+                )
+                LEFT JOIN w2_CsMessageMail as SendMail ON
+                (
+                  w2_CsMessage.dept_id = SendMail.dept_id
+                  AND
+                  w2_CsMessage.send_mail_id = SendMail.mail_id
+                )
+          [[ SearchAdvanced_Where ]]
+          @@ keywords_where @@
+      
+        SELECT  w2_CsMessage.*,
+                RowIndex.operator_name,
+                RowIndex.reply_operator_name,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_CsMessage.dept_id,
+                          w2_CsMessage.incident_id,
+                          w2_CsMessage.message_no,
+                          create_operator.name AS operator_name,
+                          reply_operator.name AS reply_operator_name,
+                          ROW_NUMBER() OVER (@@ orderby @@) AS row_num
+                    FROM  w2_CsMessage
+                          LEFT JOIN w2_CsIncident ON
+                          (
+                            w2_CsMessage.dept_id = w2_CsIncident.dept_id
+                            AND
+                            w2_CsMessage.incident_id = w2_CsIncident.incident_id
+                          )
+                          LEFT JOIN w2_CsMessageMail as ReceiveMail ON
+                          (
+                            w2_CsMessage.dept_id = ReceiveMail.dept_id
+                            AND
+                            w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+                          )
+                          LEFT JOIN w2_CsMessageMail as SendMail ON
+                          (
+                            w2_CsMessage.dept_id = SendMail.dept_id
+                            AND
+                            w2_CsMessage.send_mail_id = SendMail.mail_id
+                          )
+                          LEFT JOIN w2_ShopOperator AS create_operator ON
+                          (
+                            w2_CsMessage.dept_id = create_operator.shop_id
+                            AND
+                            w2_CsMessage.operator_id = create_operator.operator_id
+                          )
+                          LEFT JOIN w2_ShopOperator AS reply_operator ON
+                          (
+                            w2_CsMessage.dept_id = reply_operator.shop_id
+                            AND
+                            w2_CsMessage.reply_operator_id = reply_operator.operator_id
+                          )
+                          @@ join_table_temp @@
+                    [[ SearchAdvanced_Where ]]
+                    @@ keywords_where @@
+                ) AS RowIndex
+                INNER JOIN w2_CsMessage ON
+                (
+                  RowIndex.dept_id = w2_CsMessage.dept_id
+                  AND
+                  RowIndex.incident_id = w2_CsMessage.incident_id
+                  AND
+                  RowIndex.message_no = w2_CsMessage.message_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int"  />
+      <Input Name="end_row_num" Type="int"  />
+    </Parameter>
+  </SearchAdvanced>
+
+  <!-- メッセージ詳細検索（インシデント単位で取得）  -->
+  <SearchAdvancedByIncident>
+    <Statement>
+      <![CDATA[
+        -- Create table temp
+        @@ table_temp @@
+
+        DECLARE @row_count int;
+
+        SELECT  @row_count = ISNULL(COUNT(1), 0)
+          FROM  (
+                  SELECT  w2_CsIncident.incident_id
+                    FROM  w2_CsMessage
+                          LEFT JOIN w2_CsIncident ON
+                          (
+                            w2_CsMessage.incident_id = w2_CsIncident.incident_id
+                          )
+                          LEFT JOIN w2_CsMessageMail as ReceiveMail ON
+                          (
+                            w2_CsMessage.dept_id = ReceiveMail.dept_id
+                            AND
+                            w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+                          )
+                          LEFT JOIN w2_CsMessageMail as SendMail ON
+                          (
+                            w2_CsMessage.dept_id = SendMail.dept_id
+                            AND
+                            w2_CsMessage.send_mail_id = SendMail.mail_id
+                          )
+                    [[ SearchAdvanced_Where ]]
+                    @@ keywords_where @@
+                    GROUP BY w2_CsIncident.dept_id, w2_CsIncident.incident_id
+                ) AS Count
+                
+        SELECT  create_operator.name AS operator_name,
+                @row_count AS row_count,
+                w2_CsIncident.*,
+                RowIndex.category_name,
+                create_operator.valid_flg as operator_valid_flg,
+                w2_CsGroup.cs_group_name,
+                w2_CsGroup.valid_flg as group_valid_flg
+          FROM  (
+                  SELECT  w2_CsIncident.dept_id,
+                          w2_CsIncident.incident_id,
+                          w2_CsIncidentCategory.category_name,
+                          ROW_NUMBER() OVER (@@ orderby @@) AS row_num
+                    FROM  w2_CsMessage
+                          LEFT JOIN w2_CsIncident ON
+                          (
+                            w2_CsMessage.incident_id = w2_CsIncident.incident_id
+                          )
+                          LEFT JOIN w2_CsMessageMail as ReceiveMail ON
+                          (
+                            w2_CsMessage.dept_id = ReceiveMail.dept_id
+                            AND
+                            w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+                          )
+                          LEFT JOIN w2_CsMessageMail as SendMail ON
+                          (
+                            w2_CsMessage.dept_id = SendMail.dept_id
+                            AND
+                            w2_CsMessage.send_mail_id = SendMail.mail_id
+                          )
+                          LEFT JOIN w2_CsIncidentCategory ON
+                          (
+                            w2_CsIncident.dept_id = w2_CsIncidentCategory.dept_id
+                            AND
+                            w2_CsIncident.incident_category_id = w2_CsIncidentCategory.category_id
+                          )
+                          LEFT JOIN
+                          (
+                            SELECT  w2_CsOperator.dept_id,
+                                    w2_ShopOperator.operator_id,
+                                    w2_ShopOperator.name,
+                                    w2_ShopOperator.valid_flg
+                              FROM  w2_ShopOperator
+                                    INNER JOIN w2_CsOperator ON
+                                    (
+                                      w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                                      AND
+                                      w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                                    )
+                          ) operator ON
+                          (
+                            w2_CsIncident.dept_id = operator.dept_id
+                            AND
+                            w2_CsIncident.operator_id = operator.operator_id
+                          )
+                          LEFT JOIN w2_User ON
+                          (
+                            w2_CsIncident.user_id = w2_User.user_id
+                          )
+                          @@ join_table_temp @@
+                    [[ SearchAdvanced_Where ]]
+                    @@ keywords_where @@
+                    GROUP BY w2_CsIncident.dept_id, w2_CsIncident.incident_id,w2_CsIncidentCategory.category_name@@ groupby @@
+                ) AS RowIndex
+                INNER JOIN w2_CsIncident ON
+                (
+                  RowIndex.dept_id = w2_CsIncident.dept_id
+                  AND
+                  RowIndex.incident_id = w2_CsIncident.incident_id
+                )
+                LEFT JOIN w2_ShopOperator AS create_operator ON
+                (
+                  w2_CsIncident.dept_id = create_operator.shop_id
+                  AND
+                  w2_CsIncident.operator_id = create_operator.operator_id
+                )
+                LEFT JOIN w2_CsGroup ON
+                (
+                  w2_CsIncident.dept_id = w2_CsGroup.dept_id
+                  AND
+                  w2_CsIncident.cs_group_id = w2_CsGroup.cs_group_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int"  />
+      <Input Name="end_row_num" Type="int"  />
+    </Parameter>
+  </SearchAdvancedByIncident>
+  
+  <!-- 全て取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMessage.*,
+                w2_CsMessageRequest.urgency_flg,
+                rep.name AS reply_operator_name,
+                cre.name AS operator_name,
+                (
+                  CASE WHEN w2_CsMessage.message_status = 'DRAFT' OR w2_CsMessage.inquiry_reply_date IS NULL
+                  THEN w2_CsMessage.date_created ELSE w2_CsMessage.inquiry_reply_date END
+                ) AS ReplyChangedDate,
+                (
+                  CASE WHEN w2_CsMessage.media_kbn = 'TEL'
+                    THEN
+                      w2_CsMessage.inquiry_reply_date
+                    ELSE
+                      (
+                        CASE WHEN SendMail.mail_kbn = 'SEND'
+                        THEN SendMail.send_datetime ELSE ReceiveMail.receive_datetime END
+                      )
+                  END
+                ) AS DateSendOrReceive,
+                (
+                  CASE WHEN ReceiveMail.mail_kbn IS NULL
+                  THEN SendMail.mail_kbn ELSE ReceiveMail.mail_kbn END
+                ) AS mail_kbn,
+                ReceiveMail.receive_datetime,
+                SendMail.send_datetime
+          FROM  w2_CsMessage
+                LEFT JOIN w2_ShopOperator cre ON
+                (
+                  w2_CsMessage.dept_id = cre.shop_id
+                  AND
+                  w2_CsMessage.operator_id = cre.operator_id
+                )
+                LEFT JOIN w2_ShopOperator rep ON
+                (
+                  w2_CsMessage.dept_id = rep.shop_id
+                  AND
+                  w2_CsMessage.reply_operator_id = rep.operator_id
+                )
+                LEFT JOIN
+                (
+                  SELECT  w2_CsMessageRequest.dept_id,
+                          w2_CsMessageRequest.incident_id,
+                          w2_CsMessageRequest.message_no,
+                          MAX(w2_CsMessageRequest.request_no) AS request_no
+                    FROM  w2_CsMessageRequest
+                  GROUP BY w2_CsMessageRequest.dept_id, w2_CsMessageRequest.incident_id, w2_CsMessageRequest.message_no
+                ) req_max ON
+                (
+                  req_max.dept_id = w2_CsMessage.dept_id
+                  AND
+                  req_max.incident_id = w2_CsMessage.incident_id
+                  AND
+                  req_max.message_no = w2_CsMessage.message_no
+                )
+                LEFT JOIN w2_CsMessageRequest ON
+                (
+                  w2_CsMessageRequest.dept_id = req_max.dept_id
+                  AND
+                  w2_CsMessageRequest.incident_id = req_max.incident_id
+                  AND
+                  w2_CsMessageRequest.message_no = req_max.message_no
+                  AND
+                  w2_CsMessageRequest.request_no = req_max.request_no
+                )
+                LEFT JOIN w2_CsMessageMail as ReceiveMail ON
+                (
+                  w2_CsMessage.dept_id = ReceiveMail.dept_id
+                  AND
+                  w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+                )
+                LEFT JOIN w2_CsMessageMail as SendMail ON
+                (
+                  w2_CsMessage.dept_id = SendMail.dept_id
+                  AND
+                  w2_CsMessage.send_mail_id = SendMail.mail_id
+                )
+         WHERE  w2_CsMessage.dept_id = @dept_id
+           AND  w2_CsMessage.incident_id = @incident_id
+           @@ orderby @@
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAll>
+
+  <!-- 複数インシデントIDでインシデント最後のメッセージを取得 -->
+  <GetLastMessageByIncidentIds>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  (
+                  SELECT  dept_id,
+                          incident_id,
+                          message_no,
+                          media_kbn,
+                          direction_kbn, message_status,
+                          MAX(message_no) OVER (PARTITION BY w2_CsMessage.incident_id) AS max_message_no
+                    FROM  w2_CsMessage
+                   WHERE  incident_id IN (@@ incident_ids @@)
+                ) AS csmessage
+         WHERE  message_no = max_message_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetLastMessageByIncidentIds>
+
+  <!-- Get all receive mail -->
+  <GetAllReceiveMail>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMessage.incident_id,
+                w2_CsMessage.receive_mail_id
+          FROM  w2_CsMessage
+                LEFT JOIN w2_CsIncident ON
+                (
+                  w2_CsMessage.incident_id = w2_CsIncident.incident_id
+                )
+                LEFT JOIN w2_CsMessageMail as ReceiveMail ON
+                (
+                  w2_CsMessage.dept_id = ReceiveMail.dept_id
+                  AND
+                  w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+                )
+         WHERE  w2_CsMessage.dept_id = @dept_id
+           AND  ReceiveMail.mail_kbn = 'RECV'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllReceiveMail>
+
+  <!-- 登録用メッセージNO取得 -->
+  <GetRegisterMessageNo>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MAX(message_no),0) + 1 AS message_no
+          FROM  w2_CsMessage
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetRegisterMessageNo>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CsMessage
+                (
+                  dept_id,
+                  incident_id,
+                  message_no,
+                  media_kbn,
+                  direction_kbn,
+                  operator_id,
+                  inquiry_reply_date,
+                  message_status,
+                  user_name1,
+                  user_name2,
+                  user_name_kana1,
+                  user_name_kana2,
+                  user_mail_addr,
+                  user_tel1,
+                  inquiry_title,
+                  inquiry_text,
+                  reply_text,
+                  reply_operator_id,
+                  receive_mail_id,
+                  send_mail_id,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @dept_id,
+                  @incident_id,
+                  @message_no,
+                  @media_kbn,
+                  @direction_kbn,
+                  @operator_id,
+                  @inquiry_reply_date,
+                  @message_status,
+                  @user_name1,
+                  @user_name2,
+                  @user_name_kana1,
+                  @user_name_kana2,
+                  @user_mail_addr,
+                  @user_tel1,
+                  @inquiry_title,
+                  @inquiry_text,
+                  @reply_text,
+                  @reply_operator_id,
+                  @receive_mail_id,
+                  @send_mail_id,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+      <Input Name="media_kbn" Type="nvarchar" Size="10" />
+      <Input Name="direction_kbn" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="inquiry_reply_date" Type="datetime" />
+      <Input Name="message_status" Type="nvarchar" Size="10" />
+      <Input Name="user_name1" Type="nvarchar" Size="20" />
+      <Input Name="user_name2" Type="nvarchar" Size="20" />
+      <Input Name="user_name_kana1" Type="nvarchar" Size="30" />
+      <Input Name="user_name_kana2" Type="nvarchar" Size="30" />
+      <Input Name="user_mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="user_tel1" Type="nvarchar" Size="16" />
+      <Input Name="inquiry_title" Type="nvarchar" Size="50" />
+      <Input Name="inquiry_text" Type="nvarchar" Size="max" />
+      <Input Name="reply_text" Type="nvarchar" Size="max" />
+      <Input Name="reply_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="receive_mail_id" Type="nvarchar" Size="10" />
+      <Input Name="send_mail_id" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMessage
+           SET  media_kbn = @media_kbn,
+                direction_kbn = @direction_kbn,
+                operator_id = @operator_id,
+                inquiry_reply_date = @inquiry_reply_date,
+                message_status = @message_status,
+                user_name1 = @user_name1,
+                user_name2 = @user_name2,
+                user_name_kana1 = @user_name_kana1,
+                user_name_kana2 = @user_name_kana2,
+                user_mail_addr = @user_mail_addr,
+                user_tel1 = @user_tel1,
+                inquiry_title = @inquiry_title,
+                inquiry_text = @inquiry_text,
+                reply_text = @reply_text,
+                reply_operator_id = @reply_operator_id,
+                receive_mail_id = @receive_mail_id,
+                send_mail_id = @send_mail_id,
+                valid_flg = @valid_flg,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+           AND  message_no = @message_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+      <Input Name="media_kbn" Type="nvarchar" Size="10" />
+      <Input Name="direction_kbn" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="inquiry_reply_date" Type="datetime" />
+      <Input Name="message_status" Type="nvarchar" Size="10" />
+      <Input Name="user_name1" Type="nvarchar" Size="20" />
+      <Input Name="user_name2" Type="nvarchar" Size="20" />
+      <Input Name="user_name_kana1" Type="nvarchar" Size="30" />
+      <Input Name="user_name_kana2" Type="nvarchar" Size="30" />
+      <Input Name="user_mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="user_tel1" Type="nvarchar" Size="16" />
+      <Input Name="inquiry_title" Type="nvarchar" Size="50" />
+      <Input Name="inquiry_text" Type="nvarchar" Size="max" />
+      <Input Name="reply_text" Type="nvarchar" Size="max" />
+      <Input Name="reply_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="receive_mail_id" Type="nvarchar" Size="10" />
+      <Input Name="send_mail_id" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- メッセージステータス更新 -->
+  <UpdateMessageStatus>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMessage
+           SET  message_status = @message_status,
+                date_changed = getdate(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+           AND  message_no = @message_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+      <Input Name="message_status" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateMessageStatus>
+  
+  <!-- インシデントID更新 -->
+  <UpdateIncidentId>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMessage
+           SET  incident_id = @incident_id_after,
+                message_no = @message_no_after,
+                date_changed = getdate(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id_before
+           AND  message_no = @message_no_before
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id_before" Type="nvarchar" Size="30" />
+      <Input Name="message_no_before" Type="int" />
+      <Input Name="incident_id_after" Type="nvarchar" Size="30" />
+      <Input Name="message_no_after" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateIncidentId>
+
+  <!-- 有効フラグ更新 -->
+  <UpdateValidFlg>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMessage
+           SET  valid_flg = @valid_flg,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+           AND  message_no = @message_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateValidFlg>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CsMessage
+         WHERE  w2_CsMessage.dept_id = @dept_id
+           AND  w2_CsMessage.incident_id = @incident_id
+           AND  w2_CsMessage.message_no = @message_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+    </Parameter>
+  </Delete>
+
+  <!-- マスタ情報取得(CSV出力用) -->
+  <MasterExport>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_CsMessage
+                LEFT JOIN w2_CsIncident ON
+                (
+                  w2_CsMessage.dept_id = w2_CsIncident.dept_id
+                  AND
+                  w2_CsMessage.incident_id = w2_CsIncident.incident_id
+                )
+                LEFT JOIN w2_CsIncidentCategory ON
+                (
+                  w2_CsIncident.dept_id = w2_CsIncidentCategory.dept_id
+                  AND
+                  w2_CsIncident.incident_category_id = w2_CsIncidentCategory.category_id
+                )
+                LEFT JOIN w2_CsMessageMail as ReceiveMail ON
+                (
+                  w2_CsMessage.dept_id = ReceiveMail.dept_id
+                  AND
+                  w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+                )
+                LEFT JOIN w2_CsMessageMail as SendMail ON
+                (
+                  w2_CsMessage.dept_id = SendMail.dept_id
+                  AND
+                  w2_CsMessage.send_mail_id = SendMail.mail_id
+                )
+                [[ SearchAdvanced_Where ]]
+                @@ keywords_where @@
+      ORDER BY  w2_CsIncident.incident_id DESC,
+                w2_CsMessage.message_no DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+      <Input Name="media_kbn" Type="nvarchar" Size="10" />
+      <Input Name="direction_kbn" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="inquiry_reply_date" Type="datetime" />
+      <Input Name="message_status" Type="nvarchar" Size="10" />
+      <Input Name="user_name1" Type="nvarchar" Size="20" />
+      <Input Name="user_name2" Type="nvarchar" Size="20" />
+      <Input Name="user_name_kana1" Type="nvarchar" Size="30" />
+      <Input Name="user_name_kana2" Type="nvarchar" Size="30" />
+      <Input Name="user_mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="user_tel1" Type="nvarchar" Size="16" />
+      <Input Name="inquiry_title" Type="nvarchar" Size="50" />
+      <Input Name="inquiry_text" Type="nvarchar" Size="max" />
+      <Input Name="reply_text" Type="nvarchar" Size="max" />
+      <Input Name="reply_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="receive_mail_id" Type="nvarchar" Size="10" />
+      <Input Name="send_mail_id" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </MasterExport>
+
+</CsMessage>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        IF EXISTS(SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_ContentsLog' AND COLUMN_NAME = 'contents_id')
+        	ALTER TABLE [w2_ContentsLog] ALTER COLUMN [contents_id] [nvarchar] (100) NOT NULL;
+        GO
+        
+        IF NOT EXISTS(SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_ContentsLog' AND COLUMN_NAME = 'order_id')
+        	ALTER TABLE [w2_ContentsLog] ADD [order_id] [nvarchar] (30) NOT NULL DEFAULT (N'');
+        GO
+        
+        IF EXISTS(SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_ContentsSummaryAnalysis' AND COLUMN_NAME = 'contents_id')
+        	ALTER TABLE [w2_ContentsSummaryAnalysis] ALTER COLUMN [contents_id] [nvarchar] (100) NOT NULL;
+        GO
+        
+        if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_AbTest]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+		BEGIN
+		/*
+		=========================================================================================================
+		  Module      : ABテスト情報 (w2_AbTest.sql)
+		 ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+		  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+		=========================================================================================================
+		*/
+		CREATE TABLE [dbo].[w2_AbTest] (
+			[ab_test_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+			[ab_test_title] [nvarchar] (256) NOT NULL DEFAULT (N''),
+			[public_status] [nvarchar] (20) NOT NULL DEFAULT (N'UNPUBLISHED'),
+			[public_start_datetime] [datetime] NOT NULL DEFAULT (getdate()),
+			[public_end_datetime] [datetime],
+			[date_created] [datetime] NOT NULL,
+			[date_changed] [datetime] NOT NULL,
+			[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+		) ON [PRIMARY]
+
+		ALTER TABLE [dbo].[w2_AbTest] WITH NOCHECK ADD
+			CONSTRAINT [PK_w2_AbTest] PRIMARY KEY  CLUSTERED
+			(
+				[ab_test_id]
+			) ON [PRIMARY]
+		END
+		
+		if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_AbTestItem]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+		BEGIN
+		/*
+		=========================================================================================================
+		  Module      : ABテストアイテム (w2_AbTestItem.sql)
+		 ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+		  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+		=========================================================================================================
+		*/
+		CREATE TABLE [dbo].[w2_AbTestItem] (
+			[ab_test_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+			[item_no] [nvarchar] (30) NOT NULL DEFAULT (N''),
+			[page_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+			[distribution_rate] [int] NOT NULL DEFAULT (0)
+		) ON [PRIMARY]
+
+		ALTER TABLE [dbo].[w2_AbTestItem] WITH NOCHECK ADD
+			CONSTRAINT [PK_w2_AbTestItem] PRIMARY KEY  CLUSTERED
+			(
+				[ab_test_id],
+				[item_no]
+			) ON [PRIMARY]
+		END
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

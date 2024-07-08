@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メッセージ系SQLステートメントXML(CsMessage.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<CsMessage>
+
+  <!-- マスタ情報取得(CSV出力用) -->
+  <GetCsMessageMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_CsMessage
+                LEFT JOIN w2_CsIncident ON
+                (
+                  w2_CsMessage.dept_id = w2_CsIncident.dept_id
+                  AND
+                  w2_CsMessage.incident_id = w2_CsIncident.incident_id
+                )
+                LEFT JOIN w2_CsIncidentCategory ON
+                (
+                  w2_CsIncident.dept_id = w2_CsIncidentCategory.dept_id
+                  AND
+                  w2_CsIncident.incident_category_id = w2_CsIncidentCategory.category_id
+                )
+                LEFT JOIN w2_CsMessageMail as ReceiveMail ON
+                (
+                  w2_CsMessage.dept_id = ReceiveMail.dept_id
+                  AND
+                  w2_CsMessage.receive_mail_id = ReceiveMail.mail_id
+                )
+                LEFT JOIN w2_CsMessageMail as SendMail ON
+                (
+                  w2_CsMessage.dept_id = SendMail.dept_id
+                  AND
+                  w2_CsMessage.send_mail_id = SendMail.mail_id
+                )
+                [[ SearchAdvanced_Where ]]
+                @@ keywords_where @@
+      ORDER BY  w2_CsIncident.incident_id DESC,
+                w2_CsMessage.message_no DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="message_no" Type="int" />
+      <Input Name="media_kbn" Type="nvarchar" Size="10" />
+      <Input Name="direction_kbn" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="inquiry_reply_date" Type="datetime" />
+      <Input Name="message_status" Type="nvarchar" Size="10" />
+      <Input Name="user_name1" Type="nvarchar" Size="20" />
+      <Input Name="user_name2" Type="nvarchar" Size="20" />
+      <Input Name="user_name_kana1" Type="nvarchar" Size="30" />
+      <Input Name="user_name_kana2" Type="nvarchar" Size="30" />
+      <Input Name="user_mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="user_tel1" Type="nvarchar" Size="16" />
+      <Input Name="inquiry_title" Type="nvarchar" Size="50" />
+      <Input Name="inquiry_text" Type="nvarchar" Size="max" />
+      <Input Name="reply_text" Type="nvarchar" Size="max" />
+      <Input Name="reply_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="receive_mail_id" Type="nvarchar" Size="10" />
+      <Input Name="send_mail_id" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetCsMessageMaster>
+
+</CsMessage>

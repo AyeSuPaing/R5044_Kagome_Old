@@ -1,0 +1,191 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザ電子発票管理情報系SQLステートメントXML (TwUserInvoice.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<TwUserInvoice>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_TwUserInvoice
+                [[ TWUSERINVOICE_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetSearchHitCount>
+
+  <!-- Get All User Invoice By User Id -->
+  <GetAllUserInvoiceByUserId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_TwUserInvoice.*
+          FROM  w2_TwUserInvoice
+         WHERE  w2_TwUserInvoice.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllUserInvoiceByUserId>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_TwUserInvoice.*
+          FROM  (
+                  SELECT  w2_TwUserInvoice.user_id,
+                          w2_TwUserInvoice.tw_invoice_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ TWUSERINVOICE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_TwUserInvoice
+                          [[ TWUSERINVOICE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_TwUserInvoice ON
+                (
+                  RowIndex.user_id = w2_TwUserInvoice.user_id
+                  AND
+                  RowIndex.tw_invoice_no = w2_TwUserInvoice.tw_invoice_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_TwUserInvoice.*
+          FROM  w2_TwUserInvoice
+         WHERE  w2_TwUserInvoice.user_id = @user_id
+           AND  w2_TwUserInvoice.tw_invoice_no = @tw_invoice_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="tw_invoice_no" Type="int" />
+    </Parameter>
+  </Get>
+
+  <!-- Get New Invoice No -->
+  <GetNewInvoiceNo>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MAX(tw_invoice_no), 0) + 1
+          FROM  w2_TwUserInvoice
+         WHERE  w2_TwUserInvoice.user_id = @user_id
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetNewInvoiceNo>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_TwUserInvoice
+                (
+                  user_id
+                  ,tw_invoice_no
+                  ,tw_invoice_name
+                  ,tw_uniform_invoice
+                  ,tw_uniform_invoice_option1
+                  ,tw_uniform_invoice_option2
+                  ,tw_carry_type
+                  ,tw_carry_type_option
+                  ,date_created
+                  ,date_changed
+                )
+        VALUES  (
+                  @user_id
+                  ,@tw_invoice_no
+                  ,@tw_invoice_name
+                  ,@tw_uniform_invoice
+                  ,@tw_uniform_invoice_option1
+                  ,@tw_uniform_invoice_option2
+                  ,@tw_carry_type
+                  ,@tw_carry_type_option
+                  ,GETDATE()
+                  ,GETDATE()
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="tw_invoice_no" Type="int" />
+      <Input Name="tw_invoice_name" Type="nvarchar" Size="30" />
+      <Input Name="tw_uniform_invoice" Type="nvarchar" Size="10" />
+      <Input Name="tw_uniform_invoice_option1" Type="nvarchar" Size="10" />
+      <Input Name="tw_uniform_invoice_option2" Type="nvarchar" Size="20" />
+      <Input Name="tw_carry_type" Type="nvarchar" Size="16" />
+      <Input Name="tw_carry_type_option" Type="nvarchar" Size="16" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_TwUserInvoice
+           SET  tw_invoice_name = @tw_invoice_name
+                ,tw_uniform_invoice = @tw_uniform_invoice
+                ,tw_uniform_invoice_option1 = @tw_uniform_invoice_option1
+                ,tw_uniform_invoice_option2 = @tw_uniform_invoice_option2
+                ,tw_carry_type = @tw_carry_type
+                ,tw_carry_type_option = @tw_carry_type_option
+                ,date_changed = GETDATE()
+         WHERE  w2_TwUserInvoice.user_id = @user_id
+           AND  w2_TwUserInvoice.tw_invoice_no = @tw_invoice_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="tw_invoice_no" Type="int" />
+      <Input Name="tw_invoice_name" Type="nvarchar" Size="30" />
+      <Input Name="tw_uniform_invoice" Type="nvarchar" Size="10" />
+      <Input Name="tw_uniform_invoice_option1" Type="nvarchar" Size="10" />
+      <Input Name="tw_uniform_invoice_option2" Type="nvarchar" Size="20" />
+      <Input Name="tw_carry_type" Type="nvarchar" Size="16" />
+      <Input Name="tw_carry_type_option" Type="nvarchar" Size="16" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_TwUserInvoice
+         WHERE  w2_TwUserInvoice.user_id = @user_id
+           AND  w2_TwUserInvoice.tw_invoice_no = @tw_invoice_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="tw_invoice_no" Type="int" />
+    </Parameter>
+  </Delete>
+
+</TwUserInvoice>

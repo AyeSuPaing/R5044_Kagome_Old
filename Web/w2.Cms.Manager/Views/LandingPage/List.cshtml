@@ -1,0 +1,2121 @@
+﻿@*
+	=========================================================================================================
+	  Module      :LPビルダー(List.cshtml)
+	 ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+	  Copyright   : Copyright W2 Co.,Ltd. 2020 All Rights Reserved.
+	=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.LandingPage.LandingPageListViewModel
+@using w2.Cms.Manager.ViewModels.Shared
+@using w2.Domain.LandingPage
+@using w2.App.Common.Web.Page;
+@{
+	var sessionWrapper = new SessionWrapper(Session);
+	var shortUrlLink = Url.Action("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_SHORT_URL, new
+	{
+		PageLayout = Constants.POPUP_LAYOUT_PATH_DEFAULT
+	});
+}
+@Html.Hidden("controller", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_LANDING_PAGE)
+
+@* PageList用のエリア *@
+
+@helper PageListArea()
+{
+	<div class="list">
+		<div class="list-head">
+			<div class="list-head-row">
+				<div class="list-style-switch">
+					<div class="list-style-switch-inner">
+						<input type="radio" name="list-style" id="list-style-2" value="thumb" checked="">
+						<label for="list-style-2" class="btn-switch">
+							<span class="icon icon-thumbnail"></span><span class="label hide-list-detail">サムネイル</span>
+						</label>
+						<input type="radio" name="list-style" id="list-style-1" value="list">
+						<label for="list-style-1" class="btn-switch">
+							<span class="icon icon-list"></span><span class="label hide-list-detail">リスト</span>
+						</label>
+					</div>
+				</div>
+				<div class="list-head-col hide-list-detail w10">
+				</div>
+				@if (Constants.CMS_LANDING_PAGE_USE_CUSTOM_DESIGN_MODE)
+				{
+					<div class="list-head-col hide-list-detail w10">
+						<p>デザイン</p>
+					</div>
+				}
+				<div class="list-head-col hide-list-detail w10">
+					<p>更新日時</p>
+				</div>
+				<div class="list-head-col hide-list-detail w15">
+					<p>公開状態</p>
+				</div>
+				<div class="list-head-col hide-list-detail w15">
+					<p>集計</p>
+				</div>
+			</div>
+		</div>
+		<div class="list-content custom-scroll-area">
+
+			<!-- リストの アイテム -->
+			<!-- ko foreach: PageList -->
+			<div class="list-row" data-list-id="1-1" data-bind="attr: { id: $data.PageId }">
+				<div class="list-col list-col-thumb w10 hide-style-list">
+					<div class="list-col-inner">
+						<figure>
+							<img loading="lazy" data-bind="attr: { src: $data.ThumbnailUrlPc, onclick : 'javascript:imageModal(\'' + ThumbnailUrlPc  + '\')' }" alt="作成中">
+						</figure>
+						@if (w2.App.Common.Design.DesignCommon.UseSmartPhone)
+						{
+							<figure>
+								<img loading="lazy" data-bind="attr: { src: $data.ThumbnailUrlSp, onclick : 'javascript:imageModal(\'' + ThumbnailUrlSp  + '\', \'sp\')' }" alt="作成中">
+							</figure>
+						}
+					</div>
+				</div>
+				<div class="list-col">
+					<div class="list-col-inner-row">
+						<div class="list-col-title">
+							<div class="list-col-inner">
+								<p class="list-col-title-label line-clamp ta-left">
+									<a data-bind="attr: { href: 'javascript:lp_list_page.set_detail_datas(\'' + $data.PageId + '\')' }, text: $data.ManagementTitle" class="list-col-title-a"></a>
+								</p>
+							</div>
+						</div>
+					</div>
+					<div class="list-col-inner-row hide-list-detail  hide-style-list">
+						<div class="list-col-url">
+							<a data-bind="attr: { href: $data.PageUrl }, text: $data.PageId" target="_blank"></a>
+						</div>
+					</div>
+					<div class="list-col-inner-row hide-list-detail hide-style-list">
+						<div class="list-col-url">
+							<a href="#" data-bind="text: $data.Memo"></a>
+						</div>
+					</div>
+					<div class="list-col-inner-row hide-list-detail hide-style-list">
+						<div data-bind="foreach: { data: $data.ProductSet, as: 'ListProductSet' }">
+							<div class="list-col-set-items">
+								<div class="list-col-set-items-title">商品設定数</div>
+								<div class="list-col-set-items-count" data-bind="text: ListProductSet.ItemCount"></div>
+								<div class="list-col-set-items-thums" data-bind="foreach: { data: ListProductSet.Products, as: 'ListProduct' }">
+									<figure>
+										<img loading="lazy" data-bind="attr: { src: ListProduct.ItemImageUrl }" alt="">
+									</figure>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				@if (Constants.CMS_LANDING_PAGE_USE_CUSTOM_DESIGN_MODE)
+				{
+					<div class="list-col w10 hide-list-detail">
+						<p data-bind="visible: $data.DesignMode == '@Constants.FLG_LANDINGPAGEDESIGN_DESIGN_MODE_DEFAULT'">
+							<span class="icon-status icon-status-default">デフォルト</span>
+						</p>
+						<p data-bind="visible: $data.DesignMode == '@Constants.FLG_LANDINGPAGEDESIGN_DESIGN_MODE_CUSTOM'">
+							<span class="icon-status icon-status-custom">カスタム</span>
+						</p>
+					</div>
+				}
+				<div class="list-col w10 hide-list-detail">
+					<p data-bind="text: $data.DateChanged1"></p>
+					<p data-bind="text: $data.DateChanged2"></p>
+				</div>
+				<div class="list-col w15 hide-list-detail">
+					<p data-bind="visible: $data.PublicStatus == '@LandingPageConst.PUBLIC_STATUS_PUBLISHED' ">
+						<span class="icon-status icon-status-open">公開</span>
+					</p>
+					<p data-bind="visible: $data.PublicStatus == '@LandingPageConst.PUBLIC_STATUS_UNPUBLISHED' ">
+						<span class="icon-status icon-status-close">非公開</span>
+					</p>
+					<p data-bind="visible: $data.UsePublicRange">
+						<span class="icon-status icon-status-limited">公開範囲設定あり</span>
+					</p>
+				</div>
+				<div class="list-col w15 hide-list-detail ta-left">
+					<div class="list-col-recent-status">
+						<dl class="list-col-recent-status-item">
+							<dt>View</dt>
+							<dd><span class="list-col-recent-status-value" data-bind="text: $data.ViewCount"></span>件</dd>
+						</dl>
+						<dl class="list-col-recent-status-item">
+							<dt>CV</dt>
+							<dd>
+								<span class="list-col-recent-status-row">
+									<span class="list-col-recent-status-value" data-bind="text: $data.CvCount"></span>件
+								</span>
+								<span class="list-col-recent-status-row">
+									<span class="list-col-recent-status-note" data-bind="text: $data.CvPrice + '円'"></span>
+								</span>
+							</dd>
+						</dl>
+					</div>
+				</div>
+			</div>
+			<!-- /ko -->
+			<br />
+			<!-- リストの アイテム -->
+		</div>
+	</div>
+}
+
+@* PageList用のツールエリア *@
+
+@helper PageListToolArea()
+{
+	<div class="list-tools">
+		<div class="list-tools-row">
+			<div class="list-tools-col ta-left">
+				<div class="keyword-search">
+					<input name="" id="search_keyword" type="text" placeholder="フロント/管理用ページ名, ファイル名" class="keyword-search-input" data-bind="value:SearchWord">
+					<a href="javascript:lp_list_page.get_page_list(true)" class="keyword-search-submit">
+						<span class="icon-search"></span>
+					</a>
+				</div>
+				<a class="btn-toggle" data-toggle-content-selector=".list-tools-detailed-search"></a>
+			</div>
+
+			@if (w2.App.Common.LandingPage.LpDesignHelper.EnableMaintenaceTool())
+			{
+				<div class="list-tools-col ta-right">
+					<button class="btn btn-main btn-size-m" type="button" onclick="lp_list_page.recreate_all_file();">
+						<span class="hide-list-detail">LPデザインファイル再作成</span>
+					</button>
+				</div>
+			}
+			@using (Html.BeginForm("", "", new { }, FormMethod.Post, new { Id = "search_form", Onsubmit = "return false;" }))
+			{
+				<div class="list-tools-col ta-right">
+					@if (Constants.LPBUILDER_MAXCOUNT.HasValue)
+					{
+						<span id="lp-count" style="font-size: 13px; vertical-align: middle;"></span>
+					}
+					<div class="pager-content">
+						<p class="pager-content-info hide-list-detail"><span id="pager"></span><span id="total"></span></p>
+						@Html.Hidden("PagerNo", 1, new { id = "pagerNo" })
+						@Html.Hidden("totalHitCount", new { id = "totalHitCount" })
+						<span id="previous" class="pager-content-previous icon-arrow-left" onclick="reduce_pager_no();"></span>
+						<span id="next" class="pager-content-next icon-arrow-right" onclick="add_pager_no();"></span>
+					</div>
+					<button id="lp-new-register" class="btn btn-main btn-size-m" type="button" onclick="lp_list_page.open_new_page();">
+						<span class="icon icon-plus"></span>
+						<span class="hide-list-detail">新規作成</span>
+					</button>
+				</div>
+			}
+		</div>
+		<div class="list-tools-detailed-search">
+			<div class="list-tools-row">
+				<div class="list-tools-col">
+					<div class="form-element-group form-element-group-horizontal">
+						<div class="form-element-group-title">
+							<label for="form-select-005">公開日</label>
+						</div>
+						<div class="form-element-group-content">
+							<select name="" id="form-select-005" data-bind="options: DateChangeList, optionsText: 'text', optionsValue: 'value', value: PublicDateKbn"></select>
+						</div>
+					</div>
+					<div class="form-element-group form-element-group-horizontal">
+						<div class="form-element-group-title">
+							<label for="form-select-005">公開状態</label>
+						</div>
+						<div class="form-element-group-content">
+							<select name="" id="form-select-006" data-bind="options: SearchPublicStatusList, optionsText: 'text', optionsValue: 'value', value: SearchPublicStatus">
+							</select>
+						</div>
+					</div>
+					@if (Constants.CMS_LANDING_PAGE_USE_CUSTOM_DESIGN_MODE)
+					{
+						<div class="form-element-group form-element-group-horizontal">
+							<div class="form-element-group-title">
+								<label for="form-select-005">デザイン</label>
+							</div>
+							<div class="form-element-group-content">
+								<select name="" id="form-select-007" data-bind="options: SearchPublicDesignModeList, optionsText: 'text', optionsValue: 'value', value: SearchPublicDesignMode">
+								</select>
+							</div>
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+@* Page詳細用のエリア *@
+
+@helper PageDetailArea()
+{
+	<div class="main-content-detail-inner">
+		<a class="main-content-detail-btn-close"><span class="icon icon-close"></span>閉じる</a>
+		<div class="main-content-detail-head">
+			<div class="main-content-detail-head-title h2">
+				<input name="input.ManagementTitle" data-bind="value: ManagementTitle" type="text" placeholder="管理用ページ名を設定してください（必須）">
+				<input type="hidden" class="pageId" name="input.PageId" data-bind="value: PageId" />
+			</div>
+			<div class="main-content-detail-head-main-actions">
+				<div class="form-element-group form-element-group-horizontal">
+					<div class="form-element-group-title">
+						<label for="form-select-page-status">状態</label>
+					</div>
+					<div class="form-element-group-content">
+						<select name="" id="form-select-page-status" data-bind="options: publicstatuslist, optionsText: 'text', optionsValue: 'value', value: PublicStatus">
+						</select>
+					</div>
+				</div>
+				<input type="button" name="Update" onclick="javascript: lp_list_page.upd()" class="btn btn-main btn-size-l" data-bind="	visible: IsModify" value="更新" />
+				<input type="button" name="Update" onclick="javascript: lp_list_page.regi()" class="btn btn-main btn-size-l" data-bind="	visible: IsRegister" value="登録" />
+				<div class="dropdown" data-bind="visible: IsModify">
+					<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle">
+						<span class="icon-dots"></span>
+					</a>
+					<div class="dropdown-menu">
+						<a id="lp-copy-new-register" class="dropdown-menu-item" href="javascript:lp_list_page.copy_new()">複製して新規作成する</a>
+						<a class="dropdown-menu-item" href="javascript:lp_list_page.delete_lp()">削除する</a>
+						<a class="dropdown-menu-item" href="javascript:lp_list_page.reset()">リセットする</a>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="main-content-detail-body">
+			<div class="form-element-group form-element-group-horizontal">
+				<div class="form-element-group-title">
+					<label for="form-input-002">URL</label>
+				</div>
+				<div class="form-element-group-content">
+					<div class="page-url">
+						<span class="page-url-value">@(Constants.PROTOCOL_HTTPS + Constants.SITE_DOMAIN + Constants.PATH_ROOT_FRONT_PC + Constants.CMS_LANDING_PAGE_DIR_URL_PC)<span class="page-url-value-filename" data-bind="text: PageUrl"></span>.aspx</span>
+						<span class="page-url-value-form">
+							@(Constants.PROTOCOL_HTTPS + Constants.SITE_DOMAIN + Constants.PATH_ROOT_FRONT_PC + Constants.CMS_LANDING_PAGE_DIR_URL_PC)<input type="text" name="PageUrl" id="PageUrl" data-bind="value: PageUrl" class="page-url-value-form-input">.aspx
+							<input type="button" class="btn btn-main btn-size-s page-url-edit-submit" value="OK">
+							<input type="button" class="btn btn-sub btn-size-s page-url-edit-cancel" value="キャンセル" onclick="javascript:lp_list_page.set_bef_url()">
+						</span>
+						<span class="page-url-btns">
+							<button class="btn btn-sub btn-size-s page-url-edit-trigger" onclick="javascript:lp_list_page.keep_bef_url();" data-bind="visible: CanDisplayControlCartListLp">編集</button>
+							<button class="btn btn-sub btn-size-s" id="url-copy-btn" type="button">コピー</button>
+							@if (Constants.SHORTURL_OPTION_ENABLE)
+							{
+								<span class="btn btn-sub btn-size-s" data-bind="visible: (CanEditShortUrl && CanDisplayControlCartListLp)">
+									<a href="#" data-bind="attr: { href : 'javascript:open_short_url_setting(\'' + PageUrl() + '\')' }">ショートURLを設定する</a>
+								</span>
+							}
+						</span>
+					</div>
+				</div>
+			</div>
+
+			@Html.Partial("_ReleaseRangeSetting", new w2.Cms.Manager.Input.ReleaseRangeSettingInput
+			{
+				UseDate = true,
+				UseMemberRank = false,
+				UseTargetList = false
+			})
+
+		<div class="feature-page-elements" data-bind="foreach: ProductSets, visible: CanDisplayControlCartListLp" style="background-color: white;">
+			<div class="feature-page-element">
+				<div class="feature-page-element-head" style="padding: 5px 10px;">
+					<div class="feature-page-element-head-left">
+						<div class="feature-page-element-title">商品選択番号：<span data-bind="text: $index() + 1"></span></div>
+					</div>
+					<div style="padding: 15px 20px;">
+						<div class="slide-checkbox-wrap">
+							<input type="checkbox" data-bind="validIdAttribute: $data.id, checked: ValidFlg" data-on-label="有効" data-off-label="無効">
+							<label data-bind="validForAttribute: $data.id" class="slide-checkbox">
+								<span class="slide-checkbox-label"></span>
+								<span class="slide-checkbox-btn"></span>
+							</label>
+						</div>
+					</div>
+				</div>
+				<div data-bind="attr: {'data-check-hide': CheckHideNormalSettingWrapper}" class="feature-page-element-head" style="justify-content: flex-start;">
+					<div class="feature-page-element-head-left set_name" style="padding-right: 20px; display: none;">
+						<div class="form-element-group-title" style="width: 90px;">
+							<label>選択肢名<span class="notice">*</span></label><small>&nbsp;[<a href="javascript:void(0)" title="商品選択肢が複数ある場合に、選択肢として表示されます。">？</a>]</small>
+						</div>
+						<div class="form-element-group-content">
+							<input data-bind="textInput: SetName" style="width: 300px;" type="text" placeholder="選択肢名を入力してください">
+						</div>
+					</div>
+				</div>
+				<div data-bind="if: showSubscription, visible: showSubscription" class="feature-page-element-head">
+					<div class="feature-page-element-head-left" >
+						<div data-course-purchase-setting="">
+							<input 
+								   type="checkbox"
+								   name="SubscriptionBoxCourseFlg",
+								   data-bind="attr: {id: $data.id + '_subscriptionCourse'}, checked: SubscriptionBoxCourseFlg"
+								   data-course-active="">
+							<label
+								data-bind="attr: {for: $data.id + '_subscriptionCourse'}"
+							>頒布会購入</label>
+							<select
+								    name="SubscriptionBoxCourseId"
+									data-course-options=""
+									style="margin-left: 20px;"
+									data-bind="options: CourseOptions.options,
+									optionsText: 'Text',
+									optionsValue: 'Value',
+									selectedOptions: CourseOptions.selected,
+									attr : {'disabled' : !SubscriptionBoxCourseFlg()}
+									">
+							</select>
+						</div>
+					</div>
+				</div>
+				<div class="feature-page-element-content">
+					<div class="feature-item-list">
+							<div
+							 data-not-subscription=""
+							 data-bind="class: HideNotSubsEle"
+							 class="form-element-group form-element-group-vertical">
+							<div class="form-element-group-content">
+								<div class="feature-selected-item-list" data-bind="visible: $data.Products().length > 0">
+									<div
+										 style="overflow: auto;"
+										 class="feature-selected-item-list-body ui-sortable"
+										 data-bind="foreach: Products, event:{ mouseover: $parent.get_selected_product_set }">
+										<div class="feature-selected-item-list-item list-row" data-bind="attr: { dataListVariationId: VariationId }">
+											<div style="width: 5%; padding:30px 0px 30px 15px" class="list-col-drag ui-sortable-handle">
+												<span class="icon-drag"></span>
+											</div>
+											<div style="width: 15%; padding: 10px">
+												<img data-bind="attr: {src:ProductImage}" alt="" style="border: solid #999 1px;">
+											</div>
+											<div style="width: 45%">
+												<div style="display: table; word-break: break-all;">
+													<div style="display: table-row;">
+														<span style="display: table-cell;" data-bind="text:VariationId"></span>
+														<span style="display: table-cell; padding: 5px;" data-bind="text:ProductName"></span>
+													</div>
+													<div style="display: table-row;">
+														<span style="display: table-cell;" data-bind="visible:FixedPurchaseFlg">定期購入可能</span>
+													</div>
+												</div>
+											</div>
+											<div style="width: 15%">
+												@if (Constants.FIXEDPURCHASE_OPTION_ENABLED)
+												{
+													<div>
+														<input type="radio" value="NORMAL"data-bind="checked: BuyType,attr: { name: 'buyType' + $parentContext.$index() + '-' + $index() }" />
+														通常
+														<input type="radio" value="FIXEDPURCHASE" data-bind="checked: BuyType, attr: { name: 'buyType' + $parentContext.$index() + '-' + $index() }" />
+														定期
+													</div>
+												}
+											</div>
+											<div style="width: 10%">
+												<input type="text" id="qu" data-bind="value:Quantity" style="width: 30px" /><span>個</span>
+											</div>
+											<div style="width: 10%; cursor: pointer;">
+												<span class="icon icon-close" data-bind="click: function(data, event) { lp_list_page.remove_product_vm(data); }"></span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<p
+						   data-bind="if: SubscriptionBoxCourseFlg"
+						   style="text-align: center;">
+							頒布会購入の場合は、LPの商品は頒布会コースに基づいて設定されます。</p>
+					</div>
+					<div class="feature-item-list-btn">
+						<a
+						   data-not-subscription=""
+						   href="javascript:void(0);"
+						   data-bind="click: $parent.product_set_modify, class: HideNotSubsEle, visible: !SubscriptionBoxCourseFlg()"
+						   class="btn btn-sub btn-size-m">
+							<div data-bind="visible: $data.Products().length == 0">追加する</div>
+							<div data-bind="visible: $data.Products().length > 0">変更する</div>
+						</a>
+						<a href="javascript:void(0);" data-bind="click: $parent.product_set_remove" class="btn btn-sub btn-size-m">削除する</a>
+					</div>
+				</div>
+			</div>
+		</div>
+			<div style="text-align: center;" data-bind="visible: CanDisplayControlCartListLp">
+				<a href="javascript:lp_list_page.add_product_set();" class="btn btn-main btn-size-m">
+					<span class="icon icon-plus"></span>
+					<span>商品選択肢を追加する</span>
+				</a>
+			</div>
+			<h3>SEO設定</h3>
+			<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature">
+				<div class="form-element-group-title">
+					<label for="pageTitle">HTMLタイトル<span class="notice">*</span></label>
+				</div>
+				<div class="form-element-group-content">
+					<input type="text" name="input.PageTitle" data-bind="textInput: PageTitle" style="width: 50%">
+				</div>
+			</div>
+			<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature">
+				<div class="form-element-group-title">
+					<label for="metaDatadesc">SEOディスクリプション</label>
+				</div>
+				<div class="form-element-group-content">
+					<input type="text" name="input.MetadataDesc" data-bind="textInput: MetadataDesc" style="width: 50%">
+				</div>
+			</div>
+
+			<h3>OGP画像設定</h3>
+			<div id="uploadImage"></div>
+			@Html.Partial("_ImageListModal", new ImageModalViewModel())
+
+			<h3>カート設定</h3>
+
+			<div class="form-element-group form-element-group-horizontal-grid" data-bind="visible: CanDisplayControlCartListLp">
+				<div class="form-element-group-title" style="width: 250px;">
+					<label>商品選択タイプ</label>
+				</div>
+				<div class="form-element-group-content">
+					<div class="access-authority-setting-period-info-value">
+						<input type="radio" id="rbProductChooseTypeDONOTCHOOSE" name="input.ProductChooseType" value="DONOTCHOOSE" data-bind="checked: ProductChooseType">
+						@Html.Label("rbProductChooseTypeDONOTCHOOSE", "一覧指定の商品すべてが購入対象")
+					</div>
+					<div class="access-authority-setting-period-info-value" data-bind="visible: $data.CanSelectCheckboxOfProductChooseTypes()">
+						<input type="radio" id="rbProductChooseTypeCHECKBOX" name="input.ProductChooseType" value="CHECKBOX" data-bind="checked: ProductChooseType" />
+						@Html.Label("rbProductChooseTypeCHECKBOX", "一覧指定の商品のうち、複数の商品を選択可能")
+					</div>
+					<div class="access-authority-setting-period-info-value">
+						<input type="radio" id="rbProductChooseTypeDROPDOWNLIST" name="input.ProductChooseType" value="DROPDOWNLIST" data-bind="checked: ProductChooseType" />
+						@Html.Label("rbProductChooseTypeDROPDOWNLIST", "一覧指定の商品のうち、単一の商品のみが選択可能")
+					</div>
+				</div>
+			</div>
+
+			<div class="form-element-group form-element-group-horizontal-grid">
+				<div class="form-element-group-title" style="width: 250px;">
+					<label>会員登録<span class="notice">*</span></label>
+				</div>
+				<div class="form-element-group-content">
+					<div class="access-authority-setting-period-info-value">
+						<input type="radio" id="rbUserRegistrationTypeAUTO" name="input.UserRegistrationType" value="AUTO" data-bind="checked: UserRegistrationType">
+						@Html.Label("rbUserRegistrationTypeAUTO", "会員登録を自動で行う")
+					</div>
+					<div class="access-authority-setting-period-info-value">
+						<input type="radio" id="rbUserRegistrationTypeMANUAL" name="input.UserRegistrationType" value="MANUAL" data-bind="checked: UserRegistrationType">
+						@Html.Label("rbUserRegistrationTypeMANUAL", "会員登録を手動で行う")
+					</div>
+					<div class="access-authority-setting-period-info-value">
+						<input type="radio" id="rbUserRegistrationTypeDISABLE" name="input.UserRegistrationType" value="DISABLE" data-bind="checked: UserRegistrationType">
+						@Html.Label("rbUserRegistrationTypeDISABLE", "会員登録は行わない")
+					</div>
+				</div>
+			</div>
+
+			<div class="form-element-group form-element-group-horizontal-grid" data-bind="visible: CanAuthenticationUser()">
+				<div class="form-element-group-title" style="width: 250px;">
+					<label>@(CommonPage.ReplaceTag("@@DispText.identity_authentication.name@@")) (@(Constants.PERSONAL_AUTHENTICATION_OF_USER_REGISTRATION_AUTH_METHOD))</label>
+				</div>
+				<div class="form-element-group-content">
+					<div class="slide-checkbox-wrap">
+						<input type="checkbox" id="cbPersonalAuthenticationUseFlg" data-bind="checked: PersonalAuthenticationUseFlg" data-on-label="@(CommonPage.ReplaceTag("@@DispText.on_label.name@@"))" data-off-label="@(CommonPage.ReplaceTag("@@DispText.off_label.name@@"))">
+						<label for="cbPersonalAuthenticationUseFlg" class="slide-checkbox">
+							<span class="slide-checkbox-label" style="width: 70px"></span>
+							<span class="slide-checkbox-btn"></span>
+						</label>
+					</div>
+				</div>
+			</div>
+
+			<div class="form-element-group form-element-group-horizontal-grid">
+				<div class="form-element-group-title" style="width: 250px;">
+					<label>ログインフォーム</label>
+				</div>
+				<div class="form-element-group-content">
+					<div class="slide-checkbox-wrap">
+						<input type="checkbox" id="chLoginFormType" data-bind="checked: LoginFormType" data-on-label="利用する" data-off-label="利用しない">
+						<label for="chLoginFormType" class="slide-checkbox">
+							<span class="slide-checkbox-label" style="width: 70px"></span>
+							<span class="slide-checkbox-btn"></span>
+						</label>
+					</div>
+				</div>
+			</div>
+			@if (Constants.SOCIAL_LOGIN_ENABLED)
+			{
+				<div class="form-element-group form-element-group-horizontal-grid">
+					<div class="form-element-group-title" style="width: 250px;">
+						<label>利用するソーシャルログインタイプ</label>
+					</div>
+					<div class="form-element-group-content">
+						<div class="access-authority-setting-period-info-value-value">
+							<input type="radio" id="rbSocialLoginUseTypeAll" name="input.SocialLoginUseType" value="ALL" data-bind="checked: SocialLoginUseType">
+							@Html.Label("rbSocialLoginUseTypeAll", "利用可能なソーシャルログインボタン全て表示")
+						</div>
+						<div class="access-authority-setting-period-info-value-value">
+							<input type="radio" id="rbSocialLoginUseTypeOnly" name="input.SocialLoginUseType" value="ONLY" data-bind="checked: SocialLoginUseType">
+							@Html.Label("rbSocialLoginUseTypeOnly", "一部を選択して表示")
+							<select id="ddlChoiceSocialLoginList" class="lp_multi_select" multiple="multiple" data-bind="options: ChoiceSocialLoginList, optionsText: 'Text', optionsValue: 'Value', selectedOptions: SocialLoginList"></select>
+						</div>
+					</div>
+				</div>
+			}
+			@if ((string.IsNullOrEmpty(Constants.EFO_OPTION_PROJECT_NO) == false) && (Constants.GLOBAL_OPTION_ENABLE == false))
+			{
+				<div class="form-element-group form-element-group-horizontal-grid">
+					<div class="form-element-group-title" style="width: 250px;">
+						<label>EFO CUBE利用</label>
+					</div>
+					<div class="form-element-group-content">
+						<div class="slide-checkbox-wrap">
+							<input type="checkbox" id="chEfoCubeUseFlg" data-bind="checked: EfoCubeUseFlg" data-on-label="利用する" data-off-label="利用しない">
+							<label for="chEfoCubeUseFlg" class="slide-checkbox">
+								<span class="slide-checkbox-label" style="width: 70px"></span>
+								<span class="slide-checkbox-btn"></span>
+							</label>
+						</div>
+					</div>
+				</div>
+			}
+
+			<div class="form-element-group form-element-group-horizontal-grid">
+				<div class="form-element-group-title" style="width: 250px;">
+					<label>確認画面スキップ</label>
+				</div>
+				<div class="form-element-group-content">
+					<div class="slide-checkbox-wrap">
+						<input type="checkbox" id="chOrderConfirmPageSkipFlg" data-bind="checked: OrderConfirmPageSkipFlg" data-on-label="スキップする" data-off-label="スキップしない">
+						<label for="chOrderConfirmPageSkipFlg" class="slide-checkbox">
+							<span class="slide-checkbox-label" style="width: 100px"></span>
+							<span class="slide-checkbox-btn"></span>
+						</label>
+					</div>
+				</div>
+			</div>
+
+			<div class="form-element-group form-element-group-horizontal-grid">
+				<div class="form-element-group-title" style="width: 250px;">
+					<label>メールアドレス確認フォーム利用</label>
+				</div>
+				<div class="form-element-group-content">
+					<div class="slide-checkbox-wrap">
+						<input type="checkbox" id="chMailAddressConfirmFormUseFlg" data-bind="checked: MailAddressConfirmFormUseFlg" data-on-label="利用する" data-off-label="利用しない">
+						<label for="chMailAddressConfirmFormUseFlg" class="slide-checkbox">
+							<span class="slide-checkbox-label" style="width: 70px"></span>
+							<span class="slide-checkbox-btn"></span>
+						</label>
+					</div>
+				</div>
+			</div>
+
+			@if (Constants.NOVELTY_OPTION_ENABLED)
+			{
+				<div class="form-element-group form-element-group-horizontal-grid">
+					<div class="form-element-group-title" style="width: 250px;">
+						<label>ノベルティ利用</label>
+					</div>
+					<div class="form-element-group-content">
+						<div class="slide-checkbox-wrap">
+							<input type="checkbox" id="chNoveltyUseFlg" data-bind="checked: NoveltyUseFlg" data-on-label="利用する" data-off-label="利用しない">
+							<label for="chNoveltyUseFlg" class="slide-checkbox">
+								<span class="slide-checkbox-label" style="width: 70px"></span>
+								<span class="slide-checkbox-btn"></span>
+							</label>
+						</div>
+					</div>
+				</div>
+			}
+
+			@if (Constants.PAYMENT_CHOOSE_TYPE_LP_OPTION)
+			{
+				<div class="form-element-group form-element-group-horizontal-grid">
+					<div class="form-element-group-title" style="width:250px;">
+						<label>決済種別選択タイプ</label>
+					</div>
+					<div class="form-element-group-content">
+						<div class="access-authority-setting-period-info-value">
+							<input type="radio" id="rbPaymentChooseTypeRB" name="input.PaymentChooseType" value="RB" data-bind="checked: PaymentChooseType">
+							@Html.Label("rbPaymentChooseTypeRB", "ラジオボタン")
+						</div>
+						<div class="access-authority-setting-period-info-value">
+							<input type="radio" id="rbPaymentChooseTypeDDL" name="input.PaymentChooseType" value="DDL" data-bind="checked: PaymentChooseType">
+							@Html.Label("rbPaymentChooseTypeDDL", "ドロップダウン")
+						</div>
+					</div>
+				</div>
+			}
+
+			<div class="form-element-group form-element-group-horizontal-grid">
+				<div class="form-element-group-title" style="width:250px;">
+					<label>デフォルト決済種別</label>
+				</div>
+				<div class="form-element-group-content">
+					<select id="ddlDefaultCheckedPayment" class="ui-custom-select-options" data-bind="options: ChoiceDefaultCheckedPayment, optionsText: 'Text', optionsValue: 'Value', value: DefaultPaymentId"></select>
+					<span>※注文に利用できない決済種別は設定しても表示されません。</span>
+				</div>
+			</div>
+
+			<div class="form-element-group form-element-group-horizontal-grid">
+				<div class="form-element-group-title" style="width: 250px;">
+					<label>除外する決済種別リスト</label>
+				</div>
+				<div class="form-element-group-content">
+					<select id="ddlUnpermittedPaymentIds" class="lp_multi_select" multiple="multiple" data-bind="options: ChoiceUnpermittedPaymentIds, optionsText: 'Text', optionsValue: 'Value', selectedOptions: UnpermittedPaymentIds"></select>
+				</div>
+			</div>
+
+			<div class="form-element-group form-element-group-horizontal-grid" data-bind="visible: CanDisplayControlCartListLp">
+				<div class="form-element-group-title" style="width: 250px;">
+					<label>タグ設定リスト</label>
+				</div>
+				<div class="form-element-group-content">
+					<select id="ddlChoiceTagSettingList" class="lp_multi_select" multiple="multiple" data-bind="options: ChoiceTagSettingList, optionsText: 'Text', optionsValue: 'Value', selectedOptions: TagSettingList"></select>
+				</div>
+			</div>
+
+			@if (Constants.CMS_LANDING_PAGE_USE_CUSTOM_DESIGN_MODE)
+			{
+				<h3>デザイン</h3>
+				<div class="form-element-group form-element-group-horizontal-grid">
+					<div class="form-element-group-title" style="width: 250px;">
+						<label>デザインモード</label>
+					</div>
+					<div class="form-element-group-content">
+						<div class="access-authority-setting-period-info-value">
+							<input type="radio" id="rbDesignModeDefault" name="input.DesignMode" value="@Constants.FLG_LANDINGPAGEDESIGN_DESIGN_MODE_DEFAULT" data-bind="checked: DesignMode">
+							@Html.Label("rbDesignModeDefault", "デフォルトデザイン")
+						</div>
+						<div class="access-authority-setting-period-info-value">
+							<input type="radio" id="rbDesignModeCustom" name="input.DesignMode" value="@Constants.FLG_LANDINGPAGEDESIGN_DESIGN_MODE_CUSTOM" data-bind="checked: DesignMode">
+							@Html.Label("rbDesignModeCustom", "カスタムデザイン") ※デザインを変更する際は直接ファイルを更新してください。
+						</div>
+
+					</div>
+				</div>
+			}
+			else
+			{
+				<h3 data-bind="visible: IsDesignModify">デザイン</h3>
+			}
+			<div class="form-element-group form-element-group-horizontal-grid" data-bind="visible: IsDesignModify">
+				<div class="form-element-group-title" style="width: 250px;">
+
+					@if (w2.App.Common.Design.DesignCommon.UseResponsive)
+					{
+						<label>デザイン編集（RESPONSIVE）</label>
+					}
+					else
+					{
+						<label>デザイン編集（PC）</label>
+					}
+				</div>
+				<div class="form-element-group-content">
+					<div class="access-authority-setting-period-info-value-value">
+						<input type="button" class="btn btn-sub btn-size-s" onclick="javascript: lp_list_page.open_designer_page('PC');" value="編集" />
+						<input type="button" class="btn btn-sub btn-size-s" data-bind="visible: can_preview()" onclick="	javascript:lp_list_page.open_preview_page('PC');" value="プレビュー" />
+						<input type="hidden" name="pageId" data-bind="value: PageId" />
+					</div>
+				</div>
+			</div>
+
+			@if (w2.App.Common.Design.DesignCommon.UseSmartPhone)
+			{
+				<div class="form-element-group form-element-group-horizontal-grid" data-bind="visible: IsDesignModify">
+					<div class="form-element-group-title" style="width: 250px;">
+						<label>デザイン編集（SP）</label>
+					</div>
+					<div class="form-element-group-content">
+						<div class="access-authority-setting-period-info-value-value">
+							<input type="button" class="btn btn-sub btn-size-s" onclick="javascript: lp_list_page.open_designer_page('SP');" value="編集" />
+							<input type="button" class="btn btn-sub btn-size-s" data-bind="visible: can_preview()" onclick="	javascript:lp_list_page.open_preview_page('SP');" value="プレビュー" />
+						</div>
+					</div>
+				</div>
+			}
+		</div>
+	</div>
+}
+
+@* 商品設定用のモーダル *@
+
+@helper ProductModal(SessionWrapper sessionWrapper)
+{
+	<div class="modal-content-hide">
+		@Html.Partial("_ProductModal", new ProductSettingModalModel(sessionWrapper.LoginShopId, Constants.CONTROLLER_W2CMS_MANAGER_LANDING_PAGE)
+{
+	UseGroupSelectTab = false,
+	UseProductListInputTab = false,
+	IsVariationList = true,
+	SetProductControllerActionName = "SetProductVariation"
+})
+	</div>
+}
+
+<a href="javascript:void(0)" class="list-menu-btn">
+	<span class="icon icon-menu"></span>
+</a>
+<div class="main-content-list">
+	<!-- ページリストツール -->
+	@PageListToolArea()
+	<!-- ページリストツール -->
+
+	<!-- ページリスト -->
+	@PageListArea()
+	<!-- ページリスト -->
+</div>
+
+<div class="main-content-detail" id="lpDetailBody">
+	<!-- ページ詳細 -->
+	@PageDetailArea()
+	<!-- ページ詳細 -->
+</div>
+
+<!-- モーダル：商品設定 -->
+@ProductModal(sessionWrapper)
+<!-- モーダル：商品設定 -->
+
+@Html.Hidden("hideHitCount", this.Model.HitCount)
+
+<script type="text/javascript">
+	$(function() {
+		list.ini();
+		list_group_toggle.ini();
+		dropdown_toggle.ini();
+		custom_scroll.ini();
+		page_url_edit.ini();
+	});
+
+	var lp_list_page = (function ()
+	{
+		var vm;
+		var ltimer;
+		var productSetTemplate;
+		var selectedProductSet;
+		var moveAfterVariationIdList = [];
+		var initCourseOptions = null;
+		var initShowSubscription = false;
+		var defautLpDetail = null;
+		var clipboard =	new ClipboardJS('#url-copy-btn',
+			{
+				text: function (trigger) {
+					return clipboard_url_copy(trigger);
+				}
+			});
+
+		return {
+			ini: function() {
+				vm = {
+					PageId: ko.observable(),
+					PageTitle: ko.observable(),
+					PageUrl: ko.observable(),
+					RangeStartDate: ko.observable(),
+					RangeStartTime: ko.observable(),
+					RangeEndDate: ko.observable(),
+					RangeEndTime: ko.observable(),
+					ProductChooseType: ko.observable(),
+					CanSelectCheckboxOfProductChooseTypes: ko.observable(),
+					UserRegistrationType: ko.observable(),
+					LoginFormType: ko.observable(),
+					SocialLoginUseType: ko.observable(),
+					ChoiceUnpermittedPaymentIds: ko.observableArray([]),
+					UnpermittedPaymentIds: ko.observableArray([]),
+					ChoiceDefaultCheckedPayment: ko.observableArray([]),
+					PaymentChooseType: ko.observable(),
+					DefaultPaymentId: ko.observable(),
+					EfoCubeUseFlg: ko.observable(),
+					OrderConfirmPageSkipFlg: ko.observable(),
+					MailAddressConfirmFormUseFlg: ko.observable(),
+					NoveltyUseFlg: ko.observable(),
+					ChoiceSocialLoginList: ko.observableArray([]),
+					ChoiceTagSettingList: ko.observableArray([]),
+					SocialLoginList: ko.observableArray([]),
+					TagSettingList: ko.observableArray([]),
+					IsModify: ko.observable(),
+					IsDesignModify: ko.observable(),
+					publicstatuslist: ko.observableArray([
+						{ text: "公開", value: "PUBLISHED" },
+						{ text: "非公開", value: "UNPUBLISHED" }
+					]),
+					PublicStatus: ko.observable(),
+					IsRegister: ko.observable(),
+					ProductSets: ko.observableArray([]),
+					PageList: ko.observableArray([]),
+					SearchWord: ko.observable(),
+					PublicDateKbn: ko.observable(),
+					SearchPublicStatus: ko.observable(),
+					SearchPublicStatusList: ko.observableArray([
+						{ text: "", value: "" },
+						{ text: "公開", value: "PUBLISHED" },
+						{ text: "非公開", value: "UNPUBLISHED" }
+					]),
+					SearchPublicDesignMode: ko.observable(),
+					SearchPublicDesignModeList: ko.observableArray([
+						{ text: "", value: "" },
+						{ text: "デフォルト", value: "@Constants.FLG_LANDINGPAGEDESIGN_DESIGN_MODE_DEFAULT" },
+						{ text: "カスタム", value: "@Constants.FLG_LANDINGPAGEDESIGN_DESIGN_MODE_CUSTOM" }
+					]),
+					DateChangeList: ko.observableArray([
+						{ text: "", value: "UNSELECTED" },
+						{ text: "1日以内", value: "DAY" },
+						{ text: "1週間以内", value: "WEEK" },
+						{ text: "1か月以内", value: "MONTH" },
+						{ text: "3か月以内", value: "THREEMONTH" },
+						{ text: "3か月以降", value: "AFTERTHREEMONTH" }
+					]),
+					BeforePageUrlInput: '',
+					DownKeys: '',
+					CopySourceId: '',
+					MetadataDesc: ko.observable(),
+					ManagementTitle: ko.observable(),
+					product_set_remove: function() {
+						if(vm.ProductSets().length > 1){
+							vm.ProductSets.remove(this);
+						}else{
+							notification.show("商品選択肢は１つ以上設定してください。", 'info', 'fadeout');
+						}
+						if ($(".set_name").length === 1) {
+							$(".set_name").hide();
+							vm.ProductSets()[0].CheckHideNormalSettingWrapper("true");
+							$('[data-course-purchase-setting]')['course-purchase-setting']();
+							$('[data-course-purchase-setting]')['course-purchase-setting']('initSubsCourseHandle');
+						}
+					},
+					product_set_modify: function() {
+						selectedProductSet = this;
+						modal.open('#modal-item-list', 'modal-size-m modal-item-list');
+						$('.item-search-result').html('');
+						$('#ParamModel_ProductName').val('');
+						$('#ParamModel_ProductId').val('');
+					},
+					can_preview: function() {
+						var result = false;
+						vm.ProductSets().forEach(function(productSet) {
+							if (productSet.Products().length > 0 && productSet.ValidFlg()) {
+								result = true;
+								return;
+							}
+						});
+						return result;
+					},
+					get_selected_product_set: function() {
+						selectedProductSet = this;
+					},
+					CanDisplayControlCartListLp: ko.observable(),
+					CanEditShortUrl: ko.observable(),
+					DesignMode: ko.observable(),
+					BefDesignMode: ko.observable(),
+					CanAuthenticationUser: function () {
+						var authenticationOfUser = ('@Constants.PERSONAL_AUTHENTICATION_OF_USER_REGISTRATION_OPTION_ENABLED').toLowerCase() === 'true'
+						return authenticationOfUser;
+					},
+					PersonalAuthenticationUseFlg: ko.observable(),
+				}
+
+				vm.UnpermittedPaymentIdsText =  ko.computed(function() {
+					return vm.UnpermittedPaymentIds().join(',');
+				}, this);
+
+				vm.SocialLoginListText =  ko.computed(function() {
+					return vm.SocialLoginList().join(',');
+				}, this);
+
+				vm.TagSettingListText =  ko.computed(function() {
+					return vm.TagSettingList().join(',');
+				}, this);
+
+				// 商品セット 有効チェックボックスID割り当て
+				ko.bindingHandlers.validIdAttribute = {
+					init: function(element, valueAccessor, allBindings) {
+						var param = valueAccessor();
+						element.id  = 'validIdAttribute_' + param;
+					}
+				};
+
+				// 商品セット 有効チェックボックス Label設定
+				ko.bindingHandlers.validForAttribute = {
+					init: function(element, valueAccessor, allBindings) {
+						var param = valueAccessor();
+						element.htmlFor = 'validIdAttribute_' + param;
+					}
+				};
+
+				// vmバインド
+				ko.applyBindings(vm);
+
+				// get default LP detail and render detail page
+				get_lp_default_dropDown_list(function (){
+					var openDetailId = '@Model.OpenDetailPageId';
+
+					// IDの指定がある場合は詳細開いた状態にする
+					if (openDetailId != '') {
+						set_detail_datas(openDetailId);
+						list.open();
+					}
+
+					var urlHash = location.hash;
+					if (urlHash) {
+						var pageId = urlHash.replace("#page", "");
+						$.ajax({
+							type: "POST",
+							url: "@Url.Action("ExistPage")",
+							data: { 'pageId': pageId }
+						}).done(function(data) {
+							if (data.result === "true") {
+								set_detail_datas(pageId);
+							} else {
+								setTimeout(function() { notification.show('ページを開くことに失敗しました。', 'warning', 'fadeout'); }, 200);
+							}
+						});
+					}
+				});
+
+				get_page_list(true);
+				change_register_state();
+
+				clipboard.off('success').on('success',
+					function(e) {
+						notification.show("「" + e.text + "」をクリップボードにコピーしました", 'info', 'fadeout');
+						e.clearSelection();
+					}
+				);
+				lp_multi_select();
+			},
+			set_detail_datas: function(id) {
+				set_detail_datas(id);
+			},
+			reset: function() {
+				this.set_detail_datas(vm.PageId());
+			},
+			open_new_page: function() {
+				var url = '@Url.Action("GetLpDefaultDropDownList")';
+				$.ajax({
+					url: url,
+					type: 'POST',
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function(data) {
+						vm.PageId('');
+						vm.PageTitle('');
+						vm.PageUrl('new_page');
+						vm.RangeStartDate('');
+						vm.RangeStartTime('');
+						vm.RangeEndDate('');
+						vm.RangeEndTime('');
+						vm.ProductChooseType('DONOTCHOOSE');
+						vm.UserRegistrationType('');
+						vm.LoginFormType(true);
+						vm.SocialLoginUseType('ALL');
+						vm.EfoCubeUseFlg(true);
+						vm.OrderConfirmPageSkipFlg(false);
+						vm.MailAddressConfirmFormUseFlg(true);
+						vm.NoveltyUseFlg(false);
+						vm.PublicStatus('UNPUBLISHED');
+						vm.IsModify(false);
+						vm.IsDesignModify(false);
+						vm.IsRegister(true);
+						vm.CopySourceId = '';
+						vm.ProductSets.splice(vm.ProductSets.length);
+						vm.PaymentChooseType('');
+						vm.DefaultPaymentId('');
+						vm.CanDisplayControlCartListLp(true);
+						vm.CanSelectCheckboxOfProductChooseTypes(true);
+						vm.CanEditShortUrl(data.CanEditShortUrl);
+						vm.DesignMode('DEFAULT');
+						vm.BefDesignMode('DEFAULT');
+						vm.PersonalAuthenticationUseFlg(false);
+						vm.ChoiceDefaultCheckedPayment.splice(vm.ChoiceDefaultCheckedPayment.length);
+						for (var i = 0; i < data.ChoiceDefaultCheckedPayment.length; i++) {
+							vm.ChoiceDefaultCheckedPayment.push(data.ChoiceDefaultCheckedPayment[i]);
+						}
+						vm.UnpermittedPaymentIds.splice(vm.UnpermittedPaymentIds.length);
+						vm.ChoiceUnpermittedPaymentIds.splice(vm.ChoiceUnpermittedPaymentIds.length);
+						for (var i = 0; i < data.ChoiceUnpermittedPaymentIds.length; i++) {
+							vm.ChoiceUnpermittedPaymentIds.push(data.ChoiceUnpermittedPaymentIds[i]);
+						}
+						$('#ddlUnpermittedPaymentIds').val(vm.UnpermittedPaymentIds());
+						$('#ddlUnpermittedPaymentIds').multiselect('refresh');
+						vm.SocialLoginList.splice(vm.SocialLoginList.length);
+						vm.ChoiceSocialLoginList.splice(vm.ChoiceSocialLoginList.length);
+						for (var i = 0; i < data.ChoiceSocialLoginList.length; i++) {
+							vm.ChoiceSocialLoginList.push(data.ChoiceSocialLoginList[i]);
+						}
+						$('#ddlChoiceSocialLoginList').val(vm.SocialLoginList());
+						$('#ddlChoiceSocialLoginList').multiselect('refresh');
+						vm.TagSettingList.splice(vm.TagSettingList.length);
+						vm.ChoiceTagSettingList.splice(vm.ChoiceTagSettingList.length);
+						for (var i = 0; i < data.ChoiceTagSettingList.length; i++) {
+							vm.ChoiceTagSettingList.push(data.ChoiceTagSettingList[i]);
+						}
+						$('#ddlChoiceTagSettingList').val(vm.TagSettingList());
+						$('#ddlChoiceTagSettingList').multiselect('refresh');
+						var clone = $.extend(true, {}, productSetTemplate);
+						clone.SetName = ko.observable('');
+						clone.ValidFlg = ko.observable(true);
+						clone.Products = ko.observableArray([]);
+						clone.id = getUniqueId();
+						clone.CourseOptions = get_SubscriptionBoxes();
+						clone.SubscriptionBoxCourseFlg = ko.observable(false);
+						clone.HideNotSubsEle = ko.observable("");
+						clone.CheckHideNormalSettingWrapper = ko.observable("true");
+						clone.showSubscription = ko.observable(data.EnabledSubscriptionBox);
+						initShowSubscription = data.EnabledSubscriptionBox;
+						vm.ProductSets.push(clone);
+						if($('.set_name').length !==1) $('.set_name').show();
+						slide_check.ini();
+						vm.MetadataDesc('');
+						vm.ManagementTitle('');
+						set_period_input_by_vm();
+						set_default_image_form();
+						list.open();
+						$("#search_keyword").addClass("placeholder-display-none");
+					},
+					function() { to_error(); }
+				);
+			},
+			recreate_all_file: function() {
+				var url = '@Url.Action("RecreateAllFile")';
+				$.ajax({
+					url: url,
+					type: 'POST',
+					contentType: 'application/json'
+				}).then(
+					function(data) { notification.show('デザインファイル再作成完了', 'info', 'fadeout'); },
+					function() { to_error(); }
+				);
+			},
+			delete_lp: function() {
+				var post_data = { pageId: vm.PageId() };
+				var abtestEnabled = ('@Constants.AB_TEST_OPTION_ENABLED').toLowerCase();
+				if (abtestEnabled === 'true') {
+					var url = '@Url.Action("GetCountInAbTestItemByPageId")';
+					$.ajax({
+						url: url,
+						type: 'POST',
+						data: JSON.stringify(post_data),
+						dataType: 'json',
+						contentType: 'application/json'
+					}).then(
+						function(data) {
+							if (data === 0) {
+								deleteLp(post_data);
+							} else {
+								notification.show('本LPページに紐づくABテストが' + data.toString() + '件存在するため、削除できません。', 'warning', 'fixed');
+							}
+						},
+						function() { to_error() }
+					);
+				} else {
+					deleteLp(post_data);
+				}
+			},
+			copy_new: function() {
+				var url = '@Url.Action("GetLpDetailViewModel")';
+				var post_data = { pageId: vm.PageId() };
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: JSON.stringify(post_data),
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function(data) { change_copy_vm(data); },
+					function() { to_error(); }
+				);
+			},
+			remove_product_vm: function(data) {
+				for (i = 0; i < vm.ProductSets().length; i++) {
+					vm.ProductSets()[i].Products.remove(data);
+				}
+			},
+			upd: function() {
+				if ((vm.DesignMode() != vm.BefDesignMode())
+						&& (confirm('デザインが初期化されます。よろしいですか？') == false)) {
+					return false;
+				}
+				checkOtherOperatorFileOpening('lPageId' + vm.PageId()).done(function(result) {
+					if (result !== "") {
+						notification.show(result, 'warning', 'fixed');
+						return;
+					} else {
+						loading_animation.start();
+						var url = '@Url.Action("Update")';
+						var post_data = create_post_input();
+						$.ajax({
+							url: url,
+							type: 'POST',
+							data: JSON.stringify(post_data),
+							dataType: 'json',
+							contentType: 'application/json'
+						}).then(
+							function(data) { upd_ok(data); },
+							function() { to_error(); }
+						);
+					}
+				});
+			},
+			regi: function() {
+				loading_animation.start();
+				var url = '@Url.Action("Register")';
+				var post_data = create_post_input();
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: JSON.stringify(post_data),
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					// 1つめは通信成功時のコールバック
+					function(data) { regi_ok(data); },
+					// 2つめは通信失敗時のコールバック
+					function() { to_error(); });
+			},
+			set_product_view_html: function(j) {
+				var k;
+				if ($('#item-search-result-swap-check').prop('checked')) {
+					if (j.ProductSets[0].Products.length > 1) {
+						for (var q = 0; q < j.ProductSets[0].Products.length - 1; q++) {
+							if (j.ProductSets[0].Products[0].ShippingId !==	j.ProductSets[0].Products[q + 1].ShippingId) {
+								notification.show(
+									'異なる配送種別の商品を１つの商品選択肢に設定できません。',
+									'warning',
+									'fadeout');
+								return;
+							}
+						}
+					}
+					selectedProductSet.Products(j.ProductSets[0].Products);
+				} else {
+					for (var i = 0; i < j.ProductSets[0].Products.length; i++) {
+						var containIndex = -1;
+						for (k = 0; k < selectedProductSet.Products().length; k++) {
+							if (j.ProductSets[0].Products[i].ShippingId !== selectedProductSet.Products()[k].ShippingId) {
+								notification.show(
+									'商品「' +
+									j.ProductSets[0].Products[i].ProductId +
+									'」の配送種別が他の商品と一致しません、別の商品選択肢に入れてください。',
+									'warning',
+									'fadeout');
+								return;
+							}
+							if (j.ProductSets[0].Products[i].ProductId ===
+								selectedProductSet.Products()[k].ProductId &&
+								j.ProductSets[0].Products[i].VariationId ===
+								selectedProductSet.Products()[k].VariationId) {
+								containIndex = k;
+								break;
+							}
+						}
+						// 設定済みの商品はpushしない
+						if (containIndex !== -1) {
+							continue;
+						}
+						selectedProductSet.Products.push(j.ProductSets[0].Products[i]);
+					}
+				}
+				for (k = 0; k < selectedProductSet.Products().length; k++) {
+					selectedProductSet.Products()[k].PageId = vm.PageId();
+				}
+
+				if (moveAfterVariationIdList.length !== 0) {
+					for (var m = 0; m < j.ProductSets[0].Products.length; m++) {
+						moveAfterVariationIdList.push(j.ProductSets[0].Products[m].VariationId);
+					}
+					set_variation_sort_number(moveAfterVariationIdList);
+				} else {
+					var l = selectedProductSet.Products().length - j.ProductSets[0].Products.length;
+					var maxVariationSortNumber = 0;
+					if (l >= 1) {
+						maxVariationSortNumber = selectedProductSet.Products()[0].VariationSortNumber;
+					}
+					for (var p = 0; p < l - 1; p++) {
+						if (selectedProductSet.Products()[p].VariationSortNumber <
+							selectedProductSet.Products()[p + 1].VariationSortNumber) {
+							maxVariationSortNumber = selectedProductSet.Products()[p + 1].VariationSortNumber;
+						}
+					}
+					for (var n = 0; n < j.ProductSets[0].Products.length; n++) {
+						selectedProductSet.Products()[l + n].VariationSortNumber = maxVariationSortNumber + n + 1;
+					}
+				}
+				modal.close();
+			},
+			open_designer_page: function (designType) {
+				var url = '@Url.Action("Designer")?actionStatus=@ActionStatus.Update&pageId=' + vm.PageId() + '&designType=' + designType;
+				open_window(url, 'Designer', '');
+			},
+			open_preview_page: function(designType) {
+				var input = create_post_input();
+				var url = '@Url.Action("CreatePreviewFileListPage")';
+				var post_data = { input: input, designType: designType };
+				@* 終わってからプレビュー飛ばす用コールバック指定 *@
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: JSON.stringify(post_data),
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function(data) { compaction(data.previewKey, designType) },
+					function() { to_error() }
+				);
+			},
+			get_page_list: function (pageInit) {
+				get_page_list(pageInit);
+			},
+			keep_bef_url: function() {
+				vm.BeforePageUrlInput = vm.PageUrl();
+			},
+			set_bef_url: function() {
+				vm.PageUrl(vm.BeforePageUrlInput);
+			},
+			add_product_set: function() {
+				var clone = $.extend(true, {}, productSetTemplate);
+				clone.SetName = ko.observable('');
+				clone.ValidFlg = ko.observable(true);
+				clone.Products = ko.observableArray([]);
+				clone.id = getUniqueId();
+				clone.CourseOptions = get_SubscriptionBoxes();
+				clone.SubscriptionBoxCourseFlg = ko.observable(false);
+				clone.HideNotSubsEle = ko.observable("");
+				clone.CheckHideNormalSettingWrapper = ko.observable("false");
+				clone.showSubscription = ko.observable(initShowSubscription);
+				vm.ProductSets.push(clone);
+				if($('.set_name').length !==1) $('.set_name').show();
+				slide_check.ini();
+				variation_id_sortable();
+				vm.ProductSets()[0].CheckHideNormalSettingWrapper("false");
+				$('[data-course-purchase-setting]')['course-purchase-setting']();
+				$('[data-course-purchase-setting]')['course-purchase-setting']('initSubsCourseHandle');
+			}
+		}
+
+		function getUniqueId(myStrong){
+			var strong = 1000;
+			if (myStrong) strong = myStrong;
+			return new Date().getTime().toString(16) + Math.floor(strong * Math.random()).toString(16);
+		}
+
+		function set_detail_datas(id) {
+			$(".selected-low").removeClass("selected-low");
+			clearInterval(ltimer);
+			loading_animation.start();
+			var url = '@Url.Action("GetLpDetailViewModel")';
+			var post_data = { pageId: id };
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: JSON.stringify(post_data),
+				dataType: 'json',
+				contentType: 'application/json'
+			}).then(
+				function(data) {
+					checkOtherOperatorFileOpening('lPageId' + id).done(function(result) {
+						$("#" + id).addClass("selected-low");
+						$("#search_keyword").addClass("placeholder-display-none");
+						$('input[value="更新"]').attr('disabled', false);
+						set_image_form();
+
+						if (result !== "") {
+							notification.show(result, 'warning', 'fixed');
+							$('input[value="更新"]').attr('disabled', true);
+						} else {
+							sendOpeningFileName('lPageId' + id);
+							ltimer =
+								setInterval(function() { sendOpeningFileName('lPageId' + id) }, 50 * 1000);
+						}
+					});
+					change_vm(data);
+				},
+				function() { to_error(); }
+			).then(
+				function() { setTimeout(function() {
+					$('[data-course-purchase-setting]')['course-purchase-setting']();
+					loading_animation.end();
+				}, 200); }
+			).then(variation_id_sortable);
+		}
+
+		// ページリスト取得
+		function get_page_list(pagerInit) {
+			loading_animation.start();
+			var post_data = {
+				SearchWord: vm.SearchWord(),
+				PublicDateKbn: $("#form-select-005").val(),
+				SearchPublicStatus: $("#form-select-006").val(),
+				SearchPublicDesignMode: $("#form-select-007").val(),
+				PagerNo: pagerInit ? 1 : $("#pagerNo").val(),
+			};
+			var url = '@Url.Action("GetPageListViewModel")';
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: JSON.stringify(post_data),
+				dataType: 'json',
+				contentType: 'application/json'
+			}).then(
+				function (data) {
+					change_list_vm(data);
+					// 検索条件が指定された場合または
+					// ページ切り替えボタン押下時に検索結果が0件の場合はページャーを初期化
+					if (pagerInit || (data.HitCount == 0)) {
+						var total = data.HitCount;
+						$("#totalHitCount").val(total);
+						$("#previous,#next").hide();
+						$("#total").html("/" + total);
+						$("#pagerNo").val(1);
+						$('#previous').addClass('disabled');
+
+						if (total > displayCount) {
+							$("#pager").html(1 + '-' + displayCount);
+							$('#next').removeClass('disabled');
+							$("#previous,#next").show();
+						} else {
+							$("#pager").html(1 + '-' + total);
+							$('#next').addClass('disabled');
+						}
+					}
+				},
+				function() { to_error(); }
+			).then(
+				function() {
+					setTimeout(function () {
+						$('[data-course-purchase-setting]')['course-purchase-setting']();
+						loading_animation.end();
+					}, 600);
+				}
+			);
+		}
+
+		// リストVM変更
+		function change_list_vm(j) {
+			vm.PageList.splice(vm.PageList.length);
+			for (var i = 0; i < j.Items.length; i++) {
+				vm.PageList.push(j.Items[i]);
+			}
+		}
+
+		// 新規作成状態変更
+		function change_register_state() {
+			var url = '@Url.Action("GetLpRegisterState")';
+			$.ajax({
+				url: url,
+				type: 'POST',
+				contentType: 'application/json'
+			}).then(
+				function(data) {
+					if ($('#lp-count').length) {
+						var text = "現在LP数 " + data.ItemCount + "（最大 @Constants.LPBUILDER_MAXCOUNT）";
+						$('#lp-count').empty();
+						$('#lp-count').append(text);
+
+						if (data.CanLpRegister === false) {
+							$('#lp-new-register').attr('disabled', true);
+							$('#lp-copy-new-register').css('display', 'none');
+							$('#lp-new-register').attr('title', '作成できるLPは最大' + @Constants.LPBUILDER_MAXCOUNT + '件までです。');
+						}
+						else {
+							$('#lp-new-register').attr('disabled', false);
+							$('#lp-copy-new-register').css('display', 'block');
+							$('#lp-new-register').attr('title', '');
+						}
+					}
+				},
+				function() { to_error(); }
+			);
+		}
+
+		// 公開期限VMセット
+		function set_period_input_by_vm() {
+			$('#access-authority-setting-period-start-input-date').val(vm.RangeStartDate());
+			$('#access-authority-setting-period-start-input-time').val(vm.RangeStartTime());
+			$('#access-authority-setting-period-end-input-date').val(vm.RangeEndDate());
+			$('#access-authority-setting-period-end-input-time').val(vm.RangeEndTime());
+			access_authority_setting.period.set($("#access-authority-setting-period-info-value-wrap-"),
+				$("#modal-access-authority-setting-period-"));
+		}
+
+		// 公開期限Hiddenセット
+		function set_period_vm_by_hidden() {
+			vm.RangeStartDate($('.access-authority-setting-period-info-hidden-input-start-date').val());
+			vm.RangeStartTime($('.access-authority-setting-period-info-hidden-input-start-time').val());
+			vm.RangeEndDate($('.access-authority-setting-period-info-hidden-input-end-date').val());
+			vm.RangeEndTime($('.access-authority-setting-period-info-hidden-input-end-time').val());
+		}
+
+		// LP削除
+		function deleteLp(postData) {
+			if (confirm('削除します。よろしいですか？')) {
+				checkOtherOperatorFileOpening('lPageId' + vm.PageId()).done(function(result) {
+					if (result !== "") {
+						notification.show(result, 'warning', 'fixed');
+						return;
+					}
+					else {
+						var url = '@Url.Action("Delete")';
+						$.ajax({
+							url: url,
+							type: 'POST',
+							data: JSON.stringify(postData),
+							dataType: 'json',
+							contentType: 'application/json'
+						}).then(
+							function(data) { del_ok(data) },
+							function() { to_error() }
+						);
+					}
+				});
+			}
+		}
+
+		// 削除OK
+		function del_ok(j) {
+			if (j.result === 'ng') {
+				notification.show(j.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('削除しました。', 'info', 'fadeout');
+				get_page_list(true);
+				change_register_state();
+				list.close();
+			}
+		}
+
+		// コピー新規VM変更
+		function change_copy_vm(j) {
+			vm.PageId(j.PageId);
+			vm.PageTitle(j.PageTitle);
+			vm.ManagementTitle(j.ManagementTitle + '@Constants.COPY_NEW_SUFFIX');
+			vm.MetadataDesc(j.MetadataDesc);
+			vm.PageUrl(j.PageUrl + '_copy');
+			vm.RangeStartDate(j.RangeStartDate);
+			vm.RangeStartTime(j.RangeStartTime);
+			vm.RangeEndDate(j.RangeEndDate);
+			vm.RangeEndTime(j.RangeEndTime);
+			vm.ProductChooseType(j.ProductChooseType);
+			vm.UserRegistrationType(j.UserRegistrationType);
+			vm.LoginFormType(j.LoginFormType);
+			vm.EfoCubeUseFlg(j.EfoCubeUseFlg);
+			vm.SocialLoginUseType(j.SocialLoginUseType);
+			vm.OrderConfirmPageSkipFlg(j.OrderConfirmPageSkipFlg);
+			vm.MailAddressConfirmFormUseFlg(j.MailAddressConfirmFormUseFlg);
+			vm.NoveltyUseFlg(j.NoveltyUseFlg);
+			vm.PaymentChooseType(j.PaymentChooseType);
+			vm.PublicStatus('UNPUBLISHED');
+			vm.CanDisplayControlCartListLp(true);
+			vm.DesignMode(j.DesignMode);
+			vm.BefDesignMode(j.DesignMode);
+			// 画面状態は登録
+			vm.IsModify(false);
+			vm.IsDesignModify(false);
+			vm.IsRegister(true);
+			// コピー元のIDをセット
+			vm.CopySourceId = vm.PageId();
+			vm.PersonalAuthenticationUseFlg(j.PersonalAuthenticationUseFlg);
+
+			set_period_input_by_vm();
+
+			var post_data = { pageId: j.PageId };
+			var url = '@Url.Action("GetLpProductViewModel")';
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: JSON.stringify(post_data),
+				dataType: 'json',
+				contentType: 'application/json'
+			}).then(
+				function(data) {
+					change_copy_product_vm(data);
+					if ($(".set_name").length !== 1) $(".set_name").show();
+					$('[data-course-purchase-setting]')['course-purchase-setting']();
+				},
+				function() { to_error(); }
+			);
+		}
+
+		// コピー新規商品VM変更
+		function change_copy_product_vm(j) {
+			vm.CanSelectCheckboxOfProductChooseTypes(j.CanSelectCheckboxOfProductChooseTypes);
+			vm.ProductSets.splice(vm.ProductSets.length);
+			var needCheckHideNormal = j.ProductSets.length === 1;
+
+			for (var i = 0; i < j.ProductSets.length; i++) {
+				var selectedCourse = j.ProductSets[i].SubscriptionBoxCourseId,
+						subsFlg = j.ProductSets[i].SubscriptionBoxCourseFlg;
+				j.ProductSets[i].SetName = ko.observable(j.ProductSets[i].SetName);
+				j.ProductSets[i].ValidFlg = ko.observable(j.ProductSets[i].ValidFlg);
+
+				var products = [];
+				for (var k = 0; k < j.ProductSets[i].Products.length; k++) {
+					// コピー新規の場合はPageIdを空に
+					var product = j.ProductSets[i].Products[k];
+					// IDはクリア
+					product.PageId = '';
+					products.push(product);
+				}
+				j.ProductSets[i].Products = ko.observableArray(products);
+				j.ProductSets[i].id = getUniqueId();
+				j.ProductSets[i].CourseOptions = get_SubscriptionBoxes(selectedCourse);
+				j.ProductSets[i].SubscriptionBoxCourseFlg = ko.observable(subsFlg);
+				j.ProductSets[i].HideNotSubsEle = subsFlg ? 'd-none' : '';
+				j.ProductSets[i].CheckHideNormalSettingWrapper = ko.observable('' + needCheckHideNormal);
+				j.ProductSets[i].showSubscription = ko.observable(j.EnabledSubscriptionBox);
+				vm.ProductSets.push(j.ProductSets[i]);
+			}
+			slide_check.ini();
+			// IDはクリア
+			vm.PageId('');
+			initShowSubscription = j.EnabledSubscriptionBox;
+		}
+
+		// VM変更
+		function change_vm(j) {
+			vm.PageId(j.PageId);
+			vm.PageTitle(j.PageTitle);
+			vm.PageUrl(j.PageUrl);
+			vm.RangeStartDate(j.RangeStartDate);
+			vm.RangeStartTime(j.RangeStartTime);
+			vm.RangeEndDate(j.RangeEndDate);
+			vm.RangeEndTime(j.RangeEndTime);
+			vm.ProductChooseType(j.ProductChooseType);
+			vm.UserRegistrationType(j.UserRegistrationType);
+			vm.LoginFormType(j.LoginFormType);
+			vm.EfoCubeUseFlg(j.EfoCubeUseFlg);
+			vm.SocialLoginUseType(j.SocialLoginUseType);
+			vm.OrderConfirmPageSkipFlg(j.OrderConfirmPageSkipFlg);
+			vm.MailAddressConfirmFormUseFlg(j.MailAddressConfirmFormUseFlg);
+			vm.NoveltyUseFlg(j.NoveltyUseFlg);
+			vm.PaymentChooseType(j.PaymentChooseType);
+			vm.PublicStatus(j.PublicStatus);
+			vm.MetadataDesc(j.MetadataDesc);
+			vm.ManagementTitle(j.ManagementTitle);
+			vm.CanDisplayControlCartListLp(j.CanDisplayControlCartListLp);
+			vm.CanEditShortUrl(j.CanEditShortUrl);
+			vm.IsModify(true);
+			vm.IsDesignModify(j.DesignMode == '@Constants.FLG_LANDINGPAGEDESIGN_DESIGN_MODE_DEFAULT');
+			vm.IsRegister(false);
+			vm.CopySourceId = '';
+			vm.DesignMode(j.DesignMode);
+			vm.BefDesignMode(j.DesignMode);
+			vm.PersonalAuthenticationUseFlg(j.PersonalAuthenticationUseFlg);
+			vm.ChoiceDefaultCheckedPayment.splice(vm.ChoiceDefaultCheckedPayment.length);
+			for (var i = 0; i < j.ChoiceDefaultCheckedPayment.length; i++) {
+				vm.ChoiceDefaultCheckedPayment.push(j.ChoiceDefaultCheckedPayment[i]);
+			}
+			vm.DefaultPaymentId(j.DefaultPaymentId);
+			vm.UnpermittedPaymentIds.splice(vm.UnpermittedPaymentIds.length);
+			vm.ChoiceUnpermittedPaymentIds.splice(vm.ChoiceUnpermittedPaymentIds.length);
+			for (var i = 0; i < j.ChoiceUnpermittedPaymentIds.length; i++) {
+				vm.ChoiceUnpermittedPaymentIds.push(j.ChoiceUnpermittedPaymentIds[i]);
+			}
+			for (var i = 0; i < j.UnpermittedPaymentIds.length; i++) {
+				vm.UnpermittedPaymentIds.push(j.UnpermittedPaymentIds[i]);
+			}
+			$('#ddlUnpermittedPaymentIds').val(vm.UnpermittedPaymentIds());
+			$('#ddlUnpermittedPaymentIds').multiselect('refresh');
+
+			vm.SocialLoginList.splice(vm.SocialLoginList.length);
+			vm.ChoiceSocialLoginList.splice(vm.ChoiceSocialLoginList.length);
+			for (var i = 0; i < j.ChoiceSocialLoginList.length; i++) {
+				vm.ChoiceSocialLoginList.push(j.ChoiceSocialLoginList[i]);
+			}
+			for (var i = 0; i < j.SocialLoginList.length; i++) {
+				vm.SocialLoginList.push(j.SocialLoginList[i]);
+			}
+			$('#ddlChoiceSocialLoginList').val(vm.SocialLoginList());
+			$('#ddlChoiceSocialLoginList').multiselect('refresh');
+
+			vm.TagSettingList.splice(vm.TagSettingList.length);
+			vm.ChoiceTagSettingList.splice(vm.ChoiceTagSettingList.length);
+			for (var i = 0; i < j.ChoiceTagSettingList.length; i++) {
+				vm.ChoiceTagSettingList.push(j.ChoiceTagSettingList[i]);
+			}
+			for (var i = 0; i < j.TagSettingList.length; i++) {
+				vm.TagSettingList.push(j.TagSettingList[i]);
+			}
+			$('#ddlChoiceTagSettingList').val(vm.TagSettingList());
+			$('#ddlChoiceTagSettingList').multiselect('refresh');
+
+			set_period_input_by_vm();
+
+			var post_data = { pageId: j.PageId };
+			var url = '@Url.Action("GetLpProductViewModel")';
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: JSON.stringify(post_data),
+				dataType: 'json',
+				contentType: 'application/json'
+			}).then(
+				function(data) {
+					productSetTemplate = data.ProductSetTemplate;
+					change_product_vm(data);
+				},
+				function() { to_error(); }
+			);
+			list.open();
+		}
+
+		// 商品変更
+		function change_product_vm(j) {
+			vm.CanSelectCheckboxOfProductChooseTypes(j.CanSelectCheckboxOfProductChooseTypes);
+			vm.ProductSets.splice(vm.ProductSets.length);
+			var needCheckHideNormal = j.ProductSets.length === 1;
+
+			for (var i = 0; i < j.ProductSets.length; i++) {
+				var selectedCourse = j.ProductSets[i].SubscriptionBoxCourseId,
+						subsFlg = j.ProductSets[i].SubscriptionBoxCourseFlg;
+
+				j.ProductSets[i].SetName = ko.observable(j.ProductSets[i].SetName);
+				j.ProductSets[i].ValidFlg = ko.observable(j.ProductSets[i].ValidFlg);
+				j.ProductSets[i].Products = ko.observableArray(j.ProductSets[i].Products);
+				j.ProductSets[i].id = getUniqueId();
+
+				j.ProductSets[i].CourseOptions = get_SubscriptionBoxes(selectedCourse);
+				j.ProductSets[i].SubscriptionBoxCourseFlg = ko.observable(subsFlg);
+				j.ProductSets[i].HideNotSubsEle = subsFlg ? 'd-none' : '';
+				j.ProductSets[i].CheckHideNormalSettingWrapper = ko.observable('' + needCheckHideNormal);
+				j.ProductSets[i].showSubscription = ko.observable(j.EnabledSubscriptionBox);
+
+				vm.ProductSets.push(j.ProductSets[i]);
+			}
+			if ($(".set_name").length !== 1) $(".set_name").show();
+			slide_check.ini();
+			initShowSubscription = j.EnabledSubscriptionBox;
+		}
+
+		// 更新OK
+		function upd_ok(j) {
+			loading_animation.end();
+			if (j.result === 'ng') {
+				notification.show(j.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('更新しました。', 'info', 'fadeout');
+				set_detail_datas(j.id);
+				get_page_list(true);
+			}
+		}
+
+		// 登録OK
+		function regi_ok(j) {
+			loading_animation.end();
+			if (j.result === 'ng') {
+				notification.show(j.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('登録しました。', 'info', 'fadeout');
+				set_detail_datas(j.id);
+				get_page_list(true);
+				change_register_state();
+			}
+		}
+
+		// 入力値生成
+		function create_post_input() {
+			set_period_vm_by_hidden();
+			var post_data = {
+				PageId: vm.PageId(),
+				PageTitle: vm.PageTitle(),
+				PageUrl: vm.PageUrl(),
+				RangeStartDate: vm.RangeStartDate(),
+				RangeStartTime: vm.RangeStartTime(),
+				RangeEndDate: vm.RangeEndDate(),
+				RangeEndTime: vm.RangeEndTime(),
+				ProductChooseType: vm.ProductChooseType(),
+				UserRegistrationType: vm.UserRegistrationType(),
+				LoginFormType: vm.LoginFormType(),
+				EfoCubeUseFlg: vm.EfoCubeUseFlg(),
+				SocialLoginUseType: vm.SocialLoginUseType(),
+				OrderConfirmPageSkipFlg : vm.OrderConfirmPageSkipFlg(),
+				MailAddressConfirmFormUseFlg: vm.MailAddressConfirmFormUseFlg(),
+				NoveltyUseFlg: vm.NoveltyUseFlg(),
+				PublicStatus: vm.PublicStatus(),
+				CopySourceId: vm.CopySourceId,
+				MetadataDesc: vm.MetadataDesc(),
+				ManagementTitle: vm.ManagementTitle(),
+				ProductSets: [],
+				CopySourceId: vm.CopySourceId,
+				SocialLoginList: vm.SocialLoginList().join(','),
+				TagSettingList: vm.TagSettingList().join(','),
+				UnpermittedPaymentIds: vm.UnpermittedPaymentIds().join(','),
+				PaymentChooseType: vm.PaymentChooseType(),
+				DefaultPaymentId: vm.DefaultPaymentId(),
+				CanDisplayControlCartListLp: vm.CanDisplayControlCartListLp(),
+				CanEditShortUrl: vm.CanEditShortUrl(),
+				DesignMode: vm.DesignMode(),
+				PersonalAuthenticationUseFlg: vm.PersonalAuthenticationUseFlg(),
+			};
+			for (i = 0; i < vm.ProductSets().length; i++) {
+				var subsFlag = vm.ProductSets()[i].SubscriptionBoxCourseFlg(),
+					subsID = "",
+					nameVal =  vm.ProductSets()[i].SetName(),
+					prods = vm.ProductSets()[i].Products();
+
+				if (subsFlag) {
+					prods = [];
+					subsID = vm.ProductSets()[i].CourseOptions.selected()[0];
+				}
+				post_data.ProductSets.push({
+					PageId: vm.PageId(),
+					BranchNo: (i + 1),
+					Products:vm.ProductSets()[i].Products(),
+					ValidFlg:vm.ProductSets()[i].ValidFlg(),
+					SetName:vm.ProductSets()[i].SetName(),
+					SubscriptionBoxCourseId: subsID,
+					SubscriptionBoxCourseFlg: subsFlag
+				});
+			}
+			return post_data;
+		}
+
+		// エラー処理
+		function to_error() {
+			// エラーでたらエラーページに飛ぶようになったのでコメントアウト
+			// window.location.href = '@this.Url.Action("", Constants.CONTROLLER_W2CMS_MANAGER_ERROR, new { ErrorPageLayout = Constants.LAYOUT_PATH_DEFAULT, }) ';
+		}
+
+		// コピー
+		function clipboard_url_copy(trigger) {
+			return '@(Constants.PROTOCOL_HTTPS + Constants.SITE_DOMAIN + Constants.PATH_ROOT_FRONT_PC + Constants.CMS_LANDING_PAGE_DIR_URL_PC)' +
+					vm.PageUrl() +
+					'.aspx';
+		}
+
+		// プレビューページ表示
+		// プレビューファイル生成完了処理
+		function compaction(previewKey, designType) {
+			var url = '@Url.Action("Preview")?designType=' + designType + '&previewKey=' + previewKey;
+			if (designType === 'PC') {
+				open_window(url, 'PreviewPC', '');
+			} else {
+				open_window(url, 'PreviewSP', 'width=450,height=800,scrollbars=yes');
+			}
+		}
+
+		function lp_multi_select() {
+			var linkText = {
+				checkAll: { text: '全選択', title: '全選択' },
+				uncheckAll: { text: '全選択解除', title: '全選択解除' }
+			};
+			$(".lp_multi_select").each(function() {
+				var tgt = $(this);
+				tgt.multiselect({
+					buttonWidth: 'auto',
+					menuWidth: 300,
+					linkInfo: linkText,
+					noneSelectedText: '　',
+					selectedList: 4,
+					selectedText: "#個選択中"
+				});
+			});
+		}
+
+		// 商品を並び替える
+		function variation_id_sortable() {
+			setTimeout(function() {
+				$(".feature-selected-item-list-body").each(function() {
+					var elements = $(this);
+					elements.each(function() {
+						$(this).sortable({
+							start: function(e, ui) {
+								ui.placeholder.height(ui.item.height());
+							},
+							handle: ".list-col-drag",
+							axis: "y",
+							placeholder: "ui-state-highlight",
+							update: function(e, ui) {
+								moveAfterVariationIdList = $(this).sortable("toArray", { attribute: 'dataListVariationId' });
+								set_variation_sort_number(moveAfterVariationIdList);
+							}
+						});
+					});
+				});
+			},
+			200);
+		}
+
+		// バリュエーション順序をセット
+		function set_variation_sort_number(moveAfterVariationIdList) {
+			for (var i = 0; i < moveAfterVariationIdList.length; i++) {
+				for (var j = 0; j < selectedProductSet.Products().length; j++) {
+					if (moveAfterVariationIdList[i] ===
+						selectedProductSet.Products()[j].VariationId) {
+						selectedProductSet.Products()[j].VariationSortNumber = i + 1;
+					}
+				}
+			}
+		}
+
+		// to get defaut LP detail
+		function get_lp_default_dropDown_list(cb, err) {
+			if (defautLpDetail) {
+				cb && typeof cb === 'function' && cb(defautLpDetail);
+				return;
+			}
+
+			var url = '@Url.Action("GetLpDefaultDropDownList")';
+			$.ajax({
+				url: url,
+				type: 'POST',
+				dataType: 'json',
+				contentType: 'application/json'
+			}).then(
+				function(data) {
+					console.log(data.SubscriptionBoxes);
+					initCourseOptions = (data.SubscriptionBoxes === null)
+						? null
+						: JSON.stringify(data.SubscriptionBoxes);
+					defautLpDetail = data;
+
+					cb && typeof cb === 'function' && cb(data);
+
+				},
+				function() {
+					err && typeof err === 'function' && err();
+			});
+		}
+
+		// get subscription data to bind UI render
+		function get_SubscriptionBoxes (selectedOp) {
+
+				if (initCourseOptions === null) return [];
+
+				console.log(initCourseOptions);
+				var options  = initCourseOptions ? [""].concat(JSON.parse(initCourseOptions)) : [],	selected = [];
+
+				if (selectedOp) selected = [selectedOp];
+				else selected = options.filter((op) => {return !!op.Selected});
+
+				!selected.length && options.length && selected.push(options[0].Value);
+
+				var courseOptions = {
+					options: ko.observableArray(options),
+					selected: ko.observable(selected)
+				}
+				return courseOptions;
+		}
+	})();
+
+	lp_list_page.ini();
+	keyword_ini();
+
+	function set_product_view_html(j) {
+		lp_list_page.set_product_view_html(j);
+	}
+
+	// 画像フォームをセット
+	function set_image_form() {
+		$.ajax({
+			url: "@Url.Action("SetImageForm", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_LANDING_PAGE)",
+			type: "POST",
+			traditional: true
+		}).done(function (viewHtml) {
+			$('#uploadImage').html(viewHtml);
+			set_uploaded_image();
+		});
+	}
+
+	// アップロード済み画像をセット
+	function set_uploaded_image() {
+		$.ajax({
+			url: "@Url.Action("SetUploadedImage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_LANDING_PAGE)",
+			type: "POST",
+			data: { 'pageId': $(".pageId").val() },
+			traditional: true,
+		}).done(function (viewHtml) {
+			$('#uploadedImage').html(viewHtml);
+		});
+	}
+
+	// デフォルト画像フォームをセット
+	function set_default_image_form() {
+		$.ajax({
+		url: "@Url.Action("SetImageForm", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_LANDING_PAGE)",
+			type: "POST",
+			traditional: true
+		}).done(function (viewHtml) {
+			$('#uploadImage').html(viewHtml);
+		});
+	}
+
+	// 画像削除
+	function delete_image(imageNo) {
+		loading_animation.start();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("DeleteImage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_LANDING_PAGE)",
+			data: {
+				'imageNo': imageNo,
+				'pageId': $(".pageId").val()
+			}
+		}).done(function (errorMessage) {
+			setTimeout(function () { loading_animation.end(); }, 200);
+			// 警告表示を削除
+			$('.notification-message-warning').remove();
+			if (errorMessage === "") {
+				set_image_form();
+			} else {
+				notification.show(errorMessage, 'warning', 'fixed');
+			}
+		}).fail(function () {
+		});
+	};
+
+	/**
+	* キーワードフォーム初期化
+	*/
+	function keyword_ini() {
+		$('#search_keyword').off("keydown").on("keydown",
+			function(e) {
+				if ((e.which && e.which === 13) || (e.keyCode && e.keyCode === 13)) {
+					// knockoutはフォーカス外したときにデータバインドされるぽいので、フォーカス一度外す
+					$('#search_keyword').blur();
+					lp_list_page.get_page_list(true);
+					$('#search_keyword').focus();
+					return false;
+				}
+				return true;
+			}
+		);
+	}
+
+	// ショートURL設定
+	function open_short_url_setting(url) {
+		url ='@(Constants.PATH_ROOT_FRONT_PC + Constants.CMS_LANDING_PAGE_DIR_URL_PC)' + url + '.aspx';
+		var link = '@Html.Raw(shortUrlLink)&LongUrl=' + url + "#tbdyAddShortUrl";
+		open_window(link, '',
+			'width=1200,height=850,top=50,left=200,status=yes,scrollbars=yes,resizable=yes');
+	}
+
+	// エンターキーによるsubmit禁止
+	prohibit_submission();
+
+	// 表示件数
+	var displayCount = @Constants.CONST_DISP_CONTENTS_DEFAULT_LIST;
+
+	// ページャー数を増やす
+	function add_pager_no() {
+		if ($("#next").hasClass('disabled')) return;
+		var nextPagerNo = parseInt($("#pagerNo").val()) + parseInt(1);
+		var totalHitCount = $("#totalHitCount").val();
+		var max = nextPagerNo * displayCount;
+
+		if (max >= totalHitCount) {
+			max = totalHitCount;
+			$('#next').addClass('disabled');
+		}
+
+		$("#pagerNo").val(nextPagerNo);
+		lp_list_page.get_page_list(false);
+		change_pager(nextPagerNo, max);
+	}
+
+	// ページャー数を減らす
+	function reduce_pager_no() {
+		if ($("#previous").hasClass('disabled')) return;
+
+		var nextPagerNo = parseInt($("#pagerNo").val()) - parseInt(1);
+		var max = nextPagerNo * displayCount;
+
+		$("#pagerNo").val(nextPagerNo);
+		lp_list_page.get_page_list(false);
+		change_pager(nextPagerNo, max);
+		$('#next').removeClass('disabled');
+	}
+
+	// ページャー変更
+	function change_pager(nextPagerNo, max) {
+		$("#pager").html(1 + (nextPagerNo - 1) * displayCount + '-' + max);
+		if ($("#pagerNo").val() === '1') {
+			$('#previous').addClass('disabled');
+		} else {
+			$('#previous').removeClass('disabled');
+		}
+	}
+
+	$('#form-select-005,#form-select-006,#form-select-007').change(function () {
+		lp_list_page.get_page_list(true);
+	});
+		// 例外項目定義
+		var exceptions = ["keyword", "ProductId", "ProductName"];
+
+		// エンターキーによるsubmit禁止
+		prohibit_submission_with_exceptions(exceptions);
+</script>
+
+<!-- subscription course handler -->
+<style>
+	.d-none {
+		display: none !important;
+	}
+</style>
+
+<script type="text/javascript">
+	; (function ($) {
+		'use strict';
+
+		var pluginName = 'course-purchase-setting';
+
+		function Plugin(element, options) {
+			this.element = $(element);
+			this.options = $.extend(
+				{}, $.fn[pluginName].defaults, this.element.data(), options
+			);
+			this.initSubsCourseHandle();
+		}
+
+		Plugin.prototype = {
+			initSubsCourseHandle: function () {
+				this.selector = {};
+				this.initDOMforCoursePurchaseSetting();
+				this.bindEventforCoursePurchaseSetting();
+				this.handleCourseActiveChange(this.$checkCourseActive);
+			},
+
+			initDOMforCoursePurchaseSetting: function () {
+				this.selector.productSetContainer = '.feature-page-element';
+				this.selector.normalSetting = '[data-normal-setting]';
+				this.selector.checkCourseActive = '[data-course-active]';
+				this.selector.eleNotSubscription = '[data-not-subscription]';
+
+				this.$checkCourseActive = this.element.find(this.selector.checkCourseActive);
+				this.DNONEClss = 'd-none';
+			},
+
+			bindEventforCoursePurchaseSetting: function () {
+				var that = this;
+
+				this.$checkCourseActive.bind('change', function () {
+					that.handleCourseActiveChange($(this));
+				});
+			},
+
+			handleCourseActiveChange: function ($el) {
+				var isSubscription = $el.prop('checked');
+
+				var $prodSetContainer = this.element.closest(this.selector.productSetContainer);
+				var $normalSetting = $prodSetContainer.find(this.selector.normalSetting);
+				var $normalSettingWrapper = $prodSetContainer.find('[data-check-hide]');
+				var $eleNotSubs = $prodSetContainer.find(this.selector.eleNotSubscription);
+
+				$normalSettingWrapper.show();
+
+				if (isSubscription) {
+					$normalSetting.hide();
+					$prodSetContainer.find('[data-check-hide="true"]').hide();
+					$eleNotSubs.addClass(this.DNONEClss);
+				} else {
+					$normalSetting.show();
+					$eleNotSubs.removeClass(this.DNONEClss);
+				}
+			}
+		};
+
+		$.fn[pluginName] = function (options, params) {
+			return this.each(function () {
+				var instance = $.data(this, pluginName);
+				if (!instance) {
+					$.data(this, pluginName, new Plugin(this, options));
+				} else if (instance[options]) {
+					instance[options](params);
+				}
+			});
+		};
+
+		$(function () {
+			$('[data-' + pluginName + ']')[pluginName]();
+		});
+	}(jQuery));
+</script>

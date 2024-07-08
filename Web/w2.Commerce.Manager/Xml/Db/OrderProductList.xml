@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文情報商品選択系SQLステートメントXML(OrderProductList.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderProductList>
+
+  <!-- 商品情報一覧取得(受注情報検索用) -->
+  <GetOrderProductList>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 該当情報取得
+        SELECT  w2_ProductView.*,
+                RIGHT(w2_ProductView.variation_id, LEN(w2_ProductView.variation_id) - LEN(w2_ProductView.product_id)) AS v_id,
+                [[ MEMBER_RANK_PRICE_PRODUCTVARIATION ]]
+          FROM  (
+                  SELECT  w2_ProductView.shop_id,
+                          w2_ProductView.product_id,
+                          w2_ProductView.variation_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCT_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductView
+                          [[ PRODUCT_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductView ON
+                (
+                  RowIndex.shop_id = w2_ProductView.shop_id
+                  AND
+                  RowIndex.product_id = w2_ProductView.product_id
+                  AND
+                  RowIndex.variation_id = w2_ProductView.variation_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetOrderProductList>
+  
+</OrderProductList>

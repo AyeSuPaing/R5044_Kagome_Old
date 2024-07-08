@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        DECLARE @TABLE_NAME NVARCHAR(256)
+        DECLARE @COLUMN_NAME NVARCHAR(256)
+        DECLARE @TABLE_ID INTEGER 
+        DECLARE @COLUMN_ID INTEGER 
+        DECLARE @CONSTRAINT_NAME NVARCHAR(256)
+        SET @TABLE_NAME = 'w2_FixedPurchaseWorkflowSetting'
+        SET @COLUMN_NAME = 'cassette_fixed_purchase_stop_unavailable_shipping_area_change'
+
+        --削除したいテーブルのシステムidを取得する
+        SELECT @TABLE_ID = id FROM sys.sysobjects 
+        WHERE xtype = 'U' AND name = @TABLE_NAME
+
+        --削除したいカラムのシステムidを取得する
+        SELECT @COLUMN_ID = column_id FROM sys.columns 
+        WHERE object_id = @TABLE_ID AND name = @COLUMN_NAME
+
+        --削除したい制約名を取得する
+        SELECT @CONSTRAINT_NAME = name FROM sys.sysobjects 
+        WHERE id = (SELECT constid FROM sys.sysconstraints WHERE id = @TABLE_ID AND colid = @COLUMN_ID)
+
+        --確認 => テーブル->制約->制約名->制約をスクリプト化であっているか確認できます。
+        SELECT @CONSTRAINT_NAME
+
+        --制約を削除する
+        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME = @TABLE_NAME AND CONSTRAINT_NAME = @CONSTRAINT_NAME)
+          BEGIN
+            EXEC('ALTER TABLE '+ @TABLE_NAME + ' DROP CONSTRAINT ' + @CONSTRAINT_NAME)
+          END
+        IF NOT EXISTS (SELECT 1　FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_FixedPurchaseWorkflowSetting' AND COLUMN_NAME = 'cassette_fixed_purchase_stop_unavailable_shipping_area_change' AND DATA_TYPE = 'nvarchar(max)')
+          BEGIN
+            ALTER TABLE w2_FixedPurchaseWorkflowSetting ALTER COLUMN cassette_fixed_purchase_stop_unavailable_shipping_area_change nvarchar(MAX) NOT NULL
+          END
+        IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TABLE_NAME AND COLUMN_NAME = @COLUMN_NAME)
+          BEGIN
+            ALTER TABLE w2_FixedPurchaseWorkflowSetting ADD DEFAULT (N'') FOR cassette_fixed_purchase_stop_unavailable_shipping_area_change
+          END
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        IF EXISTS(SELECT * FROM dbo.sysobjects WHERE id = OBJECT_ID(N'[dbo].[w2_MasterExportSetting]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+          BEGIN
+
+          IF NOT EXISTS (SELECT * FROM w2_MasterExportSetting WHERE master_kbn = 'Coordinate' AND setting_id = '001')
+            BEGIN
+            INSERT  [dbo].[w2_MasterExportSetting] 
+                    (
+	                    [shop_id],
+                      [master_kbn],
+                      [setting_id],
+                      [setting_name],
+                      [fields],
+                      [del_flg],
+                      [date_created],
+                      [date_changed],
+                      [last_changed],
+                      [export_file_type]
+                    )
+            VALUES  (
+                      0,
+                      'Coordinate',
+                      '001',
+                      'コーディネートマスタ（削除不可）',
+                      'coordinate_id,coordinate_title,coordinate_url,coordinate_summary,internal_memo,staff_id,real_shop_id,html_title,metadata_desc,display_kbn,display_date',
+                      0,
+                      GETDATE(),
+                      GETDATE(),
+                      'ｗ２ユーザー',
+                      'CSV'
+                    );
+            END
+
+          IF NOT EXISTS (SELECT * FROM w2_MasterExportSetting WHERE master_kbn = 'CoordinateItem' AND setting_id = '001')
+            BEGIN
+            INSERT  [dbo].[w2_MasterExportSetting] 
+            VALUES  (
+                      0,
+                      'CoordinateItem',
+                      '001',
+                      'コーディネートアイテムマスタ（削除不可）',
+                      'coordinate_id,item_no,item_kbn,item_id,item_id2,item_name',
+                      0,
+                      GETDATE(),
+                      GETDATE(),
+                      'ｗ２ユーザー',
+                      'CSV'
+                    );
+            END
+
+          IF NOT EXISTS (SELECT * FROM w2_MasterExportSetting WHERE master_kbn = 'CoordinateCategory' AND setting_id = '001')
+            BEGIN
+            INSERT  [dbo].[w2_MasterExportSetting] 
+            VALUES  (
+                      0,
+                      'CoordinateCategory',
+                      '001',
+                      'コーディネートカテゴリマスタ（削除不可）',
+	                      'coordinate_category_id,coordinate_parent_category_id,coordinate_category_name,seo_keywords,display_order,valid_flg',
+                      0,
+                      GETDATE(),
+                      GETDATE(),
+                      'ｗ２ユーザー',
+                      'CSV'
+                    );
+            END
+
+          IF NOT EXISTS (SELECT * FROM w2_MasterExportSetting WHERE master_kbn = 'Staff' AND setting_id = '001')
+            BEGIN
+            INSERT  [dbo].[w2_MasterExportSetting] 
+            VALUES  (
+                      0,
+                      'Staff',
+                      '001',
+                      'スタッフマスタ（削除不可）',
+	                      'staff_id,staff_name,staff_profile,staff_height,staff_instagram_id,staff_sex,model_flg,operator_id,real_shop_id,valid_flg',
+                      0,
+                      GETDATE(),
+                      GETDATE(),
+                      'ｗ２ユーザー',
+                      'CSV'
+                    );
+            END
+
+        END
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_UserAttribute]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_UserAttribute]
+GO
+/*
+=========================================================================================================
+  Module      : ユーザー属性マスタ (w2_UserAttribute.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_UserAttribute] (
+	[user_id] [nvarchar] (30) NOT NULL,
+	[first_order_date] [datetime],
+	[second_order_date] [datetime],
+	[last_order_date] [datetime],
+	[enrollment_days] AS (DATEDIFF(hour, first_order_date, last_order_date)/24),
+	[away_days] AS (DATEDIFF(hour, last_order_date, GETDATE())/24),
+	[order_amount_order_all] [decimal] NOT NULL DEFAULT (0),
+	[order_amount_order_fp] [decimal] NOT NULL DEFAULT (0),
+	[order_count_order_all] [int] NOT NULL DEFAULT (0),
+	[order_count_order_fp] [int] NOT NULL DEFAULT (0),
+	[order_amount_ship_all] [decimal] NOT NULL DEFAULT (0),
+	[order_amount_ship_fp] [decimal] NOT NULL DEFAULT (0),
+	[order_count_ship_all] [int] NOT NULL DEFAULT (0),
+	[order_count_ship_fp] [int] NOT NULL DEFAULT (0),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_UserAttribute] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_UserAttribute] PRIMARY KEY  CLUSTERED
+	(
+		[user_id]
+	) ON [PRIMARY]
+GO
+	
+			]]>
+    </Statement>
+  </Up>
+</Migration>

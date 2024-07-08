@@ -1,0 +1,3017 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品マスタ系SQLステートメントXML (Product.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<Product>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCountOnCms>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime = getdate()
+
+        SELECT  COUNT(*)
+          FROM  w2_Product
+                [[ PRODUCT_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCountOnCms>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchVariationHitCountOnCms>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime = getdate()
+
+        SELECT  COUNT(*)
+          FROM  w2_ProductVariationView 
+                INNER JOIN w2_Product ON 
+                (
+                  w2_Product.shop_id = w2_ProductVariationView.shop_id 
+                  AND 
+                  w2_Product.product_id = w2_ProductVariationView.product_id
+                )
+                [[ PRODUCT_SEARCH_WHERE ]]
+           /* 不整合データは除外 */
+           AND  w2_ProductVariationView.variation_id IS NOT NULL
+      ]]>
+    </Statement>
+  </GetSearchVariationHitCountOnCms>
+
+  <!-- 検索 -->
+  <SearchOnCms>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime = getdate()
+
+        SELECT  w2_Product.*
+          FROM  (
+                  SELECT  w2_Product.product_id,
+                          w2_Product.shop_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCT_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_PRODUCT
+                          [[ PRODUCT_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Product ON
+                (
+                  RowIndex.shop_id = w2_Product.shop_id
+                  AND
+                  RowIndex.product_id = w2_Product.product_id
+                )
+                [[ PRODUCT_SEARCH_WHERE ]]
+           AND  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchOnCms>
+
+  <!-- 商品マスタ情報取得(CSV出力用) -->
+  <GetProductMaster>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        DECLARE @current_date datetime = getdate()
+
+        SELECT  @@ fields @@
+          FROM  w2_Product
+                [[ PRODUCT_SEARCH_WHERE ]]
+                [[ PRODUCT_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetProductMaster>
+
+  <!-- 商品バリエーションマスタ情報取得(CSV出力用) -->
+  <GetProductVariationMaster>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        DECLARE @current_date datetime = getdate()
+
+        SELECT  @@ fields @@
+          FROM  w2_Product
+                INNER JOIN w2_ProductVariation ON
+                (
+                  w2_Product.shop_id = w2_ProductVariation.shop_id
+                  AND
+                  w2_Product.product_id = w2_ProductVariation.product_id
+                )
+                [[ PRODUCT_SEARCH_WHERE ]]
+                [[ PRODUCT_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetProductVariationMaster>
+
+  <!-- 会員ランク価格取得 -->
+  <GetProductPriceMaster>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        DECLARE @current_date datetime = getdate()
+
+        SELECT  @@ fields @@
+          FROM  w2_Product
+                INNER JOIN w2_ProductPrice ON
+                (
+                  w2_Product.shop_id = w2_ProductPrice.shop_id
+                  AND
+                  w2_Product.product_id = w2_ProductPrice.product_id
+                )
+                [[ PRODUCT_SEARCH_WHERE ]]
+                [[ PRODUCT_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetProductPriceMaster>
+
+  <!-- 商品タグマスタ情報取得(CSV出力用) -->
+  <GetProductTagMaster>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        DECLARE @current_date datetime = getdate()
+
+        SELECT  @@ fields @@
+          FROM  w2_Product
+                LEFT JOIN  w2_ProductTag ON
+                (
+                  w2_Product.product_id = w2_ProductTag.product_id
+                )
+                [[ PRODUCT_SEARCH_WHERE ]]
+                [[ PRODUCT_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetProductTagMaster>
+
+  <!-- 商品拡張項目マスタ情報取得(CSV出力用) -->
+  <GetProductExtendMaster>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        DECLARE @current_date datetime = getdate()
+
+        SELECT  @@ fields @@
+          FROM  w2_Product
+                LEFT JOIN  w2_ProductExtend ON
+                (
+                  w2_Product.shop_id = w2_ProductExtend.shop_id
+                  AND
+                  w2_Product.product_id = w2_ProductExtend.product_id
+                )
+                [[ PRODUCT_SEARCH_WHERE ]]
+                [[ PRODUCT_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetProductExtendMaster>
+
+  <!-- 商品マスタフィールドチェック -->
+  <CheckProductFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_Product
+           WHERE  w2_Product.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductFields>
+
+  <!-- 商品バリエーションマスタフィールドチェック -->
+  <CheckProductVariationFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ProductVariation
+           WHERE  w2_ProductVariation.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductVariationFields>
+
+  <!-- 会員ランク価格マスタフィールドチェック -->
+  <CheckProductPriceFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ProductPrice
+           WHERE  w2_ProductPrice.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductPriceFields>
+
+  <!-- 商品タグマスタフィールドチェック -->
+  <CheckProductTagFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_Product
+                  LEFT JOIN  w2_ProductTag ON
+                  (
+                    w2_Product.product_id = w2_ProductTag.product_id
+                  )
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </CheckProductTagFields>
+
+  <!-- 商品拡張項目マスタフィールドチェック -->
+  <CheckProductExtendFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_Product
+       LEFT JOIN  w2_ProductExtend ON
+                  (
+                    w2_Product.shop_id = w2_ProductExtend.shop_id
+                    AND
+                    w2_Product.product_id = w2_ProductExtend.product_id
+                  )
+           WHERE  w2_Product.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductExtendFields>
+
+  <!-- 検索 -->
+  <SearchVariationOnCms>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime = getdate()
+
+        SELECT  w2_ProductVariationView.*,w2_Product.*
+          FROM  (
+                  SELECT  w2_ProductVariationView.product_id,
+                          w2_ProductVariationView.shop_id,
+                          w2_ProductVariationView.variation_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCT_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductVariationView
+                          INNER JOIN w2_Product ON
+                          (
+                            w2_Product.shop_id = w2_ProductVariationView.shop_id
+                            AND
+                            w2_Product.product_id = w2_ProductVariationView.product_id
+                          )
+                          [[ PRODUCT_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductVariationView ON
+                (
+                  RowIndex.shop_id = w2_ProductVariationView.shop_id
+                  AND
+                  RowIndex.product_id = w2_ProductVariationView.product_id
+                  AND
+                  RowIndex.variation_id = w2_ProductVariationView.variation_id
+                )
+                INNER JOIN w2_Product ON
+                (
+                  RowIndex.shop_id = w2_Product.shop_id
+                  AND
+                  RowIndex.product_id = w2_Product.product_id
+                )
+                [[ PRODUCT_SEARCH_WHERE ]]
+           /* 不整合データは除外 */
+           AND  w2_ProductVariationView.variation_id IS NOT NULL
+           AND  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchVariationOnCms>
+
+  <!-- 商品情報を取得 -->
+  <GetProductVariation>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                w2_ProductView.*,
+                [[ MEMBER_RANK_PRICE_PRODUCTVARIATION ]]
+          FROM  w2_ProductView
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id = @product_id
+           AND  w2_ProductView.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductVariation>
+
+  <!-- 商品情報の件数取得 -->
+  <CountProductView>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_ProductView
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </CountProductView>
+
+  <!-- 商品バリエーション在庫情報取得 -->
+  <GetProductVariationStockInfos>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductView.shop_id,
+                w2_ProductView.product_id,
+                w2_ProductView.variation_id,
+                w2_ProductView.name,
+                w2_ProductView.variation_name1,
+                w2_ProductView.variation_name2,
+                w2_ProductView.variation_name3,
+                w2_ProductView.tax_included_flg,
+                w2_ProductView.display_price,
+                w2_ProductView.display_special_price,
+                w2_ProductView.fixed_purchase_firsttime_price,
+                w2_ProductView.fixed_purchase_price,
+                w2_ProductView.price,
+                w2_ProductView.special_price,
+                w2_ProductView.variation_fixed_purchase_firsttime_price,
+                w2_ProductView.variation_fixed_purchase_price,
+                w2_ProductView.sale_price,
+                w2_ProductView.stock_management_kbn,
+                w2_ProductView.fixed_purchase_flg,
+                w2_ProductView.use_variation_flg,
+                w2_ProductView.stock_message_def,
+                w2_ProductView.stock_message_id,
+                CASE
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum7 THEN w2_ProductView.stock_message7
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum6 THEN w2_ProductView.stock_message6
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum5 THEN w2_ProductView.stock_message5
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum4 THEN w2_ProductView.stock_message4
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum3 THEN w2_ProductView.stock_message3
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum2 THEN w2_ProductView.stock_message2
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum1 THEN w2_ProductView.stock_message1
+                  WHEN w2_ProductView.stock > w2_ProductView.stock_datum1 THEN w2_ProductView.stock_message_def
+                  ELSE ''
+                END AS stock_message,
+                CASE
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum7 THEN 'stock_message7'
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum6 THEN 'stock_message6'
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum5 THEN 'stock_message5'
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum4 THEN 'stock_message4'
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum3 THEN 'stock_message3'
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum2 THEN 'stock_message2'
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum1 THEN 'stock_message1'
+                  WHEN w2_ProductView.stock > w2_ProductView.stock_datum1 THEN 'stock_message_def'
+                  ELSE ''
+                END AS stock_message_display_column_name
+          FROM  w2_ProductView
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id = @product_id
+         ORDER BY w2_ProductView.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductVariationStockInfos>
+
+  <!-- 商品税率カテゴリと紐づけられた商品情報を取得 -->
+  <GetProductByTaxCategoryId>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                *
+          FROM  w2_ProductView
+         WHERE  tax_category_id = @tax_category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tax_category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductByTaxCategoryId>
+
+  <!-- 商品の存在チェック -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Product.*
+          FROM  w2_Product
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- 商品データを取得(スコアリング機能) -->
+  <GetScoringSaleResultProduct>
+    <Statement>
+      <![CDATA[
+        -- ダーティリードを許可して共有ロックを掛けなくする
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        DECLARE @now DATETIME = GETDATE()
+
+        -- 会員ランク順位取得
+        DECLARE  @member_rank_order INT
+        SET      @member_rank_order = ISNULL(
+                 (
+                   SELECT  member_rank_order
+                     FROM  w2_MemberRank
+                    WHERE  member_rank_id = @member_rank_id
+                      AND  valid_flg = 'ON'
+                 ), 999)
+
+         SELECT  w2_ProductView.*,
+                 w2_ProductTag.*,
+                 (
+                   CASE -- 表示期間内か
+                     WHEN  w2_ProductView.display_from <= @now
+                           AND
+                           (
+                             w2_ProductView.display_to IS NULL
+                             OR
+                             w2_ProductView.display_to >= @now
+                           )
+                     THEN 1
+                     ELSE 0 -- 表示期間外
+                   END
+                 ) AS disp_period_flg,
+                 (
+                   CASE -- 表示可能商品か
+                     WHEN  w2_ProductView.display_kbn IN ('0', '1') -- 商品一覧○、商品詳細○ OR 商品一覧×、商品詳細○
+                      AND  w2_ProductView.mobile_disp_flg IN ('0', '1') -- PC&モバイル OR PCのみ
+                      AND  w2_ProductView.valid_flg = '1' -- 有効
+                     THEN 1
+                     ELSE 0
+                   END
+                 ) AS disp_enabled_flg,
+                 (
+                   CASE
+                     WHEN
+                       EXISTS
+                       (
+                         SELECT  TOP(1) w2_MemberRank.member_rank_name
+                           FROM  w2_ProductCategory parent,w2_MemberRank
+                          WHERE  parent.shop_id = @shop_id
+                            AND  parent.parent_category_id = 'ROOT'
+                            AND  (
+                                   cat1.category_id LIKE parent.category_id + '%' 
+                                   OR
+                                   cat2.category_id LIKE parent.category_id + '%'
+                                   OR
+                                   cat3.category_id LIKE parent.category_id + '%'
+                                   OR
+                                   cat4.category_id LIKE parent.category_id + '%'
+                                   OR
+                                   cat5.category_id LIKE parent.category_id + '%'
+                                 )
+                            AND  (
+                                   parent.member_rank_id = w2_MemberRank.member_rank_id
+                                   OR
+                                   w2_ProductView.display_member_rank = w2_MemberRank.member_rank_id
+                                 )
+                            AND  w2_MemberRank.member_rank_order < @member_rank_order
+                          ORDER BY w2_MemberRank.member_rank_order ASC
+                        )
+                     THEN 1 -- 閲覧制限あり
+                     ELSE 0
+                   END
+                 ) AS disp_enable_rank_flg,
+                 (
+                   SELECT  TOP(1) w2_MemberRank.member_rank_name
+                     FROM  w2_ProductCategory parent,w2_MemberRank
+                    WHERE  parent.shop_id = @shop_id
+                      AND  parent.parent_category_id = 'ROOT'
+                      AND  (
+                             cat1.category_id LIKE parent.category_id + '%' 
+                             OR
+                             cat2.category_id LIKE parent.category_id + '%'
+                             OR
+                             cat3.category_id LIKE parent.category_id + '%'
+                             OR
+                             cat4.category_id LIKE parent.category_id + '%'
+                             OR
+                             cat5.category_id LIKE parent.category_id + '%'
+                           )
+                      AND  (
+                             parent.member_rank_id = w2_MemberRank.member_rank_id
+                             OR
+                             w2_ProductView.display_member_rank = w2_MemberRank.member_rank_id
+                           )
+                      AND  w2_MemberRank.member_rank_order < @member_rank_order
+                    ORDER BY w2_MemberRank.member_rank_order ASC
+                 ) AS disp_enable_rank,
+                 (
+                   CASE -- 定期会員以外で閲覧できるか
+                     WHEN
+                       EXISTS
+                       (
+                         SELECT  parent.category_id
+                           FROM  w2_ProductCategory parent
+                          WHERE  parent.shop_id = @shop_id
+                            AND  parent.parent_category_id = 'ROOT'
+                            AND  (
+                                   cat1.category_id LIKE parent.category_id + '%' 
+                                   OR
+                                   cat2.category_id LIKE parent.category_id + '%'
+                                   OR
+                                   cat3.category_id LIKE parent.category_id + '%'
+                                   OR
+                                   cat4.category_id LIKE parent.category_id + '%'
+                                   OR
+                                   cat5.category_id LIKE parent.category_id + '%'
+                                 )
+                            AND  (
+                                   parent.only_fixed_purchase_member_flg = '1'
+                                   OR
+                                   w2_ProductView.display_only_fixed_purchase_member_flg  = '1'
+                                 )
+                       )
+                     THEN 1 -- 閲覧制限あり
+                     ELSE 0
+                   END
+                 ) AS disp_only_fixed_flg,
+                 NULL AS member_rank_price,
+                 NULL AS member_rank_price_variation
+           FROM  w2_ProductView
+                 LEFT JOIN w2_ProductTag ON
+                 (
+                   w2_ProductTag.product_id = w2_ProductView.product_id
+                 )
+                 LEFT JOIN w2_ProductCategory cat1 ON
+                 (
+                   w2_ProductView.shop_id = cat1.shop_id
+                   AND
+                   w2_ProductView.category_id1 = cat1.category_id
+                 )
+                 LEFT JOIN w2_MemberRank mem1 ON
+                 (
+                   cat1.member_rank_id = mem1.member_rank_id
+                 )
+                 LEFT JOIN w2_ProductCategory cat2 ON
+                 (
+                   w2_ProductView.shop_id = cat2.shop_id
+                   AND
+                   w2_ProductView.category_id2 = cat2.category_id
+                 )
+                 LEFT JOIN w2_MemberRank mem2 ON
+                 (
+                   cat2.member_rank_id = mem2.member_rank_id
+                 )
+                 LEFT JOIN w2_ProductCategory cat3 ON
+                 (
+                   w2_ProductView.shop_id = cat3.shop_id
+                   AND
+                   w2_ProductView.category_id3 = cat3.category_id
+                 )
+                 LEFT JOIN w2_MemberRank mem3 ON
+                 (
+                   cat3.member_rank_id = mem3.member_rank_id
+                 )
+                 LEFT JOIN w2_ProductCategory cat4 ON
+                 (
+                   w2_ProductView.shop_id = cat4.shop_id
+                   AND
+                   w2_ProductView.category_id4 = cat4.category_id
+                 )
+                 LEFT JOIN w2_MemberRank mem4 ON
+                 (
+                   cat4.member_rank_id = mem4.member_rank_id
+                 )
+                 LEFT JOIN w2_ProductCategory cat5 ON
+                 (
+                   w2_ProductView.shop_id = cat5.shop_id
+                   AND w2_ProductView.category_id5 = cat5.category_id
+                 )
+                 LEFT JOIN w2_MemberRank mem5 ON
+                 (
+                   cat5.member_rank_id = mem5.member_rank_id
+                 )
+          WHERE  w2_ProductView.shop_id = @shop_id
+            AND  w2_ProductView.product_id = @product_id
+        ORDER BY w2_ProductView.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetScoringSaleResultProduct>
+
+  <!-- 商品バリエーションID取得 -->
+  <GetProductVariationIds>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductView.variation_id
+          FROM  w2_ProductView
+         WHERE  shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductVariationIds>
+
+  <!-- 先頭の商品取得 (プレビュー用) -->
+  <GetProductTopForPreview>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                w2_Product.*
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND
+                (
+                  w2_Product.use_variation_flg = '0'
+                  OR
+                      (
+                        w2_Product.use_variation_flg = '1'
+                        AND EXISTS
+                           (
+                             SELECT  *
+                               FROM  w2_ProductVariation
+                              WHERE  w2_Product.shop_id = w2_ProductVariation.shop_id
+                                AND  w2_Product.product_id = w2_ProductVariation.product_id
+                           )
+                      )
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductTopForPreview>
+
+  <!-- 商品情報取得（商品バリエーション情報数分取得）-->
+  <GetProduct>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  w2_ProductView.*,
+                RIGHT(w2_ProductView.variation_id, LEN(w2_ProductView.variation_id) - LEN(w2_ProductView.product_id)) AS v_id,
+                w2_ProductExtend.*,
+                w2_ShopShipping.shop_shipping_name,
+                w2_ProductTag.*,
+                w2_ProductTaxCategory.tax_category_name + ':' + CAST(w2_ProductTaxCategory.tax_rate as nvarchar) + '(%)' AS tax_category_name
+          FROM  w2_ProductView 
+                LEFT JOIN w2_ShopShipping ON
+                (
+                  w2_ProductView.shop_id = w2_ShopShipping.shop_id
+                  AND
+                  w2_ProductView.shipping_type = w2_ShopShipping.shipping_id
+                )
+                LEFT JOIN w2_ProductExtend ON
+                (
+                  w2_ProductView.shop_id = w2_ProductExtend.shop_id
+                  AND
+                  w2_ProductView.product_id = w2_ProductExtend.product_id
+                )
+                LEFT JOIN w2_ProductTag ON
+                (
+                  w2_ProductView.product_id = w2_ProductTag.product_id
+                )
+                LEFT JOIN w2_ProductTaxCategory ON
+                (
+                  w2_ProductView.tax_category_id = w2_ProductTaxCategory.tax_category_id
+                )
+         WHERE  w2_ProductView.shop_id = @shop_id 
+           AND  w2_ProductView.product_id = @product_id 
+        ORDER BY display_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProduct>
+
+  <!-- 商品税率カテゴリと紐づけられた商品情報を取得 -->
+  <GetProductByTaxCategoryId>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                *
+          FROM  w2_ProductView
+         WHERE  tax_category_id = @tax_category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tax_category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductByTaxCategoryId>
+
+  <!-- 商品連携IDを取得 -->
+  <GetCooperationIdByProductId>
+    <Statement>
+      <![CDATA[
+        SELECT  case @cooperation_id_num
+                  WHEN 1 THEN cooperation_id1
+                  WHEN 2 THEN cooperation_id2
+                  WHEN 3 THEN cooperation_id3
+                  WHEN 4 THEN cooperation_id4
+                  WHEN 5 THEN cooperation_id5
+                  WHEN 6 THEN cooperation_id6
+                  WHEN 7 THEN cooperation_id7
+                  WHEN 8 THEN cooperation_id8
+                  WHEN 9 THEN cooperation_id9
+                  WHEN 10 THEN cooperation_id10
+                  ELSE NULL
+                END
+          FROM  w2_Product
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id_num" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCooperationIdByProductId>
+
+  <!-- 指定する配送種別が設定されている定期商品の存在チェック -->
+  <CheckFixedPurchaseProductExistByShippingType>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  COUNT(1)
+          FROM  w2_ProductView
+                INNER JOIN w2_ShopShipping ON
+                (
+                  w2_ShopShipping.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_ShopShipping.shipping_id = w2_ProductView.shipping_type
+                )
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.shipping_type = @shipping_type
+           AND  w2_ProductView.fixed_purchase_flg IN ('1', '2') -- 定期購入可能,定期購入のみ可能
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_type" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckFixedPurchaseProductExistByShippingType>
+
+  <!-- Get products -->
+  <GetProducts>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        DECLARE @current_date datetime = getdate()
+
+        SELECT  w2_ProductView.*,
+                ISNULL(w2_ProductView.stock, 0) AS productstock_stock,
+                ISNULL(w2_ProductView.realstock, 0) AS productstock_realstock,
+                ISNULL(w2_ProductView.realstock_b, 0) AS productstock_realstock_b,
+                ISNULL(w2_ProductView.realstock_c, 0) AS productstock_realstock_c,
+                ISNULL(w2_ProductView.realstock_reserved, 0) AS productstock_realstock_reserved,
+                (
+                  CASE
+                    WHEN  w2_ProductView.display_from <= getdate()
+                     AND  (
+                            w2_ProductView.display_to IS NULL
+                            OR
+                            w2_ProductView.display_to >= getdate()
+                          )
+                     AND  w2_ProductView.display_kbn IN ('0', '1')
+                     AND  w2_ProductView.mobile_disp_flg IN ('0', '1')
+                     AND  w2_ProductView.valid_flg = '1'
+                    THEN 1
+                    ELSE 0
+                  END
+                ) AS disp_flg,
+                [[ PRODUCTVIEW_SOLD_OUT_SELECT ]] AS productsoldout,
+                ISNULL(
+                  (
+                    SELECT  TOP(1) w2_ProductStock.date_created
+                      FROM  w2_ProductStock
+                     WHERE  w2_ProductStock.shop_id = w2_ProductView.shop_id
+                       AND  w2_ProductStock.product_id = w2_ProductView.product_id
+                       AND  w2_ProductStock.variation_id = w2_ProductView.variation_id
+                  ), w2_ProductView.date_created)
+                AS productstock_date_created,
+                ISNULL(
+                  (
+                    SELECT  TOP(1) w2_ProductStock.date_changed
+                      FROM  w2_ProductStock
+                     WHERE  w2_ProductStock.shop_id = w2_ProductView.shop_id
+                       AND  w2_ProductStock.product_id = w2_ProductView.product_id
+                       AND  w2_ProductStock.variation_id = w2_ProductView.variation_id
+                  ), w2_ProductView.date_changed)
+                AS productstock_date_changed
+          FROM  w2_ProductView
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id IN (@@ product_ids @@)
+         ORDER BY w2_ProductView.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProducts>
+
+  <!-- Get product list by group -->
+  <GetProductListByGroup>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        -- 全件数取得
+        DECLARE @row_count int;
+
+        [[ USER_MEMBER_RANK_ORDER ]]
+        -- 名称翻訳用の一時テーブル
+        <@@hasval:language_code@@>
+        [[ PRODUCT_NAME_TRANSLATION_SETTING_TEMP_TABLE ]]
+        </@@hasval:language_code@@>
+
+        [[ CREATE_TMP_PRODUCTVARIATION_GROUP_NAME1_TBL ]]
+        SELECT  @row_count = ISNULL(COUNT(w2_Product.product_id), 0)
+          FROM  (
+                  SELECT  w2_Product.*,
+                          @@ product_tag_field @@,
+                          [[ MEMBER_RANK_PRICE_PRODUCT ]]
+                    FROM  w2_Product LEFT JOIN w2_ProductTag ON
+                          (
+                            w2_ProductTag.product_id = w2_Product.product_id
+                          )
+                          LEFT JOIN
+                          (
+                            SELECT  w2_ProductVariationGroupView.product_id,
+                                    w2_ProductVariationGroupView.variation_id
+                              FROM  w2_ProductVariationGroupView
+                                    INNER JOIN #tmp_ProductVariation ON
+                                    (
+                                      w2_ProductVariationGroupView.shop_id = #tmp_ProductVariation.shop_id
+                                      AND
+                                      w2_ProductVariationGroupView.variation_id = #tmp_ProductVariation.variation_id
+                                    )
+                          ) AS VariationViewDistinct ON
+                          (
+                            VariationViewDistinct.product_id = w2_Product.product_id
+                          )
+                ) AS w2_Product
+                <@@hasval:language_code@@>
+                LEFT OUTER JOIN #product_translation ON
+                (
+                  #product_translation.master_id1 = w2_Product.product_id
+                )
+                </@@hasval:language_code@@>
+                [[ JOIN_PRODUCT_CATEGORY ]]
+                [[ PRODUCT_SEARCH_WHERE_GROUP ]]
+                [[ PRODUCT_CATEGORY_SEARCH_WHERE ]];
+
+        -- 該当情報取得
+        SELECT  w2_Product.*,
+                RowIndex.sale_price,
+                @row_count AS row_count,
+                RowIndex.product_variation_sold_out AS productsoldout,
+                member_rank_price_variation,
+                @@ product_tag_field @@,
+                RowIndex.variation_id,
+                RowIndex.variation_name1,
+                RowIndex.variation_name2,
+                RowIndex.variation_image_head,
+                RowIndex.price,
+                RowIndex.special_price,
+                RowIndex.variation_fixed_purchase_firsttime_price,
+                RowIndex.variation_fixed_purchase_price
+          FROM  (
+                  SELECT  w2_Product.shop_id,
+                          w2_Product.product_id,
+                          member_rank_price_variation,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCT_SEARCH_GROUP_ORDER_BY ]]
+                          ) AS row_num,
+                          w2_Product.variation_id,
+                          w2_Product.variation_name1,
+                          w2_Product.variation_name2,
+                          w2_Product.variation_image_head,
+                          w2_Product.price,
+                          w2_Product.special_price,
+                          w2_Product.variation_fixed_purchase_firsttime_price,
+                          w2_Product.variation_fixed_purchase_price,
+                          w2_Product.sale_price,
+                          w2_Product.product_variation_sold_out
+                    FROM  (
+                            SELECT  w2_Product.*,
+                                    @@ product_tag_field @@,
+                                    [[ MEMBER_RANK_PRICE_PRODUCT ]],
+                                    w2_ProductVariationView.variation_id,
+                                    w2_ProductVariationView.variation_name1,
+                                    w2_ProductVariationView.variation_name2,
+                                    w2_ProductVariationView.variation_image_head,
+                                    w2_ProductVariationView.price,
+                                    w2_ProductVariationView.special_price,
+                                    w2_ProductVariationView.variation_fixed_purchase_firsttime_price,
+                                    w2_ProductVariationView.variation_fixed_purchase_price,
+                                    VariationViewDistinct.sale_price,
+                                    VariationViewDistinct.product_variation_sold_out
+                              FROM  w2_Product LEFT JOIN w2_ProductTag ON
+                                    (
+                                      w2_ProductTag.product_id = w2_Product.product_id
+                                    )
+                                    INNER JOIN w2_ProductVariationView ON
+                                    (
+                                      w2_ProductVariationView.product_id = w2_Product.product_id
+                                    )
+                                    LEFT JOIN
+                                    (
+                                      SELECT  w2_ProductVariationGroupView.product_id,
+                                              w2_ProductVariationGroupView.variation_id,
+                                              w2_ProductVariationGroupView.variation_name1,
+                                              w2_ProductVariationGroupView.variation_name2,
+                                              w2_ProductVariationGroupView.variation_image_head,
+                                              w2_ProductVariationGroupView.price,
+                                              w2_ProductVariationGroupView.special_price,
+                                              w2_ProductVariationGroupView.variation_fixed_purchase_firsttime_price,
+                                              w2_ProductVariationGroupView.variation_fixed_purchase_price,
+                                              w2_ProductVariationGroupView.sale_price,
+                                              [[ PRODUCT_VARIATION_STOCK_SELECT_ID ]] AS product_variation_sold_out
+                                        FROM  w2_ProductVariationGroupView
+                                       WHERE  EXISTS
+                                              (
+                                                SELECT  #tmp_ProductVariation.shop_id,
+                                                        #tmp_ProductVariation.variation_id
+                                                  FROM  #tmp_ProductVariation
+                                                 WHERE  #tmp_ProductVariation.shop_id = w2_ProductVariationGroupView.shop_id
+                                                   AND  #tmp_ProductVariation.variation_id = w2_ProductVariationGroupView.variation_id
+                                              )
+                                              <@@hasval:product_color_id@@>
+                                              AND  w2_ProductVariationGroupView.variation_color_id = @product_color_id
+                                              </@@hasval:product_color_id@@>
+                                    ) AS VariationViewDistinct ON
+                                    (
+                                      VariationViewDistinct.product_id = w2_ProductVariationView.product_id
+                                      AND
+                                      VariationViewDistinct.variation_id = w2_ProductVariationView.variation_id
+                                    )
+                          ) AS w2_Product
+                          <@@hasval:language_code@@>
+                          LEFT OUTER JOIN #product_translation ON
+                          (
+                            #product_translation.master_id1 = w2_Product.product_id
+                          )
+                          </@@hasval:language_code@@>
+                          [[ JOIN_PRODUCT_CATEGORY ]]
+                          [[ PRODUCT_SEARCH_WHERE_GROUP ]]
+                          [[ PRODUCT_CATEGORY_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Product ON
+                (
+                  RowIndex.shop_id = w2_Product.shop_id
+                  AND
+                  RowIndex.product_id = w2_Product.product_id
+                )
+                LEFT JOIN w2_ProductTag ON
+                (
+                  w2_ProductTag.product_id = w2_Product.product_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="product_color_id" Type="nvarchar" Size="256" />
+      <Input Name="fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetProductListByGroup>
+
+  <!-- Awoo商品情報取得 -->
+  <GetProductListByGroupAwoo>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        DECLARE @current_date datetime = GETDATE()
+        
+        -- 全件数取得
+        DECLARE @row_count int;
+
+        [[ USER_MEMBER_RANK_ORDER ]]
+
+        -- 該当情報取得
+        SELECT  *
+          FROM  (
+                  SELECT  w2_Product.*,
+                          VariationViewDistinct.sale_price,
+                          VariationViewDistinct.member_rank_price_variation,
+                          VariationViewDistinct.variation_id,
+                          VariationViewDistinct.variation_name1,
+                          VariationViewDistinct.variation_name2,
+                          VariationViewDistinct.variation_image_head,
+                          VariationViewDistinct.price,
+                          VariationViewDistinct.special_price,
+                          VariationViewDistinct.variation_fixed_purchase_firsttime_price,
+                          VariationViewDistinct.variation_fixed_purchase_price,
+                          VariationViewDistinct.product_variation_sold_out
+                    FROM  w2_Product INNER JOIN
+                          (
+                            SELECT  w2_ProductVariationGroupView.product_id,
+                                    w2_ProductVariationGroupView.sale_price,
+                                    [[ MEMBER_RANK_PRICE_PRODUCT ]],
+                                    w2_ProductVariationGroupView.variation_id,
+                                    w2_ProductVariationGroupView.variation_name1,
+                                    w2_ProductVariationGroupView.variation_name2,
+                                    w2_ProductVariationGroupView.variation_image_head,
+                                    w2_ProductVariationGroupView.price,
+                                    w2_ProductVariationGroupView.special_price,
+                                    w2_ProductVariationGroupView.variation_fixed_purchase_firsttime_price,
+                                    w2_ProductVariationGroupView.variation_fixed_purchase_price,
+                                    [[ PRODUCT_VARIATION_STOCK_SELECT_ID ]] AS product_variation_sold_out
+                              FROM  w2_ProductVariationGroupView
+                          ) AS VariationViewDistinct ON
+                          (
+                            VariationViewDistinct.product_id = w2_Product.product_id
+                          )
+                ) AS w2_Product
+        [[ JOIN_PRODUCT_CATEGORY ]]
+        [[ PRODUCT_SEARCH_WHERE_GROUP_AWOO ]]
+        [[ PRODUCT_CATEGORY_SEARCH_WHERE ]]
+        [[ PRODUCT_SEARCH_GROUP_ORDER_BY_AWOO ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetProductListByGroupAwoo>
+
+  <!-- カートに紐づいた商品情報を取得-->
+  <GetCartProducts>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_ProductView.*
+          FROM  w2_ProductView
+                INNER JOIN w2_Cart ON
+                (
+                  w2_Cart.shop_id  = w2_ProductView.shop_id
+                  AND
+                  w2_Cart.product_id = w2_ProductView.product_id
+                  AND
+                  w2_Cart.variation_id = w2_ProductView.variation_id
+                )
+         WHERE  w2_Cart.cart_id = @cart_id
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+    </Parameter>
+  </GetCartProducts>
+
+  <!-- 紐づく商品バリエーションを取得-->
+  <GetProductVariations>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductVariation
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="15" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductVariations>
+
+  <!-- Search products for autosuggest -->
+  <SearchProductsForAutosuggest>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime
+        SET @current_date = GETDATE()
+
+        SELECT  w2_ProductView.*,
+                RIGHT(w2_ProductView.variation_id, LEN(w2_ProductView.variation_id) - LEN(w2_ProductView.product_id)) AS v_id,
+                [[ MEMBER_RANK_PRICE_PRODUCTVARIATION ]]
+          FROM  (
+                  SELECT  w2_ProductView.shop_id,
+                          w2_ProductView.product_id,
+                          w2_ProductView.variation_id
+                    FROM  w2_ProductView
+                   WHERE  w2_ProductView.shop_id = @shop_id
+                     AND  (
+                            -- 注文商品検索だったら現在購入可能な商品のみ表示
+                            w2_ProductView.sell_from <= @current_date
+                            AND
+                            (
+                              w2_ProductView.sell_to IS NULL
+                              OR
+                              w2_ProductView.sell_to >= @current_date
+                            )
+                            AND
+                            (
+                              w2_ProductView.stock_management_kbn = '0'    -- 在庫管理をしない
+                              OR
+                              w2_ProductView.stock_management_kbn = '1'    -- 在庫０以下の場合でも表示する（購入可）
+                              OR
+                              w2_ProductView.stock_management_kbn = '2'    -- 在庫０以下の場合でも表示する（購入不可）
+                            )
+                          )
+                     AND  w2_ProductView.valid_flg = '1'
+                     AND  (
+                            w2_ProductView.variation_id LIKE @search_word_like_escaped + '%' ESCAPE '#'      -- 商品ID
+                            OR
+                            w2_ProductView.name LIKE '%' + @search_word_like_escaped + '%' ESCAPE '#'        -- 商品名
+                          )
+                ) AS ProductView
+                INNER JOIN w2_ProductView ON
+                (
+                  ProductView.shop_id = w2_ProductView.shop_id
+                  AND
+                  ProductView.product_id = w2_ProductView.product_id
+                  AND
+                  ProductView.variation_id = w2_ProductView.variation_id
+                )
+        ORDER BY w2_ProductView.variation_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="search_word_like_escaped" Type="nvarchar" Size="100" />
+    </Parameter>
+  </SearchProductsForAutosuggest>
+
+  <!-- Flaps商品連携による商品挿入 -->
+  <InsertForFlapsIntegration>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_Product
+                (
+                  w2_Product.shop_id,
+                  w2_Product.product_id,
+                  w2_Product.name,
+                  w2_Product.category_id1,
+                  w2_Product.category_id2,
+                  w2_Product.category_id3,
+                  w2_Product.category_id4,
+                  w2_Product.cooperation_id1,
+                  w2_Product.cooperation_id2,
+                  w2_Product.cooperation_id3,
+                  w2_Product.cooperation_id4,
+                  w2_Product.cooperation_id5,
+                  w2_Product.cooperation_id6,
+                  w2_Product.cooperation_id7,
+                  w2_Product.cooperation_id8,
+                  w2_Product.cooperation_id9,
+                  w2_Product.cooperation_id10,
+                  w2_Product.shipping_type,
+                  w2_Product.stock_management_kbn,
+                  w2_Product.display_from,
+                  w2_Product.sell_from,
+                  w2_Product.display_price,
+                  w2_Product.product_weight_gram,
+                  w2_Product.use_variation_flg,
+                  w2_Product.valid_flg,
+                  w2_Product.last_changed,
+                  w2_Product.date_created,
+                  w2_Product.date_changed
+                )
+          VALUES
+               (
+                  @shop_id,
+                  @product_id,
+                  @name,
+                  @category_id1,
+                  @category_id2,
+                  @category_id3,
+                  @category_id4,
+                  @cooperation_id1,
+                  @cooperation_id2,
+                  @cooperation_id3,
+                  @cooperation_id4,
+                  @cooperation_id5,
+                  @cooperation_id6,
+                  @cooperation_id7,
+                  @cooperation_id8,
+                  @cooperation_id9,
+                  @cooperation_id10,
+                  @shipping_type,
+                  @stock_management_kbn,
+                  GETDATE(),
+                  GETDATE(),
+                  @display_price,
+                  @product_weight_gram,
+                  @use_variation_flg,
+                  '0',
+                  @last_changed,
+                  GETDATE(),
+                  GETDATE()
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="name" Type="nvarchar" Size="100" />
+      <Input Name="category_id1" Type="nvarchar" Size="30" />
+      <Input Name="category_id2" Type="nvarchar" Size="30" />
+      <Input Name="category_id3" Type="nvarchar" Size="30" />
+      <Input Name="category_id4" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id1" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id2" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id3" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id4" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id5" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id6" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id7" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id8" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id9" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id10" Type="nvarchar" Size="50" />
+      <Input Name="shipping_type" Type="nvarchar" Size="10" />
+      <Input Name="stock_management_kbn" Type="nvarchar" Size="1"/>
+      <Input Name="product_weight_gram" Type="int" />
+      <Input Name="display_price" Type="decimal" Size="18,3" />
+      <Input Name="use_variation_flg" Type="nvarchar" Size="1"/>
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertForFlapsIntegration>
+
+  <!-- Flaps商品バリエーション連携による商品挿入 -->
+  <InsertVariationForFlapsIntegration>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductVariation
+                (
+                  w2_ProductVariation.product_id,
+                  w2_ProductVariation.variation_id,
+                  w2_ProductVariation.shop_id,
+                  w2_ProductVariation.variation_color_id,
+                  w2_ProductVariation.variation_name1,
+                  w2_ProductVariation.variation_name2,
+                  w2_ProductVariation.price,
+                  w2_ProductVariation.variation_cooperation_id1,
+                  w2_ProductVariation.variation_cooperation_id2,
+                  w2_ProductVariation.variation_cooperation_id3,
+                  w2_ProductVariation.variation_cooperation_id4,
+                  w2_ProductVariation.variation_cooperation_id5,
+                  w2_ProductVariation.variation_cooperation_id6,
+                  w2_ProductVariation.variation_cooperation_id7,
+                  w2_ProductVariation.variation_cooperation_id8,
+                  w2_ProductVariation.variation_cooperation_id9,
+                  w2_ProductVariation.variation_cooperation_id10,
+                  w2_ProductVariation.variation_weight_gram,
+                  w2_ProductVariation.last_changed,
+                  w2_ProductVariation.date_created,
+                  w2_ProductVariation.date_changed
+                )
+          VALUES
+               (
+                  @product_id,
+                  @variation_id,
+                  @shop_id,
+                  @variation_color_id,
+                  @variation_name1,
+                  @variation_name2,
+                  @price,
+                  @variation_cooperation_id1,
+                  @variation_cooperation_id2,
+                  @variation_cooperation_id3,
+                  @variation_cooperation_id4,
+                  @variation_cooperation_id5,
+                  @variation_cooperation_id6,
+                  @variation_cooperation_id7,
+                  @variation_cooperation_id8,
+                  @variation_cooperation_id9,
+                  @variation_cooperation_id10,
+                  @variation_weight_gram,
+                  @last_changed,
+                  GETDATE(),
+                  GETDATE()
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_color_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_name1" Type="nvarchar" Size="30" />
+      <Input Name="variation_name2" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="price" Type="decimal" Size="18,3" />
+      <Input Name="variation_cooperation_id1" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id2" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id3" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id4" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id5" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id6" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id7" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id8" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id9" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id10" Type="nvarchar" Size="50" />
+      <Input Name="variation_weight_gram" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertVariationForFlapsIntegration>
+  
+  <!-- Flaps商品連携による商品更新 -->
+  <UpdateForFlapsIntegration>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Product
+           SET  w2_Product.name = @name,
+                w2_Product.category_id1 = @category_id1,
+                w2_Product.category_id2 = @category_id2,
+                w2_Product.category_id3 = @category_id3,
+                w2_Product.category_id4 = @category_id4,
+                w2_Product.cooperation_id1 = @cooperation_id1,
+                w2_Product.cooperation_id2 = @cooperation_id2,
+                w2_Product.cooperation_id3 = @cooperation_id3,
+                w2_Product.cooperation_id4 = @cooperation_id4,
+                w2_Product.cooperation_id5 = @cooperation_id5,
+                w2_Product.cooperation_id6 = @cooperation_id6,
+                w2_Product.cooperation_id7 = @cooperation_id7,
+                w2_Product.cooperation_id8 = @cooperation_id8,
+                w2_Product.cooperation_id9 = @cooperation_id9,
+                w2_Product.cooperation_id10 = @cooperation_id10,
+                w2_Product.display_price = @display_price,
+                w2_Product.product_weight_gram = @product_weight_gram,
+                w2_Product.use_variation_flg = @use_variation_flg,
+                w2_Product.last_changed = @last_changed,
+                w2_Product.date_changed = GETDATE()
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="name" Type="nvarchar" Size="100" />
+      <Input Name="category_id1" Type="nvarchar" Size="30" />
+      <Input Name="category_id2" Type="nvarchar" Size="30" />
+      <Input Name="category_id3" Type="nvarchar" Size="30" />
+      <Input Name="category_id4" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id1" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id2" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id3" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id4" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id5" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id6" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id7" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id8" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id9" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id10" Type="nvarchar" Size="50" />
+      <Input Name="display_price" Type="decimal" Size="18,3" />
+      <Input Name="product_weight_gram" Type="int" />
+      <Input Name="use_variation_flg" Type="nvarchar" Size="1"/>
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateForFlapsIntegration>
+
+  <!-- Flaps商品バリエーション連携による商品更新 -->
+  <UpdateVariationForFlapsIntegration>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductVariation
+           SET  w2_ProductVariation.variation_color_id = @variation_color_id,
+                w2_ProductVariation.variation_name1 = @variation_name1,
+                w2_ProductVariation.variation_name2 = @variation_name2,
+                w2_ProductVariation.price = @price,
+                w2_ProductVariation.variation_cooperation_id1 = @variation_cooperation_id1,
+                w2_ProductVariation.variation_cooperation_id2 = @variation_cooperation_id2,
+                w2_ProductVariation.variation_cooperation_id3 = @variation_cooperation_id3,
+                w2_ProductVariation.variation_cooperation_id4 = @variation_cooperation_id4,
+                w2_ProductVariation.variation_cooperation_id5 = @variation_cooperation_id5,
+                w2_ProductVariation.variation_cooperation_id6 = @variation_cooperation_id6,
+                w2_ProductVariation.variation_cooperation_id7 = @variation_cooperation_id7,
+                w2_ProductVariation.variation_cooperation_id8 = @variation_cooperation_id8,
+                w2_ProductVariation.variation_cooperation_id9 = @variation_cooperation_id9,
+                w2_ProductVariation.variation_cooperation_id10 = @variation_cooperation_id10,
+                w2_ProductVariation.variation_weight_gram = @variation_weight_gram,
+                w2_ProductVariation.date_changed = GETDATE(),
+                w2_ProductVariation.last_changed = @last_changed
+         WHERE  w2_ProductVariation.shop_id = @shop_id
+           AND  w2_ProductVariation.product_id = @product_id
+           AND  w2_ProductVariation.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_color_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_name1" Type="nvarchar" Size="30" />
+      <Input Name="variation_name2" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="variation_cooperation_id1" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id2" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id3" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id4" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id5" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id6" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id7" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id8" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id9" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id10" Type="nvarchar" Size="50" />
+      <Input Name="variation_weight_gram" Type="int" />
+      <Input Name="price" Type="decimal" Size="18,3" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+
+  </UpdateVariationForFlapsIntegration>
+
+  <!-- Get all products -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Product.*
+          FROM  w2_Product
+      ]]>
+    </Statement>
+  </GetAll>
+
+  <!-- Get products by product ids -->
+  <GetProductsByProductIds>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Product.*
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.product_id IN (@@ product_ids @@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductsByProductIds>
+
+  <!-- 指定値で部分一致の商品情報取得 -->
+  <GetProductsLikeIdOrName>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Product.*
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  (
+                  w2_Product.product_id LIKE '%' + @search_word_like_escaped + '%' ESCAPE '#'      -- 商品ID
+                  OR
+                  w2_Product.name LIKE '%' + @search_word_like_escaped + '%' ESCAPE '#'      -- 商品名
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="search_word_like_escaped" Type="nvarchar" Size="100" />
+    </Parameter>
+  </GetProductsLikeIdOrName>
+
+  <!-- Is product variation exist -->
+  <IsProductVariationExist>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(w2_ProductVariation.variation_id)
+          FROM  w2_ProductVariation
+         WHERE  w2_ProductVariation.shop_id = @shop_id
+           AND  w2_ProductVariation.product_id = @product_id
+           AND  w2_ProductVariation.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </IsProductVariationExist>
+
+  <!-- Get delete product variations -->
+  <GetDeleteProductVariations>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductVariation
+         WHERE  w2_ProductVariation.shop_id = @shop_id
+           AND  w2_ProductVariation.product_id = @product_id
+           AND  w2_ProductVariation.variation_id NOT IN (@@ ignored_variation_ids @@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetDeleteProductVariations>
+
+  <!-- Get product variation by product id and variation id -->
+  <GetProductVariationByProductIdAndVariationId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductVariation
+         WHERE  w2_ProductVariation.shop_id = @shop_id
+           AND  w2_ProductVariation.product_id = @product_id
+           AND  w2_ProductVariation.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetProductVariationByProductIdAndVariationId>
+
+  <!-- 商品情報登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_Product
+                (
+                  w2_Product.shop_id,
+                  w2_Product.product_id,
+                  w2_Product.note,
+                  w2_Product.supplier_id,
+                  w2_Product.cooperation_id1,
+                  w2_Product.cooperation_id2,
+                  w2_Product.cooperation_id3,
+                  w2_Product.cooperation_id4,
+                  w2_Product.cooperation_id5,
+                  w2_Product.mall_ex_product_id,
+                  w2_Product.name,
+                  w2_Product.name_kana,
+                  w2_Product.seo_keywords,
+                  w2_Product.catchcopy,
+                  w2_Product.search_keyword,
+                  w2_Product.outline_kbn,
+                  w2_Product.outline,
+                  w2_Product.desc_detail_kbn1,
+                  w2_Product.desc_detail1,
+                  w2_Product.desc_detail_kbn2,
+                  w2_Product.desc_detail2,
+                  w2_Product.desc_detail_kbn3,
+                  w2_Product.desc_detail3,
+                  w2_Product.desc_detail_kbn4,
+                  w2_Product.desc_detail4,
+                  w2_Product.return_exchange_message,
+                  w2_Product.url,
+                  w2_Product.inquire_email,
+                  w2_Product.inquire_tel,
+                  w2_Product.display_price,
+                  w2_Product.display_special_price,
+                  w2_Product.shipping_type,
+                  w2_Product.shipping_size_kbn,
+                  w2_Product.product_color_id,
+                  w2_Product.tax_included_flg,
+                  w2_Product.point_kbn1,
+                  w2_Product.point1,
+                  w2_Product.point_kbn2,
+                  w2_Product.point2,
+                  w2_Product.display_from,
+                  w2_Product.display_to,
+                  w2_Product.sell_from,
+                  w2_Product.sell_to,
+                  w2_Product.max_sell_quantity,
+                  w2_Product.stock_management_kbn,
+                  w2_Product.stock_message_id,
+                  w2_Product.display_kbn,
+                  w2_Product.category_id1,
+                  w2_Product.category_id2,
+                  w2_Product.category_id3,
+                  w2_Product.category_id4,
+                  w2_Product.category_id5,
+                  w2_Product.related_product_id_cs1,
+                  w2_Product.related_product_id_cs2,
+                  w2_Product.related_product_id_cs3,
+                  w2_Product.related_product_id_cs4,
+                  w2_Product.related_product_id_cs5,
+                  w2_Product.related_product_id_us1,
+                  w2_Product.related_product_id_us2,
+                  w2_Product.related_product_id_us3,
+                  w2_Product.related_product_id_us4,
+                  w2_Product.related_product_id_us5,
+                  w2_Product.image_head,
+                  w2_Product.icon_flg1,
+                  w2_Product.icon_term_end1,
+                  w2_Product.icon_flg2,
+                  w2_Product.icon_term_end2,
+                  w2_Product.icon_flg3,
+                  w2_Product.icon_term_end3,
+                  w2_Product.icon_flg4,
+                  w2_Product.icon_term_end4,
+                  w2_Product.icon_flg5,
+                  w2_Product.icon_term_end5,
+                  w2_Product.icon_flg6,
+                  w2_Product.icon_term_end6,
+                  w2_Product.icon_flg7,
+                  w2_Product.icon_term_end7,
+                  w2_Product.icon_flg8,
+                  w2_Product.icon_term_end8,
+                  w2_Product.icon_flg9,
+                  w2_Product.icon_term_end9,
+                  w2_Product.icon_flg10,
+                  w2_Product.icon_term_end10,
+                  w2_Product.use_variation_flg,
+                  w2_Product.fixed_purchase_flg,
+                  w2_Product.fixed_purchase_product_order_limit_flg,
+                  w2_Product.product_order_limit_flg_fp,
+                  w2_Product.member_rank_discount_flg,
+                  w2_Product.display_member_rank,
+                  w2_Product.buyable_member_rank,
+                  w2_Product.valid_flg,
+                  w2_Product.date_created,
+                  w2_Product.date_changed,
+                  w2_Product.last_changed,
+                  w2_Product.google_shopping_flg,
+                  w2_Product.product_option_settings,
+                  w2_Product.arrival_mail_valid_flg,
+                  w2_Product.release_mail_valid_flg,
+                  w2_Product.resale_mail_valid_flg,
+                  w2_Product.select_variation_kbn,
+                  w2_Product.brand_id1,
+                  w2_Product.brand_id2,
+                  w2_Product.brand_id3,
+                  w2_Product.brand_id4,
+                  w2_Product.brand_id5,
+                  w2_Product.use_recommend_flg,
+                  w2_Product.plural_shipping_price_free_flg,
+                  w2_Product.age_limit_flg,
+                  w2_Product.gift_flg,
+                  w2_Product.digital_contents_flg,
+                  w2_Product.download_url,
+                  w2_Product.display_sell_flg,
+                  w2_Product.display_priority,
+                  w2_Product.limited_payment_ids,
+                  w2_Product.fixed_purchase_firsttime_price,
+                  w2_Product.fixed_purchase_price,
+                  w2_Product.bundle_item_display_type,
+                  w2_Product.product_type,
+                  w2_Product.limited_fixed_purchase_kbn1_setting,
+                  w2_Product.limited_fixed_purchase_kbn3_setting,
+                  w2_Product.cooperation_id6,
+                  w2_Product.cooperation_id7,
+                  w2_Product.cooperation_id8,
+                  w2_Product.cooperation_id9,
+                  w2_Product.cooperation_id10,
+                  w2_Product.andmall_reservation_flg,
+                  w2_Product.tax_category_id,
+                  w2_Product.display_only_fixed_purchase_member_flg,
+                  w2_Product.sell_only_fixed_purchase_member_flg,
+                  w2_Product.product_weight_gram,
+                  w2_Product.fixed_purchase_cancelable_count,
+                  w2_Product.fixed_purchase_limited_user_level_ids,
+                  w2_Product.fixed_purchase_next_shipping_product_id,
+                  w2_Product.fixed_purchase_next_shipping_variation_id,
+                  w2_Product.fixed_purchase_next_shipping_item_quantity,
+                  w2_Product.fixed_purchase_limited_skipped_count,
+                  w2_Product.next_shipping_item_fixed_purchase_kbn,
+                  w2_Product.next_shipping_item_fixed_purchase_setting,
+                  w2_Product.product_size_factor,
+                  w2_Product.add_cart_url_limit_flg,
+                  w2_Product.limited_fixed_purchase_kbn4_setting,
+                  w2_Product.subscription_box_flg,
+                  w2_Product.member_rank_point_exclude_flg,
+                  w2_Product.storepickup_flg,
+                  w2_Product.exclude_free_shipping_flg
+                )
+        VALUES  (
+                  @shop_id,
+                  @product_id,
+                  @note,
+                  @supplier_id,
+                  @cooperation_id1,
+                  @cooperation_id2,
+                  @cooperation_id3,
+                  @cooperation_id4,
+                  @cooperation_id5,
+                  @mall_ex_product_id,
+                  @name,
+                  @name_kana,
+                  @seo_keywords,
+                  @catchcopy,
+                  @search_keyword,
+                  @outline_kbn,
+                  @outline,
+                  @desc_detail_kbn1,
+                  @desc_detail1,
+                  @desc_detail_kbn2,
+                  @desc_detail2,
+                  @desc_detail_kbn3,
+                  @desc_detail3,
+                  @desc_detail_kbn4,
+                  @desc_detail4,
+                  @return_exchange_message,
+                  @url,
+                  @inquire_email,
+                  @inquire_tel,
+                  @display_price,
+                  @display_special_price,
+                  @shipping_type,
+                  @shipping_size_kbn,
+                  @product_color_id,
+                  @tax_included_flg,
+                  @point_kbn1,
+                  @point1,
+                  @point_kbn2,
+                  @point2,
+                  @display_from,
+                  @display_to,
+                  @sell_from,
+                  @sell_to,
+                  @max_sell_quantity,
+                  @stock_management_kbn,
+                  @stock_message_id,
+                  @display_kbn,
+                  @category_id1,
+                  @category_id2,
+                  @category_id3,
+                  @category_id4,
+                  @category_id5,
+                  @related_product_id_cs1,
+                  @related_product_id_cs2,
+                  @related_product_id_cs3,
+                  @related_product_id_cs4,
+                  @related_product_id_cs5,
+                  @related_product_id_us1,
+                  @related_product_id_us2,
+                  @related_product_id_us3,
+                  @related_product_id_us4,
+                  @related_product_id_us5,
+                  @image_head,
+                  @icon_flg1,
+                  @icon_term_end1,
+                  @icon_flg2,
+                  @icon_term_end2,
+                  @icon_flg3,
+                  @icon_term_end3,
+                  @icon_flg4,
+                  @icon_term_end4,
+                  @icon_flg5,
+                  @icon_term_end5,
+                  @icon_flg6,
+                  @icon_term_end6,
+                  @icon_flg7,
+                  @icon_term_end7,
+                  @icon_flg8,
+                  @icon_term_end8,
+                  @icon_flg9,
+                  @icon_term_end9,
+                  @icon_flg10,
+                  @icon_term_end10,
+                  @use_variation_flg,
+                  @fixed_purchase_flg,
+                  @fixed_purchase_product_order_limit_flg,
+                  @product_order_limit_flg_fp,
+                  @member_rank_discount_flg,
+                  @display_member_rank,
+                  @buyable_member_rank,
+                  @valid_flg,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed,
+                  @google_shopping_flg,
+                  @product_option_settings,
+                  @arrival_mail_valid_flg,
+                  @release_mail_valid_flg,
+                  @resale_mail_valid_flg,
+                  @select_variation_kbn,
+                  @brand_id1,
+                  @brand_id2,
+                  @brand_id3,
+                  @brand_id4,
+                  @brand_id5,
+                  @use_recommend_flg,
+                  @plural_shipping_price_free_flg,
+                  @age_limit_flg,
+                  @gift_flg,
+                  @digital_contents_flg,
+                  @download_url,
+                  @display_sell_flg,
+                  @display_priority,
+                  @limited_payment_ids,
+                  @fixed_purchase_firsttime_price,
+                  @fixed_purchase_price,
+                  @bundle_item_display_type,
+                  @product_type,
+                  @limited_fixed_purchase_kbn1_setting,
+                  @limited_fixed_purchase_kbn3_setting,
+                  @cooperation_id6,
+                  @cooperation_id7,
+                  @cooperation_id8,
+                  @cooperation_id9,
+                  @cooperation_id10,
+                  @andmall_reservation_flg,
+                  @tax_category_id,
+                  @display_only_fixed_purchase_member_flg,
+                  @sell_only_fixed_purchase_member_flg,
+                  @product_weight_gram,
+                  @fixed_purchase_cancelable_count,
+                  @fixed_purchase_limited_user_level_ids,
+                  @fixed_purchase_next_shipping_product_id,
+                  @fixed_purchase_next_shipping_variation_id,
+                  @fixed_purchase_next_shipping_item_quantity,
+                  @fixed_purchase_limited_skipped_count,
+                  @next_shipping_item_fixed_purchase_kbn,
+                  @next_shipping_item_fixed_purchase_setting,
+                  @product_size_factor,
+                  @add_cart_url_limit_flg,
+                  @limited_fixed_purchase_kbn4_setting,
+                  @subscription_box_flg,
+                  @member_rank_point_exclude_flg,
+                  @storepickup_flg,
+                  @exclude_free_shipping_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="supplier_id" Type="nvarchar" Size="20" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id1" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id2" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id3" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id4" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id5" Type="nvarchar" Size="30" />
+      <Input Name="mall_ex_product_id" Type="nvarchar" Size="30" />
+      <Input Name="maker_id" Type="nvarchar" Size="30" />
+      <Input Name="maker_name" Type="nvarchar" Size="50" />
+      <Input Name="name" Type="nvarchar" Size="100" />
+      <Input Name="name_kana" Type="nvarchar" Size="100" />
+      <Input Name="name2" Type="nvarchar" Size="100" />
+      <Input Name="name2_kana" Type="nvarchar" Size="100" />
+      <Input Name="seo_keywords" Type="nvarchar" Size="200" />
+      <Input Name="catchcopy" Type="nvarchar" Size="60" />
+      <Input Name="search_keyword" Type="nvarchar" Size="500" />
+      <Input Name="outline_kbn" Type="nvarchar" Size="1" />
+      <Input Name="outline" Type="nvarchar" Size="max" />
+      <Input Name="desc_detail_kbn1" Type="nvarchar" Size="1" />
+      <Input Name="desc_detail1" Type="ntext" />
+      <Input Name="desc_detail_kbn2" Type="nvarchar" Size="1" />
+      <Input Name="desc_detail2" Type="ntext" />
+      <Input Name="desc_detail_kbn3" Type="nvarchar" Size="1" />
+      <Input Name="desc_detail3" Type="ntext" />
+      <Input Name="desc_detail_kbn4" Type="nvarchar" Size="1" />
+      <Input Name="desc_detail4" Type="ntext" />
+      <Input Name="return_exchange_message" Type="ntext" />
+      <Input Name="note" Type="ntext" />
+      <Input Name="display_price" Type="decimal" Size="18,3" />
+      <Input Name="display_special_price" Type="decimal" Size="18,3" />
+      <Input Name="tax_included_flg" Type="nvarchar" Size="1" />
+      <Input Name="tax_rate" Type="int" />
+      <Input Name="tax_round_type" Type="nvarchar" Size="20" />
+      <Input Name="price_pretax" Type="decimal" Size="18,3" />
+      <Input Name="price_shipping" Type="decimal" />
+      <Input Name="shipping_type" Type="nvarchar" Size="10" />
+      <Input Name="shipping_size_kbn" Type="nvarchar" Size="4" />
+      <Input Name="product_color_id" Type="nvarchar" Size="50" />
+      <Input Name="price_cost" Type="decimal" />
+      <Input Name="kbn1" Type="nvarchar" Size="30" />
+      <Input Name="kbn2" Type="nvarchar" Size="30" />
+      <Input Name="kbn3" Type="nvarchar" Size="30" />
+      <Input Name="kbn4" Type="nvarchar" Size="30" />
+      <Input Name="kbn5" Type="nvarchar" Size="30" />
+      <Input Name="point_kbn1" Type="nvarchar" Size="1" />
+      <Input Name="point1" Type="decimal" />
+      <Input Name="point_kbn2" Type="nvarchar" Size="1" />
+      <Input Name="point2" Type="decimal" />
+      <Input Name="point_kbn3" Type="nvarchar" Size="1" />
+      <Input Name="point3" Type="decimal" />
+      <Input Name="campaign_from" Type="datetime" />
+      <Input Name="campaign_to" Type="datetime" />
+      <Input Name="campaign_point_kbn" Type="nvarchar" Size="1" />
+      <Input Name="campaign_point" Type="int" />
+      <Input Name="display_from" Type="datetime" />
+      <Input Name="display_to" Type="datetime" />
+      <Input Name="sell_from" Type="datetime" />
+      <Input Name="sell_to" Type="datetime" />
+      <Input Name="before_sale_display_kbn" Type="nvarchar" Size="1" />
+      <Input Name="after_sale_display_kbn" Type="nvarchar" Size="1" />
+      <Input Name="max_sell_quantity" Type="int" />
+      <Input Name="stock_management_kbn" Type="nvarchar" Size="1" />
+      <Input Name="stock_message_id" Type="nvarchar" Size="30" />
+      <Input Name="url" Type="nvarchar" Size="256" />
+      <Input Name="inquire_email" Type="nvarchar" Size="256" />
+      <Input Name="inquire_tel" Type="nvarchar" Size="30" />
+      <Input Name="display_kbn" Type="nvarchar" Size="1" />
+      <Input Name="category_id1" Type="nvarchar" Size="30" />
+      <Input Name="category_id2" Type="nvarchar" Size="30" />
+      <Input Name="category_id3" Type="nvarchar" Size="30" />
+      <Input Name="category_id4" Type="nvarchar" Size="30" />
+      <Input Name="category_id5" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_cs1" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_cs2" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_cs3" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_cs4" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_cs5" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_us1" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_us2" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_us3" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_us4" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_us5" Type="nvarchar" Size="30" />
+      <Input Name="image_head" Type="nvarchar" Size="50" />
+      <Input Name="icon_flg1" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end1" Type="datetime" />
+      <Input Name="icon_flg2" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end2" Type="datetime" />
+      <Input Name="icon_flg3" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end3" Type="datetime" />
+      <Input Name="icon_flg4" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end4" Type="datetime" />
+      <Input Name="icon_flg5" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end5" Type="datetime" />
+      <Input Name="icon_flg6" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end6" Type="datetime" />
+      <Input Name="icon_flg7" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end7" Type="datetime" />
+      <Input Name="icon_flg8" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end8" Type="datetime" />
+      <Input Name="icon_flg9" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end9" Type="datetime" />
+      <Input Name="icon_flg10" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end10" Type="datetime" />
+      <Input Name="use_variation_flg" Type="nvarchar" Size="2" />
+      <Input Name="fixed_purchase_flg" Type="nvarchar" Size="2" />
+      <Input Name="fixed_purchase_product_order_limit_flg" Type="nvarchar" Size="1" />
+      <Input Name="product_order_limit_flg_fp" Type="nvarchar" Size="1" />
+      <Input Name="member_rank_discount_flg" Type="nvarchar" Size="1" />
+      <Input Name="display_member_rank" Type="nvarchar" Size="30" />
+      <Input Name="buyable_member_rank" Type="nvarchar" Size="30" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="google_shopping_flg" Type="nvarchar" Size="1" />
+      <Input Name="product_option_settings" Type="nvarchar" Size="max" />
+      <Input Name="arrival_mail_valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="release_mail_valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="resale_mail_valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="select_variation_kbn" Type="nvarchar" Size="20" />
+      <Input Name="brand_id1" Type="nvarchar" Size="30" />
+      <Input Name="brand_id2" Type="nvarchar" Size="30" />
+      <Input Name="brand_id3" Type="nvarchar" Size="30" />
+      <Input Name="brand_id4" Type="nvarchar" Size="30" />
+      <Input Name="brand_id5" Type="nvarchar" Size="30" />
+      <Input Name="use_recommend_flg" Type="nvarchar" Size="1" />
+      <Input Name="plural_shipping_price_free_flg" Type="nvarchar" Size="1" />
+      <Input Name="gift_flg" Type ="nvarchar" Size="2" />
+      <Input Name="age_limit_flg" Type="nvarchar" Size="1" />
+      <Input Name="digital_contents_flg" Type="nvarchar" Size="1" />
+      <Input Name="download_url" Type="nvarchar" Size="max" />
+      <Input Name="display_sell_flg" Type="nvarchar" Size="1" />
+      <Input Name="display_priority" Type="int" />
+      <Input Name="limited_payment_ids" Type="nvarchar" Size="250"/>
+      <Input Name="fixed_purchase_firsttime_price" Type="decimal" Size="18,3" />
+      <Input Name="fixed_purchase_price" Type="decimal" Size="18,3" />
+      <Input Name="bundle_item_display_type" Type="nvarchar" Size="10" />
+      <Input Name="product_type" Type="nvarchar" Size="10" />
+      <Input Name="limited_fixed_purchase_kbn1_setting" Type="nvarchar" Size="200"/>
+      <Input Name="limited_fixed_purchase_kbn3_setting" Type="nvarchar" Size="200"/>
+      <Input Name="cooperation_id6" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id7" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id8" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id9" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id10" Type="nvarchar" Size="50" />
+      <Input Name="andmall_reservation_flg" Type="nvarchar" Size="3" />
+      <Input Name="display_only_fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+      <Input Name="sell_only_fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+      <Input Name="tax_category_id" Type="nvarchar" Size="30" />
+      <Input Name="product_weight_gram" Type="int" />
+      <Input Name="fixed_purchase_cancelable_count" Type="int" />
+      <Input Name="fixed_purchase_limited_user_level_ids" Type="nvarchar" Size="200" />
+      <Input Name="fixed_purchase_next_shipping_product_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_next_shipping_variation_id" Type="nvarchar" Size="60" />
+      <Input Name="fixed_purchase_next_shipping_item_quantity" Type="int" />
+      <Input Name="fixed_purchase_limited_skipped_count" Type="int" />
+      <Input Name="next_shipping_item_fixed_purchase_kbn" Type="nvarchar" Size="10" />
+      <Input Name="next_shipping_item_fixed_purchase_setting" Type="nvarchar" Size="10" />
+      <Input Name="product_size_factor" Type="int" />
+      <Input Name="add_cart_url_limit_flg" Type="nvarchar" Size="1" />
+      <Input Name="limited_fixed_purchase_kbn4_setting" Type="nvarchar" Size="50"/>
+      <Input Name="subscription_box_flg" Type="nvarchar" Size="2" />
+      <Input Name="member_rank_point_exclude_flg" Type="nvarchar" Size="1"/>
+      <Input Name="storepickup_flg" Type="nvarchar" Size="1" />
+      <Input Name="exclude_free_shipping_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </Insert>
+
+  <!-- Insert product variation -->
+  <InsertProductVariation>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductVariation
+                (
+                  w2_ProductVariation.shop_id,
+                  w2_ProductVariation.product_id,
+                  w2_ProductVariation.variation_id,
+                  w2_ProductVariation.variation_cooperation_id1,
+                  w2_ProductVariation.variation_cooperation_id2,
+                  w2_ProductVariation.variation_cooperation_id3,
+                  w2_ProductVariation.variation_cooperation_id4,
+                  w2_ProductVariation.variation_cooperation_id5,
+                  w2_ProductVariation.variation_download_url,
+                  w2_ProductVariation.mall_variation_id1,
+                  w2_ProductVariation.mall_variation_id2,
+                  w2_ProductVariation.mall_variation_type,
+                  w2_ProductVariation.variation_name1,
+                  w2_ProductVariation.variation_name2,
+                  w2_ProductVariation.variation_name3,
+                  w2_ProductVariation.variation_color_id,
+                  w2_ProductVariation.price,
+                  w2_ProductVariation.special_price,
+                  w2_ProductVariation.variation_image_head,
+                  w2_ProductVariation.display_order,
+                  w2_ProductVariation.date_created,
+                  w2_ProductVariation.date_changed,
+                  w2_ProductVariation.last_changed,
+                  w2_ProductVariation.variation_fixed_purchase_firsttime_price,
+                  w2_ProductVariation.variation_fixed_purchase_price,
+                  w2_ProductVariation.variation_cooperation_id6,
+                  w2_ProductVariation.variation_cooperation_id7,
+                  w2_ProductVariation.variation_cooperation_id8,
+                  w2_ProductVariation.variation_cooperation_id9,
+                  w2_ProductVariation.variation_cooperation_id10,
+                  w2_ProductVariation.variation_andmall_reservation_flg,
+                  w2_ProductVariation.variation_weight_gram,
+                  w2_ProductVariation.variation_add_cart_url_limit_flg
+                )
+          VALUES
+                (
+                  @shop_id,
+                  @product_id,
+                  @variation_id,
+                  @variation_cooperation_id1,
+                  @variation_cooperation_id2,
+                  @variation_cooperation_id3,
+                  @variation_cooperation_id4,
+                  @variation_cooperation_id5,
+                  @variation_download_url,
+                  @mall_variation_id1,
+                  @mall_variation_id2,
+                  @mall_variation_type,
+                  @variation_name1,
+                  @variation_name2,
+                  @variation_name3,
+                  @variation_color_id,
+                  @price,
+                  @special_price,
+                  @variation_image_head,
+                  @display_order,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed,
+                  @variation_fixed_purchase_firsttime_price,
+                  @variation_fixed_purchase_price,
+                  @variation_cooperation_id6,
+                  @variation_cooperation_id7,
+                  @variation_cooperation_id8,
+                  @variation_cooperation_id9,
+                  @variation_cooperation_id10,
+                  @variation_andmall_reservation_flg,
+                  @variation_weight_gram,
+                  @variation_add_cart_url_limit_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="variation_cooperation_id1" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id2" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id3" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id4" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id5" Type="nvarchar" Size="30" />
+      <Input Name="mall_variation_id1" Type="nvarchar" Size="30" />
+      <Input Name="mall_variation_id2" Type="nvarchar" Size="30" />
+      <Input Name="mall_variation_type" Type="nvarchar" Size="10" />
+      <Input Name="variation_name1" Type="nvarchar" Size="30" />
+      <Input Name="variation_name2" Type="nvarchar" Size="30" />
+      <Input Name="variation_name3" Type="nvarchar" Size="30" />
+      <Input Name="variation_color_id" Type="nvarchar" Size="30" />
+      <Input Name="price" Type="decimal" Size="18,3" />
+      <Input Name="special_price" Type="decimal" Size="18,3" />
+      <Input Name="variation_image_head" Type="nvarchar" Size="50" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="variation_download_url" Type="nvarchar" Size="max" />
+      <Input Name="variation_fixed_purchase_firsttime_price" Type="decimal" Size="18,3" />
+      <Input Name="variation_fixed_purchase_price" Type="decimal" Size="18,3" />
+      <Input Name="variation_cooperation_id6" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id7" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id8" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id9" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id10" Type="nvarchar" Size="50" />
+      <Input Name="variation_andmall_reservation_flg" Type="nvarchar" Size="3" />
+      <Input Name="variation_weight_gram" Type="int" />
+      <Input Name="variation_add_cart_url_limit_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </InsertProductVariation>
+
+  <!-- 商品情報更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Product
+           SET  w2_Product.note = @note,
+                w2_Product.supplier_id = @supplier_id,
+                w2_Product.cooperation_id1 = @cooperation_id1,
+                w2_Product.cooperation_id2 = @cooperation_id2,
+                w2_Product.cooperation_id3 = @cooperation_id3,
+                w2_Product.cooperation_id4 = @cooperation_id4,
+                w2_Product.cooperation_id5 = @cooperation_id5,
+                w2_Product.mall_ex_product_id = @mall_ex_product_id,
+                w2_Product.name = @name,
+                w2_Product.name_kana = @name_kana,
+                w2_Product.seo_keywords = @seo_keywords,
+                w2_Product.catchcopy = @catchcopy,
+                w2_Product.catchcopy_mobile = '',
+                w2_Product.search_keyword = @search_keyword,
+                w2_Product.outline_kbn = @outline_kbn,
+                w2_Product.outline = @outline,
+                w2_Product.outline_mobile = '',
+                w2_Product.desc_detail_kbn1 = @desc_detail_kbn1,
+                w2_Product.desc_detail1 = @desc_detail1,
+                w2_Product.desc_detail_kbn2 = @desc_detail_kbn2,
+                w2_Product.desc_detail2 = @desc_detail2,
+                w2_Product.desc_detail_kbn3 = @desc_detail_kbn3,
+                w2_Product.desc_detail3 = @desc_detail3,
+                w2_Product.desc_detail_kbn4 = @desc_detail_kbn4,
+                w2_Product.desc_detail4 = @desc_detail4,
+                w2_Product.return_exchange_message = @return_exchange_message,
+                w2_Product.desc_detail1_mobile = '',
+                w2_Product.desc_detail2_mobile = '',
+                w2_Product.return_exchange_message_mobile = '',
+                w2_Product.url = @url,
+                w2_Product.inquire_email = @inquire_email,
+                w2_Product.inquire_tel = @inquire_tel,
+                w2_Product.display_price = @display_price,
+                w2_Product.display_special_price = @display_special_price,
+                w2_Product.shipping_type = @shipping_type,
+                w2_Product.shipping_size_kbn = @shipping_size_kbn,
+                w2_Product.product_color_id = @product_color_id,
+                w2_Product.tax_included_flg = @tax_included_flg,
+                w2_Product.point_kbn1 = @point_kbn1,
+                w2_Product.point1 = @point1,
+                w2_Product.point_kbn2 = @point_kbn2,
+                w2_Product.point2 = @point2,
+                w2_Product.display_from = @display_from,
+                w2_Product.display_to = @display_to,
+                w2_Product.sell_from = @sell_from,
+                w2_Product.sell_to = @sell_to,
+                w2_Product.max_sell_quantity = @max_sell_quantity,
+                w2_Product.stock_management_kbn = @stock_management_kbn,
+                w2_Product.stock_message_id = @stock_message_id,
+                w2_Product.display_kbn = @display_kbn,
+                w2_Product.category_id1 = @category_id1,
+                w2_Product.category_id2 = @category_id2,
+                w2_Product.category_id3 = @category_id3,
+                w2_Product.category_id4 = @category_id4,
+                w2_Product.category_id5 = @category_id5,
+                w2_Product.related_product_id_cs1 = @related_product_id_cs1,
+                w2_Product.related_product_id_cs2 = @related_product_id_cs2,
+                w2_Product.related_product_id_cs3 = @related_product_id_cs3,
+                w2_Product.related_product_id_cs4 = @related_product_id_cs4,
+                w2_Product.related_product_id_cs5 = @related_product_id_cs5,
+                w2_Product.related_product_id_us1 = @related_product_id_us1,
+                w2_Product.related_product_id_us2 = @related_product_id_us2,
+                w2_Product.related_product_id_us3 = @related_product_id_us3,
+                w2_Product.related_product_id_us4 = @related_product_id_us4,
+                w2_Product.related_product_id_us5 = @related_product_id_us5,
+                w2_Product.image_head = @image_head,
+                w2_Product.image_mobile = '',
+                w2_Product.icon_flg1 = @icon_flg1,
+                w2_Product.icon_term_end1 = @icon_term_end1,
+                w2_Product.icon_flg3 = @icon_flg3,
+                w2_Product.icon_term_end3 = @icon_term_end3,
+                w2_Product.icon_flg2 = @icon_flg2,
+                w2_Product.icon_term_end2 = @icon_term_end2,
+                w2_Product.icon_flg4 = @icon_flg4,
+                w2_Product.icon_term_end4 = @icon_term_end4,
+                w2_Product.icon_flg5 = @icon_flg5,
+                w2_Product.icon_term_end5 = @icon_term_end5,
+                w2_Product.icon_flg6 = @icon_flg6,
+                w2_Product.icon_term_end6 = @icon_term_end6,
+                w2_Product.icon_flg7 = @icon_flg7,
+                w2_Product.icon_term_end7 = @icon_term_end7,
+                w2_Product.icon_flg8 = @icon_flg8,
+                w2_Product.icon_term_end8 = @icon_term_end8,
+                w2_Product.icon_flg9 = @icon_flg9,
+                w2_Product.icon_term_end9 = @icon_term_end9,
+                w2_Product.icon_flg10 = @icon_flg10,
+                w2_Product.icon_term_end10 = @icon_term_end10,
+                w2_Product.use_variation_flg = @use_variation_flg,
+                w2_Product.fixed_purchase_flg = @fixed_purchase_flg,
+                w2_Product.fixed_purchase_product_order_limit_flg = @fixed_purchase_product_order_limit_flg,
+                w2_Product.product_order_limit_flg_fp = @product_order_limit_flg_fp,
+                w2_Product.member_rank_discount_flg = @member_rank_discount_flg,
+                w2_Product.display_member_rank = @display_member_rank,
+                w2_Product.buyable_member_rank = @buyable_member_rank,
+                w2_Product.valid_flg = @valid_flg,
+                w2_Product.date_changed = getdate(),
+                w2_Product.last_changed = @last_changed,
+                w2_Product.google_shopping_flg = @google_shopping_flg,
+                w2_Product.product_option_settings = @product_option_settings,
+                w2_Product.arrival_mail_valid_flg = @arrival_mail_valid_flg,
+                w2_Product.release_mail_valid_flg = @release_mail_valid_flg,
+                w2_Product.resale_mail_valid_flg = @resale_mail_valid_flg,
+                w2_Product.select_variation_kbn = @select_variation_kbn,
+                w2_Product.brand_id1 = @brand_id1,
+                w2_Product.brand_id2 = @brand_id2,
+                w2_Product.brand_id3 = @brand_id3,
+                w2_Product.brand_id4 = @brand_id4,
+                w2_Product.brand_id5 = @brand_id5,
+                w2_Product.use_recommend_flg = @use_recommend_flg,
+                w2_Product.plural_shipping_price_free_flg = @plural_shipping_price_free_flg,
+                w2_Product.age_limit_flg = @age_limit_flg,
+                w2_Product.gift_flg = @gift_flg,
+                w2_Product.digital_contents_flg = @digital_contents_flg,
+                w2_Product.download_url = @download_url,
+                w2_Product.display_sell_flg = @display_sell_flg,
+                w2_Product.display_priority = @display_priority,
+                w2_Product.limited_payment_ids = @limited_payment_ids,
+                w2_Product.fixed_purchase_firsttime_price = @fixed_purchase_firsttime_price,
+                w2_Product.fixed_purchase_price = @fixed_purchase_price,
+                w2_Product.bundle_item_display_type = @bundle_item_display_type,
+                w2_Product.product_type = @product_type,
+                w2_Product.limited_fixed_purchase_kbn1_setting = @limited_fixed_purchase_kbn1_setting,
+                w2_Product.limited_fixed_purchase_kbn3_setting = @limited_fixed_purchase_kbn3_setting,
+                w2_Product.cooperation_id6 = @cooperation_id6,
+                w2_Product.cooperation_id7 = @cooperation_id7,
+                w2_Product.cooperation_id8 = @cooperation_id8,
+                w2_Product.cooperation_id9 = @cooperation_id9,
+                w2_Product.cooperation_id10 = @cooperation_id10,
+                w2_Product.andmall_reservation_flg = @andmall_reservation_flg,
+                w2_Product.tax_category_id = @tax_category_id,
+                w2_Product.display_only_fixed_purchase_member_flg = @display_only_fixed_purchase_member_flg,
+                w2_Product.sell_only_fixed_purchase_member_flg = @sell_only_fixed_purchase_member_flg,
+                w2_Product.product_weight_gram = @product_weight_gram,
+                w2_Product.fixed_purchase_cancelable_count = @fixed_purchase_cancelable_count,
+                w2_Product.fixed_purchase_limited_user_level_ids = @fixed_purchase_limited_user_level_ids,
+                w2_Product.fixed_purchase_next_shipping_product_id = @fixed_purchase_next_shipping_product_id,
+                w2_Product.fixed_purchase_next_shipping_variation_id = @fixed_purchase_next_shipping_variation_id,
+                w2_Product.fixed_purchase_next_shipping_item_quantity = @fixed_purchase_next_shipping_item_quantity,
+                w2_Product.fixed_purchase_limited_skipped_count = @fixed_purchase_limited_skipped_count,
+                w2_Product.next_shipping_item_fixed_purchase_kbn = @next_shipping_item_fixed_purchase_kbn,
+                w2_Product.next_shipping_item_fixed_purchase_setting = @next_shipping_item_fixed_purchase_setting,
+                w2_Product.product_size_factor = @product_size_factor,
+                w2_Product.add_cart_url_limit_flg = @add_cart_url_limit_flg,
+                w2_Product.limited_fixed_purchase_kbn4_setting = @limited_fixed_purchase_kbn4_setting,
+                w2_Product.subscription_box_flg = @subscription_box_flg,
+                w2_Product.member_rank_point_exclude_flg = @member_rank_point_exclude_flg,
+                w2_Product.storepickup_flg = @storepickup_flg,
+                w2_Product.exclude_free_shipping_flg = @exclude_free_shipping_flg
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <!-- すべて設定しても問題なし -->
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="supplier_id" Type="nvarchar" Size="20" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id1" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id2" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id3" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id4" Type="nvarchar" Size="30" />
+      <Input Name="cooperation_id5" Type="nvarchar" Size="30" />
+      <Input Name="mall_ex_product_id" Type="nvarchar" Size="30" />
+      <Input Name="maker_id" Type="nvarchar" Size="30" />
+      <Input Name="maker_name" Type="nvarchar" Size="50" />
+      <Input Name="name" Type="nvarchar" Size="100" />
+      <Input Name="name_kana" Type="nvarchar" Size="100" />
+      <Input Name="name2" Type="nvarchar" Size="100" />
+      <Input Name="name2_kana" Type="nvarchar" Size="100" />
+      <Input Name="seo_keywords" Type="nvarchar" Size="200" />
+      <Input Name="catchcopy" Type="nvarchar" Size="60" />
+      <Input Name="search_keyword" Type="nvarchar" Size="500" />
+      <Input Name="outline_kbn" Type="nvarchar" Size="1" />
+      <Input Name="outline" Type="nvarchar" Size="max" />
+      <Input Name="desc_detail_kbn1" Type="nvarchar" Size="1" />
+      <Input Name="desc_detail1" Type="ntext" />
+      <Input Name="desc_detail_kbn2" Type="nvarchar" Size="1" />
+      <Input Name="desc_detail2" Type="ntext" />
+      <Input Name="desc_detail_kbn3" Type="nvarchar" Size="1" />
+      <Input Name="desc_detail3" Type="ntext" />
+      <Input Name="desc_detail_kbn4" Type="nvarchar" Size="1" />
+      <Input Name="desc_detail4" Type="ntext" />
+      <Input Name="return_exchange_message" Type="ntext" />
+      <Input Name="note" Type="ntext" />
+      <Input Name="display_price" Type="decimal" Size="18,3" />
+      <Input Name="display_special_price" Type="decimal" Size="18,3" />
+      <Input Name="tax_included_flg" Type="nvarchar" Size="1" />
+      <Input Name="tax_rate" Type="int" />
+      <Input Name="tax_round_type" Type="nvarchar" Size="20" />
+      <Input Name="price_pretax" Type="decimal" Size="18,3" />
+      <Input Name="price_shipping" Type="decimal" />
+      <Input Name="shipping_type" Type="nvarchar" Size="10" />
+      <Input Name="shipping_size_kbn" Type="nvarchar" Size="4" />
+      <Input Name="product_color_id" Type="nvarchar" Size="50" />
+      <Input Name="price_cost" Type="decimal" />
+      <Input Name="kbn1" Type="nvarchar" Size="30" />
+      <Input Name="kbn2" Type="nvarchar" Size="30" />
+      <Input Name="kbn3" Type="nvarchar" Size="30" />
+      <Input Name="kbn4" Type="nvarchar" Size="30" />
+      <Input Name="kbn5" Type="nvarchar" Size="30" />
+      <Input Name="point_kbn1" Type="nvarchar" Size="1" />
+      <Input Name="point1" Type="decimal" />
+      <Input Name="point_kbn2" Type="nvarchar" Size="1" />
+      <Input Name="point2" Type="decimal" />
+      <Input Name="point_kbn3" Type="nvarchar" Size="1" />
+      <Input Name="point3" Type="decimal" />
+      <Input Name="campaign_from" Type="datetime" />
+      <Input Name="campaign_to" Type="datetime" />
+      <Input Name="campaign_point_kbn" Type="nvarchar" Size="1" />
+      <Input Name="campaign_point" Type="int" />
+      <Input Name="display_from" Type="datetime" />
+      <Input Name="display_to" Type="datetime" />
+      <Input Name="sell_from" Type="datetime" />
+      <Input Name="sell_to" Type="datetime" />
+      <Input Name="before_sale_display_kbn" Type="nvarchar" Size="1" />
+      <Input Name="after_sale_display_kbn" Type="nvarchar" Size="1" />
+      <Input Name="max_sell_quantity" Type="int" />
+      <Input Name="stock_management_kbn" Type="nvarchar" Size="1" />
+      <Input Name="stock_message_id" Type="nvarchar" Size="30" />
+      <Input Name="url" Type="nvarchar" Size="256" />
+      <Input Name="inquire_email" Type="nvarchar" Size="256" />
+      <Input Name="inquire_tel" Type="nvarchar" Size="30" />
+      <Input Name="display_kbn" Type="nvarchar" Size="1" />
+      <Input Name="category_id1" Type="nvarchar" Size="30" />
+      <Input Name="category_id2" Type="nvarchar" Size="30" />
+      <Input Name="category_id3" Type="nvarchar" Size="30" />
+      <Input Name="category_id4" Type="nvarchar" Size="30" />
+      <Input Name="category_id5" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_cs1" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_cs2" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_cs3" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_cs4" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_cs5" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_us1" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_us2" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_us3" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_us4" Type="nvarchar" Size="30" />
+      <Input Name="related_product_id_us5" Type="nvarchar" Size="30" />
+      <Input Name="image_head" Type="nvarchar" Size="50" />
+      <Input Name="icon_flg1" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end1" Type="datetime" />
+      <Input Name="icon_flg2" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end2" Type="datetime" />
+      <Input Name="icon_flg3" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end3" Type="datetime" />
+      <Input Name="icon_flg4" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end4" Type="datetime" />
+      <Input Name="icon_flg5" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end5" Type="datetime" />
+      <Input Name="icon_flg6" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end6" Type="datetime" />
+      <Input Name="icon_flg7" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end7" Type="datetime" />
+      <Input Name="icon_flg8" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end8" Type="datetime" />
+      <Input Name="icon_flg9" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end9" Type="datetime" />
+      <Input Name="icon_flg10" Type="nvarchar" Size="1" />
+      <Input Name="icon_term_end10" Type="datetime" />
+      <Input Name="use_variation_flg" Type="nvarchar" Size="2" />
+      <Input Name="fixed_purchase_flg" Type="nvarchar" Size="2" />
+      <Input Name="fixed_purchase_product_order_limit_flg" Type="nvarchar" Size="1" />
+      <Input Name="product_order_limit_flg_fp" Type="nvarchar" Size="1" />
+      <Input Name="member_rank_discount_flg" Type="nvarchar" Size="1" />
+      <Input Name="display_member_rank" Type="nvarchar" Size="30" />
+      <Input Name="buyable_member_rank" Type="nvarchar" Size="30" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="google_shopping_flg" Type="nvarchar" Size="1" />
+      <Input Name="product_option_settings" Type="nvarchar" Size="max" />
+      <Input Name="arrival_mail_valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="release_mail_valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="resale_mail_valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="select_variation_kbn" Type="nvarchar" Size="20" />
+      <Input Name="brand_id1" Type="nvarchar" Size="30" />
+      <Input Name="brand_id2" Type="nvarchar" Size="30" />
+      <Input Name="brand_id3" Type="nvarchar" Size="30" />
+      <Input Name="brand_id4" Type="nvarchar" Size="30" />
+      <Input Name="brand_id5" Type="nvarchar" Size="30" />
+      <Input Name="use_recommend_flg" Type="nvarchar" Size="1" />
+      <Input Name="plural_shipping_price_free_flg" Type="nvarchar" Size="1" />
+      <Input Name="gift_flg" Type="nvarchar" Size="2" />
+      <Input Name="age_limit_flg" Type="nvarchar" Size="1" />
+      <Input Name="digital_contents_flg" Type="nvarchar" Size="1" />
+      <Input Name="download_url" Type="nvarchar" Size="max" />
+      <Input Name="display_sell_flg" Type="nvarchar" Size="1" />
+      <Input Name="display_priority" Type="int" />
+      <Input Name="limited_payment_ids" Type="nvarchar" Size="250"/>
+      <Input Name="fixed_purchase_firsttime_price" Type="decimal" Size="18,3" />
+      <Input Name="fixed_purchase_price" Type="decimal" Size="18,3" />
+      <Input Name="bundle_item_display_type" Type="nvarchar" Size="10" />
+      <Input Name="product_type" Type="nvarchar" Size="10" />
+      <Input Name="limited_fixed_purchase_kbn1_setting" Type="nvarchar" Size="200"/>
+      <Input Name="limited_fixed_purchase_kbn3_setting" Type="nvarchar" Size="200"/>
+      <Input Name="cooperation_id6" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id7" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id8" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id9" Type="nvarchar" Size="50" />
+      <Input Name="cooperation_id10" Type="nvarchar" Size="50" />
+      <Input Name="andmall_reservation_flg" Type="nvarchar" Size="3" />
+      <Input Name="display_only_fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+      <Input Name="sell_only_fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+      <Input Name="product_weight_gram" Type="int" />
+      <Input Name="tax_category_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_cancelable_count" Type="int" />
+      <Input Name="fixed_purchase_limited_user_level_ids" Type="nvarchar" Size="200" />
+      <Input Name="fixed_purchase_next_shipping_product_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_next_shipping_variation_id" Type="nvarchar" Size="60" />
+      <Input Name="fixed_purchase_next_shipping_item_quantity" Type="int" />
+      <Input Name="fixed_purchase_limited_skipped_count" Type="int" />
+      <Input Name="next_shipping_item_fixed_purchase_kbn" Type="nvarchar" Size="10" />
+      <Input Name="next_shipping_item_fixed_purchase_setting" Type="nvarchar" Size="10" />
+      <Input Name="product_size_factor" Type="int" />
+      <Input Name="add_cart_url_limit_flg" Type="nvarchar" Size="1" />
+      <Input Name="limited_fixed_purchase_kbn4_setting" Type="nvarchar" Size="50"/>
+      <Input Name="subscription_box_flg" Type="nvarchar" Size="2" />
+      <Input Name="member_rank_point_exclude_flg" Type="nvarchar" Size="1"/>
+      <Input Name="storepickup_flg" Type="nvarchar" Size="1" />
+      <Input Name="exclude_free_shipping_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </Update>
+
+  <!-- Update product variation -->
+  <UpdateProductVariation>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductVariation
+           SET  variation_cooperation_id1 = @variation_cooperation_id1,
+                variation_cooperation_id2 = @variation_cooperation_id2,
+                variation_cooperation_id3 = @variation_cooperation_id3,
+                variation_cooperation_id4 = @variation_cooperation_id4,
+                variation_cooperation_id5 = @variation_cooperation_id5,
+                variation_download_url = @variation_download_url,
+                mall_variation_id1 = @mall_variation_id1,
+                mall_variation_id2 = @mall_variation_id2,
+                mall_variation_type = @mall_variation_type,
+                variation_name1 = @variation_name1,
+                variation_name2 = @variation_name2,
+                variation_name3 = @variation_name3,
+                variation_color_id = @variation_color_id,
+                price = @price,
+                special_price = @special_price,
+                variation_image_head = @variation_image_head,
+                display_order = @display_order,
+                date_changed = GETDATE(),
+                last_changed = @last_changed,
+                variation_fixed_purchase_firsttime_price = @variation_fixed_purchase_firsttime_price,
+                variation_fixed_purchase_price = @variation_fixed_purchase_price,
+                variation_cooperation_id6 = @variation_cooperation_id6,
+                variation_cooperation_id7 = @variation_cooperation_id7,
+                variation_cooperation_id8 = @variation_cooperation_id8,
+                variation_cooperation_id9 = @variation_cooperation_id9,
+                variation_cooperation_id10 = @variation_cooperation_id10,
+                variation_andmall_reservation_flg = @variation_andmall_reservation_flg,
+                variation_weight_gram = @variation_weight_gram,
+                variation_add_cart_url_limit_flg = @variation_add_cart_url_limit_flg
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="variation_cooperation_id1" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id2" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id3" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id4" Type="nvarchar" Size="30" />
+      <Input Name="variation_cooperation_id5" Type="nvarchar" Size="30" />
+      <Input Name="mall_variation_id1" Type="nvarchar" Size="30" />
+      <Input Name="mall_variation_id2" Type="nvarchar" Size="30" />
+      <Input Name="mall_variation_type" Type="nvarchar" Size="10" />
+      <Input Name="variation_name1" Type="nvarchar" Size="30" />
+      <Input Name="variation_name2" Type="nvarchar" Size="30" />
+      <Input Name="variation_name3" Type="nvarchar" Size="30" />
+      <Input Name="variation_color_id" Type="nvarchar" Size="30" />
+      <Input Name="price" Type="decimal" Size="18,3" />
+      <Input Name="special_price" Type="decimal" Size="18,3" />
+      <Input Name="variation_image_head" Type="nvarchar" Size="50" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="variation_download_url" Type="nvarchar" Size="max" />
+      <Input Name="variation_fixed_purchase_firsttime_price" Type="decimal" Size="18,3" />
+      <Input Name="variation_fixed_purchase_price" Type="decimal" Size="18,3" />
+      <Input Name="variation_cooperation_id6" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id7" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id8" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id9" Type="nvarchar" Size="50" />
+      <Input Name="variation_cooperation_id10" Type="nvarchar" Size="50" />
+      <Input Name="variation_andmall_reservation_flg" Type="nvarchar" Size="3" />
+      <Input Name="variation_weight_gram" Type="int" />
+      <Input Name="variation_add_cart_url_limit_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </UpdateProductVariation>
+
+  <!-- 商品情報削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- Delete product variations -->
+  <DeleteProductVariations>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductVariation
+         WHERE  w2_ProductVariation.shop_id = @shop_id
+           AND  w2_ProductVariation.product_id = @product_id
+           AND  w2_ProductVariation.variation_id NOT IN (@@ ignored_variation_ids @@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductVariations>
+
+  <!-- 商品バリエーション情報削除 -->
+  <DeleteProductVariationAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductVariation
+         WHERE  w2_ProductVariation.shop_id = @shop_id 
+           AND  w2_ProductVariation.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductVariationAll>
+
+  <!-- Get product details (including variations) -->
+  <GetProductDetail>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductView.*,
+                RIGHT(w2_ProductView.variation_id, LEN(w2_ProductView.variation_id) - LEN(w2_ProductView.product_id)) AS v_id,
+                w2_ProductExtend.*,
+                w2_ShopShipping.shop_shipping_name,
+                w2_ProductTag.*,
+                w2_ProductTaxCategory.tax_category_name + ':' + CAST(w2_ProductTaxCategory.tax_rate as nvarchar) + '(%)' AS tax_category_name,
+                ISNULL((
+                  SELECT  w2_ProductCategory.name
+                    FROM  w2_ProductCategory
+                   WHERE  w2_ProductCategory.shop_id = w2_ProductView.shop_id
+                     AND  w2_ProductCategory.category_id = w2_ProductView.category_id1), '') AS category_name1,
+                ISNULL((
+                  SELECT  w2_ProductCategory.name
+                    FROM  w2_ProductCategory
+                   WHERE  w2_ProductCategory.shop_id = w2_ProductView.shop_id
+                     AND  w2_ProductCategory.category_id = w2_ProductView.category_id2), '') AS category_name2,
+                ISNULL((
+                  SELECT  w2_ProductCategory.name
+                    FROM  w2_ProductCategory
+                   WHERE  w2_ProductCategory.shop_id = w2_ProductView.shop_id
+                     AND  w2_ProductCategory.category_id = w2_ProductView.category_id3), '') AS category_name3,
+                ISNULL((
+                  SELECT  w2_ProductCategory.name
+                    FROM  w2_ProductCategory
+                   WHERE  w2_ProductCategory.shop_id = w2_ProductView.shop_id
+                     AND  w2_ProductCategory.category_id = w2_ProductView.category_id4), '') AS category_name4,
+                ISNULL((
+                  SELECT  w2_ProductCategory.name
+                    FROM  w2_ProductCategory
+                   WHERE  w2_ProductCategory.shop_id = w2_ProductView.shop_id
+                     AND  w2_ProductCategory.category_id = w2_ProductView.category_id5), '') AS category_name5,
+                ISNULL((
+                  SELECT  w2_ProductBrand.brand_name
+                    FROM  w2_ProductBrand
+                   WHERE  w2_ProductBrand.brand_id = w2_ProductView.brand_id1), '') AS brand_name1,
+                ISNULL((
+                  SELECT  w2_ProductBrand.brand_name
+                    FROM  w2_ProductBrand
+                   WHERE  w2_ProductBrand.brand_id = w2_ProductView.brand_id2), '') AS brand_name2,
+                ISNULL((
+                  SELECT  w2_ProductBrand.brand_name
+                    FROM  w2_ProductBrand
+                   WHERE  w2_ProductBrand.brand_id = w2_ProductView.brand_id3), '') AS brand_name3,
+                ISNULL((
+                  SELECT  w2_ProductBrand.brand_name
+                    FROM  w2_ProductBrand
+                   WHERE  w2_ProductBrand.brand_id = w2_ProductView.brand_id4), '') AS brand_name4,
+                ISNULL((
+                  SELECT  w2_ProductBrand.brand_name
+                    FROM  w2_ProductBrand
+                   WHERE  w2_ProductBrand.brand_id = w2_ProductView.brand_id5), '') AS brand_name5
+          FROM  w2_ProductView
+                LEFT JOIN w2_ShopShipping ON
+                (
+                  w2_ProductView.shop_id = w2_ShopShipping.shop_id
+                  AND
+                  w2_ProductView.shipping_type = w2_ShopShipping.shipping_id
+                )
+                LEFT JOIN w2_ProductExtend ON
+                (
+                  w2_ProductView.shop_id = w2_ProductExtend.shop_id
+                  AND
+                  w2_ProductView.product_id = w2_ProductExtend.product_id
+                )
+                LEFT JOIN w2_ProductTag ON
+                (
+                  w2_ProductView.product_id = w2_ProductTag.product_id
+                )
+                LEFT JOIN w2_ProductTaxCategory ON
+                (
+                  w2_ProductView.tax_category_id = w2_ProductTaxCategory.tax_category_id
+                )
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id = @product_id
+        ORDER BY display_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductDetail>
+
+
+  <!-- 商品情報を取得 -->
+  <GetProductByCooperationId1>
+    <Statement>
+      <![CDATA[
+        SELECT  shop_id, product_id, name, brand_id1
+          FROM  w2_Product
+         WHERE  shop_id = @shop_id
+           AND  cooperation_id1 = @cooperation_id1
+           AND  w2_Product.valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="cooperation_id1" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductByCooperationId1>
+
+  <!-- 商品情報を取得 -->
+  <GetProductVariationByCooperationId1>
+    <Statement>
+      <![CDATA[
+        SELECT  shop_id, product_id, variation_id, name, brand_id1
+          FROM  w2_Product
+         WHERE  shop_id = @shop_id
+           AND  variation_cooperation_id1 = @variation_cooperation_id1
+           AND  valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="variation_cooperation_id1" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductVariationByCooperationId1>
+
+  <!-- 商品IDが既に「商品ID+バリエーションID」として使用されるかチェック -->
+  <CheckProductIdIsUsedAsVariationId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_ProductVariation
+         WHERE  shop_id = @shop_id
+           AND  variation_id = @product_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckProductIdIsUsedAsVariationId>
+
+  <!-- 商品ID＋バリエーションIDが既に「商品ID」として使用されるかチェック -->
+  <CheckVariationIdIsUsedAsProductId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_Product
+         WHERE  shop_id = @shop_id
+           AND  product_id = @variation_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </CheckVariationIdIsUsedAsProductId>
+
+  <!-- 商品ID＋バリエーションIDが既に「商品ID+バリエーショID」として使用されるかチェック -->
+  <CheckVariationIdIsUsedAsVariationId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_ProductVariation
+         WHERE  shop_id = @shop_id
+           AND  variation_id = @variation_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </CheckVariationIdIsUsedAsVariationId>
+
+  <!-- Awooおすすめ商品表示パーツ用のマスタ情報を取得-->
+  <GetProductRecommendByAwoo>
+    <Statement>
+      <![CDATA[
+         DECLARE @current_date datetime = GETDATE()
+      
+        [[ USER_MEMBER_RANK_ORDER ]]
+                
+        SELECT  w2_Product.shop_id,
+                w2_Product.product_id,
+                w2_Product.cooperation_id1,
+                w2_Product.cooperation_id2,
+                w2_Product.cooperation_id3,
+                w2_Product.cooperation_id4,
+                w2_Product.cooperation_id5,
+                w2_Product.cooperation_id6,
+                w2_Product.cooperation_id7,
+                w2_Product.cooperation_id8,
+                w2_Product.cooperation_id9,
+                w2_Product.cooperation_id10,
+                w2_Product.catchcopy,
+                w2_Product.name,
+                w2_Product.display_price,
+                w2_Product.display_special_price,
+                w2_Product.category_id1 AS category_id,
+                w2_Product.category_id1,
+                w2_Product.category_id2,
+                w2_Product.category_id3,
+                w2_Product.category_id4,
+                w2_Product.category_id5,
+                w2_Product.image_head,
+                w2_Product.display_member_rank,
+                w2_Product.brand_id1,
+                productSale.sale_price,
+                w2_Product.tax_included_flg,
+                w2_Product.use_variation_flg,
+                w2_Product.icon_flg1,
+                w2_Product.icon_term_end1,
+                w2_Product.icon_flg2,
+                w2_Product.icon_term_end2,
+                w2_Product.icon_flg3,
+                w2_Product.icon_term_end3,
+                w2_Product.icon_flg4,
+                w2_Product.icon_term_end4,
+                w2_Product.icon_flg5,
+                w2_Product.icon_term_end5,
+                w2_Product.icon_flg6,
+                w2_Product.icon_term_end6,
+                w2_Product.icon_flg7,
+                w2_Product.icon_term_end7,
+                w2_Product.icon_flg8,
+                w2_Product.icon_term_end8,
+                w2_Product.icon_flg9,
+                w2_Product.icon_term_end9,
+                w2_Product.icon_flg10,
+                w2_Product.icon_term_end10,
+                w2_Product.name_kana,
+                w2_Product.sell_from,
+                [[ PRODUCT_SOLD_OUT_SELECT ]] AS productsoldout,
+                [[ MEMBER_RANK_PRICE_PRODUCT_WITHOUT_VARIATION ]],
+                w2_MemberRank.member_rank_order,
+                w2_ProductCategory.name AS w2_ProductCategory_name,
+                w2_ProductCategory.name_kana AS w2_ProductCategory_name_kana,
+                fixed_purchase_firsttime_price,
+                fixed_purchase_price,
+                w2_Product.fixed_purchase_flg
+          FROM  w2_Product
+                LEFT JOIN w2_MemberRank ON 
+                (
+                  w2_MemberRank.member_rank_id = w2_Product.display_member_rank
+                )
+                [[ JOIN_PRODUCT_SALE_PRICE ]]
+                LEFT JOIN w2_ProductCategory ON
+                (
+                  w2_Product.category_id1 = w2_ProductCategory.category_id -- カテゴリー 1 〜 5。カテゴリ 1 でのみ並べ替える
+                )
+                [[ JOIN_PRODUCT_CATEGORY ]]
+          WHERE  w2_Product.shop_id = @shop_id
+            AND  w2_Product.display_from <= @current_date      -- 表示期間内
+            AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+            AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+            AND  w2_Product.mobile_disp_flg IN ('0','1')   -- PC&モバイル OR PCのみ
+            AND  w2_Product.valid_flg = '1'                -- 有効
+            AND  w2_Product.product_id IN(@@ product_ids @@)
+            AND  (
+                  w2_MemberRank.member_rank_order IS NULL 
+                  OR
+                  w2_MemberRank.member_rank_order >= @member_rank_order --会員ランク順位 = 1 > 会員ランク順位 = 2 (3,4,5...)
+                  )
+            <@@hasval:brand_id@@>
+            AND  (
+                    w2_Product.brand_id1 = @brand_id
+                    OR
+                    w2_Product.brand_id2 = @brand_id
+                    OR
+                    w2_Product.brand_id3 = @brand_id
+                    OR
+                    w2_Product.brand_id4 = @brand_id
+                    OR
+                    w2_Product.brand_id5 = @brand_id
+                  )
+            </@@hasval:brand_id@@>
+            [[ PRODUCT_CATEGORY_SEARCH_WHERE ]]
+           AND  (
+                  w2_Product.display_only_fixed_purchase_member_flg = '0'
+                  OR
+                  (
+                    w2_Product.display_only_fixed_purchase_member_flg = '1'
+                    AND
+                    @fixed_purchase_member_flg = '1'
+                  )
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetProductRecommendByAwoo>
+
+  <!-- Awoo連携用商品情報を取得 -->
+  <GetProductForAwooProductSync>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime
+        SET @current_date = GETDATE()
+
+        SELECT  w2_Product.shop_id,
+                w2_Product.product_id,
+                w2_Product.name,
+                w2_Product.outline,
+                w2_Product.desc_detail1,
+                w2_Product.desc_detail2,
+                w2_Product.desc_detail3,
+                w2_Product.desc_detail4,
+                w2_Product.image_head,
+                w2_Product.display_price,
+                w2_Product.display_special_price,
+                w2_Product.sell_from,
+                w2_Product.category_id1,
+                productSale.sale_price,
+                w2_ProductBrand.brand_id,
+                w2_ProductBrand.brand_name,
+                w2_ProductCategory1.name AS category_name1,
+                w2_ProductCategory2.name AS category_name2,
+                w2_ProductCategory3.name AS category_name3,
+                w2_ProductCategory4.name AS category_name4,
+                w2_ProductCategory5.name AS category_name5,
+                ISNULL(FavoriteCount.favorite_count, 0) as favorite_count
+          FROM  w2_Product
+                [[ JOIN_PRODUCT_SALE_PRICE ]]
+                LEFT JOIN w2_ProductBrand ON
+                (
+                  w2_Product.brand_id1 = w2_ProductBrand.brand_id
+                )
+                LEFT JOIN w2_ProductCategory w2_ProductCategory1 ON
+                (
+                  w2_Product.category_id1 = w2_ProductCategory1.category_id
+                )
+                LEFT JOIN w2_ProductCategory w2_ProductCategory2 ON
+                (
+                  w2_Product.category_id2 = w2_ProductCategory2.category_id
+                )
+                LEFT JOIN w2_ProductCategory w2_ProductCategory3 ON
+                (
+                  w2_Product.category_id3 = w2_ProductCategory3.category_id
+                )
+                LEFT JOIN w2_ProductCategory w2_ProductCategory4 ON
+                (
+                  w2_Product.category_id4 = w2_ProductCategory4.category_id
+                )
+                LEFT JOIN w2_ProductCategory w2_ProductCategory5 ON
+                (
+                  w2_Product.category_id5 = w2_ProductCategory5.category_id
+                )
+                LEFT JOIN 
+                (
+                  SELECT  shop_id,
+                          product_id,
+                          COUNT(product_id) favorite_count
+                    FROM  w2_Favorite
+                   GROUP BY shop_id, product_id
+                ) AS FavoriteCount ON
+                (
+                  w2_Product.shop_id = FavoriteCount.shop_id
+                  AND
+                  w2_Product.product_id = FavoriteCount.product_id
+                )
+         WHERE  w2_Product.display_kbn = '0' -- 商品表示区分が「商品一覧〇かつ商品詳細〇」
+           AND  w2_Product.display_from <= @current_date 
+           AND  (
+                  w2_Product.display_to IS NULL
+                  OR
+                  w2_Product.display_to >= @current_date
+                )
+           AND  w2_Product.valid_flg = '1'
+    ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetProductForAwooProductSync>
+
+  <!-- 商品情価格を取得 -->
+  <GetProductPrice>
+    <Statement>
+      <![CDATA[
+        SELECT  price
+          FROM  w2_ProductView
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetProductPrice>
+
+  <!-- 商品バリエーション件数取得 -->
+  <GetProductVariationCounts>
+    <Statement>
+      <![CDATA[
+        SELECT  product_id,
+                COUNT(*)
+          FROM  w2_ProductVariation
+         WHERE  shop_id = @shop_id
+           AND  product_id IN (@@ product_ids @@)
+         GROUP BY product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductVariationCounts>
+</Product>

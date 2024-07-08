@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文情報登録系SQLステートメントXML(OrderRegist.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderRegist>
+
+  <!-- ユーザ一覧取得 -->
+  <GetUserList>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  w2_User.*
+          FROM  (
+                  SELECT  w2_User.user_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ USER_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_User
+                          [[ USER_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_User ON
+                (
+                  RowIndex.user_id = w2_User.user_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="80" />
+      <Input Name="mail_addr_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="name_kana_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="tel1_like_escaped" Type="nvarchar" Size="32" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetUserList>
+
+  <!-- ユーザ情報該当件数取得 -->
+  <GetUserCount>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        SELECT ISNULL(COUNT(w2_User.user_id), 0) AS row_count
+          FROM  w2_User
+                [[ USER_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="80" />
+      <Input Name="mail_addr_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="name_kana_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="tel1_like_escaped" Type="nvarchar" Size="32" />
+    </Parameter>
+  </GetUserCount>
+
+  <!-- 注文メモ系更新 -->
+  <UpdateOrderMemos>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Order
+           SET  payment_memo = @payment_memo,
+                management_memo = @management_memo,
+                relation_memo = @relation_memo,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="payment_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="management_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="relation_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateOrderMemos>
+
+</OrderRegist>

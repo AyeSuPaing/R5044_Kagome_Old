@@ -1,0 +1,251 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : タスクスケジュールマスタ系SQLステートメントXML (TaskSchedule.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<TaskSchedule>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_TaskSchedule
+         WHERE  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           AND  action_no = @action_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+    </Parameter>
+  </Get>
+
+  <!-- 取得(実行区分、実行マスタID) -->
+  <GetMasterId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_TaskSchedule
+         WHERE  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMasterId>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_TaskSchedule
+                (
+                  schedule_date
+                  ,dept_id
+                  ,action_kbn
+                  ,action_master_id
+                  ,action_no
+                  ,prepare_status
+                  ,execute_status
+                  ,progress
+                  ,stop_flg
+                  ,del_flg
+                  ,date_begin
+                  ,date_end
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @schedule_date
+                  ,@dept_id
+                  ,@action_kbn
+                  ,@action_master_id
+                  ,@action_no
+                  ,@prepare_status
+                  ,@execute_status
+                  ,@progress
+                  ,@stop_flg
+                  ,@del_flg
+                  ,@date_begin
+                  ,@date_end
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="schedule_date" Type="datetime" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <Input Name="prepare_status" Type="nvarchar" Size="10" />
+      <Input Name="execute_status" Type="nvarchar" Size="10" />
+      <Input Name="progress" Type="nvarchar" Size="30" />
+      <Input Name="stop_flg" Type="nvarchar" Size="10" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_begin" Type="datetime" />
+      <Input Name="date_end" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_TaskSchedule
+         WHERE  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           AND  action_no = @action_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+    </Parameter>
+  </Delete>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_TaskSchedule
+           SET  schedule_date = @schedule_date
+                ,prepare_status = @prepare_status
+                ,execute_status = @execute_status
+                ,progress = @progress
+                ,stop_flg = @stop_flg
+                ,del_flg = @del_flg
+                ,date_begin = @date_begin
+                ,date_end = @date_end
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           AND  action_no = @action_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="schedule_date" Type="datetime" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <Input Name="prepare_status" Type="nvarchar" Size="10" />
+      <Input Name="execute_status" Type="nvarchar" Size="10" />
+      <Input Name="progress" Type="nvarchar" Size="30" />
+      <Input Name="stop_flg" Type="nvarchar" Size="10" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_begin" Type="datetime" />
+      <Input Name="date_end" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 準備ステータス更新 -->
+  <!--
+    本当はschedule_noで完了更新したいがスケジュール重複で実行されないタスクが
+    あった場合に両方更新したいため区分とかIDで更新するようにする
+  -->
+  <UpdatePrepareTaskStatus>
+    <Statement>
+      <![CDATA[
+        -- ステータス更新
+        UPDATE  w2_TaskSchedule
+           SET  prepare_status = @prepare_status,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  schedule_date = @schedule_date
+           AND  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           AND  action_no = @action_no
+           AND  (@prepare_status_target IS NULL OR prepare_status = @prepare_status_target)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="schedule_date" Type="datetime" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <Input Name="prepare_status" Type="nvarchar" Size="10" />
+      <Input Name="prepare_status_target" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdatePrepareTaskStatus>
+
+  <!-- 本ステータス更新(開始) -->
+  <!--
+    本当はschedule_noで完了更新したいがスケジュール重複で実行されないタスクが
+    あった場合に両方更新したいため区分とかIDで更新するようにする
+  -->
+  <UpdateTaskStatusBegin>
+    <Statement>
+      <![CDATA[
+        -- ステータス更新
+        UPDATE  w2_TaskSchedule
+           SET  execute_status = @execute_status,
+                progress = @progress,
+                date_begin = GETDATE(),
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  schedule_date = @schedule_date
+           AND  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           AND  action_no = @action_no
+           AND  (@execute_status_target IS NULL OR execute_status = @execute_status_target)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="schedule_date" Type="datetime" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <Input Name="execute_status" Type="nvarchar" Size="10" />
+      <Input Name="execute_status_target" Type="nvarchar" Size="10" />
+      <Input Name="progress" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateTaskStatusBegin>
+
+  <!-- 最大アクションNO取得 -->
+  <GetMaxActionNo>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MAX(action_no), 0)
+          FROM  w2_TaskSchedule
+         WHERE  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMaxActionNo>
+
+</TaskSchedule>

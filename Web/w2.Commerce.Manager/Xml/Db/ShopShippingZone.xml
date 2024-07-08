@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 店舗配送料地帯系SQLステートメントXML(ShopShippingZone.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ShopShippingZone>
+  <!-- 店舗配送料地帯情報一覧を取得する -->
+  <GetShippingZoneList>
+    <Statement>
+      <![CDATA[
+         -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_ShopShippingZone.shipping_zone_no), 0)
+          FROM  w2_ShopShippingZone
+                INNER JOIN w2_ShopShipping ON
+                (
+                  w2_ShopShippingZone.shop_id = w2_ShopShipping.shop_id
+                  AND
+                  w2_ShopShippingZone.shipping_id = w2_ShopShipping.shipping_id
+                )
+                [[ SHOPSHIPPINGZONE_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_ShopShippingZone.*,
+                w2_ShopShipping.shop_shipping_name,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ShopShippingZone.shop_id,
+                          w2_ShopShippingZone.shipping_id,
+                          w2_ShopShippingZone.delivery_company_id,
+                          w2_ShopShippingZone.shipping_zone_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ SHOPSHIPPINGZONE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ShopShippingZone
+                          [[ SHOPSHIPPINGZONE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ShopShippingZone ON
+                (
+                  RowIndex.shop_id = w2_ShopShippingZone.shop_id
+                  AND
+                  RowIndex.shipping_id = w2_ShopShippingZone.shipping_id
+                  AND
+                  RowIndex.delivery_company_id = w2_ShopShippingZone.delivery_company_id
+                  AND
+                  RowIndex.shipping_zone_no = w2_ShopShippingZone.shipping_zone_no
+                )
+                INNER JOIN w2_ShopShipping ON
+                (
+                  w2_ShopShippingZone.shop_id = w2_ShopShipping.shop_id
+                  AND
+                  w2_ShopShippingZone.shipping_id = w2_ShopShipping.shipping_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="min_shipping_zone_no" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetShippingZoneList>
+
+  <!-- 店舗配送料地帯情報を取得する -->
+  <GetShippingZone>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ShopShippingZone.*, 
+                w2_ShopShipping.shop_shipping_name
+          FROM  w2_ShopShippingZone, w2_ShopShipping 
+         WHERE  w2_ShopShippingZone.shop_id = @shop_id
+           AND  w2_ShopShippingZone.shipping_id = @shipping_id
+           AND  w2_ShopShippingZone.shipping_zone_no = @shipping_zone_no
+           AND  w2_ShopShippingZone.shipping_id = w2_ShopShipping.shipping_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_zone_no" Type="int" />
+    </Parameter>
+  </GetShippingZone>
+
+  <!-- 登録用配送料設定ID重複チェック -->
+  <CheckDuplicationRegistShippingZoneNo>
+    <Statement>
+      <![CDATA[
+      SELECT  COUNT(shipping_zone_no) AS count
+        FROM  w2_ShopShippingZone
+       WHERE  w2_ShopShippingZone.shop_id = @shop_id
+         AND  w2_ShopShippingZone.shipping_id = @shipping_id
+         <@@hasval:shipping_zone_no@@>
+         AND  w2_ShopShippingZone.shipping_zone_no = @shipping_zone_no
+         </@@hasval:shipping_zone_no@@>
+         <@@hasval:shipping_zone_no_tw@@>
+         AND  w2_ShopShippingZone.shipping_zone_no = @shipping_zone_no_tw
+         </@@hasval:shipping_zone_no_tw@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_zone_no" Type="int" />
+      <Input Name="shipping_zone_no_tw" Type="int" />
+    </Parameter>
+  </CheckDuplicationRegistShippingZoneNo>
+  
+  <!-- 更新用配送料設定ID重複チェック -->
+  <CheckDuplicationModifyShippingZoneNo>
+    <Statement>
+      <![CDATA[
+      SELECT  COUNT(shipping_zone_no) AS count
+        FROM  w2_ShopShippingZone
+       WHERE  w2_ShopShippingZone.shop_id = @shop_id
+         AND  w2_ShopShippingZone.shipping_id = @shipping_id
+         <@@hasval:shipping_zone_no@@>
+         AND  w2_ShopShippingZone.shipping_zone_no = @shipping_zone_no
+         AND  (
+                @shipping_id != @shipping_id_old
+                OR
+                @shipping_zone_no != @shipping_zone_no_old
+               )
+         </@@hasval:shipping_zone_no@@>
+         <@@hasval:shipping_zone_no_tw@@>
+         AND  w2_ShopShippingZone.shipping_zone_no = @shipping_zone_no_tw
+         AND  (
+                @shipping_id != @shipping_id_old
+                OR
+                @shipping_zone_no_tw != @shipping_zone_no_old
+               )
+         </@@hasval:shipping_zone_no_tw@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_zone_no" Type="int" />
+      <Input Name="shipping_zone_no_tw" Type="int" />
+      <Input Name="shipping_id_old" Type="nvarchar" Size="10" />
+      <Input Name="shipping_zone_no_old" Type="int" />
+    </Parameter>
+  </CheckDuplicationModifyShippingZoneNo>
+  
+</ShopShippingZone>

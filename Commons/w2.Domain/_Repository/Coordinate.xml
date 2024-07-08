@@ -1,0 +1,579 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : コーディネートマスタ系SQLステートメントXML (Coordinate.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<Coordinate>
+
+  <!-- 
+    コーディネート情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetCoordinateMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_Coordinate
+            [[ COORDINATE_SEARCH_JOIN ]]
+            [[ COORDINATE_MASTER_SEARCH_WHERE ]]
+            [[ COORDINATE_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetCoordinateMaster>
+
+  <!-- 
+    コーディネートアイテム情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetCoordinateItemMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_CoordinateItem
+      ]]>
+    </Statement>
+  </GetCoordinateItemMaster>
+
+  <!-- コーディネートマスタフィールドチェック -->
+  <CheckCoordinateFields>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  w2_Coordinate
+      ]]>
+    </Statement>
+  </CheckCoordinateFields>
+
+  <!-- コーディネートアイテムマスタフィールドチェック -->
+  <CheckCoordinateItemFields>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  w2_CoordinateItem
+      ]]>
+    </Statement>
+  </CheckCoordinateItemFields>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(distinct(w2_Coordinate.coordinate_id))
+          FROM  w2_Coordinate
+                [[ COORDINATE_SEARCH_JOIN ]]
+                [[ COORDINATE_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Coordinate.*,
+                ISNULL(w2_Staff.staff_name, '') as staff_name,
+                ISNULL(w2_Staff.staff_height, 0) as staff_height,
+                ISNULL(w2_RealShop.name, '') as real_shop_name
+          FROM  (
+                  SELECT  w2_Coordinate.coordinate_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ COORDINATE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Coordinate
+                          [[ COORDINATE_SEARCH_JOIN ]]
+                          [[ COORDINATE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Coordinate ON
+                (
+                  RowIndex.coordinate_id = w2_Coordinate.coordinate_id
+                )
+                LEFT JOIN w2_Staff ON
+                (
+                  w2_Coordinate.staff_id = w2_Staff.staff_id
+                )
+                LEFT JOIN w2_RealShop ON
+                (
+                  w2_Coordinate.real_shop_id = w2_RealShop.real_shop_id
+                )
+                <@@hasval:category_like_escaped@@>
+                LEFT JOIN w2_CoordinateItem ON
+                (
+                  w2_CoordinateItem.item_kbn = 'CTG'
+                  AND
+                  w2_Coordinate.coordinate_id = w2_CoordinateItem.coordinate_id
+                )
+                </@@hasval:category_like_escaped@@>
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Coordinate.*,
+                ISNULL(w2_Staff.staff_name, '') as staff_name,
+                ISNULL(w2_Staff.staff_height, 0) as staff_height,
+                ISNULL(w2_Staff.staff_profile, '') as staff_profile,
+                ISNULL(w2_Staff.valid_flg, '0') as staff_valid_flg,
+                ISNULL(w2_Staff.staff_instagram_id, '') as staff_instagram_id,
+                ISNULL(w2_RealShop.name, '') as real_shop_name
+          FROM  w2_Coordinate
+                LEFT JOIN w2_Staff ON
+                (
+                  w2_Coordinate.staff_id =  w2_Staff.staff_id
+                )
+                LEFT JOIN w2_RealShop ON
+                (
+                  w2_Coordinate.real_shop_id =  w2_RealShop.real_shop_id
+                )
+         WHERE  coordinate_id = @coordinate_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- プレビュー用に取得 -->
+  <GetForPreview>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Coordinate.*,
+                ISNULL(w2_Staff.staff_name, '') as staff_name,
+                ISNULL(w2_Staff.staff_height, 0) as staff_height,
+                ISNULL(w2_Staff.staff_profile, '') as staff_profile,
+                ISNULL(w2_Staff.staff_instagram_id, '') as staff_instagram_id,
+                ISNULL(w2_RealShop.name, '') as real_shop_name,
+                ISNULL(w2_CoordinateItem.item_id, '') as item_id,
+                ISNULL(w2_CoordinateItem.item_id2, '') as item_id2,
+                ISNULL(w2_CoordinateItem.item_kbn, '') as item_kbn
+          FROM  w2_Coordinate
+                LEFT JOIN w2_Staff ON
+                (
+                  w2_Coordinate.staff_id = w2_Staff.staff_id
+                )
+                LEFT JOIN w2_RealShop ON
+                (
+                  w2_Coordinate.real_shop_id = w2_RealShop.real_shop_id
+                )
+                LEFT JOIN w2_CoordinateItem ON
+                (
+                  w2_Coordinate.coordinate_id = w2_CoordinateItem.coordinate_id
+                )
+         WHERE  w2_Coordinate.coordinate_id = @coordinate_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetForPreview>
+
+  <!-- いいねリストを取得 -->
+  <GetLikeList>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  (
+                  SELECT  w2_UserActivity.user_id,
+                          w2_UserActivity.master_kbn,
+                          w2_UserActivity.master_id,
+                          w2_Coordinate.*,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            ORDER BY w2_UserActivity.master_id DESC
+                          ) AS row_num
+                    FROM  w2_UserActivity
+                    LEFT JOIN w2_Coordinate ON
+                    (
+                      w2_Coordinate.coordinate_id = w2_UserActivity.master_id
+                    )
+                   WHERE  user_id = @user_id
+                     AND  master_kbn = 'COORDINATE_LIKE'
+                     AND  w2_Coordinate.display_kbn = 'PUBLIC'
+                     AND  w2_Coordinate.display_date < GETDATE()
+                ) AS RowIndex
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetLikeList>
+
+  <!-- いいねリスト件数を取得 -->
+  <GetLikeListCount>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(COUNT(master_id), 0)
+          FROM  w2_UserActivity
+                LEFT JOIN w2_Coordinate ON
+                (
+                  w2_Coordinate.coordinate_id = w2_UserActivity.master_id
+                )
+         WHERE  user_id = @user_id
+           AND  master_kbn = 'COORDINATE_LIKE'
+           AND  w2_Coordinate.display_kbn = 'PUBLIC'
+           AND  w2_Coordinate.display_date < GETDATE()
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetLikeListCount>
+
+  <!-- 取得 -->
+  <GetItems>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CoordinateItem
+         WHERE  coordinate_id = @coordinate_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetItems>
+
+  <!-- 商品IDで取得 -->
+  <GetItemsByProductId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CoordinateItem
+         WHERE  item_id = @product_id
+           AND  item_kbn = 'PDT'
+        ORDER BY coordinate_id DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetItemsByProductId>
+
+  <!-- 全取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Coordinate.*,
+                ISNULL(w2_Staff.staff_name, '') as staff_name,
+                ISNULL(w2_Staff.staff_height, 0) as staff_height,
+                ISNULL(w2_RealShop.name, '') as real_shop_name
+          FROM  w2_Coordinate
+                LEFT JOIN w2_Staff ON
+                (
+                  w2_Coordinate.staff_id =  w2_Staff.staff_id
+                )
+                LEFT JOIN w2_RealShop ON
+                (
+                  w2_Coordinate.real_shop_id =  w2_RealShop.real_shop_id
+                )
+        ORDER BY w2_Coordinate.coordinate_id DESC
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetAll>
+
+  <!-- いいねランキングを取得 -->
+  <GetLikeRankingList>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(Ranking.Count, 0) AS ranking_count,
+                ISNULL(w2_Staff.staff_id, '') AS staff_id,
+                ISNULL(w2_Staff.staff_name, '') AS staff_name,
+                ISNULL(w2_Staff.staff_height, 0) AS staff_height,
+                ISNULL(w2_RealShop.name, '') AS real_shop_name,
+                w2_Coordinate.*
+          FROM  (
+                  SELECT  count(*) AS COUNT,
+                          master_id
+                    FROM  w2_Coordinate
+                          LEFT JOIN w2_UserActivity ON
+                          (
+                            w2_Coordinate.coordinate_id = w2_UserActivity.master_id
+                          )
+                   WHERE  w2_UserActivity.master_kbn ='COORDINATE_LIKE'
+                     AND  CAST(date AS DATE) > CAST(DATEADD(DAY, @count_days*(-1), GETDATE()) AS DATE)
+                     AND  CAST(date AS DATE) < CAST(DATEADD(DAY, 1, GETDATE()) AS DATE)
+                  GROUP BY w2_UserActivity.master_id
+                ) AS Ranking
+                RIGHT JOIN w2_Coordinate ON
+                (
+                  w2_Coordinate.coordinate_id = Ranking.master_id
+                )
+                LEFT JOIN w2_Staff ON
+                (
+                  w2_Coordinate.staff_id = w2_Staff.staff_id
+                )
+                LEFT JOIN w2_RealShop ON
+                (
+                  w2_Coordinate.real_shop_id = w2_RealShop.real_shop_id
+                )
+         WHERE  w2_Coordinate.display_kbn ='PUBLIC'
+           AND  w2_Coordinate.display_date < GETDATE()
+        ORDER BY ranking_count DESC,
+                 display_date DESC,
+                 coordinate_id DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="count_days" Type="int" />
+    </Parameter>
+  </GetLikeRankingList>
+
+  <!-- 目次概要ランキングを取得 -->
+  <GetContentsSummaryRankingList>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(Ranking.Count, 0) AS ranking_count,
+                coordinate_id,
+                ISNULL(w2_Staff.staff_id, '') AS staff_id,
+                ISNULL(w2_Staff.staff_name, '') AS staff_name,
+                ISNULL(w2_Staff.staff_height, 0) AS staff_height,
+                ISNULL(w2_RealShop.name, '') AS real_shop_name,
+                w2_Coordinate.*
+          FROM  (
+                  SELECT  w2_ContentsSummaryAnalysis.count,
+                          contents_id
+                    FROM  w2_Coordinate
+                          LEFT JOIN w2_ContentsSummaryAnalysis ON
+                          (
+                            w2_Coordinate.coordinate_id = w2_ContentsSummaryAnalysis.contents_id
+                          )
+                   WHERE  w2_ContentsSummaryAnalysis.report_type = @report_type
+                     AND  CAST(date AS DATE) > CAST(DATEADD(DAY, @count_days*(-1), GETDATE()) AS DATE)
+                     AND  CAST(date AS DATE) < CAST(DATEADD(DAY, 1, GETDATE()) AS DATE)
+                     AND  w2_Coordinate.display_kbn ='PUBLIC'
+                  GROUP BY w2_ContentsSummaryAnalysis.contents_id,
+                           w2_ContentsSummaryAnalysis.count
+                ) AS Ranking
+                RIGHT JOIN w2_Coordinate ON
+                (
+                  w2_Coordinate.coordinate_id = Ranking.contents_id
+                )
+                LEFT JOIN w2_Staff ON
+                (
+                  w2_Coordinate.staff_id = w2_Staff.staff_id
+                )
+                LEFT JOIN w2_RealShop ON
+                (
+                  w2_Coordinate.real_shop_id = w2_RealShop.real_shop_id
+                )
+         WHERE  w2_Coordinate.display_kbn ='PUBLIC'
+           AND  w2_Coordinate.display_date < GETDATE()
+        ORDER BY ranking_count DESC,
+                 display_date DESC,
+                 w2_Coordinate.coordinate_id DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="report_type" Type="nvarchar" Size="10" />
+      <Input Name="count_days" Type="int" />
+    </Parameter>
+  </GetContentsSummaryRankingList>
+
+  <!-- 先頭のコーディネート取得 (プレビュー用) -->
+  <GetCoordinateTopForPreview>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                w2_Coordinate.*,
+                ISNULL(w2_Staff.staff_name, '') as staff_name,
+                ISNULL(w2_Staff.staff_height, 0) as staff_height,
+                ISNULL(w2_Staff.staff_profile, '') as staff_profile,
+                ISNULL(w2_Staff.staff_instagram_id, '') as staff_instagram_id,
+                ISNULL(w2_RealShop.name, '') as real_shop_name
+          FROM  w2_Coordinate
+                LEFT JOIN w2_Staff ON
+                (
+                  w2_Coordinate.staff_id =  w2_Staff.staff_id
+                )
+                LEFT JOIN w2_RealShop ON
+                (
+                  w2_Coordinate.real_shop_id =  w2_RealShop.real_shop_id
+                )
+         WHERE  w2_Coordinate.display_kbn ='PUBLIC'
+           AND  w2_Coordinate.display_date < GETDATE()
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetCoordinateTopForPreview>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_Coordinate
+                (
+                  coordinate_id
+                  ,coordinate_title
+                  ,coordinate_url
+                  ,coordinate_summary
+                  ,internal_memo
+                  ,staff_id
+                  ,real_shop_id
+                  ,html_title
+                  ,metadata_desc
+                  ,display_kbn
+                  ,display_date
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @coordinate_id
+                  ,@coordinate_title
+                  ,@coordinate_url
+                  ,@coordinate_summary
+                  ,@internal_memo
+                  ,@staff_id
+                  ,@real_shop_id
+                  ,@html_title
+                  ,@metadata_desc
+                  ,@display_kbn
+                  ,@display_date
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_id" Type="nvarchar" Size="30" />
+      <Input Name="coordinate_title" Type="nvarchar" Size="200" />
+      <Input Name="coordinate_url" Type="nvarchar" Size="2000" />
+      <Input Name="coordinate_summary" Type="nvarchar" Size="MAX" />
+      <Input Name="internal_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="staff_id" Type="nvarchar" Size="30" />
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="html_title" Type="nvarchar" Size="200" />
+      <Input Name="metadata_desc" Type="nvarchar" Size="200" />
+      <Input Name="display_kbn" Type="nvarchar" Size="20" />
+      <Input Name="display_date" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 登録 -->
+  <InsertCoordinateItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CoordinateItem
+                (
+                  coordinate_id
+                  ,item_kbn
+                  ,item_id
+                  ,item_id2
+                  ,item_name
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @coordinate_id
+                  ,@item_kbn
+                  ,@item_id
+                  ,@item_id2
+                  ,@item_name
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_id" Type="nvarchar" Size="30" />
+      <Input Name="item_no" Type="int" />
+      <Input Name="item_kbn" Type="nvarchar" Size="15" />
+      <Input Name="item_id" Type="nvarchar" Size="30" />
+      <Input Name="item_id2" Type="nvarchar" Size="30" />
+      <Input Name="item_name" Type="nvarchar" Size="100" />
+      <Input Name="last_changed" Type="nvarchar" Size="30"/>
+    </Parameter>
+  </InsertCoordinateItem>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Coordinate
+           SET  coordinate_title = @coordinate_title
+                ,coordinate_url = @coordinate_url
+                ,coordinate_summary = @coordinate_summary
+                ,internal_memo = @internal_memo
+                ,staff_id = @staff_id
+                ,real_shop_id = @real_shop_id
+                ,html_title = @html_title
+                ,metadata_desc = @metadata_desc
+                ,display_kbn = @display_kbn
+                ,display_date = @display_date
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  coordinate_id = @coordinate_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_id" Type="nvarchar" Size="30" />
+      <Input Name="coordinate_title" Type="nvarchar" Size="200" />
+      <Input Name="coordinate_url" Type="nvarchar" Size="2000" />
+      <Input Name="coordinate_summary" Type="nvarchar" Size="MAX" />
+      <Input Name="internal_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="html_title" Type="nvarchar" Size="200" />
+      <Input Name="metadata_desc" Type="nvarchar" Size="200" />
+      <Input Name="staff_id" Type="nvarchar" Size="30" />
+      <Input Name="real_shop_id" Type="nvarchar" Size="30" />
+      <Input Name="display_kbn" Type="nvarchar" Size="20" />
+      <Input Name="display_date" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_Coordinate
+         WHERE  coordinate_id = @coordinate_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- 項目削除 -->
+  <DeleteItem>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CoordinateItem
+         WHERE  coordinate_id = @coordinate_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteItem>
+
+</Coordinate>

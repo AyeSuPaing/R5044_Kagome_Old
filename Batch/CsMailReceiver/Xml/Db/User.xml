@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザ系SQLステートメントXML(User.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<User>
+
+  <!-- ユーザ情報取得 -->
+  <GetUser>
+    <Statement>
+      <![CDATA[
+      SELECT  TOP 1
+              w2_User.*,
+              w2_MallCooperationSetting.mall_name
+        FROM  w2_User
+              LEFT JOIN w2_MallCooperationSetting ON
+              (
+                w2_User.mall_id = w2_MallCooperationSetting.mall_id
+              )
+       WHERE  w2_User.user_id = @user_id 
+       --AND  w2_user.del_flg = '0'
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUser>
+
+  <!-- メールアドレスを指定してユーザ情報取得 -->
+  <GetUsersByMailAddr>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.*,
+                w2_MallCooperationSetting.mall_name   -- w2Userを使用する場合、なぜか必要
+          FROM  w2_User
+                LEFT JOIN w2_MallCooperationSetting ON
+                (
+                  w2_User.mall_id = w2_MallCooperationSetting.mall_id
+                )
+         WHERE  (
+                  w2_User.mail_addr = @mail_addr
+                  OR
+                  w2_User.mail_addr2 = @mail_addr
+                )
+           AND  @mail_addr <> ''
+           AND  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+      ORDER BY  case user_kbn 
+                  when 'PC_USER' then 0 
+                  when 'SP_USER' then 1 
+                  when 'MB_USER' then 2
+                  when 'PC_GEST' then 3 
+                  when 'SP_GEST' then 4 
+                  when 'MB_GEST' then 5
+                  when 'CS'      then 6 
+                  when 'MAIL'    then 8
+                                 else 9 end,
+                date_created desc
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetUsersByMailAddr>
+
+</User>

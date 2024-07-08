@@ -1,0 +1,146 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザポイント系SQLステートメントXML(UserPont.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<UserPoint>
+
+  <!-- ポイント履歴一覧 -->
+  <GetPointHistoryList>
+    <Statement>
+      <![CDATA[
+      -- 全件数取得
+      DECLARE @row_count int
+
+      SELECT  @row_count = count(*)
+      FROM
+      (
+        SELECT  kbn1 AS point_order_id,
+                kbn2 AS point_fixed_purchase_id
+          FROM  w2_UserPoint
+         WHERE  user_id = @user_id
+           AND  point_type = '00' --仮ポイントのみ
+           AND  point <> 0
+        UNION ALL
+        SELECT  kbn1 AS point_order_id,
+                kbn2 AS point_fixed_purchase_id
+          FROM  w2_UserPointHistory
+         WHERE  user_id = @user_id
+           AND  point_type = '01' --本ポイントのみ
+           AND  point_inc <> 0
+           AND  point_inc_kbn <> '21' --ポイント利用調整（次回定期購入分） を表示しない
+           AND  (point_inc_kbn <> '10' OR kbn2 = '') --定期から通常注文に利用ポイント履歴を表示しない
+        GROUP BY point_type
+                ,point_inc_kbn
+                ,date_created
+                ,kbn1
+                ,kbn2
+      ) AS PointList
+      LEFT OUTER JOIN w2_Order ON 
+      (
+        PointList.point_order_id = w2_Order.order_id
+      )
+      LEFT OUTER JOIN w2_FixedPurchase ON
+      (
+        PointList.point_fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+      )
+      [[ GETPOINTHISTORYLIST_SEARCH_WHERE ]]
+
+      SELECT  MyPagePointHistoryList.*
+        FROM  (
+                SELECT  w2_Order.*
+                        ,PointList.point_kbn
+                        ,PointList.point_type
+                        ,PointList.point_inc_kbn
+                        ,PointList.point
+                        ,PointList.point_date_created_tmp
+                        ,CASE WHEN w2_Order.order_id_org = '' THEN w2_Order.order_id ELSE w2_Order.order_id_org END AS point_order_id
+                        ,PointList.point_fixed_purchase_id
+                        ,ROW_NUMBER()
+                        OVER
+                        (
+                          ORDER BY 
+                            PointList.point_date_created_tmp DESC,
+                            PointList.history_no DESC
+                        ) AS row_num
+                        ,@row_count AS row_count
+                        ,PointList.point_date_created_tmp AS point_date_created
+                        ,(
+                          SELECT  COUNT(*)
+                            FROM  w2_Order
+                           WHERE  PointList.point_order_id = w2_Order.order_id_org
+                             AND  w2_Order.return_exchange_kbn = '01'
+                             AND  w2_Order.order_id_org <> ''
+                         ) AS ContainsReturnOrder
+                        ,(
+                          SELECT  COUNT(*)
+                            FROM  w2_Order
+                           WHERE  PointList.point_order_id IN
+                                  (
+                                    w2_Order.order_id_org,w2_Order.order_id
+                                  )
+                             AND  w2_Order.return_exchange_kbn = '10'
+                             AND w2_Order.order_id_org <> ''
+                         ) AS ContainsExchangeOrder
+                   FROM  (
+                           SELECT  point_inc_kbn
+                                   ,point_kbn
+                                   ,point_type
+                                   ,point
+                                   ,date_created AS point_date_created_tmp
+                                   ,kbn1 AS point_order_id
+                                   ,kbn2 AS point_fixed_purchase_id
+                                   ,0 AS history_no
+                             FROM  w2_UserPoint
+                            WHERE  user_id = @user_id
+                              AND  point_type = '00'
+                              AND  point <> 0
+                           UNION ALL
+                           SELECT  point_inc_kbn
+                                   ,'00' AS point_kbn -- フロント表示には利用しないので0固定（でないとhistory_group_noでのグループ化ができない
+                                   ,point_type
+                                   ,SUM(point_inc) AS point
+                                   ,MAX(date_created) AS point_date_created_tmp
+                                   ,kbn1 AS point_order_id
+                                   ,kbn2 AS point_fixed_purchase_id
+                                   ,MAX(history_no)
+                             FROM  w2_UserPointHistory
+                            WHERE  user_id = @user_id
+                              AND  point_type = '01'
+                              AND  point_inc <> 0
+                              AND  point_inc_kbn <> '21' --ポイント利用調整（次回定期購入分） を表示しない
+                              AND  (point_inc_kbn <> '10' OR kbn2 = '') --定期から通常注文に利用ポイント履歴を表示しない
+                           GROUP BY history_group_no
+                                    ,point_kbn
+                                    ,point_type
+                                    ,point_inc_kbn
+                                    ,kbn1
+                                    ,kbn2
+                        
+                        ) AS PointList
+                LEFT OUTER JOIN w2_Order ON 
+                (
+                  PointList.point_order_id = w2_Order.order_id
+                )
+                LEFT OUTER JOIN w2_FixedPurchase ON
+                (
+                  PointList.point_fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                [[ GETPOINTHISTORYLIST_SEARCH_WHERE ]]
+              ) AS MyPagePointHistoryList
+       WHERE  @bgn_row_num <= MyPagePointHistoryList.row_num
+         AND  MyPagePointHistoryList.row_num <= @end_row_num
+    ORDER BY  row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetPointHistoryList>
+
+</UserPoint>

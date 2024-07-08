@@ -1,0 +1,1669 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 名称翻訳設定マスタ系SQLサブステートメントXML (NameTranslationSetting_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<NameTranslationSetting_Sub>
+
+  <!-- 出力対象商品ID一時テーブル作成 -->
+  <CREATE_TMP_PRODUCTID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_ProductId
+        (
+            [shop_id] [nvarchar] (10) NOT NULL,
+            [product_id] [nvarchar] (30) NOT NULL,
+            [name] [nvarchar] (100) NOT NULL,
+            [outline] [nvarchar] (max) NOT NULL,
+            [desc_detail1] [ntext] NOT NULL,
+            [desc_detail2] [ntext] NOT NULL,
+            [desc_detail3] [ntext] NOT NULL,
+            [desc_detail4] [ntext] NOT NULL,
+            [return_exchange_message] [ntext] NOT NULL,
+            [catchcopy] [nvarchar] (60) NOT NULL,
+            [use_variation_flg] [nvarchar] (2) NOT NULL
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_PRODUCTID_TBL>
+
+  <!-- 出力対象商品ID一時テーブル登録 -->
+  <INSERT_TMP_PRODUCTID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_ProductId
+        SELECT  w2_Product.shop_id,
+                w2_Product.product_id,
+                w2_Product.name,
+                w2_Product.outline,
+                w2_Product.desc_detail1,
+                w2_Product.desc_detail2,
+                w2_Product.desc_detail3,
+                w2_Product.desc_detail4,
+                w2_Product.return_exchange_message,
+                w2_Product.catchcopy,
+                w2_Product.use_variation_flg
+          FROM  w2_Product
+      ]]>
+    </Statement>
+  </INSERT_TMP_PRODUCTID_TBL>
+
+  <!-- 商品情報、バリエーション情報一時テーブル作成 -->
+  <CREATE_TMP_PRODUCT_PRODUCTVATIATION_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_ProductAndProductVariation
+        (
+            [data_kbn] [nvarchar] (30) NOT NULL,
+            [product_id] [nvarchar] (30) NOT NULL,
+            [variation_id] [nvarchar] (60),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_PRODUCT_PRODUCTVATIATION_TBL>
+
+  <!-- 商品情報を「商品情報、バリエーション情報一時テーブル」に登録 -->
+  <INSERT_PRODUCTDATA_INTO_TMP_PRODUCT_PRODUCTVATIATION_TBL>
+    <Statement>
+      <![CDATA[
+        -- 商品名
+        INSERT  #tmp_ProductAndProductVariation
+        SELECT  'Product',
+                #tmp_ProductId.product_id,
+                '',
+                'name',
+                #tmp_ProductId.name
+          FROM  #tmp_ProductId
+
+        -- 商品概要
+        INSERT  #tmp_ProductAndProductVariation
+        SELECT  'Product',
+                #tmp_ProductId.product_id,
+                '',
+                'outline',
+                #tmp_ProductId.outline
+          FROM  #tmp_ProductId
+
+        -- 商品詳細1
+        INSERT  #tmp_ProductAndProductVariation
+        SELECT  'Product',
+                #tmp_ProductId.product_id,
+                '',
+                'desc_detail1',
+                #tmp_ProductId.desc_detail1
+          FROM  #tmp_ProductId
+
+
+        -- 商品詳細2
+        INSERT  #tmp_ProductAndProductVariation
+        SELECT  'Product',
+                #tmp_ProductId.product_id,
+                '',
+                'desc_detail2',
+                #tmp_ProductId.desc_detail2
+          FROM  #tmp_ProductId
+
+        -- 商品詳細3
+        INSERT  #tmp_ProductAndProductVariation
+        SELECT  'Product',
+                #tmp_ProductId.product_id,
+                '',
+                'desc_detail3',
+                #tmp_ProductId.desc_detail3
+          FROM  #tmp_ProductId
+
+        -- 商品詳細4
+        INSERT  #tmp_ProductAndProductVariation
+        SELECT  'Product',
+                #tmp_ProductId.product_id,
+                '',
+                'desc_detail4',
+                #tmp_ProductId.desc_detail4
+          FROM  #tmp_ProductId
+
+        -- 商品返品交換文言
+        INSERT  #tmp_ProductAndProductVariation
+        SELECT  'Product',
+                #tmp_ProductId.product_id,
+                '',
+                'return_exchange_message',
+                #tmp_ProductId.return_exchange_message
+          FROM  #tmp_ProductId
+
+        -- キャッチコピー
+        INSERT  #tmp_ProductAndProductVariation
+        SELECT  'Product',
+                #tmp_ProductId.product_id,
+                '',
+                'catchcopy',
+                #tmp_ProductId.catchcopy
+          FROM  #tmp_ProductId
+      ]]>
+    </Statement>
+  </INSERT_PRODUCTDATA_INTO_TMP_PRODUCT_PRODUCTVATIATION_TBL>
+
+  <!-- 出力対象商品バリエーションID一時テーブル作成 -->
+  <CREATE_TMP_PRODUCTVARIATIONID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_ProductVariationId
+        (
+            [shop_id] [nvarchar] (10),
+            [product_id] [nvarchar] (30),
+            [variation_id] [nvarchar] (60),
+            [variation_name1] [nvarchar] (30),
+            [variation_name2] [nvarchar] (30),
+            [variation_name3] [nvarchar] (30)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_PRODUCTVARIATIONID_TBL>
+
+  <!-- 出力対象商品バリエーションID一時テーブル登録 -->
+  <INSERT_TMP_PRODUCTVARIATIONID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_ProductVariationId
+        SELECT  w2_ProductVariation.shop_id,
+                w2_ProductVariation.product_id,
+                w2_ProductVariation.variation_id,
+                w2_ProductVariation.variation_name1,
+                w2_ProductVariation.variation_name2,
+                w2_ProductVariation.variation_name3
+          FROM  w2_ProductVariation
+      ]]>
+    </Statement>
+  </INSERT_TMP_PRODUCTVARIATIONID_TBL>
+
+  <!-- 出力対象商品ID一時テーブルと商品バリエーションマスタを結合 -->
+  <JOIN_TMP_PRODUCTID_AND_PRODUCT_VARIATION>
+    <Statement>
+      <![CDATA[
+        INNER JOIN #tmp_ProductId ON
+        (
+          w2_ProductVariation.shop_id = #tmp_ProductId.shop_id
+          AND
+          w2_ProductVariation.product_id = #tmp_ProductId.product_id
+        )
+      ]]>
+    </Statement>
+  </JOIN_TMP_PRODUCTID_AND_PRODUCT_VARIATION>
+
+  <!-- 商品バリエーション情報を「商品情報、バリエーション情報一時テーブル」に登録 -->
+  <INSERT_PRODUCTVARIATIONDATA_INTO_TMP_PRODUCT_PRODUCTVARIATION_TBL>
+    <Statement>
+      <![CDATA[
+        -- バリエーション名1
+        INSERT  #tmp_ProductAndProductVariation
+        SELECT  'ProductVariation',
+                #tmp_ProductVariationId.product_id,
+                #tmp_ProductVariationId.variation_id,
+                'variation_name1',
+                #tmp_ProductVariationId.variation_name1
+          FROM  #tmp_ProductVariationId
+
+        -- バリエーション名2
+        INSERT  #tmp_ProductAndProductVariation
+        SELECT  'ProductVariation',
+                #tmp_ProductVariationId.product_id,
+                #tmp_ProductVariationId.variation_id,
+                'variation_name2',
+                #tmp_ProductVariationId.variation_name2
+          FROM  #tmp_ProductVariationId
+
+        -- バリエーション名3
+        INSERT  #tmp_ProductAndProductVariation
+        SELECT  'ProductVariation',
+                #tmp_ProductVariationId.product_id,
+                #tmp_ProductVariationId.variation_id,
+                'variation_name3',
+                #tmp_ProductVariationId.variation_name3
+          FROM  #tmp_ProductVariationId
+      ]]>
+    </Statement>
+  </INSERT_PRODUCTVARIATIONDATA_INTO_TMP_PRODUCT_PRODUCTVARIATION_TBL>
+
+  <!-- 出力対象カテゴリID一時テーブル作成 -->
+  <CREATE_TMP_CATEGORYID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_CategoryId
+        (
+            [shop_id] [nvarchar] (10),
+            [category_id] [nvarchar] (30),
+            [name] [nvarchar] (40)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_CATEGORYID_TBL>
+
+  <!-- 出力対象カテゴリID一時テーブル登録 -->
+  <INSERT_TMP_CATEGORYID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_CategoryId
+        SELECT  w2_ProductCategory.shop_id,
+                w2_ProductCategory.category_id,
+                w2_ProductCategory.name
+          FROM  w2_ProductCategory
+      ]]>
+    </Statement>
+  </INSERT_TMP_CATEGORYID_TBL>
+
+  <!-- カテゴリ情報一時テーブル作成 -->
+  <CREATE_TMP_CATEGORY_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_ProductCategory
+        (
+            [category_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_CATEGORY_TBL>
+
+  <!-- カテゴリ情報一時テーブル登録 -->
+  <INSERT_TMP_CATEGORY_TBL>
+    <Statement>
+      <![CDATA[
+        -- カテゴリ名
+        INSERT  #tmp_ProductCategory
+        SELECT  #tmp_CategoryId.category_id,
+                'name',
+                #tmp_CategoryId.name
+          FROM  #tmp_CategoryId
+      ]]>
+    </Statement>
+  </INSERT_TMP_CATEGORY_TBL>
+
+  <!-- 出力対象商品セットID一時テーブル作成 -->
+  <CREATE_TMP_PRODUCTSETID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_ProductSetId
+        (
+            [shop_id] [nvarchar] (10),
+            [product_set_id] [nvarchar] (30),
+            [product_set_name] [nvarchar] (30),
+            [description] [ntext]
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_PRODUCTSETID_TBL>
+
+  <!-- 出力対象商品セットID一時テーブル登録 -->
+  <INSERT_TMP_PRODUCTSETID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_ProductSetId
+        SELECT  w2_ProductSet.shop_id,
+                w2_ProductSet.product_set_id,
+                w2_ProductSet.product_set_name,
+                w2_ProductSet.description
+          FROM  w2_ProductSet
+      ]]>
+    </Statement>
+  </INSERT_TMP_PRODUCTSETID_TBL>
+
+  <!-- 商品セット情報一時テーブル作成 -->
+  <CREATE_TMP_PRODUCTSET_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_ProductSet
+        (
+            [product_set_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_PRODUCTSET_TBL>
+
+  <!-- 商品セット情報一時テーブル登録 -->
+  <INSERT_TMP_PRODUCTSET_TBL>
+    <Statement>
+      <![CDATA[
+        -- 商品セット名
+        INSERT  #tmp_ProductSet
+        SELECT  #tmp_ProductSetId.product_set_id,
+                'product_set_name',
+                #tmp_ProductSetId.product_set_name
+          FROM  #tmp_ProductSetId
+
+        -- 表示用文言
+        INSERT  #tmp_ProductSet
+        SELECT  #tmp_ProductSetId.product_set_id,
+                'description',
+                #tmp_ProductSetId.description
+          FROM  #tmp_ProductSetId
+      ]]>
+    </Statement>
+  </INSERT_TMP_PRODUCTSET_TBL>
+
+  <!-- 出力対象クーポンID一時テーブル作成 -->
+  <CREATE_TMP_COUPONID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_CouponId
+        (
+            [dept_id] [nvarchar] (30),
+            [coupon_id] [nvarchar] (30),
+            [coupon_disp_name] [nvarchar] (30),
+            [coupon_disp_discription] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_COUPONID_TBL>
+
+  <!-- 出力対象クーポンID一時テーブル登録 -->
+  <INSERT_TMP_COUPONID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_CouponId
+        SELECT  w2_Coupon.dept_id,
+                w2_Coupon.coupon_id,
+                w2_Coupon.coupon_disp_name,
+                w2_Coupon.coupon_disp_discription
+          FROM  w2_Coupon
+      ]]>
+    </Statement>
+  </INSERT_TMP_COUPONID_TBL>
+
+  <!-- クーポン情報一時テーブル作成 -->
+  <CREATE_TMP_COUPON_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_Coupon
+        (
+            [coupon_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_COUPON_TBL>
+
+  <!-- クーポン情報一時テーブル登録 -->
+  <INSERT_TMP_COUPON_TBL>
+    <Statement>
+      <![CDATA[
+        -- 表示用クーポン名
+        INSERT  #tmp_Coupon
+        SELECT  #tmp_CouponId.coupon_id,
+                'coupon_disp_name',
+                #tmp_CouponId.coupon_disp_name
+          FROM  #tmp_CouponId
+
+        -- フロント表示用クーポン説明文
+        INSERT  #tmp_Coupon
+        SELECT  #tmp_CouponId.coupon_id,
+                'coupon_disp_discription',
+                #tmp_CouponId.coupon_disp_discription
+          FROM  #tmp_CouponId
+      ]]>
+    </Statement>
+  </INSERT_TMP_COUPON_TBL>
+
+  <!-- 出力対象会員ランクID一時テーブル作成 -->
+  <CREATE_TMP_MEMBERRANKID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_MemberRankId
+        (
+            [member_rank_id] [nvarchar] (30),
+            [member_rank_name] [nvarchar] (100)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_MEMBERRANKID_TBL>
+
+  <!-- 出力対象会員ランクID一時テーブル登録 -->
+  <INSERT_TMP_MEMBERRANKID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_MemberRankId
+        SELECT  w2_MemberRank.member_rank_id,
+                w2_MemberRank.member_rank_name
+          FROM  w2_MemberRank
+      ]]>
+    </Statement>
+  </INSERT_TMP_MEMBERRANKID_TBL>
+
+  <!-- 会員ランク情報一時テーブル作成 -->
+  <CREATE_TMP_MEMBERRANK_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_MemberRank
+        (
+            [member_rank_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_MEMBERRANK_TBL>
+
+  <!-- 会員ランク情報一時テーブル登録 -->
+  <INSERT_TMP_MEMBERRANK_TBL>
+    <Statement>
+      <![CDATA[
+        -- ランク名
+        INSERT  #tmp_MemberRank
+        SELECT  #tmp_MemberRankId.member_rank_id,
+                'member_rank_name',
+                #tmp_MemberRankId.member_rank_name
+          FROM  #tmp_MemberRankId
+      ]]>
+    </Statement>
+  </INSERT_TMP_MEMBERRANK_TBL>
+
+  <!-- 出力対象セットプロモーションID一時テーブル作成 -->
+  <CREATE_TMP_SETPROMOTIONID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_SetPromotionId
+        (
+            [setpromotion_id] [nvarchar] (10),
+            [setpromotion_disp_name] [nvarchar] (30),
+            [description] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_SETPROMOTIONID_TBL>
+
+  <!-- 出力対象セットプロモーションID一時テーブル登録 -->
+  <INSERT_TMP_SETPROMOTIONID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_SetPromotionId
+        SELECT  w2_SetPromotion.setpromotion_id,
+                w2_SetPromotion.setpromotion_disp_name,
+                w2_SetPromotion.description
+          FROM  w2_SetPromotion
+      ]]>
+    </Statement>
+  </INSERT_TMP_SETPROMOTIONID_TBL>
+  
+  <!-- セットプロモーション情報一時テーブル作成 -->
+  <CREATE_TMP_SETPROMOTION_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_SetPromotion
+        (
+          [setpromotion_id] [nvarchar] (10),
+          [translation_target_column] [nvarchar] (50),
+          [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_SETPROMOTION_TBL>
+
+  <!-- セットプロモーション情報一時テーブル登録 -->
+  <INSERT_TMP_SETPROMOTION_TBL>
+    <Statement>
+      <![CDATA[
+        -- 表示用セットプロモーション名
+        INSERT  #tmp_SetPromotion
+        SELECT  #tmp_SetPromotionId.setpromotion_id,
+                'setpromotion_disp_name',
+                #tmp_SetPromotionId.setpromotion_disp_name
+          FROM  #tmp_SetPromotionId
+
+        -- 表示用文言(セットプロモーション)
+        INSERT  #tmp_SetPromotion
+        SELECT  #tmp_SetPromotionId.setpromotion_id,
+                'description',
+                #tmp_SetPromotionId.description
+          FROM  #tmp_SetPromotionId
+      ]]>
+    </Statement>
+  </INSERT_TMP_SETPROMOTION_TBL>
+
+  <!-- 出力対象決済種別ID一時テーブル作成 -->
+  <CREATE_TMP_PAYMENTID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_PaymentId
+        (
+            [shop_id] [nvarchar] (10),
+            [payment_group_id] [nvarchar] (10),
+            [payment_id] [nvarchar] (10),
+            [payment_name] [nvarchar] (20)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_PAYMENTID_TBL>
+
+  <!-- 出力対象決済種別ID一時テーブル登録 -->
+  <INSERT_TMP_PAYMENTID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_PaymentId
+        SELECT  w2_Payment.shop_id,
+                w2_Payment.payment_group_id,
+                w2_Payment.payment_id,
+                w2_Payment.payment_name
+          FROM  w2_Payment
+      ]]>
+    </Statement>
+  </INSERT_TMP_PAYMENTID_TBL>
+
+  <!-- 決済種別情報一時テーブル作成 -->
+  <CREATE_TMP_PAYMENT_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_Payment
+        (
+            [payment_id] [nvarchar] (10),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_PAYMENT_TBL>
+
+  <!-- 決済種別情報一時テーブル登録 -->
+  <INSERT_TMP_PAYMENT_TBL>
+    <Statement>
+      <![CDATA[
+        -- 決済種別名
+        INSERT  #tmp_Payment
+        SELECT  #tmp_PaymentId.payment_id,
+                'payment_name',
+                #tmp_PaymentId.payment_name
+          FROM  #tmp_PaymentId
+      ]]>
+    </Statement>
+  </INSERT_TMP_PAYMENT_TBL>
+
+  <!-- 出力対象ユーザ拡張項目設定ID一時テーブル作成 -->
+  <CREATE_TMP_USEREXTENDSETTINGID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_UserExtendSettingId
+        (
+            [setting_id] [nvarchar] (50),
+            [setting_name] [nvarchar] (100),
+            [outline] [nvarchar] (MAX)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_USEREXTENDSETTINGID_TBL>
+
+  <!-- 出力対象ユーザ拡張項目設定ID一時テーブル登録 -->
+  <INSERT_TMP_USEREXTENDSETTINGID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_UserExtendSettingId
+        SELECT  w2_UserExtendSetting.setting_id,
+                w2_UserExtendSetting.setting_name,
+                w2_UserExtendSetting.outline
+          FROM  w2_UserExtendSetting
+      ]]>
+    </Statement>
+  </INSERT_TMP_USEREXTENDSETTINGID_TBL>
+
+  <!-- ユーザ拡張項目設定情報一時テーブル作成 -->
+  <CREATE_TMP_USEREXTENDSETTING_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_UserExtendSetting
+        (
+            [setting_id] [nvarchar] (50),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_USEREXTENDSETTING_TBL>
+
+  <!-- ユーザ拡張項目設定情報一時テーブル登録 -->
+  <INSERT_TMP_USEREXTENDSETTING_TBL>
+    <Statement>
+      <![CDATA[
+        -- 名称(ユーザー拡張項目)
+        INSERT  #tmp_UserExtendSetting
+        SELECT  #tmp_UserExtendSettingId.setting_id,
+                'setting_name',
+                #tmp_UserExtendSettingId.setting_name
+          FROM  #tmp_UserExtendSettingId
+
+        -- ユーザ拡張項目概要
+        INSERT  #tmp_UserExtendSetting
+        SELECT  #tmp_UserExtendSettingId.setting_id,
+                'outline',
+                #tmp_UserExtendSettingId.outline
+          FROM  #tmp_UserExtendSettingId
+      ]]>
+    </Statement>
+  </INSERT_TMP_USEREXTENDSETTING_TBL>
+
+
+  <!-- 出力対象ブランドID一時テーブル作成 -->
+  <CREATE_TMP_BRANDID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_BrandId
+        (
+            [brand_id] [nvarchar] (30),
+            [brand_name] [nvarchar] (100)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_BRANDID_TBL>
+
+  <!-- 出力対象ブランドID一時テーブル登録 -->
+  <INSERT_TMP_BRANDID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_BrandId
+        SELECT  w2_ProductBrand.brand_id,
+                w2_ProductBrand.brand_name
+          FROM  w2_ProductBrand
+      ]]>
+    </Statement>
+  </INSERT_TMP_BRANDID_TBL>
+
+  <!-- ブランド情報一時テーブル作成 -->
+  <CREATE_TMP_PRODUCTBRAND_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_ProductBrand
+        (
+            [brand_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_PRODUCTBRAND_TBL>
+
+  <!-- ブランド情報一時テーブル登録 -->
+  <INSERT_TMP_PRODUCTBRAND_TBL>
+    <Statement>
+      <![CDATA[
+        -- ランク名
+        INSERT  #tmp_ProductBrand
+        SELECT  #tmp_BrandId.brand_id,
+                'brand_name',
+                #tmp_BrandId.brand_name
+          FROM  #tmp_BrandId
+      ]]>
+    </Statement>
+  </INSERT_TMP_PRODUCTBRAND_TBL>
+
+  <!-- 出力対象ノベルティID一時テーブル作成 -->
+  <CREATE_TMP_NOVELTYID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_NoveltyId
+        (
+            [novelty_id] [nvarchar] (30),
+            [novelty_disp_name] [nvarchar] (100)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_NOVELTYID_TBL>
+
+  <!-- 出力対象ノベルティID一時テーブル登録 -->
+  <INSERT_TMP_NOVELTYID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_NoveltyId
+        SELECT  w2_Novelty.novelty_id,
+                w2_Novelty.novelty_disp_name
+          FROM  w2_Novelty
+      ]]>
+    </Statement>
+  </INSERT_TMP_NOVELTYID_TBL>
+
+  <!-- ノベルティ情報一時テーブル作成 -->
+  <CREATE_TMP_NOVELTY_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_Novelty
+        (
+            [novelty_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_NOVELTY_TBL>
+
+  <!-- ノベルティ情報一時テーブル登録 -->
+  <INSERT_TMP_NOVELTY_TBL>
+    <Statement>
+      <![CDATA[
+        -- ノベルティ名（表示用）
+        INSERT  #tmp_Novelty
+        SELECT  #tmp_NoveltyId.novelty_id,
+                'novelty_disp_name',
+                #tmp_NoveltyId.novelty_disp_name
+          FROM  #tmp_NoveltyId
+      ]]>
+    </Statement>
+  </INSERT_TMP_NOVELTY_TBL>
+
+  <!-- 出力対象新着ID一時テーブル作成 -->
+  <CREATE_TMP_NEWSID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_NewsId
+        (
+            [news_id] [nvarchar] (30),
+            [news_text] [ntext]
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_NEWSID_TBL>
+
+  <!-- 出力対象新着ID一時テーブル登録 -->
+  <INSERT_TMP_NEWSID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_NewsId
+        SELECT  w2_News.news_id,
+                w2_News.news_text
+          FROM  w2_News
+      ]]>
+    </Statement>
+  </INSERT_TMP_NEWSID_TBL>
+
+  <!-- 新着情報一時テーブル作成 -->
+  <CREATE_TMP_NEWS_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_News
+        (
+            [news_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_NEWS_TBL>
+
+  <!-- 新着情報一時テーブル登録 -->
+  <INSERT_TMP_NEWS_TBL>
+    <Statement>
+      <![CDATA[
+        -- 本文(新着情報)
+        INSERT  #tmp_News
+        SELECT  #tmp_NewsId.news_id,
+                'news_text',
+                #tmp_NewsId.news_text
+          FROM  #tmp_NewsId
+      ]]>
+    </Statement>
+  </INSERT_TMP_NEWS_TBL>
+
+  <!-- 出力対象注文メモID一時テーブル作成 -->
+  <CREATE_TMP_ORDERMEMOID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_OrderMemoId
+        (
+            [order_memo_id] [nvarchar] (30),
+            [order_memo_name] [nvarchar] (100),
+            [default_text] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_ORDERMEMOID_TBL>
+
+  <!-- 出力対象注文メモID一時テーブル登録 -->
+  <INSERT_TMP_ORDERMEMOID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_OrderMemoId
+        SELECT  w2_OrderMemoSetting.order_memo_id,
+                w2_OrderMemoSetting.order_memo_name,
+                w2_OrderMemoSetting.default_text
+          FROM  w2_OrderMemoSetting
+      ]]>
+    </Statement>
+  </INSERT_TMP_ORDERMEMOID_TBL>
+
+  <!-- 注文メモ情報一時テーブル作成 -->
+  <CREATE_TMP_ORDERMEMOSETTING_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_OrderMemoSetting
+        (
+            [order_memo_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_ORDERMEMOSETTING_TBL>
+
+  <!-- 注文メモ情報一時テーブル登録 -->
+  <INSERT_TMP_ORDERMEMOSETTING_TBL>
+    <Statement>
+      <![CDATA[
+        -- 注文メモ名称
+        INSERT  #tmp_OrderMemoSetting
+        SELECT  #tmp_OrderMemoId.order_memo_id,
+                'order_memo_name',
+                #tmp_OrderMemoId.order_memo_name
+          FROM  #tmp_OrderMemoId
+
+        -- デフォルト文字列
+        INSERT  #tmp_OrderMemoSetting
+        SELECT  #tmp_OrderMemoId.order_memo_id,
+                'default_text',
+                #tmp_OrderMemoId.default_text
+          FROM  #tmp_OrderMemoId
+      ]]>
+    </Statement>
+  </INSERT_TMP_ORDERMEMOSETTING_TBL>
+
+  <!-- 出力対象解約理由区分ID一時テーブル作成 -->
+  <CREATE_TMP_CANCELREASONID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_CancelReasonId
+        (
+            [cancel_reason_id] [nvarchar] (30),
+            [cancel_reason_name] [nvarchar] (100)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_CANCELREASONID_TBL>
+
+  <!-- 出力対象解約理由区分ID一時テーブル登録 -->
+  <INSERT_TMP_CANSELREASONID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_CancelReasonId
+        SELECT  w2_FixedPurchaseCancelReason.cancel_reason_id,
+                w2_FixedPurchaseCancelReason.cancel_reason_name
+          FROM  w2_FixedPurchaseCancelReason
+      ]]>
+    </Statement>
+  </INSERT_TMP_CANSELREASONID_TBL>
+
+  <!-- 定期解約理由区分情報一時テーブル作成 -->
+  <CREATE_TMP_FIXEDPURCHASECANCELREASON_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_FixedPurchaseCancelReason
+        (
+            [cancel_reason_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_FIXEDPURCHASECANCELREASON_TBL>
+
+  <!-- 定期解約理由区分情報一時テーブル登録 -->
+  <INSERT_TMP_FIXEDPURCHASECANCELREASON_TBL>
+    <Statement>
+      <![CDATA[
+        -- 解約理由区分名
+        INSERT  #tmp_FixedPurchaseCancelReason
+        SELECT  #tmp_CancelReasonId.cancel_reason_id,
+                'cancel_reason_name',
+                #tmp_CancelReasonId.cancel_reason_name
+          FROM  #tmp_CancelReasonId
+      ]]>
+    </Statement>
+  </INSERT_TMP_FIXEDPURCHASECANCELREASON_TBL>
+
+  <!-- 出力対象商品一覧表示設定ID一時テーブル作成 -->
+  <CREATE_TMP_PRODUCTDISPSETTINGID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_ProductListDispSettingId
+        (
+            [setting_id] [nvarchar] (2),
+            [setting_name] [nvarchar] (50),
+            [setting_kbn] [nvarchar] (10)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_PRODUCTDISPSETTINGID_TBL>
+
+  <!-- 出力対象商品一覧表示設定ID一時テーブル登録 -->
+  <INSERT_TMP_PRODUCTDISPSETTINGID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_ProductListDispSettingId
+        SELECT  w2_ProductListDispSetting.setting_id,
+                w2_ProductListDispSetting.setting_name,
+                w2_ProductListDispSetting.setting_kbn
+          FROM  w2_ProductListDispSetting
+      ]]>
+    </Statement>
+  </INSERT_TMP_PRODUCTDISPSETTINGID_TBL>
+
+  <!-- 商品一覧表示設定情報一時テーブル作成 -->
+  <CREATE_TMP_PRODUCTDISPSETTING_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_ProductListDispSetting
+        (
+            [setting_id] [nvarchar] (2),
+            [setting_kbn] [nvarchar] (10),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_PRODUCTDISPSETTING_TBL>
+
+  <!-- 商品一覧表示設定情報一時テーブル登録 -->
+  <INSERT_TMP_PRODUCTDISPSETTING_TBL>
+    <Statement>
+      <![CDATA[
+        -- 設定名
+        INSERT  #tmp_ProductListDispSetting
+        SELECT  #tmp_ProductListDispSettingId.setting_id,
+                #tmp_ProductListDispSettingId.setting_kbn,
+                'setting_name',
+                #tmp_ProductListDispSettingId.setting_name
+          FROM  #tmp_ProductListDispSettingId
+      ]]>
+    </Statement>
+  </INSERT_TMP_PRODUCTDISPSETTING_TBL>
+  
+  <!-- 出力対象コーディネートID一時テーブル作成 -->
+  <CREATE_TMP_COORDINATEID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_CoordinateId
+        (
+            [coordinate_id] [nvarchar] (30),
+            [coordinate_title] [nvarchar] (200),
+            [coordinate_summary] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_COORDINATEID_TBL>
+
+  <!-- 出力対象コーディネート一時テーブル登録 -->
+  <INSERT_TMP_COORDINATEID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_CoordinateId
+        SELECT  w2_Coordinate.coordinate_id,
+                w2_Coordinate.coordinate_title,
+                w2_Coordinate.coordinate_summary
+          FROM  w2_Coordinate
+      ]]>
+    </Statement>
+  </INSERT_TMP_COORDINATEID_TBL>
+
+  <!-- コーディネート情報一時テーブル作成 -->
+  <CREATE_TMP_COORDINATE_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_Coordinate
+        (
+            [coordinate_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_COORDINATE_TBL>
+
+  <!-- コーディネート一時テーブル登録 -->
+  <INSERT_TMP_COORDINATE_TBL>
+    <Statement>
+      <![CDATA[
+        -- タイトル
+        INSERT  #tmp_Coordinate
+        SELECT  #tmp_CoordinateId.coordinate_id,
+                'coordinate_title',
+                #tmp_CoordinateId.coordinate_title
+          FROM  #tmp_CoordinateId
+
+        -- 概要
+        INSERT  #tmp_Coordinate
+        SELECT  #tmp_CoordinateId.coordinate_id,
+                'coordinate_summary',
+                #tmp_CoordinateId.coordinate_summary
+          FROM  #tmp_CoordinateId
+      ]]>
+    </Statement>
+  </INSERT_TMP_COORDINATE_TBL>
+
+  <!-- 出力対象コーディネートカテゴリID一時テーブル作成 -->
+  <CREATE_TMP_COORDINATECATEGORYID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_CoordinateCategoryId
+        (
+            [coordinate_category_id] [nvarchar] (30),
+            [coordinate_category_name] [nvarchar] (200)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_COORDINATECATEGORYID_TBL>
+
+  <!-- 出力対象コーディネートカテゴリ一時テーブル登録 -->
+  <INSERT_TMP_COORDINATECATEGORYID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_CoordinateCategoryId
+        SELECT  w2_CoordinateCategory.coordinate_category_id,
+                w2_CoordinateCategory.coordinate_category_name
+          FROM  w2_CoordinateCategory
+      ]]>
+    </Statement>
+  </INSERT_TMP_COORDINATECATEGORYID_TBL>
+
+  <!-- コーディネートカテゴリ情報一時テーブル作成 -->
+  <CREATE_TMP_COORDINATECATEGORY_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_CoordinateCategory
+        (
+            [coordinate_category_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_COORDINATECATEGORY_TBL>
+
+  <!-- コーディネートカテゴリ一時テーブル登録 -->
+  <INSERT_TMP_COORDINATECATEGORY_TBL>
+    <Statement>
+      <![CDATA[
+        -- 名前
+        INSERT  #tmp_CoordinateCategory
+        SELECT  #tmp_CoordinateCategoryId.coordinate_category_id,
+                'coordinate_category_name',
+                #tmp_CoordinateCategoryId.coordinate_category_name
+          FROM  #tmp_CoordinateCategoryId
+      ]]>
+    </Statement>
+  </INSERT_TMP_COORDINATECATEGORY_TBL>
+
+  <!-- 出力対象スタッフID一時テーブル作成 -->
+  <CREATE_TMP_STAFFID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_StaffId
+        (
+            [staff_id] [nvarchar] (30),
+            [staff_name] [nvarchar] (30),
+            [staff_profile] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_STAFFID_TBL>
+
+  <!-- 出力対象スタッフ一時テーブル登録 -->
+  <INSERT_TMP_STAFFID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_StaffId
+        SELECT  w2_Staff.staff_id,
+                w2_Staff.staff_name,
+                w2_Staff.staff_profile
+          FROM  w2_Staff
+      ]]>
+    </Statement>
+  </INSERT_TMP_STAFFID_TBL>
+
+  <!-- スタッフ情報一時テーブル作成 -->
+  <CREATE_TMP_STAFF_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_Staff
+        (
+            [staff_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_STAFF_TBL>
+
+  <!-- スタッフ一時テーブル登録 -->
+  <INSERT_TMP_STAFF_TBL>
+    <Statement>
+      <![CDATA[
+        -- 名前
+        INSERT  #tmp_Staff
+        SELECT  #tmp_StaffId.staff_id,
+                'staff_name',
+                #tmp_StaffId.staff_name
+          FROM  #tmp_StaffId
+          
+        -- プロフィール
+        INSERT  #tmp_Staff
+        SELECT  #tmp_StaffId.staff_id,
+                'staff_profile',
+                #tmp_StaffId.staff_profile
+          FROM  #tmp_StaffId
+      ]]>
+    </Statement>
+  </INSERT_TMP_STAFF_TBL>
+
+
+  <!-- 出力対象リアル店舗ID一時テーブル作成 -->
+  <CREATE_TMP_REALSHOPID_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_RealShopId
+        (
+            [real_shop_id] [nvarchar] (30),
+            [name] [nvarchar] (100)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_REALSHOPID_TBL>
+
+  <!-- 出力対象リアル店舗一時テーブル登録 -->
+  <INSERT_TMP_REALSHOPID_TBL>
+    <Statement>
+      <![CDATA[
+        INSERT  #tmp_RealShopId
+        SELECT  w2_RealShop.real_shop_id,
+                w2_RealShop.name
+          FROM  w2_RealShop
+      ]]>
+    </Statement>
+  </INSERT_TMP_REALSHOPID_TBL>
+
+  <!-- リアル店舗情報一時テーブル作成 -->
+  <CREATE_TMP_REALSHOP_TBL>
+    <Statement>
+      <![CDATA[
+        CREATE TABLE #tmp_RealShop
+        (
+            [real_shop_id] [nvarchar] (30),
+            [translation_target_column] [nvarchar] (50),
+            [before_translational_name] [nvarchar] (max)
+        )
+      ]]>
+    </Statement>
+  </CREATE_TMP_REALSHOP_TBL>
+
+  <!-- リアル店舗一時テーブル登録 -->
+  <INSERT_TMP_REALSHOP_TBL>
+    <Statement>
+      <![CDATA[
+        -- 名前
+        INSERT  #tmp_RealShop
+        SELECT  #tmp_RealShopId.real_shop_id,
+                'name',
+                #tmp_RealShopId.name
+          FROM  #tmp_RealShopId
+      ]]>
+    </Statement>
+  </INSERT_TMP_REALSHOP_TBL>
+
+  <!-- 商品情報一覧取得用WHERE文 -->
+  <PRODUCT_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_Product.product_id in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+  </PRODUCT_SEARCH_WHERE>
+
+  <!-- 商品カテゴリ情報一覧取得用WHERE文 -->
+  <PRODUCTCATEGORY_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_ProductCategory.category_id in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+  </PRODUCTCATEGORY_SEARCH_WHERE>
+
+  <!-- セットプロモーション情報一覧取得用WHERE文 -->
+  <SETPROMOTION_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE w2_SetPromotion.setpromotion_id in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+  </SETPROMOTION_SEARCH_WHERE>
+
+  <!-- 商品セット情報一覧取得用WHERE文 -->
+  <PRODUCTSET_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_ProductSet.product_set_id in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+  </PRODUCTSET_SEARCH_WHERE>
+
+  <!-- ノベルティ一覧検索用WHERE文 -->
+  <NOVELTY_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_Novelty.novelty_id in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+  </NOVELTY_SEARCH_WHERE>
+
+  <!-- お知らせ設定一覧検索用WHERE文 -->
+  <NEWS_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+          WHERE  w2_News.news_id in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+  </NEWS_SEARCH_WHERE>
+
+  <!-- 注文メモ情報一覧取得用WHERE文 -->
+  <ORDERMEMOSETTING_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_OrderMemoSetting.order_memo_id in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+  </ORDERMEMOSETTING_SEARCH_WHERE>
+
+  <!-- クーポン情報一覧取得用WHERE文 -->
+  <COUPON_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_Coupon.coupon_id in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+  </COUPON_SEARCH_WHERE>
+
+  <TRANSLATION_SETTING_FOR_LIST_SEARCH_WITH_SELECT>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        WITH Product AS (
+          SELECT  1 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'name' THEN w2_Product.name
+                    WHEN 'outline' THEN w2_Product.outline
+                    WHEN 'desc_detail1' THEN w2_Product.desc_detail1
+                    WHEN 'desc_detail2' THEN w2_Product.desc_detail2
+                    WHEN 'desc_detail3' THEN w2_Product.desc_detail3
+                    WHEN 'desc_detail4' THEN w2_Product.desc_detail4
+                    WHEN 'return_exchange_message' THEN w2_Product.return_exchange_message
+                    WHEN 'catchcopy' THEN w2_Product.catchcopy
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_Product ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_Product.product_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'Product'
+        ),
+        ProductVariation AS (
+          SELECT  2 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'variation_name1' THEN w2_ProductVariation.variation_name1
+                    WHEN 'variation_name2' THEN w2_ProductVariation.variation_name2
+                    WHEN 'variation_name3' THEN w2_ProductVariation.variation_name3
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_ProductVariation ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_ProductVariation.product_id
+                    AND w2_NameTranslationSetting.master_id2 = w2_ProductVariation.variation_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'ProductVariation'
+        ),
+        ProductCategory AS (
+          SELECT  3 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'name' THEN w2_ProductCategory.name
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_ProductCategory ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_ProductCategory.category_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'ProductCategory'
+        ),
+        SetPromotion AS (
+          SELECT  4 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'setpromotion_disp_name' THEN w2_SetPromotion.setpromotion_disp_name
+                    WHEN 'description' THEN w2_SetPromotion.description
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_SetPromotion ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_SetPromotion.setpromotion_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'SetPromotion'
+        ),
+        ProductSet AS (
+          SELECT  5 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'product_set_name' THEN w2_ProductSet.product_set_name
+                    WHEN 'description' THEN w2_ProductSet.description
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_ProductSet ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_ProductSet.product_set_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'ProductSet'
+        ),
+        Coupon AS (
+          SELECT  6 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'coupon_disp_name' THEN w2_Coupon.coupon_disp_name
+                    WHEN 'coupon_disp_discription' THEN w2_Coupon.coupon_disp_discription
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_Coupon ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_Coupon.coupon_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'Coupon'
+        ),
+        MemberRank AS (
+          SELECT  7 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'member_rank_name' THEN w2_MemberRank.member_rank_name
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_MemberRank ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_MemberRank.member_rank_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'MemberRank'
+        ),
+        Payment AS (
+          SELECT  8 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'payment_name' THEN w2_Payment.payment_name
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_Payment ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_Payment.payment_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'Payment'
+        ),
+        UserExtendSetting AS (
+          SELECT  9 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'setting_name' THEN w2_UserExtendSetting.setting_name
+                    WHEN 'outline' THEN w2_UserExtendSetting.outline
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_UserExtendSetting ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_UserExtendSetting.setting_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'UserExtendSetting'
+        ),
+        ProductBrand AS (
+          SELECT  10 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'brand_name' THEN w2_ProductBrand.brand_name
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_ProductBrand ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_ProductBrand.brand_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'ProductBrand'
+        ),
+        Novelty AS (
+          SELECT  11 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'novelty_disp_name' THEN w2_Novelty.novelty_disp_name
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_Novelty ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_Novelty.novelty_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'Novelty'
+        ),
+        News AS (
+          SELECT  12 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'news_text' THEN w2_News.news_text
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_News ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_News.news_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'News'
+        ),
+        OrderMemoSetting AS (
+          SELECT  13 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'order_memo_name' THEN w2_OrderMemoSetting.order_memo_name
+                    WHEN 'default_text' THEN w2_OrderMemoSetting.default_text
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_OrderMemoSetting ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_OrderMemoSetting.order_memo_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'OrderMemoSetting'
+        ),
+        FixedPurchaseCancelReason AS (
+          SELECT  14 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'cancel_reason_name' THEN w2_FixedPurchaseCancelReason.cancel_reason_name
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_FixedPurchaseCancelReason ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_FixedPurchaseCancelReason.cancel_reason_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'FixedPurchaseCancelReason'
+        ),
+        ProductListDispSetting AS (
+          SELECT  15 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'setting_name' THEN w2_ProductListDispSetting.setting_name
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_ProductListDispSetting ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_ProductListDispSetting.setting_id
+                  )
+           WHERE  w2_NameTranslationSetting.data_kbn = 'ProductListDispSetting'
+        ),
+        SiteInformation AS (
+          SELECT  16 sort_number,
+                  '' before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+          WHERE  w2_NameTranslationSetting.data_kbn = 'SiteInformation'
+        ),
+        ProductTagSetting AS (
+          SELECT  17 sort_number,
+                  '' before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+          WHERE  w2_NameTranslationSetting.data_kbn = 'ProductTagSetting'
+        ),
+        Coordinate AS (
+          SELECT  18 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'coordinate_title' THEN w2_Coordinate.coordinate_title
+                    WHEN 'coordinate_summary' THEN w2_Coordinate.coordinate_summary
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_Coordinate ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_Coordinate.coordinate_id
+                  )
+          WHERE  w2_NameTranslationSetting.data_kbn = 'Coordinate'
+        ),
+        CoordinateCategory AS (
+          SELECT  19 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'coordinate_category_name' THEN w2_CoordinateCategory.coordinate_category_name
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_CoordinateCategory ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_CoordinateCategory.coordinate_category_id
+                  )
+          WHERE  w2_NameTranslationSetting.data_kbn = 'CoordinateCategory'
+        ),
+        Staff AS (
+          SELECT  20 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'staff_name' THEN w2_Staff.staff_name
+                    WHEN 'staff_profile' THEN w2_Staff.staff_profile
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_Staff ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_Staff.staff_id
+                  )
+          WHERE  w2_NameTranslationSetting.data_kbn = 'Staff'
+        ),
+        RealShop AS (
+          SELECT  21 sort_number,
+                  CASE w2_NameTranslationSetting.translation_target_column
+                    WHEN 'name' THEN w2_RealShop.name
+                  END before_translational_name,
+                  w2_NameTranslationSetting.*
+            FROM  w2_NameTranslationSetting
+                  LEFT JOIN w2_RealShop ON
+                  (
+                    w2_NameTranslationSetting.master_id1 = w2_RealShop.real_shop_id
+                  )
+          WHERE  w2_NameTranslationSetting.data_kbn = 'RealShop'
+        ),
+        Unioned AS (
+          SELECT  *
+            FROM  Product
+          UNION ALL
+          SELECT  *
+            FROM  ProductVariation
+          UNION ALL
+          SELECT  *
+            FROM  ProductCategory
+          UNION ALL
+          SELECT  *
+            FROM  SetPromotion
+          UNION ALL
+          SELECT  *
+            FROM  ProductSet
+          UNION ALL
+          SELECT  *
+            FROM  Coupon
+          UNION ALL
+          SELECT  *
+            FROM  MemberRank
+          UNION ALL
+          SELECT  *
+            FROM  Payment
+          UNION ALL
+          SELECT  *
+            FROM  UserExtendSetting
+          UNION ALL
+          SELECT  *
+            FROM  ProductBrand
+          UNION ALL
+          SELECT  *
+            FROM  Novelty
+          UNION ALL
+          SELECT  *
+            FROM  News
+          UNION ALL
+          SELECT  *
+            FROM  OrderMemoSetting
+          UNION ALL
+          SELECT  *
+            FROM  FixedPurchaseCancelReason
+          UNION ALL
+          SELECT  *
+            FROM  ProductListDispSetting
+          UNION ALL
+          SELECT  *
+            FROM  SiteInformation
+          UNION ALL
+          SELECT  *
+            FROM  ProductTagSetting
+          UNION ALL
+          SELECT  *
+            FROM  Coordinate
+          UNION ALL
+          SELECT  *
+            FROM  CoordinateCategory
+          UNION ALL
+          SELECT  *
+            FROM  Staff
+          UNION ALL
+          SELECT  *
+            FROM  RealShop
+        )
+      ]]>
+    </Statement>
+  </TRANSLATION_SETTING_FOR_LIST_SEARCH_WITH_SELECT>
+
+  <!-- 名称翻訳設定一覧取得用WHERE文 -->
+  <TRANSLATION_SETTING_FOR_LIST_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE  1 = 1
+               <@@hasval:data_kbn@@>
+               AND  data_kbn = @data_kbn
+               </@@hasval:data_kbn@@>
+               <@@hasval:translation_target_column@@>
+               AND  translation_target_column = @translation_target_column
+               </@@hasval:translation_target_column@@>
+               <@@hasval:master_id1_like_escaped@@>
+               AND  master_id1 LIKE @master_id1_like_escaped + '%' ESCAPE '#'
+               </@@hasval:master_id1_like_escaped@@>
+               <@@hasval:master_id2_like_escaped@@>
+               AND  master_id2 LIKE @master_id2_like_escaped + '%' ESCAPE '#'
+               </@@hasval:master_id2_like_escaped@@>
+               <@@hasval:language_code@@>
+               AND  language_code = @language_code
+               </@@hasval:language_code@@>
+               <@@hasval:language_locale_id@@>
+               AND  language_locale_id = @language_locale_id
+               </@@hasval:language_locale_id@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="translation_target_column" Type="nvarchar" Size="50" />
+      <Input Name="master_id1_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="master_id2_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </TRANSLATION_SETTING_FOR_LIST_SEARCH_WHERE>
+
+</NameTranslationSetting_Sub>

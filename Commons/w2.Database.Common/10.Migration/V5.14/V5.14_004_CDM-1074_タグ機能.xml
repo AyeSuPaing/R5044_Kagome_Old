@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        -- w2_AffiliateTagSetting
+        DECLARE @TABLE_NAME NVARCHAR(256)
+        DECLARE @COLUMN_NAME NVARCHAR(256)
+        DECLARE @TABLE_ID INTEGER 
+        DECLARE @COLUMN_ID INTEGER 
+        DECLARE @CONSTRAINT_NAME NVARCHAR(256)
+        SET @TABLE_NAME = 'w2_AffiliateTagSetting'
+        SET @COLUMN_NAME = 'affiliate_kbn'
+
+        --削除したいテーブルのシステムidを取得する
+        SELECT @TABLE_ID = id FROM sys.sysobjects 
+        WHERE xtype = 'U' AND name = @TABLE_NAME
+
+        --削除したいカラムのシステムidを取得する
+        SELECT @COLUMN_ID = column_id FROM sys.columns 
+        WHERE object_id = @TABLE_ID AND name = @COLUMN_NAME
+
+        --削除したい制約名を取得する
+        SELECT @CONSTRAINT_NAME = name FROM sys.sysobjects 
+        WHERE id = (SELECT constid FROM sys.sysconstraints WHERE id = @TABLE_ID AND colid = @COLUMN_ID)
+
+        --確認 => テーブル->制約->制約名->制約をスクリプト化であっているか確認できます。
+        SELECT @CONSTRAINT_NAME
+
+        --制約を削除する
+        EXEC('ALTER TABLE '+ @TABLE_NAME + ' DROP CONSTRAINT ' + @CONSTRAINT_NAME)
+
+        ALTER TABLE [w2_AffiliateTagSetting] ADD DEFAULT (N'PC/SP') FOR [affiliate_kbn] ;
+        GO
+
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_AffiliateTagSetting' AND COLUMN_NAME = 'affiliate_product_tag_id')
+          ALTER TABLE [w2_AffiliateTagSetting] ADD [affiliate_product_tag_id] [int];
+        GO
+
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_AffiliateTagSetting' AND COLUMN_NAME = 'output_location')
+          ALTER TABLE [w2_AffiliateTagSetting] ADD [output_location] [nvarchar] (20) NOT NULL DEFAULT (N'');
+        GO
+
+    if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_AffiliateTagCondition]'))
+        BEGIN
+        /*
+        =========================================================================================================
+          Module      : アフィリエイトタグの出力条件管理 (w2_AffiliateTagCondition.sql)
+         ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+          Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+        =========================================================================================================
+        */
+        CREATE TABLE [dbo].[w2_AffiliateTagCondition] (
+        	[affiliate_id] [int] NOT NULL,
+        	[condition_type] [nvarchar] (30) NOT NULL DEFAULT (N''),
+        	[condition_sort_no] [int] NOT NULL,
+        	[condition_value] [nvarchar] (100) NOT NULL DEFAULT (N''),
+        	[match_type] [nvarchar] (20) NOT NULL DEFAULT (N'PERFECT')
+        ) ON [PRIMARY]
+        
+        ALTER TABLE [dbo].[w2_AffiliateTagCondition] WITH NOCHECK ADD
+        	CONSTRAINT [PK_w2_AffiliateTagCondition] PRIMARY KEY  CLUSTERED
+        	(
+        		[affiliate_id],
+        		[condition_type],
+        		[condition_sort_no]
+        	) ON [PRIMARY]
+        END
+        
+    if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_AffiliateProductTagSetting]'))
+        BEGIN
+        /*
+        =========================================================================================================
+          Module      : アフィリエイト商品タグ設定マスタ (w2_AffiliateProductTagSetting.sql)
+         ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+          Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+        =========================================================================================================
+        */
+        CREATE TABLE [dbo].[w2_AffiliateProductTagSetting] (
+        	[affiliate_product_tag_id] [int] IDENTITY(1,1) NOT NULL,
+        	[tag_name] [nvarchar] (200) NOT NULL DEFAULT (N''),
+        	[tag_content] [nvarchar] (max) NOT NULL DEFAULT (N''),
+        	[tag_delimiter] [nvarchar] (100) NOT NULL DEFAULT (N''),
+        	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+        	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+        	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+        ) ON [PRIMARY]
+        
+        ALTER TABLE [dbo].[w2_AffiliateProductTagSetting] WITH NOCHECK ADD
+        	CONSTRAINT [PK_w2_AffiliateProductTagSetting] PRIMARY KEY  CLUSTERED
+        	(
+        		[affiliate_product_tag_id]
+        	) ON [PRIMARY]
+        END
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

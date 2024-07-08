@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 回答例管理画面系SQLステートメントXML(CsAnswerTemplate.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsAnswerTemplate>
+  
+  <!-- 全件検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+       DECLARE  @row_count int
+       
+        -- 該当件数取得
+        SELECT  @row_count = ISNULL(COUNT(w2_CsAnswerTemplate.dept_id), 0)
+          FROM  w2_CsAnswerTemplate
+         WHERE  w2_CsAnswerTemplate.dept_id = @dept_id 
+                AND  
+                (
+                  (@answer_category_id = '' OR w2_CsAnswerTemplate.answer_category_id = @answer_category_id)
+                  AND 
+                  (@answer_title = '' OR w2_CsAnswerTemplate.answer_title like '%' + dbo.w2_LikeStringEscape(@answer_title) + '%' ESCAPE '#')
+                  AND 
+                  (@answer_mail_title = '' OR w2_CsAnswerTemplate.answer_mail_title like '%' + dbo.w2_LikeStringEscape(@answer_mail_title) + '%' ESCAPE '#')
+                  AND
+                  (@answer_text = '' OR w2_CsAnswerTemplate.answer_text like '%' + dbo.w2_LikeStringEscape(@answer_text) + '%' ESCAPE '#')
+                  AND 
+                  (@valid_flg = '' OR w2_CsAnswerTemplate.valid_flg = @valid_flg)
+                )
+        
+        -- 一覧情報取得
+        SELECT  w2_CsAnswerTemplate.*,
+                w2_CsAnswerTemplateCategory.category_name,
+                @row_count as row_count
+          FROM  (
+                  SELECT  w2_CsAnswerTemplate.dept_id,
+                          w2_CsAnswerTemplate.answer_id,
+                          ROW_NUMBER() OVER (ORDER BY w2_CsAnswerTemplate.display_order, w2_CsAnswerTemplate.answer_id) AS row_num
+                    FROM  w2_CsAnswerTemplate
+                   WHERE  w2_CsAnswerTemplate.dept_id = @dept_id 
+                          AND  
+                          (
+                            (@answer_category_id = '' OR w2_CsAnswerTemplate.answer_category_id = @answer_category_id)
+                            AND 
+                            (@answer_title = '' OR w2_CsAnswerTemplate.answer_title like '%' + dbo.w2_LikeStringEscape(@answer_title) + '%' ESCAPE '#')
+                            AND 
+                            (@answer_mail_title = '' OR w2_CsAnswerTemplate.answer_mail_title like '%' + dbo.w2_LikeStringEscape(@answer_mail_title) + '%' ESCAPE '#')
+                            AND
+                            (@answer_text = '' OR w2_CsAnswerTemplate.answer_text like '%' + dbo.w2_LikeStringEscape(@answer_text) + '%' ESCAPE '#')
+                            AND 
+                            (@valid_flg = '' OR w2_CsAnswerTemplate.valid_flg = @valid_flg)
+                          )
+                ) AS RowIndex
+                INNER JOIN  w2_CsAnswerTemplate ON
+                (
+                  w2_CsAnswerTemplate.dept_id = RowIndex.dept_id
+                  AND
+                  w2_CsAnswerTemplate.answer_id = RowIndex.answer_id
+                )
+                LEFT JOIN w2_CsAnswerTemplateCategory ON
+                (
+                  w2_CsAnswerTemplate.answer_category_id = w2_CsAnswerTemplateCategory.category_id
+                  AND
+                  w2_CsAnswerTemplateCategory.valid_flg = '1'
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  w2_CsAnswerTemplate.display_order ASC, w2_CsAnswerTemplate.answer_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="answer_category_id" Type="nvarchar" Size="10" />
+      <Input Name="answer_title" Type="nvarchar" Size="50" />
+      <Input Name="answer_text" Type="nvarchar" Size="max" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="answer_mail_title" Type="nvarchar" Size="50" />
+    </Parameter>
+  </Search>
+
+  <!-- 有効なものから検索 -->
+  <SearchValid>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CsAnswerTemplate
+                LEFT JOIN w2_CsAnswerTemplateCategory ON
+                (
+                  w2_CsAnswerTemplate.answer_category_id = w2_CsAnswerTemplateCategory.category_id
+                  AND
+                  w2_CsAnswerTemplateCategory.valid_flg = '1'
+                )
+         WHERE  w2_CsAnswerTemplate.dept_id = @dept_id 
+                AND  
+                (
+                  (@answer_category_id = '' OR w2_CsAnswerTemplate.answer_category_id = @answer_category_id)
+                  AND 
+                  (
+                    @keyword = ''
+                    OR
+                    w2_CsAnswerTemplate.answer_title like '%' + dbo.w2_LikeStringEscape(@keyword) + '%' ESCAPE '#'
+                    OR
+                    w2_CsAnswerTemplate.answer_text like '%' + dbo.w2_LikeStringEscape(@keyword) + '%' ESCAPE '#'
+                  )
+                  AND 
+                  w2_CsAnswerTemplate.valid_flg ='1'
+                )
+      ORDER BY  w2_CsAnswerTemplate.display_order ASC, w2_CsAnswerTemplate.answer_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="answer_category_id" Type="nvarchar" Size="10" />
+      <Input Name="keyword" Type="nvarchar" Size="100" />
+    </Parameter>
+  </SearchValid>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsAnswerTemplate.*,
+                w2_CsAnswerTemplateCategory.category_name
+          FROM  w2_CsAnswerTemplate
+                LEFT JOIN w2_CsAnswerTemplateCategory ON
+                (
+                  w2_CsAnswerTemplate.answer_category_id = w2_CsAnswerTemplateCategory.category_id
+                  AND
+                  w2_CsAnswerTemplateCategory.valid_flg = '1'
+                )
+         WHERE  w2_CsAnswerTemplate.dept_id = @dept_id
+           AND  w2_CsAnswerTemplate.answer_id = @answer_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="answer_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Get>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CsAnswerTemplate
+          (
+            w2_CsAnswerTemplate.dept_id, 
+            w2_CsAnswerTemplate.answer_id, 
+            w2_CsAnswerTemplate.answer_category_id, 
+            w2_CsAnswerTemplate.answer_title, 
+            w2_CsAnswerTemplate.answer_text, 
+            w2_CsAnswerTemplate.display_order, 
+            w2_CsAnswerTemplate.valid_flg, 
+            w2_CsAnswerTemplate.date_created, 
+            w2_CsAnswerTemplate.date_changed, 
+            w2_CsAnswerTemplate.last_changed,
+            w2_CsAnswerTemplate.answer_mail_title
+          ) 
+          VALUES
+          (
+            @dept_id, 
+            @answer_id, 
+            @answer_category_id, 
+            @answer_title, 
+            @answer_text, 
+            @display_order, 
+            @valid_flg, 
+            getdate(),
+            getdate(),
+            @last_changed,
+            @answer_mail_title
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="answer_id" Type="nvarchar" Size="10" />
+      <Input Name="answer_category_id" Type="nvarchar" Size="10" />
+      <Input Name="answer_title" Type="nvarchar" Size="50" />
+      <Input Name="answer_text" Type="nvarchar" Size="max" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="answer_mail_title" Type="nvarchar" Size="50" />
+    </Parameter>
+  </Register>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsAnswerTemplate 
+           SET  w2_CsAnswerTemplate.answer_category_id = @answer_category_id, 
+                w2_CsAnswerTemplate.answer_title = @answer_title, 
+                w2_CsAnswerTemplate.answer_text = @answer_text, 
+                w2_CsAnswerTemplate.display_order = @display_order, 
+                w2_CsAnswerTemplate.valid_flg = @valid_flg, 
+                w2_CsAnswerTemplate.date_changed = getdate(), 
+                w2_CsAnswerTemplate.last_changed = @last_changed,
+                w2_CsAnswerTemplate.answer_mail_title = @answer_mail_title
+         WHERE  w2_CsAnswerTemplate.dept_id = @dept_id
+           AND  w2_CsAnswerTemplate.answer_id = @answer_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="answer_id" Type="nvarchar" Size="10" />
+      <Input Name="answer_category_id" Type="nvarchar" Size="10" />
+      <Input Name="answer_title" Type="nvarchar" Size="50" />
+      <Input Name="answer_text" Type="nvarchar" Size="max" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="answer_mail_title" Type="nvarchar" Size="50" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE 
+          FROM  w2_CsAnswerTemplate
+         WHERE  w2_CsAnswerTemplate.dept_id = @dept_id 
+           AND  w2_CsAnswerTemplate.answer_id = @answer_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="answer_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+
+</CsAnswerTemplate>

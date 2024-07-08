@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+-- w2_FixedPurchaseCancelReason
+CREATE TABLE [dbo].[w2_FixedPurchaseCancelReason] (
+	[cancel_reason_id] [nvarchar] (30) NOT NULL,
+	[cancel_reason_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[display_kbn] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_FixedPurchaseCancelReason] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_FixedPurchaseCancelReason] PRIMARY KEY  CLUSTERED
+	(
+		[cancel_reason_id]
+	) ON [PRIMARY]
+
+GO
+
+-- w2_FixedPurchase
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchase' AND column_name = 'cancel_reason_id')
+	ALTER TABLE [w2_FixedPurchase] ADD [cancel_reason_id] [nvarchar] (30) NOT NULL DEFAULT (N'');
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchase' AND column_name = 'cancel_memo')
+	ALTER TABLE [w2_FixedPurchase] ADD [cancel_memo] [nvarchar] (MAX) NOT NULL DEFAULT (N'');
+
+-- w2_MenuAuthority
+ALTER TABLE [w2_MenuAuthority] ALTER COLUMN [menu_path] [nvarchar] (100) NOT NULL;
+			]]>
+    </Statement>
+  </Up>
+</Migration>

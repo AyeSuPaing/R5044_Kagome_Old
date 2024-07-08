@@ -1,0 +1,278 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<OrderDataExportSetting>
+
+  <!-- 出力ファイルの設定 -->
+  <ExportSetting>
+	<!-- 受注一覧・ワークフロー一覧画面に表示する送り状ダウンロードリンクの文言 -->
+	<DisplayName><![CDATA[宅配通出荷指示データ出力]]></DisplayName>
+	<!-- 出力ファイルの種類（設定可能値：csv） -->
+	<FormatType>csv</FormatType>
+	<!-- 出力単位（設定可能値：Order） -->
+	<UnitType>OrderItem</UnitType>
+	<!-- 出力ファイル名 -->
+	<FileName>
+	  <Value Type="string"><![CDATA[ShippingOrder_]]></Value>
+	  <Value Type="dateString" Format="yyyyMMddHHmmss">Now</Value>
+	  <Value Type="string">.csv</Value>
+	</FileName>
+	<!-- ヘッダ行出力有無（設定可能値：true, false） -->
+	<ExportHeader>false</ExportHeader>
+	<!-- 引用符常時出力有無（設定可能値：true, false） -->
+	<!--
+		 例：引用符が「"」、1列目の値は「123」、2列目の値は「abc」、3列目の値は「1,2」の場合、
+			 ・true の場合、"123","abc","1,2"を出力しますが、
+			 ・false の場合、123,abc,"1,2"を出力します。（値にカンマ(,)があるときは強制エスケープ）
+	-->
+	<AlwaysExportQuotation>false</AlwaysExportQuotation>
+	<!-- 列の引用符 -->
+	<StringQuotationMark><![CDATA["]]></StringQuotationMark>
+	<!-- 区切り文字（設定可能値：COMMA, TAB） -->
+	<Separator>COMMA</Separator>
+	<!-- 文字コード（設定可能値：Shift_JIS, UTF-8, Big5） -->
+	<Encoding>Big5</Encoding>
+  </ExportSetting>
+
+  <!-- 出力項目・内容の設定 -->
+  <FieldsSetting>
+	<!-- 1. 項目 -->
+	<Field Name="序號">
+		<Value Type="field">ROW_NUMBER() OVER(ORDER BY w2_Order.order_id DESC)</Value>
+	</Field>
+
+	<!-- 2. 情報生成日 -->
+	<Field Name="資料產生日">
+		<Value Type="dateString" Format="yyyymmdd">w2_Order.order_date</Value>
+	</Field>
+
+	<!-- 3. 空白 -->
+	<Field Name="空白1">
+		<Value Type="string"></Value>
+	</Field>
+
+	<!-- 4. 空白 -->
+	<Field Name="空白2">
+		<Value Type="string"></Value>
+	</Field>
+
+	<!-- 5. 注文数(1に固定) -->
+	<Field Name="件數">
+		<Value Type="string">1</Value>
+	</Field>
+
+	<!-- 6. 三辺総合 (単位：cm) -->
+	<!-- 01: s60（XXS,XS）
+		 02: s90（S,M）
+		 03: s120（L,XL）
+		 04: s150（XXL） -->
+	<Field Name="規格">
+		<Switch>
+			<Case>
+				<Condition><![CDATA[w2_OrderItem.shipping_size_kbn = 'XXS' OR w2_OrderItem.shipping_size_kbn = 'XS']]></Condition>
+				<Value Type="string">01</Value>
+			</Case>
+			<Case>
+				<Condition><![CDATA[w2_OrderItem.shipping_size_kbn = 'S' OR w2_OrderItem.shipping_size_kbn = 'M']]></Condition>
+				<Value Type="string">02</Value>
+			</Case>
+			<Case>
+				<Condition><![CDATA[w2_OrderItem.shipping_size_kbn = 'L' OR w2_OrderItem.shipping_size_kbn = 'XL']]></Condition>
+				<Value Type="string">03</Value>
+			</Case>
+			<Else>
+				<Value Type="string">04</Value>
+			</Else>
+		</Switch>
+	</Field>
+
+	<!-- 7. 会社番号 -->
+	<Field Name="客戶代號">
+		<Value Type="string">0000000000</Value>
+	</Field>
+
+	<!-- 8. 注文ID -->
+	<Field Name="出貨單號">
+		<Value Type="field">w2_Order.order_id</Value>
+	</Field>
+
+	<!-- 9. 送り主氏名 -->
+	<Field Name="寄件人名">
+		<Value Type="string">日商雙贏電商股分有限公司</Value>
+	</Field>
+
+	<!-- 10. 送り主電話番号 -->
+	<Field Name="寄件人電話">
+		<Value Type="string">0229112356</Value>
+	</Field>
+
+	<!-- 11. 送り主郵便番号 -->
+	<Field Name="郵區">
+		<Value Type="string">233</Value>
+	</Field>
+
+	<!-- 12. 送り主住所 -->
+	<Field Name="寄址">
+		<Value Type="string">台北市中山區中山北路二段77號</Value>
+	</Field>
+
+	<!-- 13. 配送先氏名（20 byte） -->
+	<Field Name="收件人名">
+		<Switch>
+			<Case>
+				<Condition><![CDATA[w2_OrderShipping.shipping_receiving_store_flg = '1']]></Condition>
+				<Value Type="field">
+					<![CDATA[
+						CASE
+						  WHEN  DATALENGTH(CAST(w2_OrderOwner.owner_name AS TEXT)) < 20 THEN w2_OrderOwner.owner_name + REPLICATE(' ', 20 - DATALENGTH(CAST(w2_OrderOwner.owner_name AS TEXT)))
+						  ELSE  CONVERT(VARCHAR(20), w2_OrderOwner.owner_name)
+						END
+					]]>
+				</Value>
+			</Case>
+			<Else>
+				<Value Type="field">
+					<![CDATA[
+						CASE
+						  WHEN  DATALENGTH(CAST(w2_OrderShipping.shipping_name AS TEXT)) < 20 THEN w2_OrderShipping.shipping_name + REPLICATE(' ', 20 - DATALENGTH(CAST(w2_OrderShipping.shipping_name AS TEXT)))
+						  ELSE  CONVERT(VARCHAR(20), w2_OrderShipping.shipping_name)
+						END
+					]]>
+				</Value>
+			</Else>
+		</Switch>
+	</Field>
+
+	<!-- 14. 配送先電話番号（10 byte） -->
+	<Field Name="收件人電話">
+		<Switch>
+			<Case>
+				<Condition><![CDATA[w2_OrderShipping.shipping_receiving_store_flg = '1']]></Condition>
+				<Value Type="field">
+					<![CDATA[
+						CASE
+						  WHEN  DATALENGTH(CAST(replace(w2_OrderOwner.owner_tel1, '-', '') AS TEXT)) <= 10 THEN SUBSTRING(replace(w2_OrderOwner.owner_tel1, '-', ''), 1, 10) + REPLICATE(' ', 10 - DATALENGTH(CAST(replace(w2_OrderOwner.owner_tel1, '-', '') AS TEXT)))
+						  ELSE  SUBSTRING(replace(w2_OrderOwner.owner_tel1, '-', ''), 1, 10)
+						END
+					]]>
+				</Value>
+			</Case>
+			<Else>
+				<Value Type="field">
+					<![CDATA[
+						CASE
+						  WHEN  DATALENGTH(CAST(replace(w2_OrderShipping.shipping_tel1, '-', '') AS TEXT)) <= 10 THEN SUBSTRING(replace(w2_OrderShipping.shipping_tel1, '-', ''), 1, 10) + REPLICATE(' ', 10 - DATALENGTH(CAST(replace(w2_OrderShipping.shipping_tel1, '-', '') AS TEXT)))
+						  ELSE  SUBSTRING(replace(w2_OrderShipping.shipping_tel1, '-', ''), 1, 10)
+						END
+					]]>
+				</Value>
+			</Else>
+		</Switch>
+	</Field>
+
+	<!-- 15. 配送先郵便番号（297に固定） -->
+	<Field Name="郵區">
+		<Value Type="string">297</Value>
+	</Field>
+
+	<!-- 16. 配送先住所（コンビニアドレス） -->
+	<Field Name="收址">
+		<Value Type="field">w2_OrderShipping.shipping_receiving_store_id + REPLICATE(' ', 10 -  DATALENGTH(CAST(w2_OrderShipping.shipping_receiving_store_id AS TEXT)))</Value>
+		<Value Type="field">w2_OrderShipping.shipping_name + REPLICATE(' ', 20 - DATALENGTH(CAST(w2_OrderShipping.shipping_name AS TEXT))) + REPLICATE(' ', 34)</Value>
+	</Field>
+
+	<!-- 17. 空白 -->
+	<Field Name="空白3">
+		<Value Type="string"></Value>
+	</Field>
+
+	<!-- 18. 空白 -->
+	<Field Name="空白4">
+		<Value Type="string"></Value>
+	</Field>
+
+	<!-- 19. 空白 -->
+	<Field Name="空白5">
+		<Value Type="string"></Value>
+	</Field>
+
+	<!-- 20. 預り方法 -->
+	<Field Name="代收款方式">
+		<Switch>
+			<Case>
+				<Condition><![CDATA[w2_Order.order_payment_kbn = 'K20']]></Condition>
+				<Value Type="string">3</Value>
+			</Case>
+			<Else>
+				<Value Type="string">0</Value>
+			</Else>
+		</Switch>
+	</Field>
+
+	<!-- 21. 預り金 -->
+	<Field Name="代收款金額">
+		<Switch>
+			<Case>
+				<Condition><![CDATA[w2_Order.order_payment_kbn = 'K20']]></Condition>
+				<Value Type="field">
+					<![CDATA[
+					  LEFT(CAST(w2_Order.settlement_amount AS nvarchar), LEN(CAST(w2_Order.settlement_amount AS nvarchar)) - 4)
+					]]>
+				</Value>
+			</Case>
+			<Else>
+				<Value Type="field">0</Value>
+			</Else>
+		</Switch>
+	</Field>
+
+	<!-- 22. 配送方法（5に固定） -->
+	<Field Name="商品別">
+		<Value Type="string">5</Value>
+	</Field>
+
+	<!-- 23. 空白 -->
+	<Field Name="空白6">
+		<Value Type="string"></Value>
+	</Field>
+
+	<!-- 24. 空白） -->
+	<Field Name="空白7">
+		<Value Type="string"></Value>
+	</Field>
+
+	<!-- 25. 空白 -->
+	<Field Name="空白8">
+		<Value Type="string"></Value>
+	</Field>
+
+	<!-- 26. メモ（60 byte） -->
+	<Field Name="備註">
+		<!-- データタイプdecimalを直接にnvarcharに変換すると、小数点が付くので、先にfloat変換しないといけない -->
+		<Value Type="field">
+			<!-- [1-6商品價值] -->
+			RIGHT('000000' + CONVERT(NVARCHAR, CAST(w2_OrderItem.item_price AS FLOAT)), 6)
+			<!-- [7-46商品內容] -->
+			+ 
+			<![CDATA[
+				CASE
+				  WHEN  DATALENGTH(CAST(w2_OrderItem.product_name AS TEXT)) < 40 THEN w2_OrderItem.product_name + REPLICATE(' ', 40 - DATALENGTH(CAST(w2_OrderItem.product_name AS TEXT)))
+				  ELSE  CONVERT(VARCHAR(40), w2_OrderItem.product_name)
+				END
+			  ]]>
+			<!-- [47-52路線RSNO] -->
+			+ REPLICATE(' ', 6)
+			<!-- [53-54設備代碼 EQPID] -->
+			+ REPLICATE(' ', 2)
+			<!-- [55-56區域代碼別 AREA] -->
+			+ REPLICATE(' ', 2)
+			<!-- [57-60空白] -->
+			+ REPLICATE(' ', 4)
+		</Value>
+	</Field>
+
+	<!-- 27. 空白 -->
+	<Field Name="空白9">
+		<Value Type="string"></Value>
+	</Field>
+</FieldsSetting>
+
+</OrderDataExportSetting>

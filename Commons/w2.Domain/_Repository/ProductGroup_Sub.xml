@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品グループマスタ系SQLサブステートメントXML (ProductGroup_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductGroup_Sub>
+
+  <!-- 検索用WHERE文 -->
+  <PRODUCTGROUP_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE w2_ProductGroup.product_group_id LIKE + @product_group_id_like_escaped + '%' ESCAPE '#'
+              AND
+              w2_ProductGroup.product_group_name LIKE '%' + @product_group_name_like_escaped + '%' ESCAPE '#'
+              AND
+              (
+                @master_id_like_escaped = ''
+                OR
+                w2_ProductGroup.product_group_id IN
+                (
+                  SELECT  w2_ProductGroupItem.product_group_id
+                    FROM  w2_ProductGroupItem
+                   WHERE  w2_ProductGroupItem.master_id LIKE + @master_id_like_escaped + '%' ESCAPE '#'
+                )
+              )
+              AND
+              (
+                @begin_date_from IS NULL
+                OR
+                w2_ProductGroup.begin_date >= @begin_date_from
+              )
+              AND
+              (
+                @begin_date_to IS NULL
+                OR
+                w2_ProductGroup.begin_date < DATEADD(day, 1, @begin_date_to)
+              )
+              AND
+              (
+                @end_date_from IS NULL
+                OR
+                w2_ProductGroup.end_date >= @end_date_from
+              )
+              AND
+              (
+                @end_date_to IS NULL
+                OR
+                w2_ProductGroup.end_date < DATEADD(day, 1, @end_date_to)
+              )
+              AND
+              (
+                @valid_flg IS NULL
+                OR
+                w2_ProductGroup.valid_flg = @valid_flg
+              )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_group_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="product_group_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="master_id_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="begin_date_from" Type="datetime" />
+      <Input Name="begin_date_to" Type="datetime" />
+      <Input Name="end_date_from" Type="datetime" />
+      <Input Name="end_date_to" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </PRODUCTGROUP_SEARCH_WHERE>
+  
+  <!-- 検索用ORDER BY -->
+  <PRODUCTGROUP_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY w2_ProductGroup.product_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </PRODUCTGROUP_SEARCH_ORDER_BY>
+
+</ProductGroup_Sub>

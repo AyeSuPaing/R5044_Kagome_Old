@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メール配信設定系SQLステートメントXML(MailDistSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MailDistSetting>
+
+  <!-- メール配信設定取得(除外リストも取得) -->
+  <GetMailDistSettingAndChangeStatus>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailDistSetting
+         WHERE  dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+           AND  del_flg = '0'
+           
+        SELECT  *
+          FROM  w2_MailDistExceptList
+         WHERE  dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+           
+        UPDATE  w2_MailDistSetting
+           SET  status = @status,
+                last_dist_date = GETDATE()
+         WHERE	dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+           AND  status IN ('00', '09')   -- 通常、エラーのものを更新
+           AND  del_flg = '0'
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="10" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMailDistSettingAndChangeStatus>
+
+  <!-- メール配信最終集計人数更新 -->
+  <UpdateMailDistSettingLastCount>
+    <Statement>
+      <![CDATA[
+        -- ステータス更新
+        UPDATE  w2_MailDistSetting
+           SET  last_count = @last_count,
+                last_errorexcept_count = @last_errorexcept_count,
+                last_mobilemailexcept_count = @last_mobilemailexcept_count,
+                last_duplicate_except_count = @last_duplicate_except_count
+         WHERE  dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="10" />
+      <Input Name="last_count" Type="bigint" />
+      <Input Name="last_errorexcept_count" Type="bigint" />
+      <Input Name="last_mobilemailexcept_count" Type="bigint" />
+      <Input Name="last_duplicate_except_count" Type="bigint" />
+    </Parameter>
+  </UpdateMailDistSettingLastCount>
+  
+  <!-- メール配信設定ステータス更新 -->
+  <UpdateMailDistSettingStatus>
+    <Statement>
+      <![CDATA[
+        -- ステータス更新
+        UPDATE  w2_MailDistSetting
+           SET  status = @status
+         WHERE  dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+           AND  (
+                  (@status_target IS NULL)
+                  OR
+                  (status = @status_target)
+                )
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="10" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="status_target" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateMailDistSettingStatus>
+  
+</MailDistSetting>

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 顧客状況分析セッティングXML(UserExtendKbnAnalysis.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<UserExtendKbnAnalysis>
+  <!--
+    構成分析のStatementへはname、count、total（各レコード共通）が取得できるSQLを記述する。
+    ========================================
+    [name]         [count]         [total]
+    ========================================
+    男             35              68
+    女             32              68
+    不明           1               68
+    ========================================
+  -->
+
+  <UserExtendKbnAnalysis>
+    <Title>拡張項目</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- ---------------------------------------
+        -- 変数テーブルを用意
+        -- ---------------------------------------
+        -- 集計結果のソート順を一定化するため、nameフィールドのみのテーブルを作成
+        DECLARE @name_only TABLE
+        (
+          name [nvarchar] (MAX)
+        )
+        -- 変数テーブルにレコードをINSERTしていく。この順番で最終的なレポートも表示される
+        -- INSERT文はプログラム側で生成
+        @@ insert_values @@
+        
+        -- カンマでバラした値をいったん格納する用テーブル
+        -- チェックボックスで複数選択された場合に利用する
+        DECLARE @SplitedValueTable TABLE
+        (
+          user_id [nvarchar] (MAX),
+          id [int],
+          splited_value [nvarchar] (MAX),
+          @@ target_user_extend_field @@ [nvarchar] (MAX)
+        );
+        
+        -- ---------------------------------------
+        -- 再帰処理で対象フィールドの内容をバラす
+        -- ---------------------------------------
+        -- １レコードをカンマでバラして、複数レコードにする処理
+        -- フィールド値の前後にカンマを入れて必ずカンマがある状態にしつつ処理していく
+        -- カンマが１個も無ければ特に何も行われない。ユーザー１：レコード１
+        -- カンマがあると「A,B,C」ならユーザ１に対して３レコード作成される状態。（idは便宜上割り当てているが現状使用していない）
+        WITH SplitExtendValue AS
+        (
+          SELECT user_id,
+                 id=1,
+                 splited_value=LEFT(@@ target_user_extend_field @@ + ',', CHARINDEX(',', @@ target_user_extend_field @@ + ',') -1),
+                 @@ target_user_extend_field @@=RIGHT(@@ target_user_extend_field @@ + ',', LEN(@@ target_user_extend_field @@ + ',') - CHARINDEX(',', @@ target_user_extend_field @@ + ','))
+            FROM w2_UserExtend
+
+           UNION ALL
+
+         SELECT user_id,
+                id+1,
+                LEFT(@@ target_user_extend_field @@, CHARINDEX(',', @@ target_user_extend_field @@) -1),
+                RIGHT(@@ target_user_extend_field @@, LEN(@@ target_user_extend_field @@) - CHARINDEX(',', @@ target_user_extend_field @@))
+           FROM SplitExtendValue
+          WHERE @@ target_user_extend_field @@ != ''
+        )
+
+        -- 変数テーブルに再帰処理の結果を格納（このあと２回利用する）
+        INSERT INTO @SplitedValueTable
+            SELECT * FROM SplitExtendValue
+            ORDER BY 1, 2
+            OPTION (maxrecursion 0); --再帰できる回数制限指定(0だと制限なし　かな？)
+
+        -- 再帰処理で作った中身を確認する場合にはこれで確認可能
+        -- SELECT * FROM @SplitedValueTable;
+
+        -- ---------------------------------------
+        -- 集計処理開始
+        -- ---------------------------------------
+        -- totalデータ作成
+        DECLARE @total_count decimal
+        SELECT  @total_count = ISNULL(COUNT(w2_User.user_id), 0)
+          FROM  w2_User INNER JOIN 
+                @SplitedValueTable AS TempUserExtend
+            ON  w2_User.user_id = TempUserExtend.user_id
+         WHERE  
+                (@user_kbn IS NULL OR w2_User.user_kbn = @user_kbn)
+           AND  w2_User.mall_id = 'OWN_SITE'
+           AND  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+           AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+        
+        -- nameのみテーブルにJOINしつつ集計データをSELECT
+        SELECT  TableNameOnly.name as name, -- nameだけは一時テーブルの内容を参照
+                ISNULL (TableCountSummary.count, 0) as count,
+                ISNULL (TableCountSummary.total, @total_count) as total
+          FROM  @name_only as TableNameOnly
+                LEFT JOIN 
+                  (
+                    -- 分析データ集計
+                    SELECT  TempUserExtend.splited_value as name,
+                            ISNULL(COUNT(w2_User.user_id), 0) AS count,
+                            @total_count AS total
+                      FROM  w2_User RIGHT JOIN @SplitedValueTable AS TempUserExtend ON  w2_User.user_id = TempUserExtend.user_id
+                     WHERE  
+                            (@user_kbn IS NULL OR w2_User.user_kbn = @user_kbn)
+                       AND  w2_User.mall_id = 'OWN_SITE'
+                       AND  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+                       AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+                       AND  TempUserExtend.splited_value IS NOT NULL
+                       AND  TempUserExtend.splited_value IN (@@ valid_fields @@) --ここに含まれないものは「上記以外」となる
+                   GROUP BY TempUserExtend.splited_value
+                  ) AS TableCountSummary
+                 ON
+                 (TableNameOnly.name = TableCountSummary.name) --nameで並ばせる
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UserExtendKbnAnalysis>
+  
+</UserExtendKbnAnalysis>

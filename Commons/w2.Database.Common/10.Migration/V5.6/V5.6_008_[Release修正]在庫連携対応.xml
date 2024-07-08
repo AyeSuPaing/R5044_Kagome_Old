@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+	
+	if not exists (select * from sysobjects inner join syscolumns on sysobjects.id = syscolumns.id where sysobjects.type = 'u' and sysobjects.name = 'w2_ProductStockHistory' and syscolumns.name = 'sync_flg')
+	BEGIN
+	
+	
+	/* 在庫履歴テーブルの作成日にインデックス付与 */
+	CREATE INDEX 
+		IX_w2_ProductStockHistory_2
+	ON 
+		w2_ProductStockHistory(date_created)
+	ON 
+		[PRIMARY]
+	
+	/* 在庫履歴テーブルに同期フラグカラム追加 */
+	ALTER TABLE w2_ProductStockHistory ADD sync_flg  bit NOT NULL DEFAULT (0)
+	
+	END
+	GO
+			]]>
+    </Statement>
+  </Up>
+</Migration>

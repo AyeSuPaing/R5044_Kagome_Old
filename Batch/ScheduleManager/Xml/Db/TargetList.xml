@@ -1,0 +1,384 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ターゲットリスト系SQLステートメントXML(TargetList.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<TargetList>
+
+  <!-- ターゲットリスト取得(抽出/利用) -->
+  <!--
+      以下の動作を行うことを想定
+        ・取得できたデータのstatusが'通常'であればステータスも更新済みであり、抽出/利用可能
+        ・取得できたデータのstatusが'抽出中'or'利用中'であれば時間をおいて再度実行
+        ・取得できたデータのstatusがエラーであれば終了
+  -->
+  <GetTargetListAndChangeStatus>
+    <Statement>
+      <![CDATA[
+        DECLARE @target_list_temp TABLE(
+                status NVARCHAR(10)
+                ,target_type NVARCHAR(20)
+                ,target_condition NTEXT
+                ,data_count INT
+              )
+
+        INSERT INTO @target_list_temp
+        SELECT  status
+                ,target_type
+                ,target_condition
+                ,data_count
+          FROM  w2_TargetList WITH (NOLOCK)
+         WHERE  dept_id = @dept_id
+           AND  target_id = @target_id
+           AND  del_flg = '0'
+
+        UPDATE  w2_TargetList
+           SET  status = @status
+         WHERE  dept_id = @dept_id
+           AND  target_id = @target_id
+           AND  status = '00'   -- 通常状態のものを更新
+           AND  del_flg = '0'
+           AND  (SELECT status FROM @target_list_temp) = '00'
+
+        SELECT  *
+          FROM  @target_list_temp
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetTargetListAndChangeStatus>
+
+  <!-- ターゲットリスト取得（実際に利用するとき） -->
+  <GetTargetList>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_TargetList WITH (NOLOCK)
+         WHERE  dept_id = @dept_id
+           AND  target_id = @target_id
+           AND  del_flg = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetTargetList>
+
+  <!-- アクション実行ターゲットリスト取得 -->
+  <GetTargetListForAction>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_TargetList WITH (NOLOCK)
+         WHERE  dept_id = @dept_id
+           AND  target_id in (@@ params @@)
+           AND  del_flg = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetTargetListForAction>
+
+  <!-- ターゲットリストデータ取得 -->
+  <GetTargetListData>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        -- 配信除外メールエラーポイント、モバイルメール除外フラグ取得
+        DECLARE @except_error_point INT
+        DECLARE @except_mobilemail_flg NVARCHAR(10)
+
+        SELECT  @except_error_point = except_error_point,
+                @except_mobilemail_flg = except_mobilemail_flg
+          FROM  w2_MailDistSetting
+         WHERE  dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+           AND  del_flg = '0'
+      
+        -- ターゲットリストデータ取得（重複排除）
+        SELECT  w2_MailSendTemp.*,
+                ROW_NUMBER() OVER (PARTITION BY mailDomain.domain ORDER BY mailDomain.domain) AS domain_num,
+                w2_User.disp_language_code,
+                w2_User.disp_language_locale_id
+          FROM  w2_MailSendTemp
+                INNER JOIN
+                (
+                  SELECT  w2_MailSendTemp.*, 
+                          SUBSTRING(w2_MailSendTemp.mail_addr,CHARINDEX('@',w2_MailSendTemp.mail_addr), LEN(w2_MailSendTemp.mail_addr) - CHARINDEX('@',w2_MailSendTemp.mail_addr) + 1) AS domain -- ドメイン毎に連番
+                    FROM  w2_MailSendTemp
+                ) AS mailDomain
+                ON
+                (
+                  w2_MailSendTemp.dept_id = mailDomain.dept_id
+                  AND  w2_MailSendTemp.master_id = mailDomain.master_id
+                  AND  w2_MailSendTemp.data_no = mailDomain.data_no
+                )
+                LEFT JOIN w2_MailErrorAddr ON (
+                  w2_MailSendTemp.mail_addr = w2_MailErrorAddr.mail_addr
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_User.user_id = w2_MailSendTemp.user_id
+                )
+         WHERE  w2_MailSendTemp.dept_id = @dept_id
+           AND  w2_MailSendTemp.master_id = @master_id
+           AND  (
+                  (SELECT COUNT(*) FROM w2_MailDistExceptList WHERE  w2_MailDistExceptList.dept_id = @dept_id  AND w2_MailDistExceptList.maildist_id = @maildist_id) = 0
+                  OR
+                  NOT EXISTS (
+                    SELECT  *
+                      FROM  w2_MailDistExceptList
+                     WHERE  w2_MailDistExceptList.dept_id = @dept_id
+                       AND  w2_MailDistExceptList.maildist_id = @maildist_id
+                       AND  w2_MailDistExceptList.mail_addr = w2_MailSendTemp.mail_addr)
+                )
+           AND  ISNULL(w2_MailErrorAddr.error_point, 0) < @except_error_point
+           <@@val:enable_deduplication:1@@>
+           AND  NOT EXISTS
+                (
+                   SELECT  *
+                     FROM  w2_MailDistSentUser
+                    WHERE  maildist_id = @maildist_id
+                      AND  w2_MailDistSentUser.user_id = w2_MailSendTemp.user_id
+                )
+           </@@val:enable_deduplication:1@@>
+           AND  (@@ where_except_mobile @@)
+        ORDER BY domain_num, domain
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="enable_deduplication" Type="nvarchar" Size="2" />
+    </Parameter>
+  </GetTargetListData>
+
+  <!-- メール配信排除アドレス数取得 -->
+  <GetExceptListCount>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  COUNT(*)
+          FROM  w2_MailDistExceptList
+         WHERE  maildist_id = @maildist_id
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetExceptListCount>
+
+  <!-- メールエラーポイント除外数取得 -->
+  <GetMailErrorPointExceptCount>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        -- 配信除外メールエラーポイント取得
+        DECLARE @except_error_point int
+        SELECT  @except_error_point = except_error_point
+          FROM  w2_MailDistSetting
+         WHERE  dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+           AND  del_flg = '0'
+      
+        -- ターゲットリストデータ取得（重複排除）
+        SELECT  COUNT(*)
+          FROM  w2_MailSendTemp
+                LEFT JOIN w2_MailErrorAddr ON (
+                  w2_MailSendTemp.mail_addr = w2_MailErrorAddr.mail_addr
+                )
+         WHERE  dept_id = @dept_id
+           AND  master_id = @master_id
+           <@@hasval:exists_flg@@>
+           AND  (
+                  NOT EXISTS (
+                    SELECT  *
+                      FROM  w2_MailDistExceptList
+                     WHERE  dept_id = '0'
+                       AND  maildist_id = @maildist_id
+                       AND  w2_MailDistExceptList.mail_addr = w2_MailSendTemp.mail_addr)
+                )
+           </@@hasval:exists_flg@@>
+           AND  ISNULL(w2_MailErrorAddr.error_point, 0) >= @except_error_point
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMailErrorPointExceptCount>
+
+  <!-- モバイルメール除外数取得 -->
+  <GetMobileMailExceptCount>
+    <Statement>
+      <![CDATA[
+        -- 配信除外メールエラーポイント取得
+        DECLARE @except_error_point int
+        SELECT  @except_error_point = except_error_point
+          FROM  w2_MailDistSetting
+         WHERE  dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+           AND  del_flg = '0'
+      
+        -- ターゲットリストデータ取得（重複排除）
+        SELECT  COUNT(*)
+          FROM  w2_MailSendTemp
+                LEFT JOIN w2_MailErrorAddr ON (
+                  w2_MailSendTemp.mail_addr = w2_MailErrorAddr.mail_addr
+                )
+         WHERE  dept_id = @dept_id
+           AND  master_id = @master_id
+           <@@hasval:exists_flg@@>
+           AND  (
+                  NOT EXISTS (
+                    SELECT  *
+                      FROM  w2_MailDistExceptList
+                     WHERE  maildist_id = @maildist_id
+                       AND  w2_MailDistExceptList.mail_addr = w2_MailSendTemp.mail_addr)
+                )
+           </@@hasval:exists_flg@@>
+           AND  ISNULL(w2_MailErrorAddr.error_point, 0) < @except_error_point
+           AND  (@@ where_not_except_mobile @@)
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMobileMailExceptCount>
+
+  <!-- ターゲットリストステータス更新 -->
+  <UpdateTargetListStatus>
+    <Statement>
+      <![CDATA[
+        -- ステータス更新
+        UPDATE  w2_TargetList
+           SET  status = @status,
+                data_count = @data_count,
+                data_count_date = @data_count_date
+         WHERE  dept_id = @dept_id
+           AND  target_id = @target_id
+           AND  (
+                  (@status_target IS NULL)
+                  OR
+                  (status = @status_target)
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="data_count" Type="int" />
+      <Input Name="data_count_date" Type="datetime" />
+      <Input Name="status_target" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateTargetListStatus>
+
+  <!-- ターゲットリストステータス更新2（抽出数は更新しない） -->
+  <UpdateTargetListStatus2>
+    <Statement>
+      <![CDATA[
+        -- ステータス更新
+        UPDATE  w2_TargetList
+           SET  status = @status
+         WHERE  dept_id = @dept_id
+           AND  target_id = @target_id
+           AND  (
+                  (@status_target IS NULL)
+                  OR
+                  (status = @status_target)
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="status_target" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateTargetListStatus2>
+
+  <!-- ターゲットリスト統合(ユーザIDで重複排除) -->
+  <IntegrationTargetLists>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MailSendTemp
+         WHERE  dept_id = @dept_id
+           AND  master_id = @master_id
+
+        DECLARE @now DATETIME
+        SET @now = GETDATE()
+
+          /*
+             最新メールアドレス取得
+             抽出から配信時にタイムラグがある場合に
+             正しい送信先に送られないためw2_TargetListData.mail_addrは利用しない
+          */
+          ;WITH  TargetData AS
+          (
+            -- 条件に合うユーザーの抽出
+            -- 優先度：PCアドレス > MBアドレス > アドレス無し
+            SELECT  w2_User.user_id
+                    ,CASE
+                      WHEN w2_User.mail_addr <> ''  THEN w2_User.mail_addr
+                      WHEN w2_User.mail_addr2 <> '' THEN w2_User.mail_addr2
+                      ELSE '' END AS mail_addr
+                    ,CASE
+                      WHEN w2_User.mail_addr <> ''  THEN 'PC'
+                      WHEN w2_User.mail_addr2 <> '' THEN 'MB'
+                      ELSE '' END AS mail_addr_kbn
+              FROM  w2_User
+             WHERE  (w2_User.del_flg = '0' AND  w2_User.integrated_flg = '0') -- 退会・統合非代表を除く
+          )
+
+        -- データ登録
+        -- ※もしdept_idとmail_addrが被ったら user_id は小さいもの優先、送信先はPC優先
+        INSERT  w2_MailSendTemp
+                (
+                dept_id
+                ,master_id
+                ,user_id
+                ,mail_addr
+                ,mail_addr_kbn
+                ,date_created
+                )
+        SELECT  DISTINCT
+                w2_TargetListData.dept_id
+                ,@master_id
+                ,MIN(w2_TargetListData.user_id)          -- 最初に登録したもの優先
+                ,TargetData.mail_addr
+                ,MAX(TargetData.mail_addr_kbn)            -- PC優先（'PC' > 'MB'）
+                ,@now
+          FROM  w2_TargetListData
+    INNER JOIN  TargetData ON
+                (
+                  w2_TargetListData.user_id = TargetData.user_id
+                )
+         WHERE  w2_TargetListData.dept_id = @dept_id
+           AND  w2_TargetListData.target_kbn = 'TargetList'
+           AND  TargetData.mail_addr_kbn <> ''
+           AND  TargetData.mail_addr <> ''
+           AND  w2_TargetListData.master_id in (@@ params @@)
+      GROUP BY  w2_TargetListData.dept_id, TargetData.mail_addr
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </IntegrationTargetLists>
+
+</TargetList>

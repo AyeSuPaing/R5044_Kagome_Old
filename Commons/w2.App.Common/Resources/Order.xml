@@ -1,0 +1,477 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文処理SQLステートメントXML(Order.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<Order>
+  <!-- 注文ステータス更新(外部連携メモ上書き) -->
+  <UpdateOrderStatusOverwriteMemo>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Order
+           SET  w2_Order.order_status = @order_status
+                ,w2_Order.relation_memo = @relation_memo
+                ,w2_Order.order_shipped_date = @order_shipped_date
+                ,w2_Order.order_delivering_date = @order_delivering_date
+                ,w2_Order.date_changed = getdate()
+                ,w2_Order.last_changed = @last_changed
+         WHERE  w2_Order.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_status" Type="nvarchar" Size="30" />
+      <Input Name="relation_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="order_shipped_date" Type="datetime" />
+      <Input Name="order_delivering_date" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateOrderStatusOverwriteMemo>
+  
+  <!-- 注文ステータス更新(外部連携メモ上書き) -->
+  <UpdateOrderStatusAppendMemo>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Order
+           SET  w2_Order.order_status = @order_status
+                ,w2_Order.relation_memo = w2_Order.relation_memo + @relation_memo
+                ,w2_Order.order_shipped_date = @order_shipped_date
+                ,w2_Order.order_delivering_date = @order_delivering_date
+                ,w2_Order.date_changed = getdate()
+                ,w2_Order.last_changed = @last_changed
+         WHERE  w2_Order.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_status" Type="nvarchar" Size="30" />
+      <Input Name="relation_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="order_shipped_date" Type="datetime" />
+      <Input Name="order_delivering_date" Type="datetime" />/>
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateOrderStatusAppendMemo>
+  
+  <!--  ユーザの仮ポイント情報取得 -->
+  <GetUserPointTemp>
+    <Statement>
+      <![CDATA[
+        SELECT  * 
+          FROM  w2_UserPoint 
+         WHERE  w2_UserPoint.user_id = @user_id 
+           AND  w2_UserPoint.kbn1 = @order_id 
+           AND  w2_UserPoint.point_kbn = '01'      -- 通常ポイント
+           AND  w2_UserPoint.point_type = '00'     -- 仮ポイント
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserPointTemp>
+  
+  <!-- シリアルキー引き渡し -->
+  <DeliverSerialKey>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_SerialKey
+           SET  w2_SerialKey.status = 'DELIVERED'
+                ,w2_SerialKey.date_delivered = getdate()
+                ,w2_SerialKey.date_changed = getdate()
+                ,w2_SerialKey.last_changed = @last_changed
+         WHERE  w2_SerialKey.status = 'RESERVED'
+           AND  w2_SerialKey.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </DeliverSerialKey>
+  
+  <!-- 注文商品情報取得 -->
+  <GetOrderItem>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_OrderItem.*
+          FROM  w2_OrderItem
+         WHERE  w2_OrderItem.order_id = @order_id
+           AND  w2_OrderItem.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetOrderItem>
+  
+  <!-- 注文情報を取得（ステータス更新メール用） -->
+  <GetSendOrderMail>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_Order.*
+                ,w2_OrderOwner.*
+                ,w2_OrderShipping.*
+                ,w2_OrderItem.*
+                ,w2_OrderSetPromotion.*
+                ,w2_OrderCoupon.*
+                ,w2_ShopShipping.*
+                ,w2_Payment.payment_name
+                ,w2_ShopShipping.shop_shipping_name
+                ,w2_FixedPurchase.*
+                ,w2_User.*
+          FROM  w2_Order
+                INNER JOIN w2_OrderOwner ON
+                (
+                  w2_Order.order_id = w2_OrderOwner.order_id
+                )
+                INNER JOIN w2_OrderShipping ON
+                (
+                  w2_Order.order_id = w2_OrderShipping.order_id
+                )
+                INNER JOIN w2_OrderItem ON
+                (
+                  w2_OrderShipping.order_id = w2_OrderItem.order_id
+                  AND
+                  w2_OrderShipping.order_shipping_no = w2_OrderItem.order_shipping_no
+                )
+                LEFT JOIN w2_OrderCoupon ON
+                (
+                  w2_Order.order_id = w2_OrderCoupon.order_id
+                )
+                LEFT JOIN w2_Payment ON
+                (
+                  w2_Order.shop_id = w2_Payment.shop_id
+                  AND
+                  w2_Order.order_payment_kbn = w2_Payment.payment_id
+                )
+                LEFT JOIN w2_ShopShipping ON
+                (
+                  w2_Order.shop_id = w2_ShopShipping.shop_id
+                  AND
+                  w2_Order.shipping_id = w2_ShopShipping.shipping_id
+                )
+                LEFT JOIN w2_FixedPurchase ON
+                (
+                  w2_Order.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                LEFT JOIN w2_OrderSetPromotion ON
+                (
+                  w2_OrderItem.order_id = w2_OrderSetPromotion.order_id
+                  AND
+                  w2_OrderItem.order_setpromotion_no = w2_OrderSetPromotion.order_setpromotion_no
+                )
+                LEFT JOIN w2_User ON
+                (
+                  w2_Order.user_id = w2_User.user_id
+                )
+         WHERE  w2_Order.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetSendOrderMail>
+
+  <!-- 注文の基本情報を取得 -->
+  <!-- ApiCommandのため、カラム名はＤＢに依存せず、すべて定義する -->
+  <GetOrders>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  order_id AS OrderID
+                ,date_created AS OrderDate
+                ,date_changed AS DateUpdated
+                ,order_status AS OrderStatus
+                ,order_payment_status AS PaymentStatus
+                ,order_item_count AS ItemCount
+                ,order_product_count AS ProductCount
+                ,order_price_subtotal AS PriceSubtotal
+                ,'' AS PricePack
+                ,'' AS PriceTax
+                ,order_price_shipping AS ShippingFee
+                ,order_price_exchange AS PaymentFee
+                ,order_price_regulation AS PriceOther
+                ,member_rank_discount_price AS MemberRankDiscountPrice
+                ,order_point_use AS PointUse
+                ,order_point_use_yen AS PointUseYen
+                ,order_coupon_use AS CouponUse
+                ,order_price_total AS PriceTotal
+                ,order_payment_kbn AS PaymentID
+                ,card_tran_id AS CardTransactionID
+                ,user_id AS UserID
+                ,CASE WHEN CAST(gift_flg AS Numeric) = 1 THEN 'True' ELSE 'False' END AS GiftFlg
+                ,memo AS Memo
+                ,management_memo AS ManagementMemo
+                ,relation_memo AS APIMemo
+                ,regulation_memo as RegulationMemo
+                ,mall_id AS MallId
+                ,setpromotion_product_discount_amount AS SetpromotionProductDiscount
+                ,setpromotion_shipping_charge_discount_amount AS SetpromotionShippingChargeDiscount
+                ,setpromotion_payment_charge_discount_amount AS SetpromotionPaymentChargeDiscount
+          FROM  w2_Order
+         WHERE  ((@order_id = '') OR (order_id LIKE @order_id + '%' ESCAPE '#')) 
+                AND
+                (
+                  (@created_from IS NULL OR @created_from <= date_created AND date_created < @created_before)
+                  AND
+                  (@updated_from IS NULL OR @updated_from <= date_changed AND date_changed < @updated_before)
+                )
+                AND (@order_status = '' OR order_status = @order_status)
+                AND (@order_payment_status = '' OR order_payment_status = @order_payment_status) 
+                @@extended_status_where_statement@@
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="created_from" Type="datetime"/>
+      <Input Name="created_before" Type="datetime"/>
+      <Input Name="updated_from" Type="datetime"/>
+      <Input Name="updated_before" Type="datetime"/>
+      <Input Name="order_status" Type="nvarchar" Size="30" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_payment_status" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetOrders>
+
+  <!-- Get orders by extend status -->
+  <GetOrdersByExtendStatus>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_Order.shop_id,
+                w2_Order.order_id,
+                ISNULL(w2_Order.order_date, w2_Order.date_created) AS order_date,
+                w2_OrderOwner.owner_name,
+                w2_OrderOwner.owner_name_kana,
+                w2_OrderOwner.owner_zip,
+                (w2_OrderOwner.owner_addr1 + w2_OrderOwner.owner_addr2 + w2_OrderOwner.owner_addr3 + w2_OrderOwner.owner_addr4) AS owner_addr,
+                w2_OrderOwner.owner_tel1,
+                w2_OrderOwner.owner_mail_addr,
+                w2_Payment.payment_name,
+                w2_Order.card_instruments,
+                w2_Order.order_kbn,
+                w2_Order.last_order_point_use,
+                w2_Order.order_coupon_use,
+                w2_Order.order_price_subtotal,
+                w2_Order.order_price_tax,
+                w2_Order.order_price_subtotal_tax,                
+                w2_Order.shipping_tax_rate,
+                w2_Order.payment_tax_rate,
+                ABS(w2_Order.order_price_shipping) AS order_price_shipping,
+                ABS(w2_Order.order_price_exchange) AS order_price_exchange,
+                ABS(w2_Order.order_discount_set_price) AS order_discount_set_price,
+                ABS(w2_Order.fixed_purchase_discount_price) AS fixed_purchase_discount_price,
+                ABS(w2_Order.fixed_purchase_member_discount_amount) AS fixed_purchase_member_discount_amount,
+                ABS(w2_Order.setpromotion_product_discount_amount) AS setpromotion_product_discount_amount,
+                ABS(w2_Order.setpromotion_shipping_charge_discount_amount) AS setpromotion_shipping_charge_discount_amount,
+                ABS(w2_Order.setpromotion_payment_charge_discount_amount) AS setpromotion_payment_charge_discount_amount,
+                ABS(w2_Order.member_rank_discount_price) AS member_rank_discount_price,
+                w2_Order.order_price_total,
+                w2_Order.order_payment_date,
+                w2_Order.memo,
+                w2_Order.management_memo,
+                w2_OrderShipping.shipping_name,
+                w2_OrderShipping.shipping_name_kana,
+                w2_OrderShipping.shipping_zip,
+                w2_OrderShipping.shipping_date,
+                (w2_OrderShipping.shipping_addr1 + w2_OrderShipping.shipping_addr2 + w2_OrderShipping.shipping_addr3 + w2_OrderShipping.shipping_addr4) AS shipping_addr,
+                w2_OrderShipping.shipping_tel1,
+                w2_OrderShipping.delivery_company_id,
+                w2_DeliveryCompany.delivery_company_name,
+                w2_OrderShipping.shipping_time,
+                w2_Order.order_coupon_use,
+                w2_Order.order_tax_round_type,
+                w2_Order.order_tax_rate,
+                w2_OrderItem.variation_id,
+                w2_OrderItem.product_name,
+                w2_OrderItem.item_quantity_single,
+                w2_OrderItem.product_price,
+                w2_OrderItem.item_price_tax,
+                w2_OrderItem.product_tax_rate,
+                w2_OrderItem.product_tax_round_type
+          FROM  w2_Order
+                LEFT JOIN w2_OrderShipping ON
+                (
+                  w2_Order.order_id = w2_OrderShipping.order_id
+                )
+                LEFT JOIN w2_OrderOwner ON
+                (
+                  w2_Order.order_id = w2_OrderOwner.order_id
+                )
+                LEFT JOIN w2_Payment ON
+                (
+                  w2_Order.order_payment_kbn = w2_Payment.payment_id
+                )
+                LEFT JOIN w2_OrderItem ON
+                (
+                  w2_Order.order_id = w2_OrderItem.order_id
+                )
+                 LEFT JOIN w2_DeliveryCompany ON
+                (
+                  w2_OrderShipping.delivery_company_id = w2_DeliveryCompany.delivery_company_id
+                )
+         WHERE  w2_Order.extend_status37 = '0'
+           AND  w2_Order.return_exchange_kbn = '00'
+           AND  w2_Order.order_status NOT IN ('TMP','ODR_CNSL','TMP_CNSL')
+      ]]>
+    </Statement>
+  </GetOrdersByExtendStatus>
+
+  <!-- 注文の配送情報を取得 -->
+  <!-- ApiCommandのため、カラム名はＤＢに依存せず、すべて定義する -->
+  <GetOrderShippings>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_OrderShipping.order_id AS OrderID
+                ,order_shipping_no AS ShippingNo
+                ,sender_name1 AS SenderName1
+                ,sender_name2 AS SenderName2
+                ,sender_name_kana1 AS SenderNameKana1
+                ,sender_name_kana2 AS SenderNameKana2
+                ,sender_company_name AS SenderCompanyName
+                ,sender_company_post_name AS SenderCompanyPostName
+                ,sender_zip AS SenderZip
+                ,sender_addr1 AS SenderAddr1
+                ,sender_addr2 AS SenderAddr2
+                ,sender_addr3 AS SenderAddr3
+                ,sender_addr4 AS SenderAddr4
+                ,sender_tel1 AS SenderTel
+                ,shipping_name1 AS ShippingName1
+                ,shipping_name2 AS ShippingName2
+                ,shipping_name_kana1 AS ShippingNameKana1
+                ,shipping_name_kana2 AS ShippingNameKana2
+                ,shipping_company_name AS ShippingCompanyName
+                ,shipping_company_post_name AS ShippingCompanyPostName
+                ,shipping_zip AS ShippingZip
+                ,shipping_addr1 AS ShippingAddr1
+                ,shipping_addr2 AS ShippingAddr2
+                ,shipping_addr3 AS ShippingAddr3
+                ,shipping_addr4 AS ShippingAddr4
+                ,shipping_tel1 AS ShippingTel
+                ,'' AS ShippingCompany
+                ,shipping_date AS ShippingDate
+                ,shipping_time AS ShippingTime
+                ,shipping_check_no AS ShippingCheckNo
+                ,wrapping_paper_type AS WrappingPaperType
+                ,wrapping_paper_name AS WrappingPaperName
+                ,wrapping_bag_type AS WrappingBagType
+          FROM  w2_OrderShipping
+                INNER JOIN w2_Order ON
+                (
+                  w2_Order.order_id = w2_OrderShipping.order_id
+                )
+         WHERE  ((@order_id = '') OR (w2_OrderShipping.order_id LIKE @order_id + '%' ESCAPE '#')) 
+                AND
+                (
+                  (@created_from IS NULL OR @created_from <= w2_OrderShipping.date_created AND w2_OrderShipping.date_created < @created_before)
+                  AND
+                  (@updated_from IS NULL OR @updated_from <= w2_OrderShipping.date_changed AND w2_OrderShipping.date_changed < @updated_before)
+                )
+                AND (@order_status = '' OR order_status = @order_status)
+                AND (@order_payment_status = '' OR order_payment_status = @order_payment_status) 
+                @@extended_status_where_statement@@
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="created_from" Type="datetime"/>
+      <Input Name="created_before" Type="datetime"/>
+      <Input Name="updated_from" Type="datetime"/>
+      <Input Name="updated_before" Type="datetime"/>
+      <Input Name="order_status" Type="nvarchar" Size="30" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_payment_status" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetOrderShippings>
+
+  <!-- 注文の商品情報を取得 -->
+  <!-- ApiCommandのため、カラム名はＤＢに依存せず、すべて定義する -->
+  <GetOrderItems>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_OrderItem.order_id AS OrderID
+                ,order_item_no AS ItemNo
+                ,product_id AS ProductID
+                ,variation_id AS VariationID
+                ,cooperation_id1 AS CooperationID1
+                ,'' AS VariationCooperationID1
+                ,cooperation_id2 AS CooperationID2
+                ,'' AS VariationCooperationID2
+                ,cooperation_id3 AS CooperationID3
+                ,'' AS VariationCooperationID3
+                ,cooperation_id4 AS CooperationID4
+                ,'' AS VariationCooperationID4
+                ,cooperation_id5 AS CooperationID5
+                ,'' AS VariationCooperationID5
+                ,product_name AS ProductName
+                ,brand_id AS BrandID
+                ,'' AS SupplierID
+                ,product_name_kana AS ProductNameKana
+                ,product_price AS ProductPrice
+                ,product_price_org AS ProductPriceOrg
+                ,product_tax_rate AS TaxRate
+                ,product_tax_round_type AS TaxRoundType
+                ,'' AS PricePreTax
+                ,'' AS PriceShip
+                ,'' AS PriceCost
+                ,item_quantity AS ItemQuantity
+                ,item_price AS ItemPrice
+                ,item_price_tax AS ItemPriceTax
+                ,product_option_texts AS OptionText
+                ,productsale_id AS ProductSaleID
+                ,download_url AS DownloadUrl
+          FROM  w2_OrderItem
+                INNER JOIN w2_Order ON
+                (
+                  w2_Order.order_id = w2_OrderItem.order_id
+                )
+         WHERE  ((@order_id = '') OR (w2_OrderItem.order_id LIKE @order_id + '%' ESCAPE '#')) 
+                AND
+                (
+                  (@created_from IS NULL OR @created_from <= w2_Order.date_created AND w2_Order.date_created < @created_before)
+                  AND
+                  (@updated_from IS NULL OR @updated_from <= w2_Order.date_changed AND w2_Order.date_changed < @updated_before)
+                )
+                AND (@order_status = '' OR order_status = @order_status)
+                AND (@return_exchange_kbn = '' OR w2_Order.return_exchange_kbn = @return_exchange_kbn)
+                AND (@order_payment_status = '' OR order_payment_status = @order_payment_status)
+                @@extended_status_where_statement@@
+      ]]>
+    </Statement> 
+    <Parameter>
+      <Input Name="created_from" Type="datetime"/>
+      <Input Name="created_before" Type="datetime"/>
+      <Input Name="updated_from" Type="datetime"/>
+      <Input Name="updated_before" Type="datetime"/>
+      <Input Name="order_status" Type="nvarchar" Size="30" />
+      <Input Name="return_exchange_kbn" Type="nvarchar" Size="10" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_payment_status" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetOrderItems>
+ 
+  <!-- 注文個数取得 -->
+  <GetOrderQuantity>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_OrderItem.product_id, w2_OrderItem.variation_id, SUM(w2_OrderItem.item_quantity) as order_item_quantity
+          FROM  w2_OrderItem
+                INNER JOIN w2_Order ON (w2_OrderItem.order_id = w2_Order.order_id)
+         WHERE  w2_Order.order_status IN ('TMP','ODR','ODR_RECG','SHP_ARGD')
+           AND  w2_OrderItem.shop_id = @shop_id
+       GROUP BY w2_OrderItem.product_id, w2_OrderItem.variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetOrderQuantity>
+
+</Order>

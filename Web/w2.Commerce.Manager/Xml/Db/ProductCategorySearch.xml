@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : カテゴリ検索SQLステートメントXML(ProductCategorySearch.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductCategorySearch>
+  <GetCategoryList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(DISTINCT category_id), 0)
+          FROM  w2_ProductCategory
+                [[ CATEGORY_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_ProductCategory.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ProductCategory.shop_id,
+                          w2_ProductCategory.category_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ CATEGORY_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductCategory
+                          [[ CATEGORY_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductCategory ON
+                (
+                  RowIndex.shop_id = w2_ProductCategory.shop_id
+                  AND
+                  RowIndex.category_id = w2_ProductCategory.category_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="category_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetCategoryList>
+</ProductCategorySearch>

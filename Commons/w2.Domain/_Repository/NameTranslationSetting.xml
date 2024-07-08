@@ -1,0 +1,1929 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 名称翻訳設定マスタ系SQLステートメントXML (NameTranslationSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<NameTranslationSetting>
+
+  <!-- 商品情報翻訳設定情報取得(全件) -->
+  <GetProductAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_PRODUCTID_TBL ]]
+        [[ INSERT_TMP_PRODUCTID_TBL ]]
+        
+        [[ CREATE_TMP_PRODUCT_PRODUCTVATIATION_TBL ]]
+        [[ INSERT_PRODUCTDATA_INTO_TMP_PRODUCT_PRODUCTVATIATION_TBL ]]
+        
+        SELECT  #tmp_ProductAndProductVariation.data_kbn,
+                #tmp_ProductAndProductVariation.translation_target_column,
+                #tmp_ProductAndProductVariation.product_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_ProductAndProductVariation.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                ISNULL(w2_NameTranslationSetting.display_kbn, '') as display_kbn
+          FROM  #tmp_ProductAndProductVariation
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = #tmp_ProductAndProductVariation.data_kbn
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_ProductAndProductVariation.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_ProductAndProductVariation.product_id
+                )
+       ORDER BY #tmp_ProductAndProductVariation.product_id,
+                #tmp_ProductAndProductVariation.translation_target_column
+      ]]>
+    </Statement>
+  </GetProductAllTranslationSettings>
+
+  <!-- 商品バリエーション情報翻訳設定情報取得(全件) -->
+  <GetProductVariationAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_PRODUCTVARIATIONID_TBL ]]
+        [[ INSERT_TMP_PRODUCTVARIATIONID_TBL ]]
+        
+        [[ CREATE_TMP_PRODUCT_PRODUCTVATIATION_TBL ]]
+        [[ INSERT_PRODUCTVARIATIONDATA_INTO_TMP_PRODUCT_PRODUCTVARIATION_TBL ]]
+      
+        SELECT  #tmp_ProductAndProductVariation.data_kbn,
+                #tmp_ProductAndProductVariation.translation_target_column,
+                #tmp_ProductAndProductVariation.product_id as master_id1,
+                #tmp_ProductAndProductVariation.variation_id  as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_ProductAndProductVariation.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                ISNULL(w2_NameTranslationSetting.display_kbn, '') as display_kbn
+          FROM  #tmp_ProductAndProductVariation
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = #tmp_ProductAndProductVariation.data_kbn
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_ProductAndProductVariation.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_ProductAndProductVariation.product_id
+                  AND
+                  w2_NameTranslationSetting.master_id2 = #tmp_ProductAndProductVariation.variation_id
+                )
+       ORDER BY #tmp_ProductAndProductVariation.product_id,
+                #tmp_ProductAndProductVariation.variation_id,
+                #tmp_ProductAndProductVariation.translation_target_column
+      ]]>
+    </Statement>
+  </GetProductVariationAllTranslationSettings>
+
+  <!-- 商品カテゴリ翻訳設定情報取得(全件) -->
+  <GetProductCategoryAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_CATEGORYID_TBL ]]
+        [[ INSERT_TMP_CATEGORYID_TBL ]]
+        
+        [[ CREATE_TMP_CATEGORY_TBL ]]
+        [[ INSERT_TMP_CATEGORY_TBL ]]
+      
+        SELECT  'ProductCategory' as data_kbn,
+                #tmp_ProductCategory.translation_target_column as translation_target_column,
+                #tmp_ProductCategory.category_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_ProductCategory.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_ProductCategory
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'ProductCategory'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = 'name'
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_ProductCategory.category_id
+                )
+       ORDER BY data_kbn,
+                #tmp_ProductCategory.category_id,
+                #tmp_ProductCategory.translation_target_column
+      ]]>
+    </Statement>
+  </GetProductCategoryAllTranslationSettings>
+
+  <!-- 商品セット翻訳設定情報取得(全件) -->
+  <GetProductSetAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_PRODUCTSETID_TBL ]]
+        [[ INSERT_TMP_PRODUCTSETID_TBL ]]
+        
+        [[ CREATE_TMP_PRODUCTSET_TBL ]]
+        [[ INSERT_TMP_PRODUCTSET_TBL ]]
+
+        SELECT  'ProductSet' as data_kbn,
+                #tmp_ProductSet.translation_target_column as translation_target_column,
+                #tmp_ProductSet.product_set_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_ProductSet.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_ProductSet
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'ProductSet'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_ProductSet.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_ProductSet.product_set_id
+                )
+       ORDER BY data_kbn,
+                #tmp_ProductSet.product_set_id,
+                #tmp_ProductSet.translation_target_column
+      ]]>
+    </Statement>
+  </GetProductSetAllTranslationSettings>
+
+  <!-- クーポン翻訳設定情報取得(全件) -->
+  <GetCouponAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_COUPONID_TBL ]]
+        [[ INSERT_TMP_COUPONID_TBL ]]
+        
+        [[ CREATE_TMP_COUPON_TBL ]]
+        [[ INSERT_TMP_COUPON_TBL ]]
+
+        SELECT  'Coupon' as data_kbn,
+                #tmp_Coupon.translation_target_column,
+                #tmp_Coupon.coupon_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_Coupon.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_Coupon
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'Coupon'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_Coupon.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_Coupon.coupon_id
+                )
+       ORDER BY data_kbn,
+                #tmp_Coupon.coupon_id,
+                #tmp_Coupon.translation_target_column
+      ]]>
+    </Statement>
+  </GetCouponAllTranslationSettings>
+
+  <!-- 会員ランク翻訳設定情報取得(全件) -->
+  <GetMemberRankAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_MEMBERRANKID_TBL ]]
+        [[ INSERT_TMP_MEMBERRANKID_TBL ]]
+        
+        [[ CREATE_TMP_MEMBERRANK_TBL ]]
+        [[ INSERT_TMP_MEMBERRANK_TBL ]]
+
+        SELECT  'MemberRank' as data_kbn,
+                #tmp_MemberRank.translation_target_column,
+                #tmp_MemberRank.member_rank_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_MemberRank.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_MemberRank
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'MemberRank'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_MemberRank.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_MemberRank.member_rank_id
+                )
+       ORDER BY data_kbn,
+                #tmp_MemberRank.member_rank_id,
+                #tmp_MemberRank.translation_target_column
+      ]]>
+    </Statement>
+  </GetMemberRankAllTranslationSettings>
+
+  <!-- 決済種別翻訳設定情報取得(全件) -->
+  <GetPaymentAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_PAYMENTID_TBL ]]
+        [[ INSERT_TMP_PAYMENTID_TBL ]]
+        
+        [[ CREATE_TMP_PAYMENT_TBL ]]
+        [[ INSERT_TMP_PAYMENT_TBL ]]
+      
+        SELECT  'Payment' as data_kbn,
+                #tmp_Payment.translation_target_column,
+                #tmp_Payment.payment_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_Payment.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_Payment
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'Payment'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_Payment.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_Payment.payment_id
+                )
+       ORDER BY data_kbn,
+                #tmp_Payment.payment_id
+      ]]>
+    </Statement>
+  </GetPaymentAllTranslationSettings>
+
+  <!-- ユーザー拡張項目設定翻訳設定情報取得(全件) -->
+  <GetUserExtendSettingAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_USEREXTENDSETTINGID_TBL ]]
+        [[ INSERT_TMP_USEREXTENDSETTINGID_TBL ]]
+        
+        [[ CREATE_TMP_USEREXTENDSETTING_TBL ]]
+        [[ INSERT_TMP_USEREXTENDSETTING_TBL ]]
+      
+        SELECT  'UserExtendSetting' as data_kbn,
+                #tmp_UserExtendSetting.translation_target_column,
+                #tmp_UserExtendSetting.setting_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_UserExtendSetting.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_UserExtendSetting
+                LEFT OUTER JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'UserExtendSetting'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_UserExtendSetting.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_UserExtendSetting.setting_id
+                )
+       ORDER BY data_kbn,
+                #tmp_UserExtendSetting.setting_id,
+                #tmp_UserExtendSetting.translation_target_column
+      ]]>
+    </Statement>
+  </GetUserExtendSettingAllTranslationSettings>
+  
+  <!-- セットプロモーション翻訳設定情報取得(全件) -->
+  <GetSetPromotionAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        -- 出力対象セットプロモーションID取得
+        [[ CREATE_TMP_SETPROMOTIONID_TBL ]]
+        [[ INSERT_TMP_SETPROMOTIONID_TBL ]]
+        
+        -- 出力データ作成
+        [[ CREATE_TMP_SETPROMOTION_TBL ]]
+        [[ INSERT_TMP_SETPROMOTION_TBL ]]
+
+        SELECT  'SetPromotion' as data_kbn,
+                #tmp_SetPromotion.translation_target_column,
+                #tmp_SetPromotion.setpromotion_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_SetPromotion.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                ISNULL(w2_NameTranslationSetting.display_kbn, '') as display_kbn
+          FROM  #tmp_SetPromotion
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'SetPromotion'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_SetPromotion.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_SetPromotion.setpromotion_id
+                )
+       ORDER BY #tmp_SetPromotion.setpromotion_id,
+                #tmp_SetPromotion.translation_target_column
+      ]]>
+    </Statement>
+  </GetSetPromotionAllTranslationSettings>
+
+  <!-- ブランド翻訳設定情報取得(全件) -->
+  <GetBrandAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_BRANDID_TBL ]]
+        [[ INSERT_TMP_BRANDID_TBL ]]
+        
+        [[ CREATE_TMP_PRODUCTBRAND_TBL ]]
+        [[ INSERT_TMP_PRODUCTBRAND_TBL ]]
+      
+        SELECT  'ProductBrand' as data_kbn,
+                #tmp_ProductBrand.translation_target_column,
+                #tmp_ProductBrand.brand_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_ProductBrand.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_ProductBrand
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'MemberRank'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_ProductBrand.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_ProductBrand.brand_id
+                )
+       ORDER BY #tmp_ProductBrand.brand_id,
+                #tmp_ProductBrand.translation_target_column
+      ]]>
+    </Statement>
+  </GetBrandAllTranslationSettings>
+
+  <!-- ノベルティ翻訳設定情報取得(全件) -->
+  <GetNoveltyAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_NOVELTYID_TBL ]]
+        [[ INSERT_TMP_NOVELTYID_TBL ]]
+        
+        [[ CREATE_TMP_NOVELTY_TBL ]]
+        [[ INSERT_TMP_NOVELTY_TBL ]]
+      
+        SELECT  'Novelty' as data_kbn,
+                #tmp_Novelty.translation_target_column,
+                #tmp_Novelty.novelty_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_Novelty.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_Novelty
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'Novelty'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_Novelty.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_Novelty.novelty_id
+                )
+       ORDER BY #tmp_Novelty.novelty_id,
+                #tmp_Novelty.translation_target_column
+      ]]>
+    </Statement>
+  </GetNoveltyAllTranslationSettings>
+
+  <!-- 新着情報翻訳設定情報取得(全件) -->
+  <GetNewsAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_NEWSID_TBL ]]
+        [[ INSERT_TMP_NEWSID_TBL ]]
+        
+        [[ CREATE_TMP_NEWS_TBL ]]
+        [[ INSERT_TMP_NEWS_TBL ]]
+      
+        SELECT  'News' as data_kbn,
+                #tmp_News.translation_target_column,
+                #tmp_News.news_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_News.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_News
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'News'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_News.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_News.news_id
+                )
+       ORDER BY #tmp_News.news_id,
+                #tmp_News.translation_target_column
+      ]]>
+    </Statement>
+  </GetNewsAllTranslationSettings>
+
+  <!-- 注文メモ設定情報翻訳設定情報取得(全件) -->
+  <GetOrderMemoSettingAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_ORDERMEMOID_TBL ]]
+        [[ INSERT_TMP_ORDERMEMOID_TBL ]]
+        
+        [[ CREATE_TMP_ORDERMEMOSETTING_TBL ]]
+        [[ INSERT_TMP_ORDERMEMOSETTING_TBL ]]
+      
+        SELECT  'OrderMemoSetting' as data_kbn,
+                #tmp_OrderMemoSetting.translation_target_column,
+                #tmp_OrderMemoSetting.order_memo_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_OrderMemoSetting.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_OrderMemoSetting
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'OrderMemoSetting'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_OrderMemoSetting.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_OrderMemoSetting.order_memo_id
+                )
+       ORDER BY #tmp_OrderMemoSetting.order_memo_id,
+                #tmp_OrderMemoSetting.translation_target_column
+      ]]>
+    </Statement>
+    </GetOrderMemoSettingAllTranslationSettings>
+
+  <!-- 定期解約理由区分情報翻訳設定情報取得(全件) -->
+  <GetFixedPurchaseCancelReasonAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_CANCELREASONID_TBL ]]
+        [[ INSERT_TMP_CANSELREASONID_TBL ]]
+        
+        [[ CREATE_TMP_FIXEDPURCHASECANCELREASON_TBL ]]
+        [[ INSERT_TMP_FIXEDPURCHASECANCELREASON_TBL ]]
+      
+        SELECT  'FixedPurchaseCancelReason' as data_kbn,
+                #tmp_FixedPurchaseCancelReason.translation_target_column,
+                #tmp_FixedPurchaseCancelReason.cancel_reason_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_FixedPurchaseCancelReason.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_FixedPurchaseCancelReason
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'FixedPurchaseCancelReason'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_FixedPurchaseCancelReason.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_FixedPurchaseCancelReason.cancel_reason_id
+                )
+       ORDER BY #tmp_FixedPurchaseCancelReason.cancel_reason_id,
+                #tmp_FixedPurchaseCancelReason.translation_target_column
+      ]]>
+    </Statement>
+  </GetFixedPurchaseCancelReasonAllTranslationSettings>
+
+  <!-- 商品一覧表示設定翻訳設定情報取得(全件) -->
+  <GetProductDispSettingAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_PRODUCTDISPSETTINGID_TBL ]]
+        [[ INSERT_TMP_PRODUCTDISPSETTINGID_TBL ]]
+        
+        [[ CREATE_TMP_PRODUCTDISPSETTING_TBL ]]
+        [[ INSERT_TMP_PRODUCTDISPSETTING_TBL ]]
+      
+        SELECT  'ProductListDispSetting' as data_kbn,
+                #tmp_ProductListDispSetting.translation_target_column,
+                #tmp_ProductListDispSetting.setting_id as master_id1,
+                #tmp_ProductListDispSetting.setting_kbn as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_ProductListDispSetting.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_ProductListDispSetting
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'ProductListDispSetting'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_ProductListDispSetting.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_ProductListDispSetting.setting_id
+                )
+       ORDER BY #tmp_ProductListDispSetting.setting_id,
+                #tmp_ProductListDispSetting.translation_target_column
+      ]]>
+    </Statement>
+  </GetProductDispSettingAllTranslationSettings>
+
+  <!-- サイト基本情報翻訳設定情報取得(全件) -->
+  <GetSiteInformationAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        -- サイト名
+        SELECT  'SiteInformation' as data_kbn,
+                'ShopName' as translation_target_column,
+                'SiteInformation' as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                '' as before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  (
+                  SELECT 'SiteInformation' AS data_kbn
+                ) SiteInformation
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'SiteInformation'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = 'ShopName'
+                )
+        UNION ALL
+        -- 企業名
+        SELECT  'SiteInformation' as data_kbn,
+                'CompanyName' as translation_target_column,
+                'SiteInformation' as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                '' as before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  (
+                  SELECT 'SiteInformation' AS data_kbn
+                ) SiteInfomation
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'SiteInformation'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = 'CompanyName'
+                )
+        UNION ALL
+        -- 問い合わせ窓口情報
+        SELECT  'SiteInformation' as data_kbn,
+                'ContactCenterInfo' as translation_target_column,
+                'SiteInformation' as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                '' as before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  (
+                  SELECT 'SiteInformation' AS data_kbn
+                ) SiteInformation
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'SiteInformation'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = 'ContactCenterInfo'
+                )
+       ORDER BY language_code,
+                language_locale_id,
+                translation_target_column
+      ]]>
+    </Statement>
+  </GetSiteInformationAllTranslationSettings>
+
+  <!-- コーディネート翻訳設定情報取得(全件) -->
+  <GetCoordinateAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_COORDINATEID_TBL ]]
+        [[ INSERT_TMP_COORDINATEID_TBL ]]
+        
+        [[ CREATE_TMP_COORDINATE_TBL ]]
+        [[ INSERT_TMP_COORDINATE_TBL ]]
+
+        SELECT  'Coordinate' as data_kbn,
+                #tmp_Coordinate.translation_target_column,
+                #tmp_Coordinate.coordinate_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_Coordinate.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_Coordinate
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'Coordinate'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_Coordinate.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_Coordinate.coordinate_id
+                )
+       ORDER BY #tmp_Coordinate.coordinate_id,
+                #tmp_Coordinate.translation_target_column
+      ]]>
+    </Statement>
+  </GetCoordinateAllTranslationSettings>
+
+  <!-- コーディネートカテゴリ翻訳設定情報取得(全件) -->
+  <GetCoordinateCategoryAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_COORDINATECATEGORYID_TBL ]]
+        [[ INSERT_TMP_COORDINATECATEGORYID_TBL ]]
+        
+        [[ CREATE_TMP_COORDINATECATEGORY_TBL ]]
+        [[ INSERT_TMP_COORDINATECATEGORY_TBL ]]
+
+        SELECT  'CoordinateCategory' as data_kbn,
+                #tmp_CoordinateCategory.translation_target_column,
+                #tmp_CoordinateCategory.coordinate_category_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_CoordinateCategory.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_CoordinateCategory
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'CoordinateCategory'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_CoordinateCategory.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_CoordinateCategory.coordinate_category_id
+                )
+       ORDER BY #tmp_CoordinateCategory.coordinate_category_id,
+                #tmp_CoordinateCategory.translation_target_column
+      ]]>
+    </Statement>
+  </GetCoordinateCategoryAllTranslationSettings>
+
+  <!-- スタッフ翻訳設定情報取得(全件) -->
+  <GetStaffAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_STAFFID_TBL ]]
+        [[ INSERT_TMP_STAFFID_TBL ]]
+        
+        [[ CREATE_TMP_STAFF_TBL ]]
+        [[ INSERT_TMP_STAFF_TBL ]]
+
+        SELECT  'Staff' as data_kbn,
+                #tmp_Staff.translation_target_column,
+                #tmp_Staff.staff_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_Staff.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_Staff
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'Staff'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_Staff.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_Staff.staff_id
+                )
+       ORDER BY #tmp_Staff.staff_id,
+                #tmp_Staff.translation_target_column
+      ]]>
+    </Statement>
+  </GetStaffAllTranslationSettings>
+
+  <!-- リアル店舗翻訳設定情報取得(全件) -->
+  <GetRealShopAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_REALSHOPID_TBL ]]
+        [[ INSERT_TMP_REALSHOPID_TBL ]]
+        
+        [[ CREATE_TMP_REALSHOP_TBL ]]
+        [[ INSERT_TMP_REALSHOP_TBL ]]
+
+        SELECT  'RealShop' as data_kbn,
+                #tmp_RealShop.translation_target_column,
+                #tmp_RealShop.real_shop_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_RealShop.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_RealShop
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'RealShop'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_RealShop.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_RealShop.real_shop_id
+                )
+       ORDER BY #tmp_RealShop.real_shop_id,
+                #tmp_RealShop.translation_target_column
+      ]]>
+    </Statement>
+  </GetRealShopAllTranslationSettings>
+
+  <!-- 商品一覧ページから翻訳設定情報取得 -->
+  <GetTranslationSettingsFromProductList>
+    <Statement>
+      <![CDATA[
+        -- 出力対象の商品ID取得
+        [[ CREATE_TMP_PRODUCTID_TBL ]]
+        
+        [[ INSERT_TMP_PRODUCTID_TBL ]]
+        [[ PRODUCT_SEARCH_WHERE ]]
+        
+        -- 出力対象の商品バリエーションID取得
+        [[ CREATE_TMP_PRODUCTVARIATIONID_TBL ]]
+        
+        [[ INSERT_TMP_PRODUCTVARIATIONID_TBL ]]
+        [[ JOIN_TMP_PRODUCTID_AND_PRODUCT_VARIATION ]]
+        
+        -- 商品情報、バリエーション情報一時テーブル作成
+        [[ CREATE_TMP_PRODUCT_PRODUCTVATIATION_TBL ]]
+
+        [[ INSERT_PRODUCTDATA_INTO_TMP_PRODUCT_PRODUCTVATIATION_TBL ]]
+        [[ INSERT_PRODUCTVARIATIONDATA_INTO_TMP_PRODUCT_PRODUCTVARIATION_TBL ]]
+
+        --商品情報
+        SELECT  #tmp_ProductAndProductVariation.data_kbn,
+                #tmp_ProductAndProductVariation.translation_target_column,
+                #tmp_ProductAndProductVariation.product_id as master_id1,
+                #tmp_ProductAndProductVariation.variation_id as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_ProductAndProductVariation.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                ISNULL(w2_NameTranslationSetting.display_kbn, '') as display_kbn
+          FROM  #tmp_ProductAndProductVariation
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = #tmp_ProductAndProductVariation.data_kbn
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_ProductAndProductVariation.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_ProductAndProductVariation.product_id
+                )
+         WHERE  #tmp_ProductAndProductVariation.data_kbn = 'Product'
+        UNION ALL
+        -- 商品バリエーション情報
+        SELECT  #tmp_ProductAndProductVariation.data_kbn,
+                #tmp_ProductAndProductVariation.translation_target_column,
+                #tmp_ProductAndProductVariation.product_id as master_id1,
+                #tmp_ProductAndProductVariation.variation_id as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_ProductAndProductVariation.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                ISNULL(w2_NameTranslationSetting.display_kbn, '') as display_kbn
+          FROM  #tmp_ProductAndProductVariation
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = #tmp_ProductAndProductVariation.data_kbn
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_ProductAndProductVariation.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_ProductAndProductVariation.product_id
+                  AND
+                  w2_NameTranslationSetting.master_id2 = #tmp_ProductAndProductVariation.variation_id
+                )
+         WHERE  #tmp_ProductAndProductVariation.data_kbn = 'ProductVariation'
+       ORDER BY #tmp_ProductAndProductVariation.product_id,
+                #tmp_ProductAndProductVariation.variation_id,
+                #tmp_ProductAndProductVariation.data_kbn,
+                #tmp_ProductAndProductVariation.translation_target_column
+      ]]>
+    </Statement>
+  </GetTranslationSettingsFromProductList>
+
+  <!-- 商品カテゴリ設定ページから翻訳設定情報取得 -->
+  <GetTranslationSettingsFromProductCategoryRegister>
+    <Statement>
+      <![CDATA[
+        -- 出力対象の商品ID取得
+        [[ CREATE_TMP_CATEGORYID_TBL ]]
+
+        [[ INSERT_TMP_CATEGORYID_TBL ]]
+        [[ PRODUCTCATEGORY_SEARCH_WHERE ]]
+        
+        [[ CREATE_TMP_CATEGORY_TBL ]]
+        [[ INSERT_TMP_CATEGORY_TBL ]]
+
+        SELECT  'ProductCategory' as data_kbn,
+                #tmp_ProductCategory.translation_target_column as translation_target_column,
+                #tmp_ProductCategory.category_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_ProductCategory.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_ProductCategory
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'ProductCategory'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = 'name'
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_ProductCategory.category_id
+                )
+       ORDER BY data_kbn,
+                #tmp_ProductCategory.category_id,
+                #tmp_ProductCategory.translation_target_column
+      ]]>
+    </Statement>
+  </GetTranslationSettingsFromProductCategoryRegister>
+
+  <!-- セットプロモーション設定一覧ページから翻訳設定情報取得 -->
+  <GetTranslationSettingsFromSetPromotionList>
+    <Statement>
+      <![CDATA[
+        -- 出力対象セットプロモーションID取得
+        [[ CREATE_TMP_SETPROMOTIONID_TBL ]]
+
+        [[ INSERT_TMP_SETPROMOTIONID_TBL ]]
+        [[ SETPROMOTION_SEARCH_WHERE ]]
+        
+        -- 出力データ作成
+        [[ CREATE_TMP_SETPROMOTION_TBL ]]
+        [[ INSERT_TMP_SETPROMOTION_TBL ]]
+
+        SELECT  'SetPromotion' as data_kbn,
+                #tmp_SetPromotion.translation_target_column,
+                #tmp_SetPromotion.setpromotion_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_SetPromotion.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                ISNULL(w2_NameTranslationSetting.display_kbn, '') as display_kbn
+          FROM  #tmp_SetPromotion
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'SetPromotion'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_SetPromotion.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_SetPromotion.setpromotion_id
+                )
+       ORDER BY #tmp_SetPromotion.setpromotion_id,
+                #tmp_SetPromotion.translation_target_column
+      ]]>
+    </Statement>
+  </GetTranslationSettingsFromSetPromotionList>
+
+  <!-- 商品セット設定一覧ページから翻訳設定情報取得 -->
+  <GetTranslationSettingsFromProductSetList>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_PRODUCTSETID_TBL ]]
+
+        [[ INSERT_TMP_PRODUCTSETID_TBL ]]
+        [[ PRODUCTSET_SEARCH_WHERE ]]
+        
+        [[ CREATE_TMP_PRODUCTSET_TBL ]]
+        [[ INSERT_TMP_PRODUCTSET_TBL ]]
+
+        SELECT  'ProductSet' as data_kbn,
+                #tmp_ProductSet.translation_target_column as translation_target_column,
+                #tmp_ProductSet.product_set_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_ProductSet.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_ProductSet
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'ProductSet'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_ProductSet.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_ProductSet.product_set_id
+                )
+       ORDER BY data_kbn,
+                #tmp_ProductSet.product_set_id,
+                #tmp_ProductSet.translation_target_column
+      ]]>
+    </Statement>
+  </GetTranslationSettingsFromProductSetList>
+
+  <!-- ノベルティ設定一覧ページから翻訳設定情報取得 -->
+  <GetTranslationSettingsFromNoveltyList>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_NOVELTYID_TBL ]]
+
+        [[ INSERT_TMP_NOVELTYID_TBL ]]
+        [[ NOVELTY_SEARCH_WHERE ]]
+        
+        [[ CREATE_TMP_NOVELTY_TBL ]]
+        [[ INSERT_TMP_NOVELTY_TBL ]]
+      
+        SELECT  'Novelty' as data_kbn,
+                #tmp_Novelty.translation_target_column,
+                #tmp_Novelty.novelty_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_Novelty.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_Novelty
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'Novelty'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_Novelty.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_Novelty.novelty_id
+                )
+       ORDER BY #tmp_Novelty.novelty_id,
+                #tmp_Novelty.translation_target_column
+      ]]>
+    </Statement>
+  </GetTranslationSettingsFromNoveltyList>
+
+  <!-- お知らせ設定一覧ページから翻訳設定情報取得 -->
+  <GetTranslationSettingsFromNewsList>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_NEWSID_TBL ]]
+        
+        [[ INSERT_TMP_NEWSID_TBL ]]
+        [[ NEWS_SEARCH_WHERE ]]
+        
+        [[ CREATE_TMP_NEWS_TBL ]]
+        [[ INSERT_TMP_NEWS_TBL ]]
+      
+        SELECT  'News' as data_kbn,
+                #tmp_News.translation_target_column,
+                #tmp_News.news_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_News.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_News
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'News'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_News.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_News.news_id
+                )
+       ORDER BY #tmp_News.news_id,
+                #tmp_News.translation_target_column
+      ]]>
+    </Statement>
+  </GetTranslationSettingsFromNewsList>
+
+  <!-- 注文メモ設定一覧ページから翻訳設定情報取得 -->
+  <GetTranslationSettingsFromOrderMemoList>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_ORDERMEMOID_TBL ]]
+
+        [[ INSERT_TMP_ORDERMEMOID_TBL ]]
+        [[ ORDERMEMOSETTING_SEARCH_WHERE ]]
+        
+        [[ CREATE_TMP_ORDERMEMOSETTING_TBL ]]
+        [[ INSERT_TMP_ORDERMEMOSETTING_TBL ]]
+      
+        SELECT  'OrderMemoSetting' as data_kbn,
+                #tmp_OrderMemoSetting.translation_target_column,
+                #tmp_OrderMemoSetting.order_memo_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_OrderMemoSetting.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_OrderMemoSetting
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'OrderMemoSetting'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_OrderMemoSetting.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_OrderMemoSetting.order_memo_id
+                )
+       ORDER BY #tmp_OrderMemoSetting.order_memo_id,
+                #tmp_OrderMemoSetting.translation_target_column
+      ]]>
+    </Statement>
+  </GetTranslationSettingsFromOrderMemoList>
+
+  <!-- クーポン設定一覧ページから翻訳設定情報取得 -->
+  <GetTranslationSettingsFromCouponList>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_COUPONID_TBL ]]
+        [[ INSERT_TMP_COUPONID_TBL ]]
+        [[ COUPON_SEARCH_WHERE ]]
+        
+        [[ CREATE_TMP_COUPON_TBL ]]
+        [[ INSERT_TMP_COUPON_TBL ]]
+
+        SELECT  'Coupon' as data_kbn,
+                #tmp_Coupon.translation_target_column,
+                #tmp_Coupon.coupon_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_Coupon.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_Coupon
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'Coupon'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_Coupon.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_Coupon.coupon_id
+                )
+       ORDER BY data_kbn,
+                #tmp_Coupon.coupon_id,
+                #tmp_Coupon.translation_target_column
+      ]]>
+    </Statement>
+
+  </GetTranslationSettingsFromCouponList>
+
+  <!-- 商品、バリエーションの翻訳設定情報取得 -->
+  <GetProductAndVariationTranslationSettings>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  w2_NameTranslationSetting.*
+          FROM  w2_NameTranslationSetting
+         WHERE  w2_NameTranslationSetting.data_kbn in ('Product', 'ProductVariation')
+           AND  w2_NameTranslationSetting.master_id1 = @master_id1
+                <@@hasval:master_id2@@>
+           AND  w2_NameTranslationSetting.master_id2 = @master_id2
+                </@@hasval:master_id2@@>
+                <@@hasval:language_code@@>
+           AND  w2_NameTranslationSetting.language_code = @language_code
+                </@@hasval:language_code@@>
+                <@@hasval:language_locale_id@@>
+           AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+                </@@hasval:language_locale_id@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="master_id1" Type="nvarchar" Size="100" />
+      <Input Name="master_id2" Type="nvarchar" Size="100" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetProductAndVariationTranslationSettings>
+  
+  <!-- 複数のマスタID1を指定して翻訳設定情報取得 -->
+  <GetTranslationSettingsByMultipleMasterId1>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_NameTranslationSetting.*
+                <@@hasval:setpromotion@@>
+                ,w2_SetPromotion.setpromotion_disp_name
+                ,w2_SetPromotion.description_kbn
+                ,w2_SetPromotion.description
+                </@@hasval:setpromotion@@>
+          FROM  w2_NameTranslationSetting
+                <@@hasval:setpromotion@@>
+                LEFT JOIN w2_SetPromotion ON
+                (
+                  w2_SetPromotion.setpromotion_id = w2_NameTranslationSetting.master_id1
+                )
+                </@@hasval:setpromotion@@>
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+           AND  w2_NameTranslationSetting.language_code = @language_code
+           AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+           AND  w2_NameTranslationSetting.master_id1 in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetTranslationSettingsByMultipleMasterId1>
+  
+  <!-- 対象データ区分から翻訳設定情報取得 -->
+  <GetTranslationSettingsByDataKbn>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+        SELECT  w2_NameTranslationSetting.*
+          FROM  w2_NameTranslationSetting
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetTranslationSettingsByDataKbn>  
+  
+  <!-- マスタIDから翻訳設定情報取得 -->
+  <GetTranslationSettingsByMasterId>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+        SELECT  w2_NameTranslationSetting.*
+          FROM  w2_NameTranslationSetting
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+           AND  w2_NameTranslationSetting.master_id1 = @master_id1
+                <@@hasval:master_id2@@>
+           AND  w2_NameTranslationSetting.master_id2 = @master_id2
+                </@@hasval:master_id2@@>
+                <@@hasval:master_id3@@>
+           AND  w2_NameTranslationSetting.master_id3 = @master_id3
+                </@@hasval:master_id3@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="master_id1" Type="nvarchar" Size="100" />
+      <Input Name="master_id2" Type="nvarchar" Size="100" />
+      <Input Name="master_id3" Type="nvarchar" Size="100" />
+    </Parameter>
+  </GetTranslationSettingsByMasterId>
+
+  <!-- マスタID／言語コードから翻訳設定情報取得 -->
+  <GetTranslationSettingsByMasterIdAndLanguageCode>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+        SELECT  w2_NameTranslationSetting.*
+          FROM  w2_NameTranslationSetting
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+           AND  w2_NameTranslationSetting.master_id1 = @master_id1
+                <@@hasval:master_id2@@>
+           AND  w2_NameTranslationSetting.master_id2 = @master_id2
+                </@@hasval:master_id2@@>
+                <@@hasval:master_id3@@>
+           AND  w2_NameTranslationSetting.master_id3 = @master_id3
+                </@@hasval:master_id3@@>
+           AND  w2_NameTranslationSetting.language_code = @language_code
+           AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="master_id1" Type="nvarchar" Size="100" />
+      <Input Name="master_id2" Type="nvarchar" Size="100" />
+      <Input Name="master_id3" Type="nvarchar" Size="100" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetTranslationSettingsByMasterIdAndLanguageCode>
+
+  <!-- 翻訳後名称取得 -->
+  <GetAfterTranslationalName>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+        SELECT  w2_NameTranslationSetting.*
+          FROM  w2_NameTranslationSetting
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+           AND  w2_NameTranslationSetting.translation_target_column = @translation_target_column
+           AND  w2_NameTranslationSetting.master_id1 = @master_id1
+                <@@hasval:master_id2@@>
+           AND  w2_NameTranslationSetting.master_id2 = @master_id2
+                </@@hasval:master_id2@@>
+                <@@hasval:master_id3@@>
+           AND  w2_NameTranslationSetting.master_id3 = @master_id3
+                </@@hasval:master_id3@@>
+           AND  w2_NameTranslationSetting.language_code = @language_code
+           AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="translation_target_column" Type="nvarchar" Size="50" />
+      <Input Name="master_id1" Type="nvarchar" Size="100" />
+      <Input Name="master_id2" Type="nvarchar" Size="100" />
+      <Input Name="master_id3" Type="nvarchar" Size="100" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetAfterTranslationalName>
+
+  <!-- フロント表示用セットプロモーション翻訳設定情報取得(翻訳前情報も取得) -->
+  <GetSetPromotionTranslationSettingsForFrontDisplay>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_NameTranslationSetting.*,
+                w2_SetPromotion.setpromotion_disp_name,
+                w2_SetPromotion.description_kbn,
+                w2_SetPromotion.description
+          FROM  w2_NameTranslationSetting
+                LEFT JOIN w2_SetPromotion ON
+                (
+                  w2_SetPromotion.setpromotion_id = w2_NameTranslationSetting.master_id1
+                )
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+           AND  w2_NameTranslationSetting.language_code = @language_code
+           AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+           AND  w2_NameTranslationSetting.master_id1 in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetSetPromotionTranslationSettingsForFrontDisplay>
+
+  <!-- フロント表示用ユーザ拡張項目翻訳設定情報取得(翻訳前情報も取得) -->
+  <GetUserExtendSettingTranslationSettingsForFrontDisplay>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_NameTranslationSetting.*,
+                w2_UserExtendSetting.setting_name,
+                w2_UserExtendSetting.outline,
+                w2_UserExtendSetting.outline_kbn
+          FROM  w2_NameTranslationSetting
+                LEFT JOIN w2_UserExtendSetting ON
+                (
+                  w2_UserExtendSetting.setting_id = w2_NameTranslationSetting.master_id1
+                )
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+           AND  w2_NameTranslationSetting.language_code = @language_code
+           AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+           AND  w2_NameTranslationSetting.master_id1 in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetUserExtendSettingTranslationSettingsForFrontDisplay>
+
+  <!-- フロント表示用商品一覧表示設定翻訳設定情報取得(翻訳前情報も取得) -->
+  <GetProductListDispSettingTranslationSettingsForFrontDisplay>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_NameTranslationSetting.*,
+                w2_ProductListDispSetting.setting_name
+          FROM  w2_NameTranslationSetting
+                LEFT JOIN w2_ProductListDispSetting ON
+                (
+                  w2_ProductListDispSetting.setting_id = w2_NameTranslationSetting.master_id1
+                )
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+           AND  w2_NameTranslationSetting.language_code = @language_code
+           AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+           AND  w2_NameTranslationSetting.master_id1 in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetProductListDispSettingTranslationSettingsForFrontDisplay>
+
+  <!-- フロント表示用新着情報翻訳設定情報取得(翻訳前情報も取得) -->
+  <GetNewsTranslationSettingsForFrontDisplay>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_NameTranslationSetting.*,
+                w2_News.news_text,
+                w2_News.news_text_kbn
+          FROM  w2_NameTranslationSetting
+                LEFT JOIN w2_News ON
+                (
+                  w2_News.news_id = w2_NameTranslationSetting.master_id1
+                )
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+           AND  w2_NameTranslationSetting.language_code = @language_code
+           AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+           AND  w2_NameTranslationSetting.master_id1 in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetNewsTranslationSettingsForFrontDisplay>
+
+  <!-- フロント表示用コーディネート翻訳設定情報取得(翻訳前情報も取得) -->
+  <GetCoordinateTranslationSettingsForFrontDisplay>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_NameTranslationSetting.*,
+                w2_Coordinate.coordinate_title,
+                w2_Coordinate.coordinate_summary
+          FROM  w2_NameTranslationSetting
+                LEFT JOIN w2_Coordinate ON
+                (
+                  w2_Coordinate.coordinate_id = w2_NameTranslationSetting.master_id1
+                )
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+           AND  w2_NameTranslationSetting.language_code = @language_code
+           AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+           AND  w2_NameTranslationSetting.master_id1 in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetCoordinateTranslationSettingsForFrontDisplay>
+
+  <!-- フロント表示用コーディネートカテゴリ翻訳設定情報取得(翻訳前情報も取得) -->
+  <GetCoordinateCategoryTranslationSettingsForFrontDisplay>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_NameTranslationSetting.*,
+                w2_CoordinateCategory.coordinate_category_name
+          FROM  w2_NameTranslationSetting
+                LEFT JOIN w2_CoordinateCategory ON
+                (
+                  w2_CoordinateCategory.coordinate_category_id = w2_NameTranslationSetting.master_id1
+                )
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+           AND  w2_NameTranslationSetting.language_code = @language_code
+           AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+           AND  w2_NameTranslationSetting.master_id1 in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetCoordinateCategoryTranslationSettingsForFrontDisplay>
+
+  <!-- フロント表示用スタッフ翻訳設定情報取得(翻訳前情報も取得) -->
+  <GetStaffTranslationSettingsForFrontDisplay>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_NameTranslationSetting.*,
+                w2_Staff.staff_name,
+                w2_Staff.staff_profile
+          FROM  w2_NameTranslationSetting
+                LEFT JOIN w2_Staff ON
+                (
+                  w2_Staff.staff_id = w2_NameTranslationSetting.master_id1
+                )
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+           AND  w2_NameTranslationSetting.language_code = @language_code
+           AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+           AND  w2_NameTranslationSetting.master_id1 in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetStaffTranslationSettingsForFrontDisplay>
+
+  <!-- フロント表示用リアル店舗翻訳設定情報取得(翻訳前情報も取得) -->
+  <GetRealShopTranslationSettingsForFrontDisplay>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_NameTranslationSetting.*,
+                w2_RealShop.name
+          FROM  w2_NameTranslationSetting
+                LEFT JOIN w2_RealShop ON
+                (
+                  w2_RealShop.real_shop_id = w2_NameTranslationSetting.master_id1
+                )
+         WHERE  w2_NameTranslationSetting.data_kbn = @data_kbn
+           AND  w2_NameTranslationSetting.language_code = @language_code
+           AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+           AND  w2_NameTranslationSetting.master_id1 in ( @@ master_id1_where @@ )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetRealShopTranslationSettingsForFrontDisplay>
+
+  <!-- 名称翻訳設定一覧件数取得 -->
+  <GetCountNameTranslationSettingForListSearch>
+    <Statement>
+      <![CDATA[
+        [[ TRANSLATION_SETTING_FOR_LIST_SEARCH_WITH_SELECT ]],
+        Grouped AS (
+          SELECT  data_kbn,
+                  translation_target_column,
+                  master_id1,
+                  master_id2
+            FROM  Unioned
+                  [[ TRANSLATION_SETTING_FOR_LIST_SEARCH_WHERE ]]
+          GROUP BY data_kbn, translation_target_column, master_id1, master_id2
+        )
+        SELECT  COUNT(*)
+          FROM  Grouped
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetCountNameTranslationSettingForListSearch>
+
+  <!-- 名称翻訳設定一覧情報取得 -->
+  <GetNameTranslationSettingForListSearch>
+    <Statement>
+      <![CDATA[
+        [[ TRANSLATION_SETTING_FOR_LIST_SEARCH_WITH_SELECT ]],
+        Grouped AS (
+          SELECT  data_kbn,
+                  translation_target_column,
+                  master_id1,
+                  master_id2,
+                  ROW_NUMBER()
+                  OVER
+                  (
+                    ORDER BY sort_number, data_kbn, translation_target_column, master_id1, master_id2
+                  ) AS row_num
+            FROM  Unioned
+                  [[ TRANSLATION_SETTING_FOR_LIST_SEARCH_WHERE ]]
+          GROUP BY sort_number, data_kbn, translation_target_column, master_id1, master_id2
+        )
+        SELECT  *,
+                @language_code language_code,
+                @language_locale_id language_locale_id
+          FROM  Grouped
+         WHERE  @bgn_row_num <= Grouped.row_num
+           AND  Grouped.row_num <= @end_row_num
+      ORDER BY  Grouped.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetNameTranslationSettingForListSearch>
+
+  <!-- 名称翻訳設定情報取得(ロケール分) -->
+  <GetNameTranslationSettingWithLocales>
+    <Statement>
+      <![CDATA[
+        [[ TRANSLATION_SETTING_FOR_LIST_SEARCH_WITH_SELECT ]]
+        SELECT  *
+          FROM  Unioned
+         WHERE  data_kbn = @data_kbn
+                AND  translation_target_column = @translation_target_column
+                AND  master_id1 = @master_id1
+                AND  master_id2 = @master_id2
+                <@@hasval:language_code@@>
+                AND  language_code = @language_code
+                </@@hasval:language_code@@>
+                <@@hasval:language_locale_id@@>
+                AND  language_locale_id = @language_locale_id
+                </@@hasval:language_locale_id@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="translation_target_column" Type="nvarchar" Size="50" />
+      <Input Name="master_id1" Type="nvarchar" Size="100" />
+      <Input Name="master_id2" Type="nvarchar" Size="100" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetNameTranslationSettingWithLocales>
+
+  <!-- 翻訳前名称取得 -->
+  <GetBeforeTranslationName>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        DECLARE @before_translational_name NVARCHAR(MAX) = null
+
+        -- 商品情報
+        IF @data_kbn = 'Product'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'name' THEN w2_Product.name
+                    WHEN 'outline' THEN w2_Product.outline
+                    WHEN 'desc_detail1' THEN w2_Product.desc_detail1
+                    WHEN 'desc_detail2' THEN w2_Product.desc_detail2
+                    WHEN 'desc_detail3' THEN w2_Product.desc_detail3
+                    WHEN 'desc_detail4' THEN w2_Product.desc_detail4
+                    WHEN 'return_exchange_message' THEN w2_Product.return_exchange_message
+                    WHEN 'catchcopy' THEN w2_Product.catchcopy
+                  END
+            FROM  w2_Product
+           WHERE  w2_Product.product_id = @master_id1
+        END
+        -- 商品バリエーション情報
+        ELSE IF @data_kbn = 'ProductVariation'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'variation_name1' THEN w2_ProductVariation.variation_name1
+                    WHEN 'variation_name2' THEN w2_ProductVariation.variation_name2
+                    WHEN 'variation_name3' THEN w2_ProductVariation.variation_name3
+                  END
+            FROM  w2_ProductVariation
+           WHERE  w2_ProductVariation.product_id = @master_id1
+                  AND w2_ProductVariation.variation_id = @master_id2
+        END
+        -- 商品カテゴリ情報
+        ELSE IF  @data_kbn = 'ProductCategory'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'name' THEN w2_ProductCategory.name
+                  END
+            FROM  w2_ProductCategory
+           WHERE  w2_ProductCategory.category_id = @master_id1
+        END
+        -- セットプロモーション情報
+        ELSE IF @data_kbn = 'SetPromotion'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'setpromotion_disp_name' THEN w2_SetPromotion.setpromotion_disp_name
+                    WHEN 'description' THEN w2_SetPromotion.description
+                  END
+            FROM  w2_SetPromotion
+           WHERE  w2_SetPromotion.setpromotion_id = @master_id1
+        END
+        -- 商品セット情報
+        ELSE IF @data_kbn = 'ProductSet'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'product_set_name' THEN w2_ProductSet.product_set_name
+                    WHEN 'description' THEN w2_ProductSet.description
+                  END
+            FROM  w2_ProductSet
+           WHERE  w2_ProductSet.product_set_id = @master_id1
+        END
+        -- クーポン情報
+        ELSE IF @data_kbn = 'Coupon'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'coupon_disp_name' THEN w2_Coupon.coupon_disp_name
+                    WHEN 'coupon_disp_discription' THEN w2_Coupon.coupon_disp_discription
+                  END
+            FROM  w2_Coupon
+           WHERE  w2_Coupon.coupon_id = @master_id1
+        END
+        -- 会員ランク情報
+        ELSE IF @data_kbn = 'MemberRank'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'member_rank_name' THEN w2_MemberRank.member_rank_name
+                  END
+            FROM  w2_MemberRank
+           WHERE  w2_MemberRank.member_rank_id = @master_id1
+        END
+        -- 決済種別設定情報
+        ELSE IF @data_kbn = 'Payment'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'payment_name' THEN w2_Payment.payment_name
+                  END
+            FROM  w2_Payment
+           WHERE  w2_Payment.payment_id = @master_id1
+        END
+        -- ユーザー拡張項目設定情報
+        ELSE IF @data_kbn = 'UserExtendSetting'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'setting_name' THEN w2_UserExtendSetting.setting_name
+                    WHEN 'outline' THEN w2_UserExtendSetting.outline
+                  END
+            FROM  w2_UserExtendSetting
+           WHERE  w2_UserExtendSetting.setting_id = @master_id1
+        END
+        -- 商品ブランド設定情報
+        ELSE IF @data_kbn = 'ProductBrand'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'brand_name' THEN w2_ProductBrand.brand_name
+                  END
+            FROM  w2_ProductBrand
+           WHERE  w2_ProductBrand.brand_id = @master_id1
+        END
+        -- ノベルティ情報
+        ELSE IF @data_kbn = 'Novelty'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'novelty_disp_name' THEN w2_Novelty.novelty_disp_name
+                  END
+            FROM  w2_Novelty
+           WHERE  w2_Novelty.novelty_id = @master_id1
+        END
+        -- お知らせ設定情報
+        ELSE IF @data_kbn = 'News'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'news_text' THEN w2_News.news_text
+                  END
+            FROM  w2_News
+           WHERE  w2_News.news_id = @master_id1
+        END
+        -- 注文メモ設定情報
+        ELSE IF @data_kbn = 'OrderMemoSetting'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'order_memo_name' THEN w2_OrderMemoSetting.order_memo_name
+                    WHEN 'default_text' THEN w2_OrderMemoSetting.default_text
+                  END
+            FROM  w2_OrderMemoSetting
+           WHERE  w2_OrderMemoSetting.order_memo_id = @master_id1
+        END
+        -- 定期解約理由区分設定情報
+        ELSE IF @data_kbn = 'FixedPurchaseCancelReason'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'cancel_reason_name' THEN w2_FixedPurchaseCancelReason.cancel_reason_name
+                  END
+            FROM  w2_FixedPurchaseCancelReason
+           WHERE  w2_FixedPurchaseCancelReason.cancel_reason_id = @master_id1
+        END
+        -- 商品一覧表示設定情報
+        ELSE IF @data_kbn = 'ProductListDispSetting'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'setting_name' THEN w2_ProductListDispSetting.setting_name
+                  END
+            FROM  w2_ProductListDispSetting
+           WHERE  w2_ProductListDispSetting.setting_id = @master_id1
+             AND  w2_ProductListDispSetting.setting_kbn = @master_id2
+        END
+        -- サイト基本情報設定情報
+        ELSE IF @data_kbn = 'SiteInformation'
+        BEGIN
+          SELECT  @before_translational_name = ''
+        END
+        -- 商品タグ情報設定情報
+        ELSE IF @data_kbn = 'ProductTagSetting'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'tag_name' THEN w2_ProductTagSetting.tag_name
+                  END
+            FROM  w2_ProductTagSetting
+           WHERE  w2_ProductTagSetting.tag_id = @master_id1
+        END
+        -- コーディネート設定情報
+        ELSE IF @data_kbn = 'Coordinate'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'coordinate_title' THEN w2_Coordinate.coordinate_title
+                    WHEN 'coordinate_summary' THEN w2_Coordinate.coordinate_summary
+                  END
+            FROM  w2_Coordinate
+           WHERE  w2_Coordinate.coordinate_id = @master_id1
+        END
+        -- コーディネートカテゴリ設定情報
+        ELSE IF @data_kbn = 'CoordinateCategory'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'coordinate_category_name' THEN w2_CoordinateCategory.coordinate_category_name
+                  END
+            FROM  w2_CoordinateCategory
+           WHERE  w2_CoordinateCategory.coordinate_category_id = @master_id1
+        END
+        -- スタッフ設定情報
+        ELSE IF @data_kbn = 'Staff'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'staff_name' THEN w2_Staff.staff_name
+                    WHEN 'staff_profile' THEN w2_Staff.staff_profile
+                  END
+            FROM  w2_Staff
+           WHERE  w2_Staff.staff_id = @master_id1
+        END
+        -- リアル店舗設定情報
+        ELSE IF @data_kbn = 'RealShop'
+        BEGIN
+          SELECT  @before_translational_name =
+                  CASE @translation_target_column
+                    WHEN 'name' THEN w2_RealShop.name
+                  END
+            FROM  w2_RealShop
+           WHERE  w2_RealShop.real_shop_id = @master_id1
+        END
+
+        SELECT  @data_kbn data_kbn,
+                @translation_target_column translation_target_column,
+                @master_id1 master_id1,
+                @master_id2 master_id2,
+                @before_translational_name before_translational_name
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="translation_target_column" Type="nvarchar" Size="50" />
+      <Input Name="master_id1" Type="nvarchar" Size="100" />
+      <Input Name="master_id2" Type="nvarchar" Size="100" />
+    </Parameter>
+  </GetBeforeTranslationName>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_NameTranslationSetting
+                (
+                  data_kbn
+                  ,translation_target_column
+                  ,master_id1
+                  ,master_id2
+                  ,master_id3
+                  ,language_code
+                  ,language_locale_id
+                  ,after_translational_name
+                  ,display_kbn
+                  ,date_created
+                  ,date_changed
+                )
+        VALUES  (
+                  @data_kbn
+                  ,@translation_target_column
+                  ,@master_id1
+                  ,@master_id2
+                  ,@master_id3
+                  ,@language_code
+                  ,@language_locale_id
+                  ,@after_translational_name
+                  ,@display_kbn
+                  ,GETDATE()
+                  ,GETDATE()
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="translation_target_column" Type="nvarchar" Size="50" />
+      <Input Name="master_id1" Type="nvarchar" Size="100" />
+      <Input Name="master_id2" Type="nvarchar" Size="100" />
+      <Input Name="master_id3" Type="nvarchar" Size="100" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="after_translational_name" Type="nvarchar" Size="MAX" />
+      <Input Name="display_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Insert>
+  
+  <!-- 名称翻訳設定情報削除(登録画面用) -->
+  <DeleteNameTranslationSettingForRegister>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_NameTranslationSetting
+         WHERE  data_kbn = @data_kbn
+           AND  translation_target_column = @translation_target_column
+           AND  master_id1 = @master_id1
+           AND  master_id2 = @master_id2
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="30" />
+      <Input Name="translation_target_column" Type="nvarchar" Size="50" />
+      <Input Name="master_id1" Type="nvarchar" Size="100" />
+      <Input Name="master_id2" Type="nvarchar" Size="100" />
+    </Parameter>
+  </DeleteNameTranslationSettingForRegister>
+
+  <!-- 商品タグ情報翻訳設定情報取得(全件) -->
+  <GetProductTagSettingAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_TAGID_TBL ]]
+        [[ INSERT_TMP_TAGID_TBL ]]
+        
+        [[ CREATE_TMP_PRODUCTTAGSETTING_TBL ]]
+        [[ INSERT_TMP_PRODUCTTAGSETTING_TBL ]]
+      
+        SELECT  'ProductTagSetting' as data_kbn,
+                #tmp_ProductTagSetting.translation_target_column,
+                #tmp_ProductTagSetting.cancel_reason_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_ProductTagSetting.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_ProductTagSetting
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'ProductTagSetting'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_ProductTagSetting.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_ProductTagSetting.cancel_reason_id
+                )
+       ORDER BY #tmp_ProductTagSetting.cancel_reason_id,
+                #tmp_ProductTagSetting.translation_target_column
+      ]]>
+    </Statement>
+  </GetProductTagSettingAllTranslationSettings>
+
+  <!-- 商品タグ翻訳設定情報取得(全件) -->
+  <GetTagSettingAllTranslationSettings>
+    <Statement>
+      <![CDATA[
+        [[ CREATE_TMP_TAGSETTING_TBL ]]
+        [[ INSERT_TMP_TAGSETTING_TBL ]]
+        
+        [[ CREATE_TMP_PRODUCTTAGSETTING_TBL ]]
+        [[ INSERT_TMP_PRODUCTTAGSETTING_TBL ]]
+      
+        SELECT  'ProductTagSetting' as data_kbn,
+                #tmp_ProductTagSetting.translation_target_column,
+                #tmp_ProductTagSetting.brand_id as master_id1,
+                '' as master_id2,
+                '' as master_id3,
+                ISNULL(w2_NameTranslationSetting.language_code, '') as language_code,
+                ISNULL(w2_NameTranslationSetting.language_locale_id, '') as language_locale_id,
+                #tmp_ProductTagSetting.before_translational_name,
+                ISNULL(w2_NameTranslationSetting.after_translational_name, '') as after_translational_name,
+                '' as display_kbn
+          FROM  #tmp_ProductTagSetting
+                LEFT JOIN w2_NameTranslationSetting ON
+                (
+                  w2_NameTranslationSetting.data_kbn = 'ProductTagSetting'
+                  AND
+                  w2_NameTranslationSetting.translation_target_column = #tmp_ProductTagSetting.translation_target_column
+                  AND
+                  w2_NameTranslationSetting.master_id1 = #tmp_ProductTagSetting.tag_id
+                )
+       ORDER BY #tmp_ProductTagSetting.tag_id,
+                #tmp_ProductTagSetting.translation_target_column
+      ]]>
+    </Statement>
+  </GetTagSettingAllTranslationSettings>
+
+</NameTranslationSetting>

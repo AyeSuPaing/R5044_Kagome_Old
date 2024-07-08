@@ -1,0 +1,155 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_WorkCoupon]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_WorkCoupon]
+GO
+/*
+=========================================================================================================
+  Module      : クーポンワークテーブル (w2_WorkCoupon.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_WorkCoupon] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[coupon_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[coupon_code] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[coupon_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[coupon_disp_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[coupon_disp_name_mobile] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[coupon_discription] [ntext] NOT NULL DEFAULT (N''),
+	[coupon_discription_mobile] [ntext] NOT NULL DEFAULT (N''),
+	[coupon_type] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[coupon_count] [int] NOT NULL DEFAULT (0),
+	[publish_date_bgn] [datetime] NOT NULL,
+	[publish_date_end] [datetime] NOT NULL,
+	[discount_price] [decimal],
+	[discount_rate] [decimal],
+	[expire_day] [int],
+	[expire_date_bgn] [datetime],
+	[expire_date_end] [datetime],
+	[product_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'01'),
+	[exceptional_product] [ntext] NOT NULL DEFAULT (N''),
+	[exceptional_icon] [int] NOT NULL DEFAULT (0),
+	[usable_price] [decimal],
+	[use_together_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[valid_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[disp_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[coupon_disp_discription] [nvarchar] (max) NOT NULL DEFAULT (N'')
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_WorkCoupon] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkCoupon] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[coupon_id]
+	) ON [PRIMARY]
+GO
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_WorkUserCoupon]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_WorkUserCoupon]
+GO
+/*
+=========================================================================================================
+  Module      : ユーザクーポンワークテーブル (w2_WorkUserCoupon.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_WorkUserCoupon] (
+	[user_id] [nvarchar] (30) NOT NULL,
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[coupon_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[coupon_no] [int] NOT NULL DEFAULT (1),
+	[order_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[use_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_WorkUserCoupon] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkUserCoupon] PRIMARY KEY  CLUSTERED
+	(
+		[user_id],
+		[dept_id],
+		[coupon_id],
+		[coupon_no]
+	) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_WorkUserCoupon_1] ON [dbo].[w2_WorkUserCoupon]([use_flg]) ON [PRIMARY]
+GO
+
+-- 削除不可のマスタ出力設定を追加
+IF NOT EXISTS ( SELECT * FROM w2_MasterExportSetting WHERE master_kbn = 'Coupon' AND setting_id = '001' )
+BEGIN
+	INSERT INTO w2_MasterExportSetting
+	(
+		shop_id,
+		master_kbn,
+		setting_id,
+		setting_name,
+		fields,
+		del_flg,
+		date_created,
+		date_changed,
+		last_changed,
+		export_file_type
+	)
+	VALUES
+	(
+		'0',
+		'Coupon',
+		'001',
+		'クーポンマスタ（削除不可）',
+		'dept_id,coupon_id,coupon_code,coupon_name,coupon_disp_name,coupon_disp_name_mobile,coupon_discription,coupon_discription_mobile,coupon_type,coupon_count,publish_date_bgn,publish_date_end,discount_price,discount_rate,expire_day,expire_date_bgn,expire_date_end,product_kbn,exceptional_product,exceptional_icon,usable_price,use_together_flg,valid_flg,date_created,date_changed,last_changed,disp_flg,coupon_disp_discription',
+		'0',
+		GETDATE(),
+		GETDATE(),
+		'ｗ２ユーザー',
+		'CSV'
+	)
+END
+
+IF NOT EXISTS ( SELECT * FROM w2_MasterExportSetting WHERE master_kbn = 'UserCoupon' AND setting_id = '001' )
+BEGIN
+	INSERT INTO w2_MasterExportSetting
+	(
+		shop_id,
+		master_kbn,
+		setting_id,
+		setting_name,
+		fields,
+		del_flg,
+		date_created,
+		date_changed,
+		last_changed,
+		export_file_type
+	)
+	VALUES
+	(
+		'0',
+		'UserCoupon',
+		'001',
+		'ユーザクーポンマスタ（削除不可）',
+		'user_id,dept_id,coupon_id,coupon_no,order_id,use_flg,date_created,date_changed,last_changed',
+		'0',
+		GETDATE(),
+		GETDATE(),
+		'ｗ２ユーザー',
+		'CSV'
+	)
+END
+			]]>
+    </Statement>
+  </Up>
+</Migration>

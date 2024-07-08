@@ -1,0 +1,206 @@
+﻿@*
+=========================================================================================================
+  Module      : 特集ページリストパーツ (_MainContentsList.cshtml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Design
+@using w2.App.Common.Extensions.Currency
+@using w2.App.Common.Util
+@using w2.Cms.Manager.Codes
+@using w2.Common.Util
+@model w2.Cms.Manager.ViewModels.FeaturePage.ListViewModel
+<!-- リストグループ -->
+<div class="list-content custom-scroll-area">
+	<!-- リスト要素 -->
+	@foreach (var pageModel in Model.ListPageViewModels)
+	{
+		<div class="list-row" data-list-id="@pageModel.PageId">
+			<div class="list-col list-col-thumb w10 hide-style-list">
+				<div class="list-col-inner">
+					@if (pageModel.UsePc)
+					{
+						var pcSrc = (Constants.PATH_ROOT_CMS + WebBrowserCapture.GetImageFilePath(
+							Path.Combine(pageModel.PcDirPath, pageModel.FileName),
+							device: WebBrowserCapture.Device.Pc,
+							delay: 100,
+							iSizeH: 800,
+							iSizeW: 800,
+							bSizeH: 1280,
+							bSizeW: 720) + "?" + DateTime.Now.ToString("yyyyMMddHHmmss")).Replace(@"\", "/");
+						<figure>
+							<img class="web-browser-capture-image frame-pc"
+									onError="this.onerror=null; this.style='display:none';"
+									onclick="imageModal('@pcSrc')"
+									style="cursor: hand; cursor:pointer; display: none;"
+									src="@pcSrc" alt="PC">
+						</figure>
+					}
+					@if (pageModel.UseSp && DesignCommon.UseSmartPhone)
+					{
+						var spSrc = (Constants.PATH_ROOT_CMS + (WebBrowserCapture.GetImageFilePath(
+							Path.Combine(DesignCommon.SiteSpRootPath, pageModel.PcDirPath, pageModel.FileName),
+							device: WebBrowserCapture.Device.Sp,
+							delay: 100,
+							iSizeH: 400,
+							iSizeW: 400,
+							bSizeH: 400,
+							bSizeW: 800)) + "?" + DateTime.Now.ToString("yyyyMMddHHmmss")).Replace(@"\", "/");
+						<figure>
+							<img class="web-browser-capture-image frame-sp"
+									onError="this.onerror=null; this.style='display:none';"
+									onclick="imageModal('@spSrc','sp')"
+									style="cursor: hand; cursor:pointer; display: none;"
+									src="@spSrc" alt="SP">
+						</figure>
+					}
+				</div>
+			</div>
+			<div class="list-col list-col-title">
+				<div class="list-col-inner">
+					<p class="list-col-title-label line-clamp ta-left" style="height: 1.7em;">
+						<a href="javascript:open_page(@pageModel.PageId);" class="list-col-title-a feature-page-management-title" style="text-decoration: underline;">@LayoutHelper.ManagerTitleCheck(pageModel.ManagementTitle, "管理用ページ名")</a>
+					</p>
+					<div class="list-col-title-form">
+						@Html.TextBoxFor(model => pageModel.ManagementTitle, new
+							{
+								Id = "page_title_text_box_" + pageModel.PageId,
+								Name = "title"
+							})
+						<input type="button" class="btn btn-main btn-size-s list-title-edit-submit"
+									onclick="@Html.Raw("page_title_edit(" + pageModel.PageId + ",\"page_title_text_box_" + pageModel.PageId + "\")")" value="OK">
+						<input type="button" class="btn btn-sub btn-size-s list-title-edit-cancel" value="キャンセル">
+					</div>
+					<div class="dropdown">
+						<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle"><span class="icon-dots"></span></a>
+						<div class="dropdown-menu">
+							<a class="dropdown-menu-item list-title-edit-trigger" data-target-list="@pageModel.PageId" href="">名前を変更する</a>
+							<a class="dropdown-menu-item" href="Javascript:delete_feature_page(@pageModel.PageId)">削除</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="list-col w10 hide-list-detail">
+				<p>
+					@if (pageModel.UsePc)
+					{
+						<span class="icon-site-type icon-site-type-pc">
+							@Html.Raw((DesignCommon.UseResponsive) ? "RESPONSIVE" : "PC")
+						</span>
+					}
+					@if (pageModel.UseSp && DesignCommon.UseSmartPhone)
+					{
+						<span class="icon-site-type icon-site-type-sp">SP</span>
+					}
+				</p>
+			</div>
+			<div class="list-col w10 hide-list-detail">
+				<p>
+					@{
+						var dateChanged = pageModel.UpdateDateStr.Split(new[] { " " }, StringSplitOptions.None); 
+						<p>@dateChanged[0]</p>
+						<p>@dateChanged[1]</p>
+					}
+				</p>
+			</div>
+			<div class="list-col w15 hide-list-detail">
+				<p>
+					@if (pageModel.Publish == Constants.FLG_FEATUREPAGE_PUBLISH_PUBLIC)
+					{
+						<span class="icon-status icon-status-open">
+							@ValueText.GetValueText(Constants.TABLE_FEATUREPAGE, Constants.FIELD_PAGEDESIGN_PUBLISH, Constants.FLG_PAGEDESIGN_PUBLISH_PUBLIC)
+						</span>
+					}
+					@if (pageModel.Publish == Constants.FLG_PAGEDESIGN_PUBLISH_PRIVATE)
+					{
+						<span class="icon-status icon-status-close">
+							@ValueText.GetValueText(Constants.TABLE_PAGEDESIGN, Constants.FIELD_PAGEDESIGN_PUBLISH, Constants.FLG_PAGEDESIGN_PUBLISH_PRIVATE)
+						</span>
+					}
+				</p>
+				@if ((pageModel.IsSettingReleaseRange)
+					&& (pageModel.Publish == Constants.FLG_FEATUREPAGE_PUBLISH_PUBLIC))
+				{
+					<p>
+							@if (pageModel.PublishDateFrom != null)
+							{
+								<p>
+									@pageModel.PublishDateFrom から <br>
+								</p>
+							}
+							@if (pageModel.PublishDateTo != null)
+							{
+								<p>
+									@pageModel.PublishDateTo まで
+								</p>
+							}
+					</p>
+				}
+			</div>
+			<div class="list-col w15 hide-list-detail">
+				<div class="list-col-recent-status">
+					<dl class="list-col-recent-status-item">
+						<dt>View</dt>
+						<dd><span class="list-col-recent-status-value">@pageModel.ViewCount</span>件</dd>
+					</dl>
+					<dl class="list-col-recent-status-item">
+						<dt>CV</dt>
+						<dd>
+							<span class="list-col-recent-status-row">
+								<span class="list-col-recent-status-value">@pageModel.CvCount</span>件
+							</span>
+							<span class="list-col-recent-status-row">
+								<span class="list-col-recent-status-note">@pageModel.CvPrice.ToPriceString() 円</span>
+							</span>
+						</dd>
+					</dl>
+				</div>
+			</div>
+		</div>
+}
+</div>
+
+@Html.Hidden("hideHitCount", this.Model.HitCount)
+
+<script type="text/javascript">
+	$(function () {
+		list.ini();
+		dropdown_toggle.ini();
+		custom_scroll.ini();
+
+		// commonのクリックイベント無効化
+		$('.list-title-edit-submit').each(function () { $(this).off('click'); });
+
+		thumbnail_ini();
+	});
+
+	// ページタイトル変更
+	function page_title_edit(pageId, textBoxId) {
+		if ($('#' + textBoxId).val() === "") {
+			notification.show("ページ名を入力してください", 'warning', 'fadeout');
+			return;
+		}
+		checkOtherOperatorFileOpening('featurePageId' + pageId).done(function (result) {
+			if (result !== "") {
+				notification.show(result, 'warning', 'fadeout');
+				return;
+			} else {
+				$.ajax({
+					type: "POST",
+					url: "@Url.Action("ManagementTitleEdit", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_DESIGN)",
+					data: { 'pageId': pageId, 'title': $('#' + textBoxId).val() }
+				}).done(function () {
+					list_redraw();
+					notification.show('ページタイトルが変更されました', 'info', 'fadeout');
+				}).fail(function () {
+				});
+			}
+		});
+	}
+</script>
+<style>
+	.feature-page-management-title {
+		font-size: 18px;
+	}
+</style>

@@ -1,0 +1,256 @@
+﻿@*
+=========================================================================================================
+  Module      : タグマネージャー タグ設定一覧画面(List.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.TagManager.TagManagerListViewModel
+@{
+	ViewBag.Title = "タグマネージャー";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+
+@helper TopButtomControls()
+{
+	using (Html.BeginForm("Register", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_TAG_MANAGER, FormMethod.Get))
+	{
+	<input type="button" value="  商品タグの登録  " onclick="Javascript: OpenProductTagWindows();" class="btn btn-sub"/>
+	<input type="submit" value="  新規登録  " class="btn btn-main"/>
+	<input type="hidden" name="actionStatus" value="@ActionStatus.Insert"/>
+	}
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr>
+		<td>
+			<h1 class="page-title">タグマネージャー</h1>
+		</td>
+	</tr>
+	<!--▽ 検索 ▽-->
+	<tr>
+	<td style="width: 792px">
+	<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+	<tr>
+	<td class="search_box_bg">
+		@using (Html.BeginForm("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_TAG_MANAGER, FormMethod.Get))
+		{
+			<table cellspacing="0" cellpadding="0" width="100%" border="0">
+				<tr>
+				<td align="center">
+				<table cellspacing="0" cellpadding="0" border="0">
+					@LayoutHelper.PaddingTr(10)
+					<tr>
+						<td class="search_table">
+							<table cellspacing="1" cellpadding="2" width="758" border="0">
+								<tr>
+									<td class="search_title_bg" width="135">
+										タグ名</td>
+									<td class="search_item_bg" width="130">
+										@Html.TextBoxFor(model => model.ParamModel.AffiliateName, new { Name = "AffiliateName" })
+									</td>
+									<td class="search_title_bg" width="115">
+										表示区分</td>
+									<td class="search_item_bg" width="130">
+										@Html.DropDownListFor(model => model.ParamModel.AffiliateKbn, Model.AffiliateKbnItems, "", new { Name = "AffiliateKbn" })
+									</td>
+									<td class="search_title_bg" width="115">
+										設置箇所</td>
+									<td class="search_item_bg" width="130">
+										@Html.DropDownListFor(model => model.ParamModel.Page, Model.PageItems, "", new { Name = "Page" })
+									</td>
+									<td class="search_title_bg" width="80">
+										有効フラグ</td>
+									<td class="search_item_bg" width="85">
+										@Html.DropDownListFor(model => model.ParamModel.ValidFlg, Model.ValidFlgItems, "", new { Name = "ValidFlg" })
+									</td>
+									<td class="search_btn_bg" width="83" rowspan="2">
+										<div class="search_btn_main">
+											<input type="submit" name="search" value="  検索  " class="btn btn-main"/>
+										</div>
+										<div class="search_btn_sub">
+											@Html.ActionLink("クリア", "List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_TAG_MANAGER)
+										</div>
+									</td>
+								</tr>
+								<tr>
+									<td class="search_title_bg" width="135">
+										広告媒体区分</td>
+									<td class="search_item_bg" width="130">
+										@Html.DropDownListFor(model => model.ParamModel.AdvCodeMediaType, Model.AdvCodeMediaType, "", 
+											new
+											{
+												Name = "AdvCodeMediaType",
+												Style = "width:300px"
+											})
+									</td>
+									<td class="search_title_bg" width="135">
+										広告コード</td>
+									<td class="search_item_bg" width="130">
+										@Html.TextBoxFor(model => model.ParamModel.SearchAdvertisementCode, new { Name = "SearchAdvertisementCode" })
+									</td>
+									<td class="search_title_bg" width="135">
+										商品ID</td>
+									<td class="search_item_bg" width="130" colspan="3">
+										@Html.TextBoxFor(model => model.ParamModel.SearchProductId, new { Name = "SearchProductId" })
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+					@LayoutHelper.PaddingTr(10)
+				</table>
+				</td>
+				</tr>
+			</table>
+		}
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 検索 △-->
+	@LayoutHelper.PaddingTr(10)
+	<!--▽ 一覧 ▽-->
+	<tr>
+	<td>
+	<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+	<tr>
+	<td>
+	<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+		<table cellspacing="0" cellpadding="0" border="0">
+			@LayoutHelper.PaddingTr(6)
+			<tr>
+				<td>
+					<div class="action_part_top">
+						<!--▽ ページング ▽-->
+						<table class="list_pager" cellspacing="0" cellpadding="0" width="758" border="0">
+							<tr>
+								<td width="600" style="height: 22px">
+									@Html.Raw(Model.PagerHtml)
+								</td>
+								<td class="action_list_sp">
+									@TopButtomControls()
+								</td>
+							</tr>
+						</table>
+						<!-- ページング-->
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<table class="list_table" cellspacing="1" cellpadding="3" width="758" border="0">
+						<tr class="list_title_bg">
+							<td align="center" width="10%">タグID<hr>
+								タグ名</td>
+							<td align="center" width="20%">メインタグ内容<hr>
+								商品タグ設定</td>
+							<td align="center" width="5%">表示区分</td>
+							<td align="center" width="10%">設置箇所<hr>
+								出力箇所</td>
+							<td align="center" width="15%">表示条件</td>
+							<td align="center" width="5%">表示順</td>
+							<td align="center" width="5%">有効フラグ</td>
+						</tr>
+						@{ var lineNo = 1; }
+						@foreach (var resultModel in Model.TagManagerSearchResultListViewModel)
+						 {
+							lineNo = (lineNo + 1) % 2;
+							var listItemBgClass = "list_item_bg" + (lineNo + 1).ToString();
+							var listSelectMoutClass = string.Format("listselect_mout{0}(this)", (lineNo + 1).ToString());
+							<tr class="@listItemBgClass"
+							onmouseover="listselect_mover(this)"
+							onmouseout="@listSelectMoutClass"
+							onmousedown="listselect_mdown(this)"
+							onclick="listselect_mclick(this, '@resultModel.RegisterUrl')">
+								<td align="left">@resultModel.AffiliateId<hr>@resultModel.AffiliateName</td>
+								<td align="left">
+									@Html.TextAreaFor(model => resultModel.AffiliateTag1, 5, 50,
+									new
+									{
+										@readonly = true,
+										@disabled = "disabled"
+									})
+									<br>
+									<hr>
+									<strong>商品タグ名:</strong>@resultModel.TagName<br>
+									<strong>商品タグ内容:</strong><br>@resultModel.TagContent<br>
+									<strong>区切り文字:</strong>@resultModel.TagDelimiter<br>
+								</td>
+								<td align="center">@resultModel.AffiliateKbn</td>
+								<td align="left">
+									@resultModel.PageConditions<hr>
+									@resultModel.OutputLocation
+								</td>
+								<td align="left">広告媒体区分:<br>
+									@Html.TextAreaFor(model => resultModel.AdcodeMediaTypeConditions, 1, 50,
+									new
+									{
+										@readOnly = "true",
+										@disabled = "disabled",
+									})
+									<br>
+									広告コード:<br>
+									@Html.TextAreaFor(model => resultModel.AdvertisementCodeConditions, 1, 50,
+									new
+									{
+										@readOnly = "true",
+										@disabled = "disabled"
+									})
+									<br>
+									商品ID:<br>
+									@Html.TextAreaFor(model => resultModel.ProductIdConditions, 1, 50,
+									new
+									{
+										@readOnly = "true",
+										@disabled = "disabled"
+									})
+								</td>
+								<td align="center">@resultModel.DisplayOrder</td>
+								<td align="center">@resultModel.ValidFlg</td>
+							</tr>
+						}
+						@if (string.IsNullOrEmpty(Model.ErrorMessage) == false)
+						{
+							<tr class="list_alert">
+								<td colspan="7">@Model.ErrorMessage</td>
+							</tr>
+						}
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div class="action_part_bottom">
+						@TopButtomControls()
+					</div>
+				</td>
+			</tr>
+		</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 一覧 △-->
+</table>
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		// 商品タグポップアップウィンドウの呼び出し
+		function OpenProductTagWindows() {
+			open_window('@Url.Action("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_TAG_MANAGER)',
+				'productTagWindow',
+				'width=1350,height=900,top=50,left=200,status=yes,scrollbars=yes');
+		}
+	</script>
+}

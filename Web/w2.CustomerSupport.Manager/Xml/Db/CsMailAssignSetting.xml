@@ -1,0 +1,286 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メール振分設定系SQLステートメントXML(CsMailAssignSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsMailAssignSetting>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMailAssignSetting.*,
+                w2_ShopOperator.name,
+                w2_ShopOperator.valid_flg as shop_operator_valid_flg,
+                w2_CsGroup.cs_group_name,
+                w2_CsGroup.valid_flg as cs_group_valid_flg
+          FROM  w2_CsMailAssignSetting
+                LEFT OUTER JOIN w2_ShopOperator ON
+                (
+                  w2_CsMailAssignSetting.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsMailAssignSetting.assign_operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT OUTER JOIN w2_CsGroup ON
+                (
+                  w2_CsMailAssignSetting.dept_id = w2_CsGroup.dept_id
+                  AND
+                  w2_CsMailAssignSetting.assign_cs_group_id = w2_CsGroup.cs_group_id
+                )
+         WHERE  w2_CsMailAssignSetting.dept_id = @dept_id
+           AND  w2_CsMailAssignSetting.mail_assign_id = @mail_assign_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_assign_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Get>
+
+  <!-- 全件取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMailAssignSetting.*,
+                w2_ShopOperator.name,
+                w2_ShopOperator.valid_flg as shop_operator_valid_flg,
+                w2_CsGroup.cs_group_name,
+                w2_CsGroup.valid_flg as cs_group_valid_flg
+          FROM  w2_CsMailAssignSetting
+                LEFT OUTER JOIN w2_ShopOperator ON
+                (
+                  w2_CsMailAssignSetting.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsMailAssignSetting.assign_operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT OUTER JOIN w2_CsGroup ON
+                (
+                  w2_CsMailAssignSetting.dept_id = w2_CsGroup.dept_id
+                  AND
+                  w2_CsMailAssignSetting.assign_cs_group_id = w2_CsGroup.cs_group_id
+                )
+         WHERE  w2_CsMailAssignSetting.dept_id = @dept_id
+      ORDER BY  w2_CsMailAssignSetting.assign_priority, w2_CsMailAssignSetting.mail_assign_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAll>
+
+  <!-- Get all by mail assignids -->
+  <GetAllByMailAssignIds>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMailAssignSetting.*,
+                w2_ShopOperator.name,
+                w2_ShopOperator.valid_flg as shop_operator_valid_flg,
+                w2_CsGroup.cs_group_name,
+                w2_CsGroup.valid_flg as cs_group_valid_flg
+          FROM  w2_CsMailAssignSetting
+                LEFT OUTER JOIN w2_ShopOperator ON
+                (
+                  w2_CsMailAssignSetting.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsMailAssignSetting.assign_operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT OUTER JOIN w2_CsGroup ON
+                (
+                  w2_CsMailAssignSetting.dept_id = w2_CsGroup.dept_id
+                  AND
+                  w2_CsMailAssignSetting.assign_cs_group_id = w2_CsGroup.cs_group_id
+                )
+         WHERE  w2_CsMailAssignSetting.dept_id = @dept_id
+                @@ mail_assign_ids @@
+      ORDER BY  w2_CsMailAssignSetting.assign_priority, w2_CsMailAssignSetting.mail_assign_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllByMailAssignIds>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+    <![CDATA[
+        INSERT w2_CsMailAssignSetting
+            (
+               dept_id,
+               mail_assign_id,
+               assign_priority,
+               assign_incident_category_id,
+               assign_operator_id,
+               assign_cs_group_id,
+               assign_importance,
+               assign_status,
+               logical_operator,
+               auto_response,
+               auto_response_from,
+               auto_response_cc,
+               auto_response_bcc,
+               auto_response_subject,
+               auto_response_body,
+               valid_flg,
+               last_changed,
+               trash,
+               stop_filtering,
+               mail_assign_name
+            )
+            VALUES
+            (
+              @dept_id,
+              @mail_assign_id,
+              @assign_priority,
+              @assign_incident_category_id,
+              @assign_operator_id,
+              @assign_cs_group_id,
+              @assign_importance,
+              @assign_status,
+              @logical_operator,
+              @auto_response,
+              @auto_response_from,
+              @auto_response_cc,
+              @auto_response_bcc,
+              @auto_response_subject,
+              @auto_response_body,
+              @valid_flg,
+              @last_changed,
+              @trash,
+              @stop_filtering,
+              @mail_assign_name
+            )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_assign_id" Type="nvarchar" Size="10" />
+      <Input Name="assign_priority" Type="int" />
+      <Input Name="assign_incident_category_id" Type="nvarchar" Size="30" />
+      <Input Name="assign_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="assign_cs_group_id" Type="nvarchar" Size="20" />
+      <Input Name="assign_importance" Type="nvarchar" Size="1" />
+      <Input Name="assign_status" Type="nvarchar" Size="10" />
+      <Input Name="logical_operator" Type="nvarchar" Size="10" />
+      <Input Name="auto_response" Type="nvarchar" Size="1" />
+      <Input Name="auto_response_from" Type="nvarchar" Size="256" />
+      <Input Name="auto_response_cc" Type="nvarchar" Size="MAX" />
+      <Input Name="auto_response_bcc" Type="nvarchar" Size="MAX" />
+      <Input Name="auto_response_subject" Type="nvarchar" Size="256" />
+      <Input Name="auto_response_body" Type="nvarchar" Size="MAX" />
+      <Input Name="valid_flg" Type="nvarchar" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="trash" Type="nvarchar" Size="1" />
+      <Input Name="stop_filtering" Type="nvarchar" Size="1" />
+      <Input Name="mail_assign_name" Type="nvarchar" Size="256" />
+    </Parameter>
+  </Register>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMailAssignSetting
+           SET  w2_CsMailAssignSetting.assign_priority = @assign_priority,
+                w2_CsMailAssignSetting.assign_incident_category_id = @assign_incident_category_id,
+                w2_CsMailAssignSetting.assign_operator_id = @assign_operator_id,
+                w2_CsMailAssignSetting.assign_cs_group_id = @assign_cs_group_id,
+                w2_CsMailAssignSetting.assign_importance = @assign_importance,
+                w2_CsMailAssignSetting.assign_status = @assign_status,
+                w2_CsMailAssignSetting.logical_operator = @logical_operator,
+                w2_CsMailAssignSetting.auto_response = @auto_response,
+                w2_CsMailAssignSetting.auto_response_from = @auto_response_from,
+                w2_CsMailAssignSetting.auto_response_cc = @auto_response_cc,
+                w2_CsMailAssignSetting.auto_response_bcc = @auto_response_bcc,
+                w2_CsMailAssignSetting.auto_response_subject = @auto_response_subject,
+                w2_CsMailAssignSetting.auto_response_body = @auto_response_body,
+                w2_CsMailAssignSetting.valid_flg = @valid_flg,
+                w2_CsMailAssignSetting.date_changed = getdate(),
+                w2_CsMailAssignSetting.last_changed = @last_changed,
+                w2_CsMailAssignSetting.trash = @trash,
+                w2_CsMailAssignSetting.stop_filtering = @stop_filtering,
+                w2_CsMailAssignSetting.mail_assign_name = @mail_assign_name
+         WHERE  w2_CsMailAssignSetting.dept_id = @dept_id
+           AND  w2_CsMailAssignSetting.mail_assign_id = @mail_assign_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_assign_id" Type="nvarchar" Size="10" />
+      <Input Name="assign_priority" Type="int" />
+      <Input Name="assign_incident_category_id" Type="nvarchar" Size="30" />
+      <Input Name="assign_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="assign_cs_group_id" Type="nvarchar" Size="20" />
+      <Input Name="assign_importance" Type="nvarchar" Size="1" />
+      <Input Name="assign_status" Type="nvarchar" Size="10" />
+      <Input Name="logical_operator" Type="nvarchar" Size="10" />
+      <Input Name="auto_response" Type="nvarchar" Size="1" />
+      <Input Name="auto_response_from" Type="nvarchar" Size="256" />
+      <Input Name="auto_response_cc" Type="nvarchar" Size="MAX" />
+      <Input Name="auto_response_bcc" Type="nvarchar" Size="MAX" />
+      <Input Name="auto_response_subject" Type="nvarchar" Size="256" />
+      <Input Name="auto_response_body" Type="nvarchar" Size="MAX" />
+      <Input Name="valid_flg" Type="nvarchar" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="trash" Type="nvarchar" Size="1" />
+      <Input Name="stop_filtering" Type="nvarchar" Size="1" />
+      <Input Name="mail_assign_name" Type="nvarchar" Size="256" />
+    </Parameter>
+  </Update>
+
+  <!-- 移動になったオペレータでメール振り分け設定更新 -->
+  <UpdateMailAssignSettingByRemoveOperator>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMailAssignSetting
+           SET  w2_CsMailAssignSetting.assign_operator_id = ''
+         WHERE  w2_CsMailAssignSetting.dept_id = @dept_id
+           AND  w2_CsMailAssignSetting.assign_cs_group_id = @assign_cs_group_id
+           AND  w2_CsMailAssignSetting.assign_operator_id = @assign_operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="assign_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="assign_cs_group_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateMailAssignSettingByRemoveOperator>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE 
+          FROM  w2_CsMailAssignSetting
+         WHERE  w2_CsMailAssignSetting.dept_id = @dept_id 
+           AND  w2_CsMailAssignSetting.mail_assign_id = @mail_assign_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_assign_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+
+  <!-- 優先順の重複チェック -->
+  <CheckDuplication>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMailAssignSetting.mail_assign_id
+          FROM  w2_CsMailAssignSetting
+         WHERE  w2_CsMailAssignSetting.dept_id = @dept_id
+           AND  w2_CsMailAssignSetting.mail_assign_id <> @mail_assign_id
+           AND  w2_CsMailAssignSetting.assign_priority = @assign_priority
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_assign_id" Type="nvarchar" Size="10" />
+      <Input Name="assign_priority" Type="int" />
+    </Parameter>
+  </CheckDuplication>
+  
+</CsMailAssignSetting>

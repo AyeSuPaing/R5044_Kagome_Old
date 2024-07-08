@@ -1,0 +1,146 @@
+﻿<%--
+=========================================================================================================
+  Module      : ポップアップマスタページ(PopupPage.master)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+--%>
+<%@ Master Language="C#" AutoEventWireup="true" CodeFile="PopupPage.master.cs" Inherits="Form_Common_PopupPage" %>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head id="Head1" runat="server">
+	<!--▽ HEAD ▽-->
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta content="Microsoft Visual Studio 7.0" name="GENERATOR" />
+	<meta content="C#" name="CODE_LANGUAGE" />
+	<meta content="JavaScript" name="vs_defaultClientScript" />
+	<meta content="http://schemas.microsoft.com/intellisense/ie5" name="vs_targetSchema" />
+	<title>
+		<%if (this.IsW2Mp) {%>W2Unified<%} %>
+		<%else if (this.IsRepeatPlus) {%>W2Repeat<%} %>
+		<%else if (this.IsRepeatFood) {%>W2Repeat Food<%} %>
+		<%else {%><%: Constants.MANAGER_DESIGN_SETTING %><%} %>
+		&nbsp;
+		<%if (string.IsNullOrEmpty(this.Page.Title) == false) {%><%: this.Page.Title %><%} %>
+		<%else {%><%: MenuUtility.GetTitle(Request.FilePath) %><%} %>
+	</title>
+	<style type="text/css">
+	</style>
+	<link rel="stylesheet" href="<%: this.ResolveClientUrl("~/Css/w2style.css?") + Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED %>" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="<%: this.ResolveClientUrl("~/Css/w2style_mp.css?") + Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED %>" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="../../Css/jquery.qtip.css" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="<%: this.ResolveClientUrl("~/Css/w2style_mp_v2.css?") + Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED %>" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="../../Images/Icon/icomoon/style.css" media="screen,print" type="text/css" />
+	<script type="text/javascript" src="<%= Constants.PATH_ROOT %>Js/Manager.js?<%: Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%: this.ResolveClientUrl("~/Js/jquery-1.6.4.min.js") %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%: this.ResolveClientUrl("~/Js/jquery-ui.1.8.12.min.js") %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%: this.ResolveClientUrl("~/Js/cookie-utils.js") %>"></script>
+	<script type="text/javascript">
+		var root_path = "<%= Constants.PATH_ROOT %>";
+		var supportSiteUrl = "<%= Constants.SUPPORT_SITE_URL%>";
+	</script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%: this.ResolveClientUrl("~/Js/common.js?") + Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%: this.ResolveClientUrl("~/Js/jquery.qtip.js") %>"></script>
+	<script type="text/javascript">
+	<!--
+	// ページロード処理
+	function pageLoad(sender, args) {
+		// デザインセット
+		set_disabled_class();
+
+		// body側のpageLoad実行
+		if (typeof bodyPageLoad == "function") bodyPageLoad(sender, args);
+	}
+
+	function OnLoadEvent()
+	{
+		<%= OnLoadEvents %>
+	}
+
+	function reload_parent_window()
+	{
+		if(window.opener && window.opener.closed == false)
+		{
+			window.opener.location.reload(); 
+		}
+	}
+	//-->
+	</script>
+	<asp:ContentPlaceHolder id="ContentPlaceHolderHead" runat="server">
+	</asp:ContentPlaceHolder>
+	<!--△ HEAD △-->
+</head>
+<body onload="OnLoadEvent();" class="popup_body <%: this.SiteCssClassName %>">
+	<form id="form1" onsubmit="return (document.getElementById('__EVENTVALIDATION') != null);" runat="server" novalidate="novalidate">
+	<asp:Button ID="btnDummy" OnClientClick="return false;" runat="server" style="display:none;" />
+	<asp:ScriptManager ID="ScriptManager1" runat="server" OnAsyncPostBackError="smScriptManager_AsyncPostBackError"></asp:ScriptManager>
+	
+	<!--▽ ヘッダ ▽-->
+	<div id="header">
+		<div class="package-title-wrapper">
+			<div class="package-logo_popup">
+				<%if (this.IsW2Mp) {%>
+					<img src="<%= Constants.PATH_ROOT %>Images/Common/<%: this.ManagerDesingSettingDirName %>/W2_Unified_logo.svg" alt="logo"/>
+				<%} else if (this.IsRepeatPlus) {%>
+					<img src="<%= Constants.PATH_ROOT %>Images/Common/<%: this.ManagerDesingSettingDirName %>/W2_Repeat_logo.svg" alt="logo"/>
+				<%} else if (this.IsRepeatFood) {%>
+					<img src="<%= Constants.PATH_ROOT %>Images/Common/<%: this.ManagerDesingSettingDirName %>/W2_RepeatFood_logo.svg" alt="logo"/>
+				<%} else {%>
+					<img src="<%= Constants.PATH_ROOT %>Images/Common/<%: this.ManagerDesingSettingDirName %>/logo_login.png" alt="logo"/>
+				<%} %>
+			</div>
+			<div class="header-site-label_popup">
+				<%if (string.IsNullOrEmpty(Constants.MANAGER_DESIGN_DECORATE_ICON_FILENAME) == false) {%><span class="icon"><img src="<%= Constants.PATH_ROOT %>Images/Common/<%: this.ManagerDesingSettingDirName %>/<%: Constants.MANAGER_DESIGN_DECORATE_ICON_FILENAME %>" alt="" /></span><%} %>
+				<%if (string.IsNullOrEmpty(Constants.MANAGER_DESIGN_DECORATE_MESSAGE) == false) {%><span class="label"><%: Constants.MANAGER_DESIGN_DECORATE_MESSAGE %></span><%} %>
+			</div>
+		</div>
+	</div>
+	<!--△ ヘッダ △-->
+	<table class="popup_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+		<div>
+			<asp:ContentPlaceHolder id="ContentPlaceHolderBody" runat="server">
+			</asp:ContentPlaceHolder>
+		</div>
+		<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+			<tr>
+				<td width="100%" align="right"><input class="action_popup_bottom" runat="server" type="button" onclick="Javascript:window.close();" value="  閉じる  " /></td>
+			</tr>
+		</table>
+		<%if (this.IsW2Product) {%>
+		<p class="copyright">&copy; W2 Co.,Ltd.</p>
+		<%} %>
+	</td>
+	</tr>
+	</table>
+<%-- GoogleAnaytics解析タグ(管理サイト) --%>
+<% if ((Constants.GOOGLEANALYTICS_ENABLED) && (Constants.SETTING_PRODUCTION_ENVIRONMENT)){ %>
+<script async src="https://www.googletagmanager.com/gtag/js?id=<%= (string.IsNullOrEmpty(Constants.GOOGLEANALYTICS_PROFILE_ID) ? Constants.GOOGLEANALYTICS_MEASUREMENT_ID : Constants.GOOGLEANALYTICS_PROFILE_ID) %>"></script>
+<script type="text/javascript">
+	window.dataLayer = window.dataLayer || [];
+	function gtag() { dataLayer.push(arguments); }
+	gtag('js', new Date());
+	<% if (string.IsNullOrEmpty(Constants.GOOGLEANALYTICS_PROFILE_ID) == false) { %>
+		gtag('config', '<%= Constants.GOOGLEANALYTICS_PROFILE_ID %>');
+	<% } %>
+	gtag('config', '<%= Constants.GOOGLEANALYTICS_MEASUREMENT_ID %>');
+</script>
+<%} %>
+<script type="text/javascript">
+	// ポップアップ ウィンドウを閉じる確認します。
+	function close_popup() {
+		if ('<%= Request[Constants.REQUEST_KEY_MANAGER_POPUP_CLOSE_CONFIRM] %>' == '') {
+			window.close();
+		}
+		else {
+			var msg = '<%= WebMessages.GetMessages((Request[Constants.REQUEST_KEY_MANAGER_POPUP_CLOSE_CONFIRM] != null)? Request[Constants.REQUEST_KEY_MANAGER_POPUP_CLOSE_CONFIRM] : "") %>';
+			if (confirm(msg))
+				window.close();
+			else return;
+		}
+	}
+</script>
+	</form>
+</body>
+</html>

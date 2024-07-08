@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 機種グループ系SQLステートメントXML(MobileGroup.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MobileGroup>
+
+  <!-- 機種グループ一覧取得 -->
+  <GetMobileGroupList>
+    <Statement>
+      <![CDATA[
+        -- 他テーブルと連結したいため、一時テーブルを利用
+        CREATE TABLE #temp_table (
+          row_num int IDENTITY(1, 1),
+          row_count int,
+          model_count int,
+          dept_id nvarchar (30) NOT NULL,
+          career_id nvarchar (30) NOT NULL,
+          mobile_group_id nvarchar (30) NOT NULL
+        )
+        
+        -- キャリアID, 機種グループID, 機種グループ名でグループ化し、行番号, 機種数を設定。
+        INSERT
+          INTO  #temp_table (
+                model_count,
+                dept_id,
+                career_id,
+                mobile_group_id 
+                )
+        SELECT  COUNT(mobile_group_id),
+                w2_MobileGroup.dept_id,
+                w2_MobileGroup.career_id,
+                w2_MobileGroup.mobile_group_id
+          FROM  w2_MobileGroup
+         WHERE  w2_MobileGroup.dept_id = @dept_id 
+           AND  (
+                  (@career_id = '' OR w2_MobileGroup.career_id = @career_id)                              -- キャリアID
+                  AND 
+                  (@mobile_group_id_like_escaped = '' OR w2_MobileGroup.mobile_group_id LIKE @mobile_group_id_like_escaped + '%' ESCAPE '#')            -- 機種グループID
+                  AND 
+                  (@mobile_group_name_like_escaped = ''  OR w2_MobileGroup.mobile_group_name LIKE '%' + @mobile_group_name_like_escaped + '%' ESCAPE '#')      -- 機種グループ名
+                )
+         GROUP BY w2_MobileGroup.dept_id, w2_MobileGroup.career_id, w2_MobileGroup.mobile_group_id, w2_MobileGroup.mobile_group_name
+         ORDER BY
+                CASE @sort_kbn
+                  WHEN  0 THEN w2_MobileGroup.mobile_group_id
+                  WHEN  2 THEN w2_MobileGroup.mobile_group_name                  
+                  ELSE '1'
+                END 
+                ASC,
+                CASE @sort_kbn
+                  WHEN  1 THEN w2_MobileGroup.mobile_group_id
+                  WHEN  3 THEN w2_MobileGroup.mobile_group_name
+                  ELSE '1'
+                END 
+                DESC
+
+        -- 行数設定
+        UPDATE  #temp_table
+           SET  row_count = (SELECT COUNT(*) FROM #temp_table)
+
+        -- テーブル変数作成
+        DECLARE @return_table TABLE(
+          row_num int,
+          row_count int,
+          model_count int,
+          dept_id nvarchar (30) NOT NULL,
+          career_id nvarchar (30) NOT NULL,
+          mobile_group_id nvarchar (30) NOT NULL,
+          mobile_group_name nvarchar (30) NOT NULL,
+          model_no int NOT NULL,
+          model_name nvarchar (30) NOT NULL
+        )
+        
+        -- 指定ソート条件でソートを行いテーブル変数に追加
+        -- row_numは機種グループ単位なので、機種単位では重複されていてもよい
+        INSERT INTO @return_table(
+                row_num,
+                row_count,
+                model_count,
+                dept_id,
+                career_id,
+                mobile_group_id,
+                mobile_group_name,
+                model_no,
+                model_name
+                )
+        SELECT  #temp_table.row_num,
+                #temp_table.row_count,
+                #temp_table.model_count,
+                w2_MobileGroup.dept_id,
+                w2_MobileGroup.career_id,
+                w2_MobileGroup.mobile_group_id,
+                w2_MobileGroup.mobile_group_name,
+                w2_MobileGroup.model_no,
+                w2_MobileGroup.model_name
+         FROM   #temp_table, w2_MobileGroup
+        WHERE   #temp_table.dept_id = w2_MobileGroup.dept_id
+          AND   #temp_table.career_id = w2_MobileGroup.career_id 
+          AND   #temp_table.mobile_group_id = w2_MobileGroup.mobile_group_id 
+          
+        SELECT  *
+          FROM  @return_table
+         WHERE  @bgn_row_num <= row_num 
+           AND  row_num <= @end_row_num
+      ORDER BY  row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_group_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="mobile_group_name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetMobileGroupList>
+
+  <!-- 機種名取得 -->
+  <GetMobileModelNames>
+    <Statement>
+      <![CDATA[      
+        SELECT  w2_MobileModelInfo.model_name,
+                w2_MobileModelInfo.nickname
+          FROM  w2_MobileModelInfo
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetMobileModelNames>
+
+  <!-- 機種情報取得 -->
+  <GetMobileModelInfos>
+    <Statement>
+      <![CDATA[      
+        SELECT  CASE career
+                  WHEN 'DoCoMo' THEN '01dc'
+                  WHEN 'au' THEN '02au'
+                  WHEN 'Tu-Ka' THEN '02au'
+                  WHEN 'SoftBank' THEN '03vd'
+                  ELSE ''
+                END career_id,
+                w2_MobileModelInfo.model_name,
+                w2_MobileModelInfo.nickname
+          FROM  w2_MobileModelInfo
+        ORDER BY career_id, CONVERT(datetime, w2_MobileModelInfo.sale_date) DESC
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetMobileModelInfos>
+
+  <!-- 機種グループ詳細取得 -->
+  <!-- 同一キャリア、機種グループの全ての機種を取得 -->
+  <GetMobileGroupDetail>
+    <Statement>
+      <![CDATA[      
+        SELECT  *
+          FROM  w2_MobileGroup
+         WHERE  w2_MobileGroup.dept_id = @dept_id
+           AND  w2_MobileGroup.career_id = @career_id
+           AND  w2_MobileGroup.mobile_group_id = @mobile_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_group_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMobileGroupDetail>
+
+  <!-- 機種グループ登録 -->
+  <!-- 更新時も利用(DELETE→INSERT) -->
+  <InsertMobileGroup>
+    <Statement>
+      <![CDATA[
+        DECLARE @dt datetime 
+        SET @dt = getdate() 
+        
+        INSERT  w2_MobileGroup
+            (            
+            dept_id,
+            career_id,
+            mobile_group_id,
+            mobile_group_name,
+            model_no,
+            model_name,
+            date_created,
+            date_changed,
+            last_changed
+            )
+         VALUES  (
+            @dept_id,
+            @career_id,
+            @mobile_group_id,
+            @mobile_group_name,
+            @model_no,
+            @model_name,
+            ISNULL(@date_created, @dt),
+            @dt,
+            @last_changed
+            )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_group_id" Type="nvarchar" Size="30" />
+      <Input Name="mobile_group_name" Type="nvarchar" Size="30" />
+      <Input Name="model_no" Type="int" />
+      <Input Name="model_name" Type="nvarchar" Size="30" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertMobileGroup>
+
+  <!-- 機種グループ削除 -->
+  <DeleteMobileGroup>
+    <Statement>
+      <![CDATA[
+        DELETE
+          FROM  w2_MobileGroup
+         WHERE  w2_MobileGroup.dept_id = @dept_id
+           AND  w2_MobileGroup.career_id = @career_id
+           AND  w2_MobileGroup.mobile_group_id = @mobile_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_group_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteMobileGroup>
+
+  <!-- 機種グループ一覧取得（キャリア指定） -->
+  <GetCareerMobileGroupList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MobileGroup.dept_id,
+                w2_MobileGroup.career_id,
+                w2_MobileGroup.mobile_group_id,
+                w2_MobileGroup.mobile_group_name
+          FROM  w2_MobileGroup
+         WHERE  w2_MobileGroup.dept_id = @dept_id
+           AND  w2_MobileGroup.career_id = @career_id
+      GROUP BY  w2_MobileGroup.dept_id, w2_MobileGroup.career_id, w2_MobileGroup.mobile_group_id, w2_MobileGroup.mobile_group_name
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetCareerMobileGroupList>
+
+  <!-- 重複チェック（機種グループ登録時） -->
+  <CheckDuplicationInsertMobileGroupId>
+    <Statement>
+      <![CDATA[
+            SELECT 
+                COUNT(mobile_group_id) AS mobile_group_count 
+            FROM 
+                w2_MobileGroup 
+            WHERE 
+                w2_MobileGroup.dept_id = @dept_id 
+            AND           
+                w2_MobileGroup.career_id = @career_id
+            AND           
+                w2_MobileGroup.mobile_group_id = @mobile_group_id
+            ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_group_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationInsertMobileGroupId>
+
+</MobileGroup>

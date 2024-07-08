@@ -1,0 +1,794 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ターゲットリストテンプレート定義XML(TargetListTemplate.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<!--
+ターゲットリストのテンプレート分Templateノードを定義する
+テンプレートに対し複数条件を定義する場合はConditionノードを定義する
+※Valueノードについては、以下の値を指定することにより当日を基準に指定数値前の日付を設定可能
+  @@ AddDate,年加算数値,月加算数値,日加算数値
+  例：前日の場合、AddDate,0,0,-1
+      当日の場合、AddDate,0,0,0
+      翌日の場合、AddDate,0,0,1
+      1ヶ月前の場合、AddDate,0,-1,0
+      1年前の場合、AddDate,-1,0,0
+※Categoryノードについては、以下の値を指定可能。カンマ「,」区切りで複数のカテゴリを設定できる。
+  ステップメール
+  誕生日施策
+  新規獲得
+  CPM施策
+  RFM施策
+  掘り起こし施策
+  カゴ落ち施策
+  よくある設定
+
+<TargetListTemplate>
+  <Template>
+    <TemplateId>テンプレートID ※テンプレートを特定するために使用するため一意の値とすること</TemplateId>
+    <Name>テンプレート名</Name>
+    <Category>カテゴリ</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>データ区分</DataKbn>
+        <DataField>データフィールド</DataField>
+        <DataType>データタイプ</DataType>
+        <Value>値</Value>
+        <EqualSign>イコールサイン</EqualSign>
+        <OrderExist>注文ありなし</OrderExist>
+      </Condition>
+    </Conditions>
+  </Template>
+</TargetListTemplate>
+-->
+
+<TargetListTemplate>
+  <!-- 直近1ヶ月で初回購入し、2回以上ご購入されているお客様を抽出 -->
+  <Template>
+    <TemplateId>001</TemplateId>
+    <Name>直近1ヶ月で初回購入し、2回以上ご購入されているお客様を抽出</Name>
+    <Category>CPM施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserAttributeInfo</DataKbn>
+        <DataField>w2_UserAttribute.first_order_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>@@ AddDate,0,-1,-1 @@</Value>
+        <EqualSign>AfterThanDate</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserAttributeInfo</DataKbn>
+        <DataField>w2_UserAttribute.first_order_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>@@ AddDate,0,0,0 @@</Value>
+        <EqualSign>BeforeThanDate</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserAttributeInfo</DataKbn>
+        <DataField>w2_UserAttribute.second_order_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>@@ AddDate,0,-1,-1 @@</Value>
+        <EqualSign>AfterThanDate</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserAttributeInfo</DataKbn>
+        <DataField>w2_UserAttribute.second_order_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>@@ AddDate,0,0,0 @@</Value>
+        <EqualSign>BeforeThanDate</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 直近1ヶ月でご購入されているお客様を抽出 -->
+  <Template>
+    <TemplateId>002</TemplateId>
+    <Name>直近1ヶ月でご購入されているお客様を抽出</Name>
+    <Category>CPM施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserAttributeInfo</DataKbn>
+        <DataField>w2_UserAttribute.last_order_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>@@ AddDate,0,-1,-1 @@</Value>
+        <EqualSign>AfterThanDate</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.mail_flg</DataField>
+        <DataType>select</DataType>
+        <Value>ON</Value>
+        <EqualSign>EqualSelect</EqualSign>
+        <OrderExist />
+        <OrderExistString />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 新規会員登録後60日間でご購入のないお客様を抽出 -->
+  <Template>
+    <TemplateId>003</TemplateId>
+    <Name>新規会員登録後60日間でご購入のないお客様を抽出</Name>
+    <Category>新規獲得</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.date_created</DataField>
+        <DataType>datetime</DataType>
+        <Value>60</Value>
+        <EqualSign>DayBefore</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_Order.order_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>60</Value>
+        <EqualSign>LessThanDayDate</EqualSign>
+        <OrderExist>NotExist</OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataKbnString>ユーザー情報</DataKbnString>
+        <DataField>w2_User.mail_flg</DataField>
+        <DataFieldString>メール配信フラグ</DataFieldString>
+        <DataType>select</DataType>
+        <Value>ON</Value>
+        <EqualSign>EqualSelect</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 365日以上ご購入のないお客様(休眠顧客)を抽出 -->
+  <Template>
+    <TemplateId>004</TemplateId>
+    <Name>365日以上ご購入のないお客様(休眠顧客)を抽出</Name>
+    <Category>RFM施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserAttributeInfo</DataKbn>
+        <DataField>w2_UserAttribute.last_order_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>365</Value>
+        <EqualSign>DayBeforePast</EqualSign>
+        <OrderExist />
+        <OrderExistString />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.mail_flg</DataField>
+        <DataType>select</DataType>
+        <Value>ON</Value>
+        <EqualSign>EqualSelect</EqualSign>
+        <OrderExist />
+        <OrderExistString />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 去年の同じシーズン(1年前から3ヶ月間)に商品○○をご購入されているが直近1ヶ月で商品〇〇をご購入されていないお客様を抽出 -->
+  <Template>
+    <TemplateId>005</TemplateId>
+    <Name>去年の同じシーズン(1年前から3ヶ月間)に商品○○をご購入されているが直近1ヶ月で商品〇〇をご購入されていないお客様を抽出</Name>
+    <Category>RFM施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_OrderItem.variation_id</DataField>
+        <DataType>string</DataType>
+        <Value>〇〇</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist>Exist</OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_Order.order_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>365</Value>
+        <EqualSign>LessThanDayDate</EqualSign>
+        <OrderExist>Exist</OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_Order.order_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>275</Value>
+        <EqualSign>MoreThanDayDate</EqualSign>
+        <OrderExist>Exist</OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_OrderItem.variation_id</DataField>
+        <DataType>string</DataType>
+        <Value>〇〇</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist>NotExist</OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_Order.order_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>30</Value>
+        <EqualSign>LessThanDayDate</EqualSign>
+        <OrderExist>NotExist</OrderExist>
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 本日お誕生日のお客様を抽出 -->
+  <Template>
+    <TemplateId>006</TemplateId>
+    <Name>本日お誕生日のお客様を抽出(2/29お誕生日のお客様はうるう年しか抽出されません)</Name>
+    <Category>誕生日施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.birth_month</DataField>
+        <DataType>string</DataType>
+        <Value>today.month</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.birth_day</DataField>
+        <DataType>string</DataType>
+        <Value>today.day</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 来月お誕生日のお客様を抽出 -->
+  <Template>
+    <TemplateId>007</TemplateId>
+    <Name>来月お誕生日のお客様を抽出</Name>
+    <Category>誕生日施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.birth_month</DataField>
+        <DataType>string</DataType>
+        <Value>today.month+1</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 誕生日ポイント発行済みを除いた来月お誕生日のお客様を抽出 -->
+  <Template>
+    <TemplateId>008</TemplateId>
+    <Name>誕生日ポイント発行済みを除いた来月お誕生日のお客様を抽出</Name>
+    <Category>誕生日施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.birth_month</DataField>
+        <DataType>string</DataType>
+        <Value>today.month+1</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.last_birthday_point_add_year</DataField>
+        <DataType>string</DataType>
+        <Value>today.year</Value>
+        <EqualSign>NotEqualString</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 誕生日クーポン発行済みを除いた来月お誕生日のお客様を抽出 -->
+  <Template>
+    <TemplateId>009</TemplateId>
+    <Name>誕生日クーポン発行済みを除いた来月お誕生日のお客様を抽出</Name>
+    <Category>誕生日施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.birth_month</DataField>
+        <DataType>string</DataType>
+        <Value>today.month+1</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.last_birthday_coupon_publish_year</DataField>
+        <DataType>string</DataType>
+        <Value>today.year</Value>
+        <EqualSign>NotEqualString</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- メール配信設定機能にて送信したメールのURLリンクを、特定期間内(2017年4月3日～2017年10月3日)にクリックしたお客様を抽出 -->
+  <Template>
+    <TemplateId>010</TemplateId>
+    <Name>メール配信設定機能にて送信したメールのURLリンクを、特定期間内(2017年4月1日～2017年10月3日)にクリックしたお客様を抽出</Name>
+    <Category>よくある設定</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>MailClickInfo</DataKbn>
+        <DataField>w2_MailClick.date_created</DataField>
+        <DataType>datetime</DataType>
+        <Value>2017/04/01</Value>
+        <EqualSign>AfterThanDate</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>MailClickInfo</DataKbn>
+        <DataField>w2_MailClick.date_created</DataField>
+        <DataType>datetime</DataType>
+        <Value>2017/10/03</Value>
+        <EqualSign>BeforeThanDate</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>MailClickInfo</DataKbn>
+        <DataField>w2_MailClick.mailclick_url</DataField>
+        <DataType>string</DataType>
+        <Value>http://[ドメイン名]/Form/Product/ProductDetail.aspx</Value>
+        <EqualSign>BeginWithString</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 14日後にお誕生日のお客様を抽出 -->
+  <Template>
+    <TemplateId>011</TemplateId>
+    <Name>14日後にお誕生日のお客様を抽出</Name>
+    <Category>誕生日施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.birth_month</DataField>
+        <DataType>string</DataType>
+        <Value>(today+14d).month</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.birth_day</DataField>
+        <DataType>string</DataType>
+        <Value>(today+14d).day</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist></OrderExist>
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 昨日カートに特定の商品をいれたままご購入されていないお客様を抽出 -->
+  <Template>
+    <TemplateId>012</TemplateId>
+    <Name>昨日カートに特定の商品をいれたままご購入されていないお客様を抽出</Name>
+    <Category>カゴ落ち施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>CartInfo</DataKbn>
+        <DataField>w2_Cart.date_created</DataField>
+        <DataType>dayafter</DataType>
+        <Value>1</Value>
+        <EqualSign>EqualDay</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>CartInfo</DataKbn>
+        <DataField>w2_Cart.product_id</DataField>
+        <DataType>string</DataType>
+        <Value>〇〇</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 指定URLより会員登録し、頂いた注文に対して出荷が完了したお客様を抽出 -->
+  <Template>
+    <TemplateId>013</TemplateId>
+    <Name>指定URLより会員登録し、頂いた注文に対して出荷が完了したお客様を抽出</Name>
+    <Category>CPM施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_Order.order_status</DataField>
+        <DataType>select</DataType>
+        <Value>SHP_COMP</Value>
+        <EqualSign>EqualSelect</EqualSign>
+        <OrderExist>Exist</OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.advcode_first</DataField>
+        <DataType>string</DataType>
+        <Value>〇〇</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.user_kbn</DataField>
+        <DataType>select</DataType>
+        <Value>PC_GEST</Value>
+        <EqualSign>NotEqualSelect</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.user_kbn</DataField>
+        <DataType>select</DataType>
+        <Value>SP_GEST</Value>
+        <EqualSign>NotEqualSelect</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.user_kbn</DataField>
+        <DataType>select</DataType>
+        <Value>MB_GEST</Value>
+        <EqualSign>NotEqualSelect</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.user_kbn</DataField>
+        <DataType>select</DataType>
+        <Value>OFF_GEST</Value>
+        <EqualSign>NotEqualSelect</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.user_kbn</DataField>
+        <DataType>select</DataType>
+        <Value>MAIL</Value>
+        <EqualSign>NotEqualSelect</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 特定の商品をご購入から出荷完了後ちょうど5日経過し、定期でのご購入がないお客様を抽出 -->
+  <Template>
+    <TemplateId>014</TemplateId>
+    <Name>特定の商品をご購入から出荷完了後ちょうど5日経過し、定期でのご購入がないお客様を抽出</Name>
+    <Category>ステップメール</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_OrderItem.product_id</DataField>
+        <DataType>string</DataType>
+        <Value>〇〇</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist>Exist</OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_Order.order_shipped_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>5</Value>
+        <EqualSign>DayBefore</EqualSign>
+        <OrderExist>Exist</OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.fixed_purchase_member_flg</DataField>
+        <DataType>select</DataType>
+        <Value>0</Value>
+        <EqualSign>EqualSelect</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+  </Template>
+  <Template>
+    <TemplateId>015</TemplateId>
+    <Name>定期購入会員を抽出</Name>
+    <Category>よくある設定</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.fixed_purchase_member_flg</DataField>
+        <DataType>select</DataType>
+        <Value>1</Value>
+        <EqualSign>EqualSelect</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 3カ月以上1年未満ログインがなかったお客様を抽出 -->
+  <Template>
+    <TemplateId>016</TemplateId>
+    <Name>3カ月以上1年未満ログインがなかったお客様を抽出</Name>
+    <Category>CPM施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.date_last_loggedin</DataField>
+        <DataType>datetime</DataType>
+        <Value>365</Value>
+        <EqualSign>LessThanDayDate</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.date_last_loggedin</DataField>
+        <DataType>datetime</DataType>
+        <Value>90</Value>
+        <EqualSign>MoreThanDayDate</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.mail_flg</DataField>
+        <DataType>select</DataType>
+        <Value>ON</Value>
+        <EqualSign>EqualSelect</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- ポイント有効期限が10日後のお客様を抽出 -->
+  <Template>
+    <TemplateId>017</TemplateId>
+    <Name>ポイント有効期限が10日後のお客様を抽出</Name>
+    <Category>掘り起こし施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>PointInfo</DataKbn>
+        <DataField>w2_UserPoint.point_exp</DataField>
+        <DataType>datetime</DataType>
+        <Value>10</Value>
+        <EqualSign>DayAfter</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 1年以内に定期購入を解約したお客様を抽出 -->
+  <Template>
+    <TemplateId>018</TemplateId>
+    <Name>1年以内に定期購入を解約したお客様を抽出</Name>
+    <Category>掘り起こし施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>UserInfo</DataKbn>
+        <DataField>w2_User.fixed_purchase_member_flg</DataField>
+        <DataType>select</DataType>
+        <Value>0</Value>
+        <EqualSign>EqualSelect</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>FixedPurchaseInfo</DataKbn>
+        <DataField>w2_FixedPurchase.shipped_count</DataField>
+        <DataType>number</DataType>
+        <Value>0</Value>
+        <EqualSign>BiggerThanNumber</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>FixedPurchaseInfo</DataKbn>
+        <DataField>w2_FixedPurchase.last_order_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>1</Value>
+        <EqualSign>LessThanYearDate</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 商品○○を購入してから7日経過したお客様を抽出 -->
+  <Template>
+    <TemplateId>019</TemplateId>
+    <Name>商品○○を購入してから7日経過したお客様を抽出</Name>
+    <Category>ステップメール</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_OrderItem.product_id</DataField>
+        <DataType>string</DataType>
+        <Value>○○</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist>Exist</OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_Order.order_date</DataField>
+        <DataType>datetime</DataType>
+        <Value>7</Value>
+        <EqualSign>DayBefore</EqualSign>
+        <OrderExist>Exist</OrderExist>
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 商品○○を3回以上購入したお客様を抽出 -->
+  <Template>
+    <TemplateId>020</TemplateId>
+    <Name>商品○○を3回以上購入したお客様を抽出</Name>
+    <Category>CPM施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_OrderItem.product_id</DataField>
+        <DataType>string</DataType>
+        <Value>○○</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist>Exist</OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderAggregate</DataKbn>
+        <DataField>w2_Order.order_id</DataField>
+        <DataType>count</DataType>
+        <Value>3</Value>
+        <EqualSign>BiggerThanNumber</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 商品カテゴリが○○の商品を5000円以上購入したお客様を抽出 -->
+  <Template>
+    <TemplateId>021</TemplateId>
+    <Name>商品カテゴリが○○の商品を5000円以上購入したお客様を抽出</Name>
+    <Category>CPM施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderInfo</DataKbn>
+        <DataField>w2_Product.category_id</DataField>
+        <DataType>string</DataType>
+        <Value>○○</Value>
+        <EqualSign>EqualString</EqualSign>
+        <OrderExist>Exist</OrderExist>
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>OrderAggregate</DataKbn>
+        <DataField>w2_OrderItem.item_price</DataField>
+        <DataType>sum</DataType>
+        <Value>5000</Value>
+        <EqualSign>BiggerThanNumber</EqualSign>
+        <OrderExist />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 定期配送パターンが月間隔日付指定で商品○○を購入しているユーザー -->
+  <Template>
+    <TemplateId>022</TemplateId>
+    <Name>定期配送パターンが月間隔日付指定で商品○○を購入しているユーザー</Name>
+    <Category>CPM施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>FixedPurchaseInfo</DataKbn>
+        <DataKbnString>定期購入情報</DataKbnString>
+        <DataField>w2_FixedPurchase.fixed_purchase_setting1</DataField>
+        <DataFieldString>定期配送パターン</DataFieldString>
+        <DataType>fixedpurchase</DataType>
+        <Value>1,</Value>
+        <FixedPurchaseKbn>01</FixedPurchaseKbn>
+        <EqualSign>EqualSelect</EqualSign>
+        <EqualSignString>と等しい</EqualSignString>
+        <OrderExist />
+        <OrderExistString />
+        <FixedPurchaseOrderExist>Exist</FixedPurchaseOrderExist>
+        <FixedPurchaseOrderExistString>定期購入情報がある</FixedPurchaseOrderExistString>
+        <PointExist />
+        <PointExistString />
+        <DmShippingHistoryExist />
+        <DmShippingHistoryExistString />
+      </Condition>
+    </Conditions>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>FixedPurchaseInfo</DataKbn>
+        <DataKbnString>定期購入情報</DataKbnString>
+        <DataField>w2_FixedPurchaseItem.product_id</DataField>
+        <DataFieldString>商品：商品ID</DataFieldString>
+        <DataType>string</DataType>
+        <Value>○○</Value>
+        <FixedPurchaseKbn />
+        <EqualSign>EqualString</EqualSign>
+        <EqualSignString>と等しい</EqualSignString>
+        <OrderExist />
+        <OrderExistString />
+        <FixedPurchaseOrderExist>Exist</FixedPurchaseOrderExist>
+        <FixedPurchaseOrderExistString>定期購入情報がある</FixedPurchaseOrderExistString>
+        <PointExist />
+        <PointExistString />
+        <DmShippingHistoryExist />
+        <DmShippingHistoryExistString />
+      </Condition>
+    </Conditions>
+  </Template>
+  <!-- 定期解約日が14日前のユーザー -->
+  <Template>
+    <TemplateId>023</TemplateId>
+    <Name>定期解約日が14日前のユーザー</Name>
+    <Category>CRM施策</Category>
+    <Conditions type="AND">
+      <Condition>
+        <DataKbn>FixedPurchaseInfo</DataKbn>
+        <DataKbnString>定期購入情報</DataKbnString>
+        <DataField>w2_FixedPurchase.cancel_date</DataField>
+        <DataFieldString>定期解約日</DataFieldString>
+        <DataType>datetime</DataType>
+        <Value>14</Value>
+        <FixedPurchaseKbn />
+        <EqualSign>DayBefore</EqualSign>
+        <EqualSignString>日前</EqualSignString>
+        <OrderExist />
+        <OrderExistString />
+        <FixedPurchaseOrderExist>Exist</FixedPurchaseOrderExist>
+        <FixedPurchaseOrderExistString>の定期購入情報がある</FixedPurchaseOrderExistString>
+        <PointExist />
+        <PointExistString />
+        <DmShippingHistoryExist />
+        <DmShippingHistoryExistString />
+      </Condition>
+    </Conditions>
+  </Template>
+</TargetListTemplate>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+-- w2_OrderItem.item_price_tax 明細金額（税金額)
+-- 更新
+UPDATE w2_OrderItem SET w2_OrderItem.item_price_tax = [dbo].[w2_GetTaxPrice](product_price, product_tax_rate, product_tax_round_type, product_tax_included_flg) * item_quantity;
+
+
+-- w2_Order.order_price_tax 商品小計の税額
+UPDATE w2_Order
+SET 
+w2_Order.order_price_subtotal_tax = 
+[dbo].[w2_GetOrderItemSubtotalTaxPrice](
+  w2_Order.order_id,
+  (
+    last_order_point_use_yen --　利用ポイント 
+      + (CASE WHEN w2_OrderCoupon.coupon_type = '08' OR w2_OrderCoupon.coupon_type = '06' THEN 0 ELSE w2_Order.order_coupon_use END) -- 利用クーポン(送料無料以外)
+      + member_rank_discount_price -- ランク割
+      + setpromotion_product_discount_amount -- セップロ商品割
+      + fixed_purchase_discount_price -- 定期購入割
+      + fixed_purchase_member_discount_amount -- 定期会員割
+  ),
+  orderItem.product_tax_rate,
+  orderItem.product_tax_round_type,
+  orderItem.product_tax_included_flg
+),
+w2_Order.order_price_shipping_tax = [dbo].[w2_GetTaxPrice](order_price_shipping - setpromotion_shipping_charge_discount_amount,
+  orderItem.product_tax_rate,
+  orderItem.product_tax_round_type,
+  orderItem.product_tax_included_flg),
+w2_Order.order_price_exchange_tax = [dbo].[w2_GetTaxPrice](order_price_exchange - setpromotion_payment_charge_discount_amount,
+  orderItem.product_tax_rate,
+  orderItem.product_tax_round_type,
+  orderItem.product_tax_included_flg)
+FROM w2_Order
+INNER JOIN
+(
+	SELECT 
+    *,
+    ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY date_created) as rowId
+  FROM w2_OrderItem 
+  WHERE product_bundle_id = ''
+) AS orderItem
+ON w2_Order.order_id = orderItem.order_id
+LEFT JOIN w2_OrderCoupon
+ON w2_Order.order_id = w2_OrderCoupon.order_id
+WHERE orderItem.rowId = 1
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

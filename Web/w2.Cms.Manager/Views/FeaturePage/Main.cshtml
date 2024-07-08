@@ -1,0 +1,617 @@
+﻿@*
+=========================================================================================================
+  Module      : 特集ページ情報画面(Main.cshtml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.FeaturePage.MainViewModel
+@{
+	ViewBag.Title = "特集ページ情報";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+<h1 class="page-title">特集ページ情報</h1>
+<div class="main-content-frame">
+	<a href="javascript:void(0)" class="list-menu-btn"><span class="icon icon-menu"></span></a>
+	<div class="main-content-list">
+		@using (Html.BeginForm(string.Empty, string.Empty, new {}, FormMethod.Post, new { Id = "search_form", Onsubmit = "return false;" }))
+		{
+			<div class="list-tools">
+				<div class="list-tools-row">
+					<div class="list-tools-col ta-left">
+						<div class="keyword-search">
+							@Html.TextBoxFor(model => model.ParamModel.Keyword, new
+							{
+								Id = "search_keyword",
+								Name = "ParamModel.Keyword",
+								Class = "keyword-search-input",
+								Placeholder = "管理用ページ名、ファイル名"
+							})
+							<a href="javascript:list_redraw(true)" class="keyword-search-submit">
+								<span class="icon-search"></span>
+							</a>
+							@Html.HiddenFor(model => model.ParamModel.SortType, new
+							{
+								Id = "sort_type",
+								Name = "ParamModel.SortType"
+							})
+							@Html.HiddenFor(model => model.ParamModel.SortField, new
+							{
+								Id = "sort_field",
+								Name = "ParamModel.SortField"
+							})
+						</div>
+						<a class="btn-toggle" data-toggle-content-selector=".list-tools-detailed-search"></a>
+					</div>
+					<!-- 新規作成 -->
+					<div class="list-tools-col ta-right">
+						<div class="pager-content">
+							<p class="pager-content-info hide-list-detail"><span id="pager"></span><span id="total"></span></p>
+							@Html.Hidden("ParamModel.PagerNo", 1, new { id = "pagerNo" })
+							@Html.Hidden("totalHitCount", new{ id= "totalHitCount" })
+							<span id="previous" class="pager-content-previous icon-arrow-left" onclick="reduce_pager_no();"></span>
+							<span id="next" class="pager-content-next icon-arrow-right" onclick="add_pager_no();"></span>
+						</div>
+						<button class="btn btn-main btn-size-m" type="button" onclick="open_new_feature_page()">
+							<span class="icon icon-plus"></span>
+							<span class="hide-list-detail">新規作成</span>
+						</button>
+					</div>
+				</div>
+				<!-- 絞り込み -->
+				<div class="list-tools-detailed-search">
+					<div class="list-tools-row">
+						<div class="list-tools-col">
+
+							<div class="form-element-group form-element-group-vertical">
+								<div class="form-element-group-title">
+									<label for="form-select-005">更新日</label>
+								</div>
+								<div class="form-element-group-content">
+									@Html.DropDownListFor(m => Model.ParamModel.DateChangedKbn, Model.ParamModel.DateChangedDropDown, new
+									{
+										Onchange = "Javascript:list_redraw(true);",
+									})
+								</div>
+							</div>
+							<div class="form-element-group form-element-group-vertical">
+								<div class="form-element-group-title">
+									<label>公開状態</label>
+								</div>
+								<div class="form-element-group-content">
+									@for (var i = 0; i < Model.ParamModel.Types.Length; i++)
+									{
+										var id = "type_" + i;
+										var name = "Types[" + i + "].IsSelected";
+										<input class="btn-checkbox"
+												id="@id"
+												name="@name"
+												data-val="true"
+												data-val-required="IsSelected フィールドが必要です。"
+												onchange="Javascript: list_redraw(true);"
+												type="checkbox"
+												value="true" checked>
+										@Html.Label("type_" + i, Model.ParamModel.Types[i].Name, new
+										{
+											Class = "btn btn-size-m"
+										})
+										@Html.HiddenFor(m => Model.ParamModel.Types[i].Name, new
+										{
+											Name = "Types[" + i + "].Name"
+										})
+										@Html.HiddenFor(m => Model.ParamModel.Types[i].Value, new
+										{
+											Name = "Types[" + i + "].Value"
+										})
+									}
+								</div>
+							</div>
+							<div class="form-element-group form-element-group-vertical">
+								<div class="form-element-group-title">
+									<label>特集ページカテゴリ</label>
+								</div>
+								<div class="form-element-group-content">
+									@Html.DropDownListFor(model => model.ParamModel.ParentCategoryId, Model.ParamModel.ParentCategoryItemsDropDown, new
+									{
+										Onchange = "Javascript:list_redraw(true);",
+									})
+								</div>
+							</div>
+							@if (Constants.PRODUCT_BRAND_ENABLED)
+							{
+								<div class="form-element-group form-element-group-vertical">
+									<div class="form-element-group-title">
+										<label>ブランド</label>
+									</div>
+									<div class="form-element-group-content">
+										@Html.DropDownListFor(model => model.ParamModel.BrandIds, Model.ParamModel.BrandItemsDropDown, new
+										{
+											Onchange = "Javascript:list_redraw(true);",
+										})
+									</div>
+								</div>
+							}
+							<div class="form-element-group form-element-group-vertical">
+								<div class="form-element-group-title">
+									<label for="form-select-005">公開開始日</label>
+								</div>
+								<div class="form-element-group-content">
+									<div class="access-authority-setting-period">
+										<div class="access-authority-setting-period-start">
+											<div class="access-authority-setting-period-start-title">開始</div>
+											<div class="access-authority-setting-period-start-input">
+												<div class="access-authority-setting-period-start-input-date">
+													<label for="access-authority-setting-period-start-input-date2">日付</label>
+													@Html.TextBoxFor(model => model.ParamModel.PublishBeginDateFromDate, new
+													{
+														Id = "access-authority-setting-period-start-input-date2",
+														@class = "input-datepicker update-date-input-search",
+													})
+												</div>
+												<div class="access-authority-setting-period-start-input-time">
+													<label for="access-authority-setting-period-start-input-time">時間</label>
+													@Html.TextBoxFor(model => model.ParamModel.PublishBeginDateFromTime, new
+													{
+														Id = "access-authority-setting-period-start-input-time",
+														@class = "input-timepicker update-time-input-search",
+													})
+												</div>
+												<a href="javascript:void(0)" class="btn btn-txt btn-size-s" onclick="period_input_clear(this);">クリア</a>
+											</div>
+										</div>
+										<div class="access-authority-setting-period-wave">～</div>
+										<div class="access-authority-setting-period-end">
+											<div class="access-authority-setting-period-end-title">終了</div>
+											<div class="access-authority-setting-period-end-input">
+												<div class="access-authority-setting-period-end-input-date">
+													<label for="access-authority-setting-period-end-input-date2">日付</label>
+													@Html.TextBoxFor(model => model.ParamModel.PublishBeginDateToDate, new
+													{
+														Id = "access-authority-setting-period-end-input-date2",
+														@class = "input-datepicker update-date-input-search",
+													})
+												</div>
+												<div class="access-authority-setting-period-end-input-time">
+													<label for="access-authority-setting-period-end-input-time">時間</label>
+													@Html.TextBoxFor(model => model.ParamModel.PublishBeginDateToTime, new
+													{
+														Id = "access-authority-setting-period-end-input-time",
+														@class = "input-timepicker update-time-input-search",
+													})
+												</div>
+												<a href="javascript:void(0)" class="btn btn-txt btn-size-s" onclick="period_input_clear(this);">クリア</a>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="form-element-group-title">
+									<label for="form-select-005">公開終了日</label>
+								</div>
+								<div class="form-element-group-content">
+									<div class="access-authority-setting-period">
+										<div class="access-authority-setting-period-start">
+											<div class="access-authority-setting-period-start-title">開始</div>
+											<div class="access-authority-setting-period-start-input">
+												<div class="access-authority-setting-period-start-input-date">
+													<label for="access-authority-setting-period-start-input-date-end">日付</label>
+													@Html.TextBoxFor(model => model.ParamModel.PublishEndDateFromDate, new
+													{
+														Id = "access-authority-setting-period-start-input-date-end",
+														@class = "input-datepicker update-date-input-search",
+													})
+												</div>
+												<div class="access-authority-setting-period-start-input-time">
+													<label for="access-authority-setting-period-start-input-time-end">時間</label>
+													@Html.TextBoxFor(model => model.ParamModel.PublishEndDateFromTime, new
+													{
+														Id = "access-authority-setting-period-start-input-time-end",
+														@class = "input-timepicker update-time-input-search",
+													})
+												</div>
+												<a href="javascript:void(0)" class="btn btn-txt btn-size-s" onclick="period_input_clear(this);">クリア</a>
+											</div>
+										</div>
+										<div class="access-authority-setting-period-wave">～</div>
+										<div class="access-authority-setting-period-end">
+											<div class="access-authority-setting-period-end-title">終了</div>
+											<div class="access-authority-setting-period-end-input">
+												<div class="access-authority-setting-period-end-input-date">
+													<label for="access-authority-setting-period-end-input-date-end">日付</label>
+													@Html.TextBoxFor(model => model.ParamModel.PublishEndDateToDate, new
+													{
+														Id = "access-authority-setting-period-end-input-date-end",
+														@class = "input-datepicker update-date-input-search",
+													})
+												</div>
+												<div class="access-authority-setting-period-end-input-time">
+													<label for="access-authority-setting-period-end-input-time-end">時間</label>
+													@Html.TextBoxFor(model => model.ParamModel.PublishEndDateToTime, new
+													{
+														Id = "access-authority-setting-period-end-input-time-end",
+														@class = "input-timepicker update-time-input-search",
+													})
+												</div>
+												<a href="javascript:void(0)" class="btn btn-txt btn-size-s" onclick="period_input_clear(this);">クリア</a>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		}
+
+		<!-- リスト -->
+		<div class="list">
+			<!-- リストHEAD -->
+			<div class="list-head">
+				<div class="list-head-col ta-left">
+					<div class="list-style-switch">
+						<div class="list-style-switch-inner">
+							<input type="radio" name="list-style" id="list-style-2" value="thumb" checked="">
+							<label for="list-style-2" class="btn-switch"><span class="icon icon-thumbnail"></span><span class="label hide-list-detail">サムネイル</span></label>
+							<input type="radio" name="list-style" id="list-style-1" value="list">
+							<label for="list-style-1" class="btn-switch"><span class="icon icon-list"></span><span class="label hide-list-detail">リスト</span></label>
+						</div>
+					</div>
+				</div>
+				<div class="list-head-row">
+					<div class="list-head-col hide-list-detail w45" id="management-title">
+						<a href="javascript:void(0)" id="management_title" onclick="sort_by_field(this);" class="sort_by_field">
+							<p style="text-align: left;">管理用ページ名<span id="icon_sort_management_title">▼</span></p>
+						</a>
+					</div>
+					<div class="list-head-col hide-list-detail w10">
+						<p>サイト</p>
+					</div>
+					<div class="list-head-col hide-list-detail w15">
+						<a href="javascript:void(0)" id="date_changed" onclick="sort_by_field(this);" class="sort_by_field">
+							<p>更新日時<span id="icon_sort_date_changed"></span></p>
+						</a>
+					</div>
+					<div class="list-head-col hide-list-detail w15">
+						<a href="javascript:void(0)" id="publish" onclick="sort_by_field(this);" class="sort_by_field">
+							<p>公開状態<span id="icon_sort_publish"></span></p>
+						</a>
+					</div>
+					<div class="list-head-col hide-list-detail w15">
+						<p>集計</p>
+					</div>
+				</div>
+			</div>
+			<!-- リストCONTENT -->
+			<div id="list-content" class="list-content"></div>
+		</div>
+	</div>
+
+	<!-- 詳細 -->
+	<div id="main-content-detail" class="main-content-detail"></div>
+
+</div>
+
+@* モーダルウィンドウ: 拡大画像 *@
+@Html.Partial("_EnlargedImageModal")
+
+@* ACEコードエディタライブラリ *@
+<script type="text/javascript" charset="UTF-8" src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.4/ace.js"></script>
+<script type="text/javascript" charset="UTF-8" src="~/Js/diff_match_patch.js"></script>
+@section JavaScript
+{
+	@Html.Partial("_LayoutEditCommonJs")
+
+	<script type="text/javascript">
+		$(function () {
+			list_redraw(true);
+			keyword_ini();
+			input_datepicker.ini();
+			$('#update-setting-period-start-input-time').val("00:00");
+			$('#update-setting-period-end-input-time').val("23:59");
+			$('#management-title').css('padding-left', "10vw");
+			var urlHash = location.hash;
+			if (urlHash) {
+				open_page(urlHash.replace("#page", ""));
+			}
+		});
+
+		// 表示件数
+		var displayCount = @Constants.CONST_DISP_CONTENTS_DEFAULT_LIST;
+
+		// リスト再描画
+		// pagerInit ページャを初期位置に戻すかどうか
+		function list_redraw(pagerInit) {
+			loading_animation.start();
+
+			if (pagerInit) {
+				$("#pagerNo").val(1);
+			}
+
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("List", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_DESIGN)",
+				data: $('#search_form').serializeArray(),
+			}).done(function (viewHTML) {
+				$("#list-content").html(viewHTML);
+
+				if (pagerInit)
+				{
+					var total = $("#hideHitCount").val();
+					$("#totalHitCount").val(total);
+					$("#previous,#next").hide();
+					$("#total").html("/" + total);
+					$("#pagerNo").val(1);
+					$('#previous').addClass('disabled');
+
+					if (total > displayCount) {
+						$("#pager").html(1 + '-' + displayCount);
+						$('#next').removeClass('disabled');
+						$("#previous,#next").show();
+					} else {
+						$("#pager").html(1 + '-' + total);
+						$('#next').addClass('disabled');
+					}
+				}
+				
+				loading_animation.end();
+			}).fail(function () {
+			});
+		}
+
+		// キーワードフォーム初期化
+		function keyword_ini() {
+			$('#search_keyword').off("keydown").on("keydown",
+				function (e) {
+					if (e.keyCode === 13) {
+						list_redraw(true);
+					}
+				});
+		}
+
+		$('.update-date-input-search').change(function () {
+			list_redraw(true);
+		});
+
+		// 新規登録
+		function open_new_feature_page() {
+			var displayStyle = $(".main-content-detail-inner").css("display");
+			if (displayStyle === "block") {
+				confirm_close();
+
+				// 確認ポップアップキャンセル判定
+				var isCancel = $(".main-content-detail-btn-close").attr("is_cancel");
+				if (isCancel === "cancel") return;
+			}
+
+			open_main_content_detail_begin();
+			$.ajax({
+				type: "POST",
+				url:
+					"@Url.Action("MainContentDetail", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_DESIGN)"
+			}).done(function (viewHTML) {
+				open_main_content_detail_success(viewHTML);
+			}).fail(function () {
+			});
+		}
+
+		// 対象の特集ページ編集画面の表示準備
+		function open_main_content_detail_begin() {
+			loading_animation.start();
+			$('.main-content-frame').addClass('is-open-detail');
+		}
+
+		// 対象の特集ページ編集画面の表示
+		function open_main_content_detail_success(viewHTML) {
+			$("#search_keyword").addClass("placeholder-display-none");
+			$("#main-content-detail").html(viewHTML);
+			setTimeout(function () {
+				loading_animation.end();
+				$('.main-content-detail-inner').show();
+			},
+				500);
+		}
+
+		var mainFeaturePageTimer;
+		// ページIDを指定してページ表示
+		function open_page(pageId) {
+			clearInterval(mainFeaturePageTimer);
+			open_main_content_detail_begin();
+			$.ajax({
+				type: "POST",
+				url:
+					"@Url.Action("MainContentDetail", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_DESIGN)",
+				data: { 'pageId': pageId }
+			}).done(function (viewHTML) {
+				if (viewHTML.match(/.*\(\)$/) == null) {
+					open_main_content_detail_success(viewHTML);
+					checkOtherOperatorFileOpening('featurePageId' + pageId).done(function (result) {
+						$('.btn.btn-main.btn-size-l').attr('disabled', false);
+						if (result !== "") {
+							notification.show(result, 'warning', 'fixed');
+							$('.btn.btn-main.btn-size-l').attr('disabled', true);
+						} else {
+							sendOpeningFileName('featurePageId' + pageId);
+							mainFeaturePageTimer =
+								setInterval(function () { sendOpeningFileName('featurePageId' + pageId) }, 50 * 1000);
+						}
+					});
+				}
+			}).fail(function () {
+			});
+		}
+
+		// ページ削除
+		function delete_feature_page(pageId) {
+			if (confirm('ページは削除されます。よろしいでしょうか？') === false) return;
+			checkOtherOperatorFileOpening('featurePageId' + pageId).done(function (result) {
+				if (result !== "") {
+					notification.show(result, 'warning', 'fixed');
+					return;
+				} else {
+					loading_animation.start();
+					$.ajax({
+						type: "POST",
+						url: "@Url.Action("DeletePage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_DESIGN)",
+						data: { 'pageId': pageId }
+					}).done(function (errorMessage) {
+						if (errorMessage === "") {
+							list.close();
+							list_redraw();
+							$("#main-content-detail").html(null);
+							notification.show('削除が実行されました', 'info', 'fadeout');
+						} else {
+							notification.show(errorMessage, 'warning', 'fixed');
+						}
+					});
+					loading_animation.end();
+				}
+			});
+		}
+
+		/**
+		* ACEコードエディタ設定
+		* param {} editorId 対象エディタID
+		* param {} editorHideId レスポンス用 隠しテキストエリアID
+		* param {} resizeBtnId エディタの拡大縮小ボタンID
+		*/
+		function set_ace_code_editor(editorId, editorHideId, resizeBtnId) {
+			var editor = ace.edit(
+				editorId,
+				{
+					mode: "ace/mode/csharp",
+					selectionStyle: "text",
+					setTheme: "ace/theme/clouds"
+				});
+			editor.getSession().on("change",
+				function () {
+					$("#" + editorHideId).val(editor.getSession().getValue());
+				});
+			editor.setOptions({
+				fontSize: "13pt"
+			});
+
+			var openClass = 'toggle-open';
+			var openText = "拡大";
+			var closeText = "縮小";
+			$('#' + resizeBtnId).text(openText);
+			$('#' + resizeBtnId).off("click").on("click",
+				function () {
+					if ($(this).hasClass(openClass)) {
+						// 縮小
+						$(this).removeClass(openClass)
+							.removeClass('btn-sub')
+							.addClass('btn-main')
+							.text(openText);
+						$('#' + editorId).css("height", 200 + "px");
+						editor.resize();
+					} else {
+						// 拡大
+						$(this).addClass(openClass)
+							.removeClass('btn-main')
+							.addClass('btn-sub')
+							.text(closeText);
+						$('#' + editorId).css("height", 700 + "px");
+						editor.resize();
+					}
+				});
+		}
+
+		/**
+		* イベントを解除できないため同一セレクタに複数のイベントを設定するとすべて実行されてしまう
+		* そのため、main.cshtmlにて一度のみ設定
+		*/
+		var clipboard = new ClipboardJS('#url-copy-btn',
+			{
+				text: function (trigger) {
+					return clipboard_url_copy(trigger);
+				}
+			});
+		clipboard.off('success').on('success',
+			function (e) {
+				notification.show("「" + e.text + "」をクリップボードにコピーしました", 'info', 'fadeout');
+				e.clearSelection();
+			});
+
+		$("input[name='list-style']").click(function () {
+			if ($(this).val() == "thumb") {
+				$('#management-title').css('padding-left', "10vw");
+			} else {
+				$('#management-title').css('padding-left', "2vw");
+			}
+		});
+
+		// 日付検索フォームクリア
+		function period_input_clear(obj) {
+			var prev = $(obj).prev();
+			prev.find('input').val('');
+			$(prev).prev().find('input').val('');
+			list_redraw(true);
+		}
+
+		// 指定フィールドで並び替える
+		function sort_by_field(obj) {
+			// 並び替えフィールド・タイプを設定
+			var elementSortType = $('#sort_type');
+			var elementSortField = $('#sort_field');
+			var currentSortField = $(obj).attr('id');
+			if (elementSortField.val() === currentSortField) {
+				var sortType = (parseInt(elementSortType.val()) + 1) % 2;
+				elementSortType.val(sortType);
+			} else {
+				elementSortType.val('0');
+				elementSortField.val(currentSortField);
+			}
+
+			// 並び替えアイコンを更新
+			var currentSortFieldIconId = 'icon_sort_' + currentSortField;
+			var sortIcon = (elementSortType.val() === '0') ? '▼' : '▲';
+			$("span[id^='icon_sort_']").each(function (i, e) {
+				$(e).text(($(e).attr('id') === currentSortFieldIconId) ? sortIcon : '');
+			});
+
+			// リスト再描画
+			list_redraw(true);
+		}
+
+		// ページャー数を増やす
+		function add_pager_no() {
+			if ($("#next").hasClass('disabled')) return;
+			var nextPagerNo = parseInt($("#pagerNo").val()) + parseInt(1);
+			var totalHitCount = $("#totalHitCount").val();
+			var max = nextPagerNo * displayCount;
+
+			if (max >= totalHitCount) {
+				max = totalHitCount;
+				$('#next').addClass('disabled');
+			}
+
+			$("#pagerNo").val(nextPagerNo);
+			list_redraw();
+			change_pager(nextPagerNo, max);
+		}
+
+		// ページャー数を減らす
+		function reduce_pager_no() {
+			if ($("#previous").hasClass('disabled')) return;
+
+			var nextPagerNo = parseInt($("#pagerNo").val()) - parseInt(1);
+			var max = nextPagerNo * displayCount;
+
+			$("#pagerNo").val(nextPagerNo);
+			list_redraw();
+			change_pager(nextPagerNo, max);
+			$('#next').removeClass('disabled');
+		}
+
+		// ページャー変更
+		function change_pager(nextPagerNo, max) {
+			$("#pager").html(1 + (nextPagerNo - 1) * displayCount + '-' + max);
+			if ($("#pagerNo").val() === '1') {
+				$('#previous').addClass('disabled');
+			} else {
+				$('#previous').removeClass('disabled');
+			}
+		}
+</script>
+}

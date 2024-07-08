@@ -1,0 +1,33 @@
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_LandingPageDesignAttribute]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_LandingPageDesignAttribute]
+GO
+/*
+=========================================================================================================
+  Module      : Lpページ属性デザイン (w2_LandingPageDesignAttribute.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_LandingPageDesignAttribute] (
+	[page_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[design_type] [nvarchar] (20) NOT NULL DEFAULT (N'PC'),
+	[block_index] [int] NOT NULL DEFAULT (0),
+	[element_index] [int] NOT NULL DEFAULT (0),
+	[attribute] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[value] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_LandingPageDesignAttribute] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_LandingPageDesignAttribute] PRIMARY KEY  CLUSTERED
+	(
+		[page_id],
+		[design_type],
+		[block_index],
+		[element_index],
+		[attribute]
+	) ON [PRIMARY]
+GO

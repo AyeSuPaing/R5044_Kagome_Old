@@ -1,0 +1,812 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期ワークフロー設定系SQLステートメントXML(w2_FixedPurchaseWorkflowSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchaseWorkflowSetting>
+
+  <!-- 定期ワークフロー設定情報該当件数取得 -->
+  <GetFixedPurchaseWorkflowSettingCount>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        SELECT  ISNULL(COUNT(w2_FixedPurchaseWorkflowSetting.workflow_no), 0) AS row_count
+          FROM  w2_FixedPurchaseWorkflowSetting
+                [[ FixedPurchaseWorkflow_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="workflow_detail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="additional_search_flg" Type="nvarchar" Size="10" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetFixedPurchaseWorkflowSettingCount>
+
+  <!-- 定期ワークフロー設定情報一覧取得 -->
+  <GetFixedPurchaseWorkflowSettingList>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  w2_FixedPurchaseWorkflowSetting.*
+          FROM  (
+                  SELECT  w2_FixedPurchaseWorkflowSetting.shop_id,
+                          w2_FixedPurchaseWorkflowSetting.workflow_kbn,
+                          w2_FixedPurchaseWorkflowSetting.workflow_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ FIXEDPURCHASEWORKFLOWSETTING_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_FixedPurchaseWorkflowSetting
+                          [[ FixedPurchaseWorkflow_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_FixedPurchaseWorkflowSetting ON
+                (
+                  RowIndex.shop_id = w2_FixedPurchaseWorkflowSetting.shop_id
+                  AND
+                  RowIndex.workflow_kbn = w2_FixedPurchaseWorkflowSetting.workflow_kbn
+                  AND
+                  RowIndex.workflow_no = w2_FixedPurchaseWorkflowSetting.workflow_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="workflow_detail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="additional_search_flg" Type="nvarchar" Size="10" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="1" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetFixedPurchaseWorkflowSettingList>
+
+  <!-- 定期ワークフロー設定情取得 -->
+  <GetFixedPurchaseWorkflowSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchaseWorkflowSetting.*
+          FROM  w2_FixedPurchaseWorkflowSetting
+         WHERE  w2_FixedPurchaseWorkflowSetting.workflow_kbn = @workflow_kbn
+           AND  w2_FixedPurchaseWorkflowSetting.workflow_no = @workflow_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+    </Parameter>
+  </GetFixedPurchaseWorkflowSetting>
+
+  <!-- 定期ワークフロー設定情報追加 -->
+  <GetFixedPurchaseWorkflowSettingAllList>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseWorkflowSetting
+         WHERE  w2_FixedPurchaseWorkflowSetting.workflow_kbn = @workflow_kbn
+           AND  w2_FixedPurchaseWorkflowSetting.valid_flg = '1'          -- 有効
+        ORDER BY w2_FixedPurchaseWorkflowSetting.workflow_kbn ASC,
+                 w2_FixedPurchaseWorkflowSetting.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetFixedPurchaseWorkflowSettingAllList>
+
+  <!-- 定期ワークフロー枝番取得 -->
+  <GetNewWorkflowNo>
+    <Statement>
+      <![CDATA[
+        SELECT (COUNT(workflow_no) + 1) AS workflow_no
+          FROM  w2_FixedPurchaseWorkflowSetting WITH(XLOCK)
+         WHERE  w2_FixedPurchaseWorkflowSetting.workflow_kbn = @workflow_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetNewWorkflowNo>
+
+  <!-- 定期ワークフロー設定情報追加 -->
+  <InsertFixedPurchaseWorkflowSetting>
+    <Statement>
+      <![CDATA[
+        -- 登録
+        INSERT  w2_FixedPurchaseWorkflowSetting
+                (
+                  shop_id
+                  ,workflow_kbn
+                  ,workflow_no
+                  ,workflow_name
+                  ,desc1
+                  ,display_order
+                  ,display_count
+                  ,valid_flg
+                  ,workflow_detail_kbn
+                  ,display_kbn
+                  ,additional_search_flg
+                  ,search_setting
+                  ,fixed_purchase_is_alive_change
+                  ,fixed_purchase_payment_status_change
+                  ,next_shipping_date_change
+                  ,next_next_shipping_date_change
+                  ,fixed_purchase_stop_unavailable_shipping_area_change
+                  ,fixed_purchase_extend_status_change1
+                  ,fixed_purchase_extend_status_change2
+                  ,fixed_purchase_extend_status_change3
+                  ,fixed_purchase_extend_status_change4
+                  ,fixed_purchase_extend_status_change5
+                  ,fixed_purchase_extend_status_change6
+                  ,fixed_purchase_extend_status_change7
+                  ,fixed_purchase_extend_status_change8
+                  ,fixed_purchase_extend_status_change9
+                  ,fixed_purchase_extend_status_change10
+                  ,cassette_default_select
+                  ,cassette_no_update
+                  ,cassette_fixed_purchase_is_alive_change
+                  ,cassette_fixed_purchase_payment_status_change
+                  ,cassette_fixed_purchase_stop_unavailable_shipping_area_change
+                  ,cassette_next_shipping_date_change
+                  ,cassette_next_next_shipping_date_change
+                  ,cassette_fixed_purchase_extend_status_change1
+                  ,cassette_fixed_purchase_extend_status_change2
+                  ,cassette_fixed_purchase_extend_status_change3
+                  ,cassette_fixed_purchase_extend_status_change4
+                  ,cassette_fixed_purchase_extend_status_change5
+                  ,cassette_fixed_purchase_extend_status_change6
+                  ,cassette_fixed_purchase_extend_status_change7
+                  ,cassette_fixed_purchase_extend_status_change8
+                  ,cassette_fixed_purchase_extend_status_change9
+                  ,cassette_fixed_purchase_extend_status_change10
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,fixed_purchase_extend_status_change11
+                  ,fixed_purchase_extend_status_change12
+                  ,fixed_purchase_extend_status_change13
+                  ,fixed_purchase_extend_status_change14
+                  ,fixed_purchase_extend_status_change15
+                  ,fixed_purchase_extend_status_change16
+                  ,fixed_purchase_extend_status_change17
+                  ,fixed_purchase_extend_status_change18
+                  ,fixed_purchase_extend_status_change19
+                  ,fixed_purchase_extend_status_change20
+                  ,fixed_purchase_extend_status_change21
+                  ,fixed_purchase_extend_status_change22
+                  ,fixed_purchase_extend_status_change23
+                  ,fixed_purchase_extend_status_change24
+                  ,fixed_purchase_extend_status_change25
+                  ,fixed_purchase_extend_status_change26
+                  ,fixed_purchase_extend_status_change27
+                  ,fixed_purchase_extend_status_change28
+                  ,fixed_purchase_extend_status_change29
+                  ,fixed_purchase_extend_status_change30
+                  ,cassette_fixed_purchase_extend_status_change11
+                  ,cassette_fixed_purchase_extend_status_change12
+                  ,cassette_fixed_purchase_extend_status_change13
+                  ,cassette_fixed_purchase_extend_status_change14
+                  ,cassette_fixed_purchase_extend_status_change15
+                  ,cassette_fixed_purchase_extend_status_change16
+                  ,cassette_fixed_purchase_extend_status_change17
+                  ,cassette_fixed_purchase_extend_status_change18
+                  ,cassette_fixed_purchase_extend_status_change19
+                  ,cassette_fixed_purchase_extend_status_change20
+                  ,cassette_fixed_purchase_extend_status_change21
+                  ,cassette_fixed_purchase_extend_status_change22
+                  ,cassette_fixed_purchase_extend_status_change23
+                  ,cassette_fixed_purchase_extend_status_change24
+                  ,cassette_fixed_purchase_extend_status_change25
+                  ,cassette_fixed_purchase_extend_status_change26
+                  ,cassette_fixed_purchase_extend_status_change27
+                  ,cassette_fixed_purchase_extend_status_change28
+                  ,cassette_fixed_purchase_extend_status_change29
+                  ,cassette_fixed_purchase_extend_status_change30
+                  ,fixed_purchase_extend_status_change31
+                  ,fixed_purchase_extend_status_change32
+                  ,fixed_purchase_extend_status_change33
+                  ,fixed_purchase_extend_status_change34
+                  ,fixed_purchase_extend_status_change35
+                  ,fixed_purchase_extend_status_change36
+                  ,fixed_purchase_extend_status_change37
+                  ,fixed_purchase_extend_status_change38
+                  ,fixed_purchase_extend_status_change39
+                  ,fixed_purchase_extend_status_change40
+                  ,cassette_fixed_purchase_extend_status_change31
+                  ,cassette_fixed_purchase_extend_status_change32
+                  ,cassette_fixed_purchase_extend_status_change33
+                  ,cassette_fixed_purchase_extend_status_change34
+                  ,cassette_fixed_purchase_extend_status_change35
+                  ,cassette_fixed_purchase_extend_status_change36
+                  ,cassette_fixed_purchase_extend_status_change37
+                  ,cassette_fixed_purchase_extend_status_change38
+                  ,cassette_fixed_purchase_extend_status_change39
+                  ,cassette_fixed_purchase_extend_status_change40
+                  ,cancel_reason_id
+                  ,cancel_memo
+                  ,fixed_purchase_extend_status_change41
+                  ,fixed_purchase_extend_status_change42
+                  ,fixed_purchase_extend_status_change43
+                  ,fixed_purchase_extend_status_change44
+                  ,fixed_purchase_extend_status_change45
+                  ,fixed_purchase_extend_status_change46
+                  ,fixed_purchase_extend_status_change47
+                  ,fixed_purchase_extend_status_change48
+                  ,fixed_purchase_extend_status_change49
+                  ,fixed_purchase_extend_status_change50
+                  ,cassette_fixed_purchase_extend_status_change41
+                  ,cassette_fixed_purchase_extend_status_change42
+                  ,cassette_fixed_purchase_extend_status_change43
+                  ,cassette_fixed_purchase_extend_status_change44
+                  ,cassette_fixed_purchase_extend_status_change45
+                  ,cassette_fixed_purchase_extend_status_change46
+                  ,cassette_fixed_purchase_extend_status_change47
+                  ,cassette_fixed_purchase_extend_status_change48
+                  ,cassette_fixed_purchase_extend_status_change49
+                  ,cassette_fixed_purchase_extend_status_change50
+                )
+        VALUES  (
+                  @shop_id
+                  ,@workflow_kbn
+                  ,@workflow_no
+                  ,@workflow_name
+                  ,@desc1
+                  ,@display_order
+                  ,@display_count
+                  ,@valid_flg
+                  ,@workflow_detail_kbn
+                  ,@display_kbn
+                  ,@additional_search_flg
+                  ,@search_setting
+                  ,@fixed_purchase_is_alive_change
+                  ,@fixed_purchase_payment_status_change
+                  ,@next_shipping_date_change
+                  ,@next_next_shipping_date_change
+                  ,@fixed_purchase_stop_unavailable_shipping_area_change
+                  ,@fixed_purchase_extend_status_change1
+                  ,@fixed_purchase_extend_status_change2
+                  ,@fixed_purchase_extend_status_change3
+                  ,@fixed_purchase_extend_status_change4
+                  ,@fixed_purchase_extend_status_change5
+                  ,@fixed_purchase_extend_status_change6
+                  ,@fixed_purchase_extend_status_change7
+                  ,@fixed_purchase_extend_status_change8
+                  ,@fixed_purchase_extend_status_change9
+                  ,@fixed_purchase_extend_status_change10
+                  ,@cassette_default_select
+                  ,@cassette_no_update
+                  ,@cassette_fixed_purchase_is_alive_change
+                  ,@cassette_fixed_purchase_payment_status_change
+                  ,@cassette_fixed_purchase_stop_unavailable_shipping_area_change
+                  ,@cassette_next_shipping_date_change
+                  ,@cassette_next_next_shipping_date_change
+                  ,@cassette_fixed_purchase_extend_status_change1
+                  ,@cassette_fixed_purchase_extend_status_change2
+                  ,@cassette_fixed_purchase_extend_status_change3
+                  ,@cassette_fixed_purchase_extend_status_change4
+                  ,@cassette_fixed_purchase_extend_status_change5
+                  ,@cassette_fixed_purchase_extend_status_change6
+                  ,@cassette_fixed_purchase_extend_status_change7
+                  ,@cassette_fixed_purchase_extend_status_change8
+                  ,@cassette_fixed_purchase_extend_status_change9
+                  ,@cassette_fixed_purchase_extend_status_change10
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@fixed_purchase_extend_status_change11
+                  ,@fixed_purchase_extend_status_change12
+                  ,@fixed_purchase_extend_status_change13
+                  ,@fixed_purchase_extend_status_change14
+                  ,@fixed_purchase_extend_status_change15
+                  ,@fixed_purchase_extend_status_change16
+                  ,@fixed_purchase_extend_status_change17
+                  ,@fixed_purchase_extend_status_change18
+                  ,@fixed_purchase_extend_status_change19
+                  ,@fixed_purchase_extend_status_change20
+                  ,@fixed_purchase_extend_status_change21
+                  ,@fixed_purchase_extend_status_change22
+                  ,@fixed_purchase_extend_status_change23
+                  ,@fixed_purchase_extend_status_change24
+                  ,@fixed_purchase_extend_status_change25
+                  ,@fixed_purchase_extend_status_change26
+                  ,@fixed_purchase_extend_status_change27
+                  ,@fixed_purchase_extend_status_change28
+                  ,@fixed_purchase_extend_status_change29
+                  ,@fixed_purchase_extend_status_change30
+                  ,@cassette_fixed_purchase_extend_status_change11
+                  ,@cassette_fixed_purchase_extend_status_change12
+                  ,@cassette_fixed_purchase_extend_status_change13
+                  ,@cassette_fixed_purchase_extend_status_change14
+                  ,@cassette_fixed_purchase_extend_status_change15
+                  ,@cassette_fixed_purchase_extend_status_change16
+                  ,@cassette_fixed_purchase_extend_status_change17
+                  ,@cassette_fixed_purchase_extend_status_change18
+                  ,@cassette_fixed_purchase_extend_status_change19
+                  ,@cassette_fixed_purchase_extend_status_change20
+                  ,@cassette_fixed_purchase_extend_status_change21
+                  ,@cassette_fixed_purchase_extend_status_change22
+                  ,@cassette_fixed_purchase_extend_status_change23
+                  ,@cassette_fixed_purchase_extend_status_change24
+                  ,@cassette_fixed_purchase_extend_status_change25
+                  ,@cassette_fixed_purchase_extend_status_change26
+                  ,@cassette_fixed_purchase_extend_status_change27
+                  ,@cassette_fixed_purchase_extend_status_change28
+                  ,@cassette_fixed_purchase_extend_status_change29
+                  ,@cassette_fixed_purchase_extend_status_change30
+                  ,@fixed_purchase_extend_status_change31
+                  ,@fixed_purchase_extend_status_change32
+                  ,@fixed_purchase_extend_status_change33
+                  ,@fixed_purchase_extend_status_change34
+                  ,@fixed_purchase_extend_status_change35
+                  ,@fixed_purchase_extend_status_change36
+                  ,@fixed_purchase_extend_status_change37
+                  ,@fixed_purchase_extend_status_change38
+                  ,@fixed_purchase_extend_status_change39
+                  ,@fixed_purchase_extend_status_change40
+                  ,@cassette_fixed_purchase_extend_status_change31
+                  ,@cassette_fixed_purchase_extend_status_change32
+                  ,@cassette_fixed_purchase_extend_status_change33
+                  ,@cassette_fixed_purchase_extend_status_change34
+                  ,@cassette_fixed_purchase_extend_status_change35
+                  ,@cassette_fixed_purchase_extend_status_change36
+                  ,@cassette_fixed_purchase_extend_status_change37
+                  ,@cassette_fixed_purchase_extend_status_change38
+                  ,@cassette_fixed_purchase_extend_status_change39
+                  ,@cassette_fixed_purchase_extend_status_change40
+                  ,@cancel_reason_id
+                  ,@cancel_memo
+                  ,@fixed_purchase_extend_status_change41
+                  ,@fixed_purchase_extend_status_change42
+                  ,@fixed_purchase_extend_status_change43
+                  ,@fixed_purchase_extend_status_change44
+                  ,@fixed_purchase_extend_status_change45
+                  ,@fixed_purchase_extend_status_change46
+                  ,@fixed_purchase_extend_status_change47
+                  ,@fixed_purchase_extend_status_change48
+                  ,@fixed_purchase_extend_status_change49
+                  ,@fixed_purchase_extend_status_change50
+                  ,@cassette_fixed_purchase_extend_status_change41
+                  ,@cassette_fixed_purchase_extend_status_change42
+                  ,@cassette_fixed_purchase_extend_status_change43
+                  ,@cassette_fixed_purchase_extend_status_change44
+                  ,@cassette_fixed_purchase_extend_status_change45
+                  ,@cassette_fixed_purchase_extend_status_change46
+                  ,@cassette_fixed_purchase_extend_status_change47
+                  ,@cassette_fixed_purchase_extend_status_change48
+                  ,@cassette_fixed_purchase_extend_status_change49
+                  ,@cassette_fixed_purchase_extend_status_change50
+                )
+      ]]>
+      </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+      <Input Name="workflow_name" Type="nvarchar" Size="50" />
+      <Input Name="desc1" Type="nvarchar" Size="250" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="display_count" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="workflow_detail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="display_kbn" Type="nvarchar" Size="10" />
+      <Input Name="additional_search_flg" Type="nvarchar" Size="10" />
+      <Input Name="search_setting" Type="nvarchar" Size="MAX" />
+      <Input Name="fixed_purchase_is_alive_change" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_payment_status_change" Type="nvarchar" Size="2" />
+      <Input Name="fixed_purchase_stop_unavailable_shipping_area_change" Type="nvarchar" Size="2" />
+      <Input Name="next_shipping_date_change" Type="nvarchar" Size="2" />
+      <Input Name="next_next_shipping_date_change" Type="nvarchar" Size="2" />
+      <Input Name="fixed_purchase_extend_status_change1" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change2" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change3" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change4" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change5" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change6" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change7" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change8" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change9" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change10" Type="nvarchar" Size="10" />
+      <Input Name="cassette_default_select" Type="nvarchar" Size="100" />
+      <Input Name="cassette_no_update" Type="nvarchar" Size="10" />
+      <Input Name="cassette_fixed_purchase_is_alive_change" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_payment_status_change" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_stop_unavailable_shipping_area_change" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_next_shipping_date_change" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_next_next_shipping_date_change" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change1" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change2" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change3" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change4" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change5" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change6" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change7" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change8" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change9" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change10" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="fixed_purchase_extend_status_change11" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change12" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change13" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change14" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change15" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change16" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change17" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change18" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change19" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change20" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change21" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change22" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change23" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change24" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change25" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change26" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change27" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change28" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change29" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change30" Type="nvarchar" Size="10" />
+      <Input Name="cassette_fixed_purchase_extend_status_change11" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change12" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change13" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change14" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change15" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change16" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change17" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change18" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change19" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change20" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change21" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change22" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change23" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change24" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change25" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change26" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change27" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change28" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change29" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change30" Type="nvarchar" Size="MAX" />
+      <Input Name="fixed_purchase_extend_status_change31" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change32" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change33" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change34" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change35" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change36" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change37" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change38" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change39" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change40" Type="nvarchar" Size="10" />
+      <Input Name="cassette_fixed_purchase_extend_status_change31" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change32" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change33" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change34" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change35" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change36" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change37" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change38" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change39" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change40" Type="nvarchar" Size="MAX" />
+      <Input Name="cancel_reason_id" Type="nvarchar" Size="30" />
+      <Input Name="cancel_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="fixed_purchase_extend_status_change41" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change42" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change43" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change44" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change45" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change46" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change47" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change48" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change49" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change50" Type="nvarchar" Size="10" />
+      <Input Name="cassette_fixed_purchase_extend_status_change41" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change42" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change43" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change44" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change45" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change46" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change47" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change48" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change49" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change50" Type="nvarchar" Size="MAX" />
+    </Parameter>
+  </InsertFixedPurchaseWorkflowSetting>
+
+  <!-- 定期ワークフロー設定情報更新 -->
+  <UpdateFixedPurchaseWorkflowSetting>
+    <Statement>
+      <![CDATA[
+         UPDATE  w2_FixedPurchaseWorkflowSetting
+            SET  workflow_name = @workflow_name
+                ,desc1 = @desc1
+                ,display_order = @display_order
+                ,display_count = @display_count
+                ,valid_flg = @valid_flg
+                ,workflow_detail_kbn = @workflow_detail_kbn
+                ,display_kbn = @display_kbn
+                ,additional_search_flg = @additional_search_flg
+                ,search_setting = @search_setting
+                ,fixed_purchase_is_alive_change = @fixed_purchase_is_alive_change
+                ,fixed_purchase_payment_status_change = @fixed_purchase_payment_status_change
+                ,next_shipping_date_change = @next_shipping_date_change
+                ,next_next_shipping_date_change = @next_next_shipping_date_change
+                ,fixed_purchase_stop_unavailable_shipping_area_change = @fixed_purchase_stop_unavailable_shipping_area_change
+                ,fixed_purchase_extend_status_change1 = @fixed_purchase_extend_status_change1
+                ,fixed_purchase_extend_status_change2 = @fixed_purchase_extend_status_change2
+                ,fixed_purchase_extend_status_change3 = @fixed_purchase_extend_status_change3
+                ,fixed_purchase_extend_status_change4 = @fixed_purchase_extend_status_change4
+                ,fixed_purchase_extend_status_change5 = @fixed_purchase_extend_status_change5
+                ,fixed_purchase_extend_status_change6 = @fixed_purchase_extend_status_change6
+                ,fixed_purchase_extend_status_change7 = @fixed_purchase_extend_status_change7
+                ,fixed_purchase_extend_status_change8 = @fixed_purchase_extend_status_change8
+                ,fixed_purchase_extend_status_change9 = @fixed_purchase_extend_status_change9
+                ,fixed_purchase_extend_status_change10 = @fixed_purchase_extend_status_change10
+                ,cassette_default_select = @cassette_default_select
+                ,cassette_no_update = @cassette_no_update
+                ,cassette_fixed_purchase_is_alive_change = @cassette_fixed_purchase_is_alive_change
+                ,cassette_fixed_purchase_payment_status_change = @cassette_fixed_purchase_payment_status_change
+                ,cassette_fixed_purchase_stop_unavailable_shipping_area_change = @cassette_fixed_purchase_stop_unavailable_shipping_area_change
+                ,cassette_next_shipping_date_change = @cassette_next_shipping_date_change
+                ,cassette_next_next_shipping_date_change = @cassette_next_next_shipping_date_change
+                ,cassette_fixed_purchase_extend_status_change1 = @cassette_fixed_purchase_extend_status_change1
+                ,cassette_fixed_purchase_extend_status_change2 = @cassette_fixed_purchase_extend_status_change2
+                ,cassette_fixed_purchase_extend_status_change3 = @cassette_fixed_purchase_extend_status_change3
+                ,cassette_fixed_purchase_extend_status_change4 = @cassette_fixed_purchase_extend_status_change4
+                ,cassette_fixed_purchase_extend_status_change5 = @cassette_fixed_purchase_extend_status_change5
+                ,cassette_fixed_purchase_extend_status_change6 = @cassette_fixed_purchase_extend_status_change6
+                ,cassette_fixed_purchase_extend_status_change7 = @cassette_fixed_purchase_extend_status_change7
+                ,cassette_fixed_purchase_extend_status_change8 = @cassette_fixed_purchase_extend_status_change8
+                ,cassette_fixed_purchase_extend_status_change9 = @cassette_fixed_purchase_extend_status_change9
+                ,cassette_fixed_purchase_extend_status_change10 = @cassette_fixed_purchase_extend_status_change10
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,fixed_purchase_extend_status_change11 = @fixed_purchase_extend_status_change11
+                ,fixed_purchase_extend_status_change12 = @fixed_purchase_extend_status_change12
+                ,fixed_purchase_extend_status_change13 = @fixed_purchase_extend_status_change13
+                ,fixed_purchase_extend_status_change14 = @fixed_purchase_extend_status_change14
+                ,fixed_purchase_extend_status_change15 = @fixed_purchase_extend_status_change15
+                ,fixed_purchase_extend_status_change16 = @fixed_purchase_extend_status_change16
+                ,fixed_purchase_extend_status_change17 = @fixed_purchase_extend_status_change17
+                ,fixed_purchase_extend_status_change18 = @fixed_purchase_extend_status_change18
+                ,fixed_purchase_extend_status_change19 = @fixed_purchase_extend_status_change19
+                ,fixed_purchase_extend_status_change20 = @fixed_purchase_extend_status_change20
+                ,fixed_purchase_extend_status_change21 = @fixed_purchase_extend_status_change21
+                ,fixed_purchase_extend_status_change22 = @fixed_purchase_extend_status_change22
+                ,fixed_purchase_extend_status_change23 = @fixed_purchase_extend_status_change23
+                ,fixed_purchase_extend_status_change24 = @fixed_purchase_extend_status_change24
+                ,fixed_purchase_extend_status_change25 = @fixed_purchase_extend_status_change25
+                ,fixed_purchase_extend_status_change26 = @fixed_purchase_extend_status_change26
+                ,fixed_purchase_extend_status_change27 = @fixed_purchase_extend_status_change27
+                ,fixed_purchase_extend_status_change28 = @fixed_purchase_extend_status_change28
+                ,fixed_purchase_extend_status_change29 = @fixed_purchase_extend_status_change29
+                ,fixed_purchase_extend_status_change30 = @fixed_purchase_extend_status_change30
+                ,cassette_fixed_purchase_extend_status_change11 = @cassette_fixed_purchase_extend_status_change11
+                ,cassette_fixed_purchase_extend_status_change12 = @cassette_fixed_purchase_extend_status_change12
+                ,cassette_fixed_purchase_extend_status_change13 = @cassette_fixed_purchase_extend_status_change13
+                ,cassette_fixed_purchase_extend_status_change14 = @cassette_fixed_purchase_extend_status_change14
+                ,cassette_fixed_purchase_extend_status_change15 = @cassette_fixed_purchase_extend_status_change15
+                ,cassette_fixed_purchase_extend_status_change16 = @cassette_fixed_purchase_extend_status_change16
+                ,cassette_fixed_purchase_extend_status_change17 = @cassette_fixed_purchase_extend_status_change17
+                ,cassette_fixed_purchase_extend_status_change18 = @cassette_fixed_purchase_extend_status_change18
+                ,cassette_fixed_purchase_extend_status_change19 = @cassette_fixed_purchase_extend_status_change19
+                ,cassette_fixed_purchase_extend_status_change20 = @cassette_fixed_purchase_extend_status_change20
+                ,cassette_fixed_purchase_extend_status_change21 = @cassette_fixed_purchase_extend_status_change21
+                ,cassette_fixed_purchase_extend_status_change22 = @cassette_fixed_purchase_extend_status_change22
+                ,cassette_fixed_purchase_extend_status_change23 = @cassette_fixed_purchase_extend_status_change23
+                ,cassette_fixed_purchase_extend_status_change24 = @cassette_fixed_purchase_extend_status_change24
+                ,cassette_fixed_purchase_extend_status_change25 = @cassette_fixed_purchase_extend_status_change25
+                ,cassette_fixed_purchase_extend_status_change26 = @cassette_fixed_purchase_extend_status_change26
+                ,cassette_fixed_purchase_extend_status_change27 = @cassette_fixed_purchase_extend_status_change27
+                ,cassette_fixed_purchase_extend_status_change28 = @cassette_fixed_purchase_extend_status_change28
+                ,cassette_fixed_purchase_extend_status_change29 = @cassette_fixed_purchase_extend_status_change29
+                ,cassette_fixed_purchase_extend_status_change30 = @cassette_fixed_purchase_extend_status_change30
+                ,fixed_purchase_extend_status_change31 = @fixed_purchase_extend_status_change31
+                ,fixed_purchase_extend_status_change32 = @fixed_purchase_extend_status_change32
+                ,fixed_purchase_extend_status_change33 = @fixed_purchase_extend_status_change33
+                ,fixed_purchase_extend_status_change34 = @fixed_purchase_extend_status_change34
+                ,fixed_purchase_extend_status_change35 = @fixed_purchase_extend_status_change35
+                ,fixed_purchase_extend_status_change36 = @fixed_purchase_extend_status_change36
+                ,fixed_purchase_extend_status_change37 = @fixed_purchase_extend_status_change37
+                ,fixed_purchase_extend_status_change38 = @fixed_purchase_extend_status_change38
+                ,fixed_purchase_extend_status_change39 = @fixed_purchase_extend_status_change39
+                ,fixed_purchase_extend_status_change40 = @fixed_purchase_extend_status_change40
+                ,cassette_fixed_purchase_extend_status_change31 = @cassette_fixed_purchase_extend_status_change31
+                ,cassette_fixed_purchase_extend_status_change32 = @cassette_fixed_purchase_extend_status_change32
+                ,cassette_fixed_purchase_extend_status_change33 = @cassette_fixed_purchase_extend_status_change33
+                ,cassette_fixed_purchase_extend_status_change34 = @cassette_fixed_purchase_extend_status_change34
+                ,cassette_fixed_purchase_extend_status_change35 = @cassette_fixed_purchase_extend_status_change35
+                ,cassette_fixed_purchase_extend_status_change36 = @cassette_fixed_purchase_extend_status_change36
+                ,cassette_fixed_purchase_extend_status_change37 = @cassette_fixed_purchase_extend_status_change37
+                ,cassette_fixed_purchase_extend_status_change38 = @cassette_fixed_purchase_extend_status_change38
+                ,cassette_fixed_purchase_extend_status_change39 = @cassette_fixed_purchase_extend_status_change39
+                ,cassette_fixed_purchase_extend_status_change40 = @cassette_fixed_purchase_extend_status_change40
+                ,cancel_reason_id = @cancel_reason_id
+                ,cancel_memo = @cancel_memo
+                ,fixed_purchase_extend_status_change41 = @fixed_purchase_extend_status_change41
+                ,fixed_purchase_extend_status_change42 = @fixed_purchase_extend_status_change42
+                ,fixed_purchase_extend_status_change43 = @fixed_purchase_extend_status_change43
+                ,fixed_purchase_extend_status_change44 = @fixed_purchase_extend_status_change44
+                ,fixed_purchase_extend_status_change45 = @fixed_purchase_extend_status_change45
+                ,fixed_purchase_extend_status_change46 = @fixed_purchase_extend_status_change46
+                ,fixed_purchase_extend_status_change47 = @fixed_purchase_extend_status_change47
+                ,fixed_purchase_extend_status_change48 = @fixed_purchase_extend_status_change48
+                ,fixed_purchase_extend_status_change49 = @fixed_purchase_extend_status_change49
+                ,fixed_purchase_extend_status_change50 = @fixed_purchase_extend_status_change50
+                ,cassette_fixed_purchase_extend_status_change41 = @cassette_fixed_purchase_extend_status_change41
+                ,cassette_fixed_purchase_extend_status_change42 = @cassette_fixed_purchase_extend_status_change42
+                ,cassette_fixed_purchase_extend_status_change43 = @cassette_fixed_purchase_extend_status_change43
+                ,cassette_fixed_purchase_extend_status_change44 = @cassette_fixed_purchase_extend_status_change44
+                ,cassette_fixed_purchase_extend_status_change45 = @cassette_fixed_purchase_extend_status_change45
+                ,cassette_fixed_purchase_extend_status_change46 = @cassette_fixed_purchase_extend_status_change46
+                ,cassette_fixed_purchase_extend_status_change47 = @cassette_fixed_purchase_extend_status_change47
+                ,cassette_fixed_purchase_extend_status_change48 = @cassette_fixed_purchase_extend_status_change48
+                ,cassette_fixed_purchase_extend_status_change49 = @cassette_fixed_purchase_extend_status_change49
+                ,cassette_fixed_purchase_extend_status_change50 = @cassette_fixed_purchase_extend_status_change50
+         WHERE  shop_id = @shop_id
+           AND  workflow_kbn = @workflow_kbn
+           AND  workflow_no = @workflow_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+      <Input Name="workflow_name" Type="nvarchar" Size="50" />
+      <Input Name="desc1" Type="nvarchar" Size="250" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="display_count" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="workflow_detail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="display_kbn" Type="nvarchar" Size="10" />
+      <Input Name="additional_search_flg" Type="nvarchar" Size="10" />
+      <Input Name="search_setting" Type="nvarchar" Size="MAX" />
+      <Input Name="fixed_purchase_is_alive_change" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_payment_status_change" Type="nvarchar" Size="2" />
+      <Input Name="fixed_purchase_stop_unavailable_shipping_area_change" Type="nvarchar" Size="2" />
+      <Input Name="next_shipping_date_change" Type="nvarchar" Size="2" />
+      <Input Name="next_next_shipping_date_change" Type="nvarchar" Size="2" />
+      <Input Name="fixed_purchase_stop_unavailable_shipping_area_change" Type="nvarchar" Size="2" />
+      <Input Name="fixed_purchase_extend_status_change1" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change2" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change3" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change4" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change5" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change6" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change7" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change8" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change9" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change10" Type="nvarchar" Size="10" />
+      <Input Name="cassette_default_select" Type="nvarchar" Size="100" />
+      <Input Name="cassette_no_update" Type="nvarchar" Size="10" />
+      <Input Name="cassette_fixed_purchase_is_alive_change" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_payment_status_change" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_stop_unavailable_shipping_area_change" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_next_shipping_date_change" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_next_next_shipping_date_change" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change1" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change2" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change3" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change4" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change5" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change6" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change7" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change8" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change9" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change10" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="fixed_purchase_extend_status_change11" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change12" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change13" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change14" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change15" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change16" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change17" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change18" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change19" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change20" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change21" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change22" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change23" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change24" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change25" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change26" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change27" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change28" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change29" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change30" Type="nvarchar" Size="10" />
+      <Input Name="cassette_fixed_purchase_extend_status_change11" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change12" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change13" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change14" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change15" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change16" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change17" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change18" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change19" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change20" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change21" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change22" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change23" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change24" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change25" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change26" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change27" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change28" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change29" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change30" Type="nvarchar" Size="MAX" />
+      <Input Name="fixed_purchase_extend_status_change31" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change32" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change33" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change34" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change35" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change36" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change37" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change38" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change39" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change40" Type="nvarchar" Size="10" />
+      <Input Name="cassette_fixed_purchase_extend_status_change31" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change32" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change33" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change34" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change35" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change36" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change37" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change38" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change39" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change40" Type="nvarchar" Size="MAX" />
+      <Input Name="cancel_reason_id" Type="nvarchar" Size="30" />
+      <Input Name="cancel_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="fixed_purchase_extend_status_change41" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change42" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change43" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change44" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change45" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change46" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change47" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change48" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change49" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_extend_status_change50" Type="nvarchar" Size="10" />
+      <Input Name="cassette_fixed_purchase_extend_status_change41" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change42" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change43" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change44" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change45" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change46" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change47" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change48" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change49" Type="nvarchar" Size="MAX" />
+      <Input Name="cassette_fixed_purchase_extend_status_change50" Type="nvarchar" Size="MAX" />
+    </Parameter>
+  </UpdateFixedPurchaseWorkflowSetting>
+  
+  <!-- 定期ワークフロー設定情報削除 -->
+  <DeleteFixedPurchaseWorkflowSetting>
+    <Statement>
+      <![CDATA[
+        -- 削除
+        DELETE  w2_FixedPurchaseWorkflowSetting
+         WHERE  w2_FixedPurchaseWorkflowSetting.workflow_kbn = @workflow_kbn
+           AND  w2_FixedPurchaseWorkflowSetting.workflow_no = @workflow_no
+        
+        -- 枝番更新
+        UPDATE  w2_FixedPurchaseWorkflowSetting
+           SET  w2_FixedPurchaseWorkflowSetting.workflow_no = workflow_no - 1
+         WHERE  w2_FixedPurchaseWorkflowSetting.workflow_kbn = @workflow_kbn
+           AND  w2_FixedPurchaseWorkflowSetting.workflow_no > @workflow_no        -- 削除対象の枝番より大きいレコード
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+    </Parameter>
+  </DeleteFixedPurchaseWorkflowSetting>
+
+
+</FixedPurchaseWorkflowSetting>

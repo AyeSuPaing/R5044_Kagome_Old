@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品ランキング設定マスタ系SQLサブステートメントXML (ProductRanking_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductRanking_Sub>
+  <!-- 商品ランキング情報一覧取得用WHERE文 -->
+  <PRODUCTRANKING_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_ProductRanking.shop_id = @shop_id 
+           AND  (
+                  1 = 1
+                  <@@hasval:ranking_id_like_escaped@@>
+                    AND
+                    (w2_ProductRanking.ranking_id like @ranking_id_like_escaped + '%' ESCAPE '#') -- 商品ランキングID
+                  </@@hasval:ranking_id_like_escaped@@>
+                  <@@hasval:total_type@@>
+                    AND
+                    (@total_type = '' OR w2_ProductRanking.total_type = @total_type) -- 集計タイプ
+                  </@@hasval:total_type@@>
+                  <@@hasval:valid_flg@@>
+                    AND
+                    (@valid_flg = '' OR w2_ProductRanking.valid_flg = @valid_flg) -- 有効フラグ
+                  </@@hasval:valid_flg@@>
+                )
+      ]]>
+    </Statement>
+  </PRODUCTRANKING_SEARCH_WHERE>
+
+  <!-- 商品ランキング情報一覧取得用ORDER_BY -->
+  <PRODUCTRANKING_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_ProductRanking.ranking_id
+            ELSE '1'
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  2 THEN w2_ProductRanking.date_created
+            WHEN  4 THEN w2_ProductRanking.date_changed
+            ELSE NULL
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_ProductRanking.ranking_id
+            ELSE '1'
+          END
+          DESC,
+          CASE @sort_kbn
+            WHEN  3 THEN w2_ProductRanking.date_created
+            WHEN  5 THEN w2_ProductRanking.date_changed
+            ELSE NULL
+          END
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_ProductRanking.shop_id ASC, w2_ProductRanking.ranking_id ASC
+      ]]>
+    </Statement>
+  </PRODUCTRANKING_SEARCH_ORDER_BY>
+</ProductRanking_Sub>

@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+-- 楽天受注メールに個人情報を削除の対応
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_MallCooperationSetting' AND COLUMN_NAME = 'rakuten_api_user_name')
+	ALTER TABLE [w2_MallCooperationSetting] ADD [rakuten_api_user_name] [nvarchar] (50) NOT NULL DEFAULT (N'');
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_MallCooperationSetting' AND COLUMN_NAME = 'rakuten_api_shop_url')
+	ALTER TABLE [w2_MallCooperationSetting] ADD [rakuten_api_shop_url] [nvarchar] (255) NOT NULL DEFAULT (N'');
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_MallCooperationSetting' AND COLUMN_NAME = 'rakuten_api_service_secret')
+	ALTER TABLE [w2_MallCooperationSetting] ADD [rakuten_api_service_secret] [nvarchar] (50) NOT NULL DEFAULT (N'');
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_MallCooperationSetting' AND COLUMN_NAME = 'rakuten_api_license_key')
+	ALTER TABLE [w2_MallCooperationSetting] ADD [rakuten_api_license_key] [nvarchar] (50) NOT NULL DEFAULT (N'');
+
+-- 楽天API連携のエラーメールテンプレートの追加
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'00000300')
+BEGIN
+	INSERT INTO [w2_MailTemplate]
+	(
+		shop_id
+		,mail_id
+		,mail_name
+		,mail_from
+		,mail_to
+		,mail_cc
+		,mail_bcc
+		,mail_subject
+		,mail_body
+		,mail_subject_mobile
+		,mail_body_mobile
+		,mail_attachmentfile_path
+		,del_flg
+		,date_created
+		,date_changed
+		,last_changed
+		,mail_from_name
+	)
+	VALUES
+	(
+		'0'
+		,'00000300'
+		,'楽天API連携時エラーメール'
+		,'pkg_mail@w2solution.co.jp'
+		,'pkg_mail@w2solution.co.jp'
+		,''
+		,''
+		,'楽天API連携エラー'
+		,'@@ message @@'
+		,''
+		,''
+		,''
+		,'0'
+		,getdate()
+		,getdate()
+		,'w2'
+		,''
+	)
+END		
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 発注入庫系SQLステートメントXML(StockOrder.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<StockOrder>
+
+  <!-- 発注情報一覧を取得 -->
+  <GetStockOrderList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_StockOrder.stock_order_id), 0)
+          FROM  w2_StockOrder
+                [[ STOCKORDER_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_StockOrder.shop_id,
+                w2_StockOrder.stock_order_id,
+                w2_StockOrder.relation_id,
+                w2_StockOrder.order_item_count,
+                w2_StockOrder.delivery_item_count,
+                w2_StockOrder.order_status,
+                w2_StockOrder.delivery_status,
+                w2_StockOrder.order_date,
+                w2_StockOrder.order_input_date,
+                w2_StockOrder.delivery_date,
+                w2_StockOrder.delivery_input_date,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_StockOrder.shop_id,
+                          w2_StockOrder.stock_order_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ STOCKORDER_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_StockOrder
+                          [[ STOCKORDER_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_StockOrder ON
+                (
+                  RowIndex.shop_id = w2_StockOrder.shop_id
+                  AND
+                  RowIndex.stock_order_id = w2_StockOrder.stock_order_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_order_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="relation_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="order_status" Type="nvarchar" Size="10" />
+      <Input Name="delivery_status" Type="nvarchar" Size="10" />
+      <Input Name="order_date_from" Type="datetime" />
+      <Input Name="order_date_to" Type="datetime" />
+      <Input Name="delivery_date_from" Type="datetime" />
+      <Input Name="delivery_date_to" Type="datetime" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetStockOrderList>
+
+  <!-- 発注情報一覧(CSV出力用) -->
+  <GetStockOrderMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_StockOrder
+                [[ STOCKORDER_SEARCH_WHERE ]]
+                [[ STOCKORDER_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_order_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="relation_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="order_status" Type="nvarchar" Size="10" />
+      <Input Name="delivery_status" Type="nvarchar" Size="10" />
+      <Input Name="order_date_from" Type="datetime" />
+      <Input Name="order_date_to" Type="datetime" />
+      <Input Name="delivery_date_from" Type="datetime" />
+      <Input Name="delivery_date_to" Type="datetime" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetStockOrderMaster>
+
+  <!-- 発注商品情報一覧(CSV出力用) -->
+  <GetStockOrderItemMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_StockOrder
+                INNER JOIN w2_StockOrderItem ON
+                (
+                  w2_StockOrder.shop_id = w2_StockOrderItem.shop_id
+                  AND
+                  w2_StockOrder.stock_order_id = w2_StockOrderItem.stock_order_id
+                )
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_StockOrderItem.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_StockOrderItem.product_id = w2_ProductView.product_id
+                  AND
+                  w2_StockOrderItem.variation_id = w2_ProductView.variation_id
+                )                
+                [[ STOCKORDER_SEARCH_WHERE ]]
+                [[ STOCKORDER_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_order_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="relation_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="order_status" Type="nvarchar" Size="10" />
+      <Input Name="delivery_status" Type="nvarchar" Size="10" />
+      <Input Name="order_date_from" Type="datetime" />
+      <Input Name="order_date_to" Type="datetime" />
+      <Input Name="delivery_date_from" Type="datetime" />
+      <Input Name="delivery_date_to" Type="datetime" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetStockOrderItemMaster>
+
+  <!-- 発注情報取得 -->
+  <GetStockOrder>
+    <Statement>
+      <![CDATA[
+          SELECT  *
+            FROM  w2_StockOrder
+           WHERE  w2_StockOrder.shop_id = @shop_id
+             AND  w2_StockOrder.stock_order_id = @stock_order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetStockOrder>
+
+  <!-- 発注情報取得 -->
+  <GetStockOrderItem>
+    <Statement>
+      <![CDATA[
+          SELECT  *,
+                  w2_ProductView.name,
+                  RIGHT(w2_StockOrderItem.variation_id, LEN(w2_StockOrderItem.variation_id) - LEN(w2_StockOrderItem.product_id)) AS v_id
+            FROM  w2_StockOrderItem,
+                  w2_ProductView
+           WHERE  w2_StockOrderItem.shop_id = @shop_id
+             AND  w2_StockOrderItem.stock_order_id = @stock_order_id
+             AND  w2_StockOrderItem.shop_id = w2_ProductView.shop_id
+             AND  w2_StockOrderItem.product_id = w2_ProductView.product_id
+             AND  w2_StockOrderItem.variation_id = w2_ProductView.variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetStockOrderItem>
+
+  <!-- 発注リストに表示する商品取得 -->
+  <GetProductStockForOrder>
+    <Statement>
+      <![CDATA[
+          SELECT  w2_ProductView.product_id,
+                  w2_ProductView.variation_id,
+                  RIGHT(w2_ProductView.variation_id, LEN(w2_ProductView.variation_id) - LEN(w2_ProductView.product_id)) AS v_id,
+                  w2_ProductView.name,
+                  w2_ProductView.stock,
+                  w2_ProductView.realstock,
+                  w2_ProductView.realstock_b,
+                  w2_ProductView.realstock_c,
+                  w2_ProductView.realstock_reserved,
+                  w2_ProductView.stock_alert,
+                  w2_ProductView.date_created,
+                  w2_ProductView.date_changed,
+                  (w2_ProductView.stock_alert - w2_ProductView.stock) AS default_order
+            FROM  w2_ProductView
+           WHERE  w2_ProductView.valid_flg = '1'            -- 有効
+             AND  w2_ProductView.stock_management_kbn != 0   -- 在庫管理するもの
+             AND  w2_ProductView.shop_id = @shop_id          -- 店舗ID
+             AND  w2_ProductView.stock IS NOT NULL 
+             AND  w2_ProductView.stock_alert IS NOT NULL 
+             AND  w2_ProductView.stock < w2_ProductView.stock_alert
+           ORDER BY
+            w2_ProductView.product_id,
+            w2_ProductView.variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductStockForOrder>
+
+  <!-- 発注情報追加(発注) -->
+  <InsertStockOrder>
+    <Statement>
+      <![CDATA[
+          INSERT
+            INTO  w2_StockOrder (
+                  shop_id,
+                  stock_order_id,
+                  relation_id,
+                  order_status,
+                  order_item_count,
+                  order_date,
+                  order_input_date,
+                  date_created,
+                  date_changed,
+                  last_changed
+                  )
+          VALUES  (
+                  @shop_id,
+                  @stock_order_id,
+                  @relation_id,
+                  '01',  -- 発注済
+                  @order_item_count,
+                  @order_date,
+                  getdate(),
+                  getdate(),
+                  getdate(),
+                  @last_changed
+                  )
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_order_id" Type="nvarchar" Size="30" />
+      <Input Name="relation_id" Type="nvarchar" Size="30" />
+      <Input Name="order_item_count" Type="int" />
+      <Input Name="order_date" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertStockOrder>
+
+  <!--発注商品情報追加(発注) -->
+  <InsertStockOrderItem>
+    <Statement>
+      <![CDATA[
+        INSERT
+          INTO  w2_StockOrderItem (
+                shop_id,
+                stock_order_id,
+                product_id,
+                variation_id,
+                order_status,
+                order_count,
+                order_date,
+                order_input_date,
+                date_created,
+                date_changed,
+                last_changed
+                )
+        VALUES  (
+                @shop_id,
+                @stock_order_id,
+                @product_id,
+                @variation_id,
+                '01',  -- 発注済
+                @order_count,
+                @order_date,
+                getdate(),
+                getdate(),
+                getdate(),
+                @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_order_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="order_count" Type="int" />
+      <Input Name="order_date" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertStockOrderItem>
+
+  <!-- 発注情報更新(入庫) -->
+  <UpdateStockOrder>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_StockOrder
+           SET  relation_id = @relation_id,
+                delivery_item_count = @delivery_item_count,
+                delivery_status = @delivery_status,
+                delivery_date = @delivery_date,
+                delivery_input_date = getdate(),
+                date_changed = getdate(),
+                last_changed = @last_changed
+         WHERE  shop_id = @shop_id
+           AND  stock_order_id = @stock_order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="relation_id" Type="nvarchar" Size="30" />
+      <Input Name="stock_order_id" Type="nvarchar" Size="30" />
+      <Input Name="delivery_item_count" Type="int" />
+      <Input Name="delivery_status" Type="nvarchar" Size="10" />
+      <Input Name="delivery_date" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateStockOrder>
+
+  <!-- 発注商品情報更新(入庫) -->
+  <UpdateStockOrderItem>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_StockOrderItem
+           SET  delivery_count = @delivery_count,
+                delivery_status = @delivery_status,
+                delivery_date = @delivery_date,
+                delivery_input_date = getdate(),
+                date_changed = getdate(),
+                last_changed = @last_changed
+         WHERE  shop_id = @shop_id
+           AND  stock_order_id = @stock_order_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_order_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="delivery_count" Type="int" />
+      <Input Name="delivery_status" Type="nvarchar" Size="10" />
+      <Input Name="delivery_date" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateStockOrderItem>
+
+</StockOrder>

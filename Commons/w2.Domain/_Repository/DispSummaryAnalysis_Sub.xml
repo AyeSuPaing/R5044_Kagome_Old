@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : サマリ分析結果テーブル系SQLサブステートメントXML (DispSummaryAnalysis_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<DispSummaryAnalysis_Sub>
+
+  <!-- カレンダーテーブル生成(日別) -->
+  <GET_CALENDAR_DAY>
+    <Statement>
+      <![CDATA[
+        DECLARE @calendar TABLE
+        (
+          [tgt_year] nvarchar(4),
+          [tgt_month] nvarchar(2),
+          [tgt_day] nvarchar(2)
+        )
+        DECLARE @loop int
+        SET @loop = 0
+        DECLARE @date datetime
+        SET @date = @start_date
+
+        WHILE ( @loop < @number_of_days )
+        BEGIN
+          INSERT  @calendar
+          (
+            tgt_year,
+            tgt_month,
+            tgt_day
+          )
+          VALUES
+          (
+            DATEPART(YEAR, @date),
+            RIGHT('00' + CONVERT(NVARCHAR, DATEPART(MONTH, @date)), 2),
+            RIGHT('00' + CONVERT(NVARCHAR, DATEPART(DAY, @date)), 2)
+          )
+          SET  @loop = @loop + 1
+          SET  @date = DATEADD(DAY, 1, @date)
+        END
+      ]]>
+    </Statement>
+  </GET_CALENDAR_DAY>
+
+</DispSummaryAnalysis_Sub>

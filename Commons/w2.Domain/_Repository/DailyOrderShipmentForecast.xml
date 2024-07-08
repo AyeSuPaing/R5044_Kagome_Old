@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 出荷集計XML (DailyOrderShipmentForecast.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2024 All Rights Reserved.
+=========================================================================================================
+-->
+<DailyOrderShipmentForecast>
+  <!-- 指定日の出荷数を取得 -->
+  <GetDailyPriceAndShippment>
+    <Statement>
+      <![CDATA[
+        SELECT  shipment_order_count,
+                total_order_price_subtotal
+          FROM  w2_DailyOrderShipmentForecast
+         WHERE  YEAR(shipment_date) = @year
+           AND  MONTH(shipment_date) = @month
+           AND  DAY(shipment_date) = @date;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="int" />
+      <Input Name="month" Type="int" />
+      <Input Name="date" Type="int" />
+    </Parameter>
+  </GetDailyPriceAndShippment>
+
+  <!-- 指定月での売上金額＆出荷数の合計数を取得する -->
+  <GetTotalPriceAndShippedForMonth>
+    <Statement>
+      <![CDATA[
+        SELECT  SUM(total_order_price_subtotal) AS total_order_price_subtotal,
+                SUM(shipment_order_count) AS shipment_order_count
+          FROM  w2_DailyOrderShipmentForecast
+         WHERE  YEAR(shipment_date) = @year
+           AND  MONTH(shipment_date) = @month;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="int" />
+      <Input Name="month" Type="int" />
+    </Parameter>
+  </GetTotalPriceAndShippedForMonth>
+
+  <!-- 指定年月で最終更新日を取得する -->
+  <GetLastDataChangedDateForCurrentMonth>
+    <Statement>
+      <![CDATA[
+        SELECT  MAX(date_changed) AS date_changed
+          FROM  w2_DailyOrderShipmentForecast
+         WHERE  YEAR(shipment_date) = @year
+           AND  MONTH(shipment_date) = @month;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="int" />
+      <Input Name="month" Type="int" />
+    </Parameter>
+  </GetLastDataChangedDateForCurrentMonth>
+
+  <!-- 挿入または更新 -->
+  <InsertOrUpdate>
+    <Statement>
+      <![CDATA[
+      IF EXISTS (
+                  SELECT  *
+                    FROM  w2_DailyOrderShipmentForecast
+                   WHERE  shipment_date = @shipment_date
+                )
+      BEGIN
+        UPDATE  w2_DailyOrderShipmentForecast
+           SET  shipment_order_count = @shipment_order_count,
+                total_order_price_subtotal = @total_order_price_subtotal,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  shipment_date = @shipment_date;
+      END
+      ELSE
+      BEGIN
+        INSERT  w2_DailyOrderShipmentForecast
+                (
+                  shipment_date,
+                  shipment_order_count,
+                  total_order_price_subtotal,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+                VALUES
+                (
+                  @shipment_date,
+                  @shipment_order_count,
+                  @total_order_price_subtotal,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                );
+      END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shipment_date" Type="datetime" />
+      <Input Name="shipment_order_count" Type="bigint" />
+      <Input Name="total_order_price_subtotal" Type="decimal" Size="18,3" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertOrUpdate>
+
+  <!-- ２年前のデータを削除する -->
+  <DeleteOldShipments>
+    <Statement>
+      <![CDATA[
+        DELETE FROM w2_DailyOrderShipmentForecast
+          WHERE shipment_date < DATEADD(YEAR, -2, GETDATE());
+      ]]>
+    </Statement>
+  </DeleteOldShipments>
+</DailyOrderShipmentForecast>

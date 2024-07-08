@@ -1,0 +1,297 @@
+﻿@*
+=========================================================================================================
+  Module      : マスタダウンロード設定登録ページ(MasterExportSettingRegister.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using System.Threading
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.MasterExportSetting.RegisterViewModel
+@{
+	ViewBag.Title = "マスタダウンロード設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+@section Style
+{
+	<style>
+/* マスタ種別のラジオボタンのスタイル用 */
+		.chkBoxList td
+		{
+			width: 120px;
+		}
+	</style>
+}
+@using (Html.BeginForm(
+	"MasterExportSettingRegister",
+	Constants.CONTROLLER_W2CMS_MANAGER_MASTER_EXPORT_SETTING,
+	FormMethod.Post,
+	new { input = this.Model.Input, Id = "input_form" }))
+{
+<table cellspacing="0" cellpadding="0" style="width: 791;"width="791" border="0">
+	<tr>
+	<h1 class="page-title">マスタダウンロード設定</h1>
+	</tr>
+	@LayoutHelper.PaddingTr(10)
+	<!--▽ 検索 ▽-->
+	<tr>
+	<td colspan="2">
+	<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+	<tr>
+	<td class="search_box_bg">
+	<table cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+	<table cellspacing="0" cellpadding="0" border="0">
+		@LayoutHelper.PaddingTr(10)
+		<tr>
+		<td class="search_table">
+		<table cellspacing="1" cellpadding="2" width="758" border="0">
+			<tr>
+				<td class="search_title_bg" width="95">マスタ種別</td>
+				<td class="search_item_bg" colspan="5">
+					<table class="chkBoxList" border="0" style="width: 653px;">
+						<tbody>
+						<tr>
+							@{ var i = 1;
+								var masterKbnsCount = Model.MasterKbns.Count;
+								var repeatColumns = 4;
+							}
+							@foreach (var masterKbn in this.Model.MasterKbns)
+							{
+								<td style="border-style:none;">
+									<label>
+										@Html.RadioButtonFor(
+											model => model.Input.MasterKbn.Value,
+											masterKbn.Value,
+											new
+											{
+												id = "MasterKbn",
+												onchange = "MasterKbn_SelectedIndexChanged()"
+											})
+									@Html.Encode(masterKbn.Text)</label>
+								</td>
+								if (((i % repeatColumns) == 0) || (i == masterKbnsCount))
+								{ 
+									@: </tr><tr> 
+								}
+								i++;
+							}
+						</tr>
+						</tbody>
+					</table>
+				<input id="MasterKbn_SelectedIndexChangedBtn" name="MasterSelectedIndexChangedBtn" type="submit" style="display: none;"/>
+				</td>
+			</tr>
+		</table>
+		</td>
+		</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 検索 △-->
+	<tr>
+	<td colspan="2">@LayoutHelper.Padding(10)</td>
+	</tr>
+	<!--▽ 一覧・詳細 ▽-->
+	<tr>
+	<td valign="top">
+	<table class="box_border" cellspacing="1" cellpadding="3" width="375" border="0">
+	<tr>
+	<td>
+	<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td valign="top" align="center">
+	<table cellspacing="0" cellpadding="0" border="0">
+		<tr>
+			<td>@LayoutHelper.PaddingTr(6)</td>
+			<td>
+			@if (this.Model.IsActionStatusUpdate)
+			{
+				<table class="info_table" cellspacing="1" cellpadding="3" width="100%" border="0">
+					<tr class="info_item_bg">
+						<td align="left">マスタ出力定義情報を登録/更新しました。
+						</td>
+					</tr>
+				</table>
+			}
+				<div class="action_part_top">
+					@Html.DropDownListFor(model => model.Input.SelectSettingValue, this.Model.SelectSetting, new { id = "SelectSetting", style = "width: 200px;", onchange = "SelectSetting_SelectedIndexChanged()" })
+					<input id="Delete" name="Delete" type="submit" value="  削除する  " onclick="return Delete_SetSelectedIndex();" class="btn btn-main" />
+					<input type="button" value="  更新する  " class="btn btn-main" onclick="return validate('update', { name: 'Input.IsInsert', value: false });">
+					<input type="submit" name="Update" id="update" style="display: none;" onclick = "Update_SetSelectedIndex()">
+				</div>
+				<hr/>
+				<div class="action_part_top">
+					@Html.TextBoxFor(model => model.Input.SettingName, new { style = "width:275px;align=left;" })
+					<input type="button" value="  新規登録  " class="btn btn-main" onclick="return validate('insert', { name: 'Input.IsInsert', value: true });">
+					<input type="submit" name="Insert" id="insert" style="display: none;" onclick = "Insert_SetSelectedIndex();">
+				</div>
+				<table class="edit_table" cellspacing="1" cellpadding="3" width="370" border="0">
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">出力ファイル形式<span class="notice">*</span></td>
+						<td class="edit_item_bg" align="left">
+						@Html.DropDownListFor(model => model.Input.ExportFileTypeSelectedValue, this.Model.ExportFileType, new { style = "width: 200px;" })
+					</tr>
+					<tr>
+						<td class="edit_title_bg" align="left" width="30%">出力フォーマット<span class="notice">*</span></td>
+						<td class="edit_item_bg" align="left">
+						@Html.TextAreaFor(model => model.Input.Fields, new { style = "height:680px;width:240px;", Id = "tbFields" })
+					</tr>
+				</table>
+			</td>
+			<td>@LayoutHelper.Padding(6)</td>
+		</tr>
+		@LayoutHelper.PaddingTr(10)
+	</table>
+	</td>
+	<td valign="top" align="center">
+	<table cellspacing="0" cellpadding="0" border="0">
+		<tr>
+		<td>@LayoutHelper.Padding(6)</td>
+		<td>
+			<div class="action_part_top"></div>
+			<table class="edit_table" cellspacing="1" cellpadding="3" width="370" border="0">
+				<tr>
+					<td class="edit_title_bg" align="left" width="30%">マスタ種別</td>
+					<td class="edit_item_bg" align="left">@Html.Encode(this.Model.MasterKbn.Text)</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg" align="left" colspan="2">フィールド</td>
+				</tr>
+				<tr>
+					<td class="edit_item_bg" align="left" colspan="2">
+						<table class="edit_table" cellspacing="0" cellpadding="0" border="0" width="360">
+							<tr>
+								<td class="edit_item_bg" align="right">
+									<input type="button" value="  全ての項目を一括選択  " onclick="javascript:set_field_all();" class="btn btn-sub"/>
+								</td>
+							</tr>
+						</table>
+						<div style="height: 742px; overflow-y: scroll;">
+						<table>
+							@foreach (var data in this.Model.MasterFieldData)
+							{
+								<tr>
+									<td class="edit_item_bg" align="left">
+										@Html.Hidden("hfSettingName", @data[Constants.MASTEREXPORTSETTING_XML_NAME])
+										<a href="javascript:add_field('@data[Constants.MASTEREXPORTSETTING_XML_NAME]');">
+											←&nbsp;
+											@Html.Encode(data[Constants.MASTEREXPORTSETTING_XML_J_NAME])</a>&nbsp;
+										(@Html.Encode(data[Constants.MASTEREXPORTSETTING_XML_NAME]))
+									</td>
+								</tr>
+							}
+						</table>
+						</div>
+					</td>
+				</tr>
+			</table>
+		</td>
+		<td>@LayoutHelper.Padding(6)</td>
+		</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 一覧・詳細 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+<input id="SelectedIndexChangedBtn" name="SelectedIndexChangedBtn" type="submit" style="display: none;"/>
+@Html.HiddenFor(model => model.Input.SelectSettingIndex, new{ id = "hfSelectSettingIndex" });
+}
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		// CSVフォーマットフィールド追加
+		function add_field(fld) {
+			// CSVフォーマット入力内容取得
+			var flds = document.getElementById('tbFields').value;
+
+			if (flds.charAt(flds.length - 1) != ',' && flds.length > 0) {
+				flds += ',\n' + fld;
+			} else {
+				flds += fld;
+			}
+
+			// CSVフォーマット入力内容設定
+			document.getElementById('tbFields').value = flds;
+		}
+
+		// CSVフォーマットフィールド設定（全て選択）
+		function set_field_all() {
+			var flds = "";
+			@for (var count = 0; count < this.Model.MasterFieldData.Count; count++)
+			{
+				@:flds += '@(count != 0 ? ",\\n" : "")';
+				@:flds += '@this.Model.MasterFieldData[count][Constants.MASTEREXPORTSETTING_XML_NAME]';
+			}
+			// CSVフォーマット入力内容設定
+			document.getElementById('tbFields').value = flds;
+		}
+
+		function GetSelectedIndex() {
+			var index = document.getElementById("SelectSetting").selectedIndex;
+			return index;
+		}
+
+		function GetSelectSettingLength() {
+			var index = document.getElementById("SelectSetting").length;
+			return index;
+		}
+
+		function SetSelectedSetting() {
+			document.getElementById('SelectSetting').selectedIndex = '@this.Model.Input.SelectSettingIndex';
+		}
+
+		function Insert_SetSelectedIndex() {
+			document.getElementById('hfSelectSettingIndex').value = GetSelectSettingLength();
+		}
+
+		function Update_SetSelectedIndex() {
+			document.getElementById('hfSelectSettingIndex').value = '@this.Model.Input.SelectSettingIndex';
+		}
+
+		function Delete_SetSelectedIndex() {
+			document.getElementById('hfSelectSettingIndex').value = @this.Model.Input.SelectSettingIndex - 1;
+			return confirm('情報を削除してもよろしいですか？');
+		}
+
+		function MasterKbn_SelectedIndexChanged() {
+			document.getElementById("MasterKbn_SelectedIndexChangedBtn").click();
+		}
+
+		function SelectSetting_SelectedIndexChanged() {
+			document.getElementById('hfSelectSettingIndex').value = GetSelectedIndex();
+			document.getElementById("SelectedIndexChangedBtn").click();
+		}
+
+		function SelectSettingDisabled() {
+			if (@this.Model.Input.SelectSettingIndex == 0) {
+				$("#Delete").prop('disabled', true);
+			}
+		}
+
+		function Checked() {
+			$('input[value="@this.Model.MasterKbn.Value"]').prop('checked', true);
+		}
+
+		// エンターキーによるsubmit禁止
+		prohibit_submission();
+		SetSelectedSetting();
+		Checked();
+		SelectSettingDisabled();
+	</script>
+}

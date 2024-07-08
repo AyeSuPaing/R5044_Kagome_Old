@@ -1,0 +1,1446 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : レコナイズレコメンド表示設定XML(RecommendDispSetting_Reconize.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<RecommendDispSetting>
+  <!--
+    レコナイズからおすすめ商品、おすすめカテゴリを取得して表示する際の抽出条件を設定します。
+    
+    【レコメンド表示設定ノード説明】
+    ■商品レコメンド
+    recommend_code    : レコメンドコードを指定します。
+    get_count         : レコメンドエンジンからの取得件数を指定します。(0件～40件)
+    essential_attributes1
+      ~ essential_attributes5   : レコメンドエンジンから取得する際のフィルタリング条件を指定します。(最大5件)
+      Name            : フィールド名を指定します。ReconizeRecommendItemSetting.xmlでitem_attributeに設定している名称に合わせてください。
+      Value           : 抽出する値を指定します。前方一致で抽出されます。
+    buyable_only      : 在庫がなく購入不可能な商品を表示するかどうかを指定します。(0:全商品を表示する, 1:購入可能商品のみ表示する)
+                        ※在庫がなくても購入可能な商品は表示されます。
+    price_from        : 表示する商品の価格(○○円以上)を指定します。
+    price_to          : 表示する商品の価格(○○円以下)を指定します。
+    other_condition1 ~ other_condition5 : その他の条件を指定します。SQLのWHERE句の形式で記述してください。
+                                          (最大5件,【設定例】shipping_type = '001' / product_id LIKE '%abc%')
+    item_type         : レコメンドエンジンから商品IDを取得して表示させる場合 = RECOMMEND_PRODUCT
+                        レコメンドエンジンからカテゴリIDを取得してランキングを表示させる場合 = RANKING
+                        レコメンドエンジンからカテゴリIDを取得して新着を表示させる場合 = NEW_ARRIVAL
+                        ※項目がなければRECOMMEND_PRODUCTが設定される。
+    
+     ■カテゴリレコメンド
+    recommend_code    : レコメンドコードを指定します。
+    get_count         : レコナイズからの取得件数を指定します。(0件～40件)
+    essential_attributes1
+      ~ essential_attributes5   : レコメンドエンジンから取得する際のフィルタリング条件を指定します。(最大5件)
+      Name            : フィールド名を指定します。ReconizeRecommendItemSetting.xmlでitem_attributeに設定している名称です。
+      Value           : 抽出する値を指定します。
+    level             : 表示するカテゴリの階層を指定します。
+    category_id       : 表示するカテゴリIDを指定します。前方一致で抽出されます。
+    only_bottom_level : 最下層のカテゴリのみ表示するかどうかを指定します。(0:全カテゴリを表示する, 1:最下層のカテゴリのみ表示する)
+    other_condition1 ~ other_condition5 : その他の条件を指定します。SQLのWHERE句の形式で記述してください。
+                                          (最大5件,【設定例】category_id = '001')
+    
+    【置換タグ説明】
+    以下のタグを設定すると値を動的に設定できます。(【設定例】category_id = @@ category_id @@)
+    @@ category_id @@ : 表示中のURLのカテゴリIDをセットします。
+    @@ brand_id @@    : 表示中のURLのブランドIDをセットします。
+ 
+    【レコメンドコード一覧】
+    PC      モバイル          
+    p001    m001    TOPページ：あなたの閲覧履歴からおすすめの商品はこちら
+    p002    m002    TOPページ：あなたのお気に入りからおすすめの商品はこちら
+    p005    m005    TOPページ：あなたにおすすめのカテゴリ一覧
+    p006    m006    商品一覧ページ：このカテゴリでの閲覧履歴からおすすめの商品はこちら
+    p007    m007    商品一覧ページ：あなたにおすすめのカテゴリ一覧
+    p008    m008    商品一覧ページ：このカテゴリの商品を買った人は、他にもこんなカテゴリの商品を買っています
+    p009    m009    商品詳細ページ：この商品を見た人は他にもこんな商品も見ています
+    p010    m010    商品詳細ページ：このカテゴリでの閲覧履歴からおすすめの商品はこちら
+    p011    m011    商品詳細ページ：あなたにおすすめのカテゴリ一覧
+    p014    m014    カートリスト：このショッピングカートにある商品を買った人は、他にもこんな商品も買っています
+    p015    m015    注文完了ページ：この商品を見た人は他にもこんな商品も見ています
+    p016    m016    注文完了ページ：最近の注文履歴からあなたにおすすめの商品はこちら
+    p017    m017    マイページ：あなたの閲覧履歴からおすすめの商品はこちら
+    p018    m018    マイページ：あなたの注文履歴からおすすめの商品はこちら
+    p021    m021    お気に入りページ：あなたのお気に入りリストにある商品を買った人は、他にもこんな商品も買っています
+    p022    m022    入荷通知メール一覧ページ：入荷お知らせメールにお申し込みいただいた商品を買った人は、他にもこんな商品も買っています
+    
+  -->
+  
+  <!-- PC:商品レコメンド -->
+  
+  <!-- TOPページ：あなたの閲覧履歴からおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>p001</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- TOPページ：あなたのお気に入りからおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>p002</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- TOPページ：あなたにおすすめの人気商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>p003</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+    <item_type>RANKING</item_type>
+  </ProductRecommend>
+
+  <!-- TOPページ：あなたおすすめの新着商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>p004</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+    <item_type>NEW_ARRIVAL</item_type>
+  </ProductRecommend>
+
+  <!-- 商品一覧ページ：このカテゴリでの閲覧履歴からおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>p006</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name>Category1</Name>
+      <Value>@@ category_id @@</Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- 商品詳細ページ：この商品を見た人は他にもこんな商品も見ています -->
+  <ProductRecommend>
+    <recommend_code>p009</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- 商品詳細ページ：このカテゴリでの閲覧履歴からおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>p010</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name>Category1</Name>
+      <Value>@@ category_id @@</Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- カートリスト：このショッピングカートにある商品を買った人は、他にもこんな商品も買っています -->
+  <ProductRecommend>
+    <recommend_code>p014</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- 注文完了ページ：この商品を見た人は他にもこんな商品も見ています -->
+  <ProductRecommend>
+    <recommend_code>p015</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- 注文完了ページ：最近の注文履歴からあなたにおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>p016</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- マイページ：あなたの閲覧履歴からおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>p017</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- マイページ：あなたの注文履歴からおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>p018</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- マイページ：あなたにおすすめの人気商品 -->
+  <ProductRecommend>
+    <recommend_code>p019</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+    <item_type>RANKING</item_type>
+  </ProductRecommend>
+
+  <!-- マイページ：あなたにおすすめの新着商品 -->
+  <ProductRecommend>
+    <recommend_code>p020</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+    <item_type>NEW_ARRIVAL</item_type>
+  </ProductRecommend>
+
+  <!-- お気に入りページ：あなたのお気に入りリストにある商品を買った人は、他にもこんな商品も買っています -->
+  <ProductRecommend>
+    <recommend_code>p021</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- 入荷通知メール一覧ページ：入荷お知らせメールにお申し込みいただいた商品を買った人は、他にもこんな商品も買っています -->
+  <ProductRecommend>
+    <recommend_code>p022</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- PC:カテゴリレコメンド -->
+  
+  <!-- TOPページ：あなたにおすすめのカテゴリ一覧 -->
+  <CategoryRecommend>
+    <recommend_code>p005</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <level></level>
+    <category_id></category_id>
+    <only_bottom_level></only_bottom_level>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </CategoryRecommend>
+
+  <!-- 商品一覧ページ：あなたにおすすめのカテゴリ一覧 -->
+  <CategoryRecommend>
+    <recommend_code>p007</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <level></level>
+    <category_id></category_id>
+    <only_bottom_level></only_bottom_level>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </CategoryRecommend>
+
+  <!-- 商品一覧ページ：このカテゴリの商品を買った人は、他にもこんなカテゴリの商品を買っています -->
+  <CategoryRecommend>
+    <recommend_code>p008</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <level></level>
+    <category_id></category_id>
+    <only_bottom_level></only_bottom_level>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </CategoryRecommend>
+
+  <!-- 商品詳細ページ：あなたにおすすめのカテゴリ一覧 -->
+  <CategoryRecommend>
+    <recommend_code>p011</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <level></level>
+    <category_id></category_id>
+    <only_bottom_level></only_bottom_level>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </CategoryRecommend>
+
+  <!-- モバイル:商品レコメンド -->
+
+  <!-- TOPページ：あなたの閲覧履歴からおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>m001</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>0</buyable_only>
+    <price_from>5000</price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- TOPページ：あなたのお気に入りからおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>m002</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- TOPページ：あなたにおすすめの人気商品 -->
+  <ProductRecommend>
+    <recommend_code>m003</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+    <item_type>RANKING</item_type>
+  </ProductRecommend>
+
+  <!-- TOPページ：あなたにおすすめの新着商品 -->
+  <ProductRecommend>
+    <recommend_code>m004</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+    <item_type>NEW_ARRIVAL</item_type>
+  </ProductRecommend>
+
+  <!-- 商品一覧ページ：このカテゴリでの閲覧履歴からおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>m006</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name>Category1</Name>
+      <Value>@@ category_id @@</Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- 商品詳細ページ：この商品を見た人は他にもこんな商品も見ています -->
+  <ProductRecommend>
+    <recommend_code>m009</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- 商品詳細ページ：このカテゴリでの閲覧履歴からおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>m010</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name>Category1</Name>
+      <Value>@@ category_id @@</Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- カートリスト：このショッピングカートにある商品を買った人は、他にもこんな商品も買っています -->
+  <ProductRecommend>
+    <recommend_code>m014</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- 注文完了ページ：この商品を見た人は他にもこんな商品も見ています -->
+  <ProductRecommend>
+    <recommend_code>m015</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- 注文完了ページ：最近の注文履歴からあなたにおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>m016</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- マイページ：あなたの閲覧履歴からおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>m017</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- マイページ：あなたの注文履歴からおすすめの商品はこちら -->
+  <ProductRecommend>
+    <recommend_code>m018</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- マイページ：あなたにおすすめの人気商品 -->
+  <ProductRecommend>
+    <recommend_code>m019</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+    <item_type>RANKING</item_type>
+  </ProductRecommend>
+
+  <!-- マイページ：あなたにおすすめの新着商品 -->
+  <ProductRecommend>
+    <recommend_code>m020</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+    <item_type>NEW_ARRIVAL</item_type>
+  </ProductRecommend>
+
+  <!-- お気に入りページ：あなたのお気に入りリストにある商品を買った人は、他にもこんな商品も買っています -->
+  <ProductRecommend>
+    <recommend_code>m021</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- 入荷通知メール一覧ページ：入荷お知らせメールにお申し込みいただいた商品を買った人は、他にもこんな商品も買っています -->
+  <ProductRecommend>
+    <recommend_code>m022</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_01</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <buyable_only>1</buyable_only>
+    <price_from></price_from>
+    <price_to></price_to>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </ProductRecommend>
+
+  <!-- モバイル:カテゴリレコメンド -->
+
+  <!-- TOPページ：あなたにおすすめのカテゴリ一覧 -->
+  <CategoryRecommend>
+    <recommend_code>m005</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <level></level>
+    <category_id></category_id>
+    <only_bottom_level></only_bottom_level>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </CategoryRecommend>
+
+  <!-- 商品一覧ページ：あなたにおすすめのカテゴリ一覧 -->
+  <CategoryRecommend>
+    <recommend_code>m007</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <level></level>
+    <category_id></category_id>
+    <only_bottom_level></only_bottom_level>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </CategoryRecommend>
+
+  <!-- 商品一覧ページ：このカテゴリの商品を買った人は、他にもこんなカテゴリの商品を買っています -->
+  <CategoryRecommend>
+    <recommend_code>m008</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <level></level>
+    <category_id></category_id>
+    <only_bottom_level></only_bottom_level>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </CategoryRecommend>
+
+  <!-- 商品詳細ページ：あなたにおすすめのカテゴリ一覧 -->
+  <CategoryRecommend>
+    <recommend_code>m011</recommend_code>
+    <get_count>40</get_count>
+    <essential_attributes1>
+      <Name>ITEM_TYPE</Name>
+      <Value>item_type_02</Value>
+    </essential_attributes1>
+    <essential_attributes2>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes2>
+    <essential_attributes3>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes3>
+    <essential_attributes4>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes4>
+    <essential_attributes5>
+      <Name></Name>
+      <Value></Value>
+    </essential_attributes5>
+    <level></level>
+    <category_id></category_id>
+    <only_bottom_level></only_bottom_level>
+    <other_condition1></other_condition1>
+    <other_condition2></other_condition2>
+    <other_condition3></other_condition3>
+    <other_condition4></other_condition4>
+    <other_condition5></other_condition5>
+  </CategoryRecommend>
+</RecommendDispSetting>

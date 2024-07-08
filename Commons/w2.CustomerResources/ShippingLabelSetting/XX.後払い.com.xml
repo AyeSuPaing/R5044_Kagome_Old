@@ -1,0 +1,362 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 後払い.com (後払い.com.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderDataExportSetting>
+
+  <!-- 出力ファイルの設定 -->
+  <ExportSetting>
+    <!-- 受注一覧・ワークフロー一覧画面に表示する送り状ダウンロードリンクの文言 -->
+    <DisplayName><![CDATA[後払い.com]]></DisplayName>
+    <!-- 出力ファイルの種類（設定可能値：csv） -->
+    <FormatType>csv</FormatType>
+    <!-- 出力単位（設定可能値：Order） -->
+    <UnitType>Order</UnitType>
+    <!-- 出力ファイル名 -->
+    <FileName>
+      <Value Type="string"><![CDATA[Order]]></Value>
+      <Value Type="dateString" Format="yyyyMMdd">Now</Value>
+      <Value Type="string">.csv</Value>
+    </FileName>
+    <!-- ヘッダ行出力有無（設定可能値：true, false） -->
+    <ExportHeader>true</ExportHeader>
+    <!-- 引用符常時出力有無（設定可能値：true, false） -->
+    <!--
+        例：引用符が「"」、1列目の値は「123」、2列目の値は「abc」、3列目の値は「1,2」の場合、
+            ・true の場合、"123","abc","1,2"を出力しますが、
+            ・false の場合、123,abc,"1,2"を出力します。（値にカンマ(,)があるときは強制エスケープ）
+    -->
+    <AlwaysExportQuotation>true</AlwaysExportQuotation>
+    <!-- 列の引用符 -->
+    <StringQuotationMark><![CDATA["]]></StringQuotationMark>
+    <!-- 区切り文字（設定可能値：COMMA, TAB） -->
+    <Separator>COMMA</Separator>
+    <!-- 文字コード（設定可能値：Shift_JIS, UTF-8） -->
+    <Encoding>Shift_JIS</Encoding>
+  </ExportSetting>
+
+  <!-- 出力項目・内容の設定 -->
+  <FieldsSetting>
+    <Field Name="注文ID">
+      <Value Type="field">w2_Order.order_id</Value>
+    </Field>
+    <Field Name="ユーザID">
+      <Value Type="field">w2_Order.user_id</Value>
+    </Field>
+    <Field Name="支払区分">
+      <Value Type="field">w2_Order.order_payment_kbn</Value>
+    </Field>
+    <Field Name="決済種別名">
+      <Value Type="field">w2_Payment.payment_name</Value>
+    </Field>
+    <Field Name="注文日時">
+      <Value Type="dateString" Format="yyyymmdd">w2_Order.order_date</Value>
+    </Field>
+    <Field Name="小計">
+      <Value Type="field">CAST(w2_Order.order_price_subtotal AS INT)</Value>
+    </Field>
+    <Field Name="税金合計">
+      <Value Type="field">CAST(w2_Order.order_price_tax AS INT)</Value>
+    </Field>
+    <Field Name="支払金額合計">
+      <Value Type="field">CAST(w2_Order.order_price_total AS INT)</Value>
+    </Field>
+    <Field Name="利用ポイント数">
+      <Value Type="field">w2_Order.order_point_use</Value>
+    </Field>
+    <Field Name="付与ポイント">
+      <Value Type="field">w2_Order.order_point_add</Value>
+    </Field>
+    <Field Name="配送種別ID">
+      <Value Type="string">0</Value>
+    </Field>
+    <Field Name="管理メモ">
+      <Value Type="field">REPLACE(w2_Order.management_memo, NCHAR(13) + NCHAR(10), '')</Value>
+    </Field>
+    <Field Name="配送メモ">
+      <Value Type="field">REPLACE(w2_Order.shipping_memo, NCHAR(13) + NCHAR(10), '')</Value>
+    </Field>
+    <Field Name="注文時会員ランク">
+      <Value Type="field">
+        <![CDATA[
+          (
+            SELECT  member_rank_name
+              FROM  w2_MemberRank
+             WHERE  w2_MemberRank.member_rank_id = w2_Order.member_rank_id
+          )
+        ]]>
+      </Value>
+    </Field>
+    <Field Name="購入回数(注文時点)">
+      <Value Type="field">w2_Order.order_count_order</Value>
+    </Field>
+    <Field Name="注文者：注文者氏名">
+      <Value Type="field">w2_OrderOwner.owner_name</Value>
+    </Field>
+    <Field Name="注文者：注文者氏名かな">
+      <Value Type="field">w2_OrderOwner.owner_name_kana</Value>
+    </Field>
+    <Field Name="注文者：郵便番号">
+      <Value Type="field"><![CDATA[REPLACE(w2_OrderOwner.owner_zip, '-', '')]]></Value>
+    </Field>
+    <Field Name="注文者：住所1">
+      <Value Type="field">w2_OrderOwner.owner_addr1</Value>
+    </Field>
+    <Field Name="注文者：住所2">
+      <Value Type="field">w2_OrderOwner.owner_addr2</Value>
+    </Field>
+    <Field Name="注文者：住所3">
+      <Value Type="field">w2_OrderOwner.owner_addr3</Value>
+    </Field>
+    <Field Name="注文者：住所4">
+      <Value Type="field">w2_OrderOwner.owner_addr4</Value>
+    </Field>
+    <Field Name="注文者：性別">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_OrderOwner.owner_sex = 'UNKNOWN']]></Condition>
+          <Value Type="string">0</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[w2_OrderOwner.owner_sex = 'MALE']]></Condition>
+          <Value Type="string">1</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[w2_OrderOwner.owner_sex = 'FEMALE']]></Condition>
+          <Value Type="string">2</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+    <Field Name="注文者：生年月日">
+      <Value Type="dateString" Format="yyyymmdd">w2_OrderOwner.owner_birth</Value>
+    </Field>
+    <Field Name="注文者：企業名">
+      <Value Type="field">w2_OrderOwner.owner_company_name</Value>
+    </Field>
+    <Field Name="注文者：部署名">
+      <Value Type="field">w2_OrderOwner.owner_company_post_name</Value>
+    </Field>
+    <Field Name="配送先：配送先氏名">
+      <Value Type="field">w2_OrderShipping.shipping_name</Value>
+    </Field>
+    <Field Name="配送先：郵便番号">
+      <Value Type="field"><![CDATA[REPLACE(w2_OrderShipping.shipping_zip, '-', '')]]></Value>
+    </Field>
+    <Field Name="配送先：住所1">
+      <Value Type="field">w2_OrderShipping.shipping_addr1</Value>
+    </Field>
+    <Field Name="配送先：住所2">
+      <Value Type="field">w2_OrderShipping.shipping_addr2</Value>
+    </Field>
+    <Field Name="配送先：住所3">
+      <Value Type="field">w2_OrderShipping.shipping_addr3</Value>
+    </Field>
+    <Field Name="配送先：住所4">
+      <Value Type="field">w2_OrderShipping.shipping_addr4</Value>
+    </Field>
+    <Field Name="配送先：電話番号1">
+      <Value Type="field">w2_OrderShipping.shipping_tel1</Value>
+    </Field>
+    <Field Name="配送先：配送希望日">
+      <Value Type="dateString" Format="yyyymmdd">w2_OrderShipping.shipping_date</Value>
+    </Field>
+    <Field Name="配送先：配送希望時間帯">
+      <Value Type="field">w2_OrderShipping.shipping_time</Value>
+    </Field>
+    <Field Name="配送先：配送サービスID">
+      <Value Type="field">w2_OrderShipping.delivery_company_id</Value>
+    </Field>
+    <Field Name="注文商品：商品ID">
+      <Value Type="field">w2_OrderItem.product_id</Value>
+    </Field>
+    <Field Name="注文商品：商品名">
+      <Value Type="field">w2_OrderItem.product_name</Value>
+    </Field>
+    <Field Name="注文商品：商品単価">
+      <Value Type="field">CAST(w2_OrderItem.product_price AS INT)</Value>
+    </Field>
+    <Field Name="注文商品：注文数">
+      <Value Type="field">w2_OrderItem.item_quantity</Value>
+    </Field>
+    <Field Name="注文商品：明細金額（小計）">
+      <Value Type="field">CAST(w2_OrderItem.item_price AS INT)</Value>
+    </Field>
+    <Field Name="ユーザー保有ポイント">
+      <Value Type="field">
+        <![CDATA[
+          (
+            SELECT  SUM(w2_UserPoint.point)
+              FROM  w2_UserPoint
+             WHERE  w2_UserPoint.user_id = w2_Order.user_id
+               AND  w2_UserPoint.point_type = '01'
+          )
+        ]]>
+      </Value>
+    </Field>
+    <Field Name="出荷予定日">
+      <Value Type="dateString" Format="yyyymmdd">CASE WHEN w2_OrderShipping.scheduled_shipping_date is null THEN GETDATE() ELSE w2_OrderShipping.scheduled_shipping_date END</Value>
+    </Field>
+    <Field Name="期限切れの日付">
+      <Value Type="dateString" Format="yyyymmdd">
+        <![CDATA[
+          (
+            SELECT  max(w2_UserPoint.point_exp)
+              FROM  w2_UserPoint
+             WHERE  w2_UserPoint.user_id = w2_Order.user_id
+               AND  w2_UserPoint.point_type = '01'
+          )
+        ]]>
+      </Value>
+    </Field>
+    <Field Name="お支払期日">
+      <Value Type="dateString" Format="yyyymmdd">CASE WHEN w2_Order.order_payment_kbn = 'K32' THEN w2_InvoiceAtobaraicom.limit_date END</Value>
+    </Field>
+    <Field Name="単位(明細)">
+      <Value Type="string">個</Value>
+    </Field>
+    <Field Name="送料・手数料">
+      <Value Type="field">CAST((w2_Order.order_price_shipping + w2_Order.order_price_exchange + w2_Order.order_price_regulation) AS INT)</Value>
+    </Field>
+    <Field Name="データ出力日">
+      <Value Type="dateString" Format="yyyymmdd">Now</Value>
+    </Field>
+    <Field Name="次回お届け予定日">
+      <Value Type="dateString" Format="yyyymmdd">w2_FixedPurchase.next_shipping_date</Value>
+    </Field>
+    <Field Name="決済注文ID">
+      <Value Type="field">CASE WHEN w2_Order.Order_Payment_Kbn = 'K32' THEN w2_Order.payment_order_id ELSE '' END</Value>
+    </Field>
+    <Field Name="請求金額">
+      <Value Type="field">CASE WHEN w2_InvoiceAtobaraicom.limit_date IS NOT NULL THEN CAST(w2_InvoiceAtobaraicom.use_amount AS INT) ELSE NULL END</Value>
+    </Field>
+    <Field Name="うち消費税額">
+      <Value Type="field">CASE WHEN w2_InvoiceAtobaraicom.limit_date IS NOT NULL THEN CAST(w2_InvoiceAtobaraicom.tax_amount AS INT) ELSE NULL END</Value>
+    </Field>
+    <Field Name="バーコードデータ">
+      <Value Type="field">w2_InvoiceAtobaraicom.cv_barcode_data</Value>
+    </Field>
+    <Field Name="バーコード文字列1">
+      <Value Type="field">w2_InvoiceAtobaraicom.cv_barcode_string1</Value>
+    </Field>
+    <Field Name="バーコード文字列2">
+      <Value Type="field">w2_InvoiceAtobaraicom.cv_barcode_string2</Value>
+    </Field>
+    <Field Name="ゆうちょOCRコード1">
+      <Value Type="field">w2_InvoiceAtobaraicom.yu_mt_ocr_code1</Value>
+    </Field>
+    <Field Name="ゆうちょOCRコード2">
+      <Value Type="field">w2_InvoiceAtobaraicom.yu_mt_ocr_code2</Value>
+    </Field>
+    <Field Name="支払期限日">
+      <Value Type="dateString" Format="yyyy/mm/dd">w2_InvoiceAtobaraicom.limit_date</Value>
+    </Field>
+    <Field Name="顧客氏名">
+      <Value Type="field">w2_InvoiceAtobaraicom.name_kj</Value>
+    </Field>
+    <Field Name="サイズ">
+      <Value Type="field">
+        <![CDATA[
+          (
+            SELECT  w2_ProductView.variation_cooperation_id1
+              FROM  w2_ProductView
+             WHERE  w2_ProductView.shop_id = w2_OrderItem.shop_id
+               AND  w2_ProductView.product_id = w2_OrderItem.product_id
+               AND  w2_ProductView.variation_id = w2_OrderItem.variation_id
+          )
+        ]]>
+      </Value>
+    </Field>
+    <Field Name="色">
+      <Value Type="field">
+        <![CDATA[
+          (
+            SELECT  w2_ProductView.variation_cooperation_id2
+              FROM  w2_ProductView
+             WHERE  w2_ProductView.shop_id = w2_OrderItem.shop_id
+               AND  w2_ProductView.product_id = w2_OrderItem.product_id
+               AND  w2_ProductView.variation_id = w2_OrderItem.variation_id
+          )
+        ]]>
+      </Value>
+    </Field>
+    <Field Name="同梱フラグ">
+      <Value Type="field">
+        <![CDATA[
+          (
+            SELECT  w2_UserExtend.usrex_doukon
+              FROM  w2_UserExtend
+             WHERE  w2_UserExtend.user_id = w2_Order.user_id
+          )
+        ]]>
+      </Value>
+    </Field>
+    <Field Name="CVS収納代行会社名">
+      <Value Type="field">w2_InvoiceAtobaraicom.cvs_company_name</Value>
+    </Field>
+    <Field Name="CVS収納代行加入者名">
+      <Value Type="field">w2_InvoiceAtobaraicom.cvs_user_name</Value>
+    </Field>
+    <Field Name="銀行口座 - 銀行コード">
+      <Value Type="field">w2_InvoiceAtobaraicom.bk_code</Value>
+    </Field>
+    <Field Name="銀行口座 - 支店コード">
+      <Value Type="field">w2_InvoiceAtobaraicom.bk_branch_code</Value>
+    </Field>
+    <Field Name="銀行口座 - 銀行名">
+      <Value Type="field">w2_InvoiceAtobaraicom.bk_name</Value>
+    </Field>
+    <Field Name="銀行口座 - 支店名">
+      <Value Type="field">w2_InvoiceAtobaraicom.bk_branch_name</Value>
+    </Field>
+    <Field Name="銀行口座 - 口座種別">
+      <Value Type="field">w2_InvoiceAtobaraicom.bk_account_kind</Value>
+    </Field>
+    <Field Name="銀行口座 - 口座番号">
+      <Value Type="field">w2_InvoiceAtobaraicom.bk_account_no</Value>
+    </Field>
+    <Field Name="銀行口座 - 口座名義">
+      <Value Type="field">w2_InvoiceAtobaraicom.bk_account_name</Value>
+    </Field>
+    <Field Name="銀行口座 - 口座名義カナ">
+      <Value Type="field">w2_InvoiceAtobaraicom.bk_account_kana</Value>
+    </Field>
+    <Field Name="ゆうちょ口座 - 加入者名">
+      <Value Type="field">w2_InvoiceAtobaraicom.yu_account_name</Value>
+    </Field>
+    <Field Name="ゆうちょ口座 - 口座番号">
+      <Value Type="field">w2_InvoiceAtobaraicom.yu_account_no</Value>
+    </Field>
+    <Field Name="ゆうちょ口座 - 払込負担区分">
+      <Value Type="field">w2_InvoiceAtobaraicom.yu_load_kind</Value>
+    </Field>
+    <Field Name="マイページパスワード">
+      <Value Type="field">w2_InvoiceAtobaraicom.mypage_pwd</Value>
+    </Field>
+    <Field Name="マイページURL">
+      <Value Type="field">w2_InvoiceAtobaraicom.mypage_url</Value>
+    </Field>
+    <Field Name="クレジット利用期限日">
+      <Value Type="field">w2_InvoiceAtobaraicom.credit_deadline</Value>
+    </Field>
+    <Field Name="８％対象合計金額">
+      <Value Type="field">CAST(PriceTotalByTax.[8.00] AS INT)</Value>
+    </Field>
+    <Field Name="８％対象消費税額">
+      <Value Type="field">CAST(TaxPriceByRate.[8.00] AS INT)</Value>
+    </Field>
+    <Field Name="１０％対象合計金額">
+      <Value Type="field">CAST(PriceTotalByTax.[10.00] AS INT)</Value>
+    </Field>
+    <Field Name="１０％対象消費税額">
+      <Value Type="field">CAST(TaxPriceByRate.[10.00] AS INT)</Value>
+    </Field>
+  </FieldsSetting>
+
+</OrderDataExportSetting>

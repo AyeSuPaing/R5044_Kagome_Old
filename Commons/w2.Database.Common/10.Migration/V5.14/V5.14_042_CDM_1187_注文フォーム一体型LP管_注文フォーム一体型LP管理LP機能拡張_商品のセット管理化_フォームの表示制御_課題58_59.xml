@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_LandingPageDesign' AND column_name = 'social_login_use_type')
+          ALTER TABLE [w2_LandingPageDesign] ADD [social_login_use_type] [nvarchar] (20) NOT NULL DEFAULT (N'ALL');
+        GO
+		    IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_LandingPageDesign' AND column_name = 'social_login_list')
+          ALTER TABLE [w2_LandingPageDesign] ADD [social_login_list] [nvarchar] (max) NOT NULL DEFAULT (N'');
+        GO
+		    IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_LandingPageDesign' AND column_name = 'efo_cube_use_flg')
+          ALTER TABLE [w2_LandingPageDesign] ADD [efo_cube_use_flg] [nvarchar] (20) NOT NULL DEFAULT (N'ON');
+        GO
+		    IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_LandingPageDesign' AND column_name = 'order_confirm_page_skip_flg')
+          ALTER TABLE [w2_LandingPageDesign] ADD [order_confirm_page_skip_flg] [nvarchar] (20) NOT NULL DEFAULT (N'OFF');
+        GO
+		    IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_LandingPageDesign' AND column_name = 'mail_address_confirm_form_use_flg')
+          ALTER TABLE [w2_LandingPageDesign] ADD [mail_address_confirm_form_use_flg] [nvarchar] (20) NOT NULL DEFAULT (N'ON');
+        GO
+		    IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_LandingPageDesign' AND column_name = 'unpermitted_payment_ids')
+          ALTER TABLE [w2_LandingPageDesign] ADD [unpermitted_payment_ids] [nvarchar] (max) NOT NULL DEFAULT (N'');
+        GO
+
+/* w2_LandingPageDesign buy_type削除 */
+DECLARE @ConstraintName nvarchar(200)
+
+SELECT @ConstraintName = obj.name FROM sys.objects AS obj
+JOIN sys.columns AS clm ON obj.object_id = clm.default_object_id
+WHERE obj.type = 'D' AND obj.parent_object_id = OBJECT_ID('w2_LandingPageDesign') AND clm.name = 'buy_type'
+
+IF @ConstraintName IS NOT NULL
+	EXEC('ALTER TABLE [w2_LandingPageDesign] DROP CONSTRAINT ' + @ConstraintName)
+GO
+
+IF EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_LandingPageDesign' AND column_name = 'buy_type')
+	ALTER TABLE [w2_LandingPageDesign] DROP COLUMN buy_type;
+GO
+
+/* w2_LandingPageProduct  branch_no追加 */
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_LandingPageProduct' AND column_name = 'branch_no')
+	ALTER TABLE [w2_LandingPageProduct] ADD [branch_no] [int] NOT NULL DEFAULT (0);
+GO
+
+/* w2_LandingPageProduct  プライマリキー変更 */
+ALTER TABLE [dbo].[w2_LandingPageProduct] DROP CONSTRAINT [PK_w2_LandingPageProduct];
+
+ALTER TABLE [dbo].[w2_LandingPageProduct] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_LandingPageProduct] PRIMARY KEY  CLUSTERED
+	(
+		[page_id],
+		[shop_id],
+		[product_id],
+		[variation_id],
+		[branch_no]
+	) ON [PRIMARY]
+GO
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_LandingPageProductSet]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+begin
+
+/*
+=========================================================================================================
+  Module      : Lpページ商品セット (w2_LandingPageProductSet.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_LandingPageProductSet] (
+	[page_id] [nvarchar] (32) NOT NULL DEFAULT (N''),
+	[branch_no] [int] NOT NULL DEFAULT (0),
+	[set_name] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[buy_type] [nvarchar] (20) NOT NULL DEFAULT (N'NORMAL'),
+	[valid_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+
+ALTER TABLE [dbo].[w2_LandingPageProductSet] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_LandingPageProductSet] PRIMARY KEY  CLUSTERED
+	(
+		[page_id],
+		[branch_no]
+	) ON [PRIMARY]
+
+end
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

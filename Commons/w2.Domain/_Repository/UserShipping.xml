@@ -1,0 +1,291 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザー配送先情報系SQLステートメントXML (UserShipping.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<UserShipping>
+
+ <!-- 検索（一覧） -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserShipping.*
+          FROM  (
+                  SELECT  w2_UserShipping.user_id,
+                          w2_UserShipping.shipping_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ USERSHIPPING_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_UserShipping
+                          [[ USERSHIPPING_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_UserShipping ON
+                (
+                  RowIndex.user_id = w2_UserShipping.user_id
+                  AND
+                  RowIndex.shipping_no = w2_UserShipping.shipping_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num  
+      ORDER BY  RowIndex.row_num ASC
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(COUNT(w2_UserShipping.shipping_no), 0)
+          FROM  w2_UserShipping
+                [[ USERSHIPPING_SEARCH_WHERE ]]
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetSearchHitCount>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserShipping
+         WHERE  user_id = @user_id
+           AND  shipping_no = @shipping_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shipping_no" Type="int" />
+    </Parameter>
+  </Get>
+
+  <!-- 取得（全て） -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserShipping
+         WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAll>
+
+  <!-- ユーザー配送先の新しい配送番号取得 -->
+  <GetNewShippingNo>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MAX(shipping_no), 0) + 1
+          FROM  w2_UserShipping
+         WHERE  user_id = @user_id
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetNewShippingNo>
+  
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_UserShipping
+                (
+                  user_id
+                  ,shipping_no
+                  ,name
+                  ,shipping_name
+                  ,shipping_name_kana
+                  ,shipping_zip
+                  ,shipping_addr1
+                  ,shipping_addr2
+                  ,shipping_addr3
+                  ,shipping_addr4
+                  ,shipping_tel1
+                  ,shipping_tel2
+                  ,shipping_tel3
+                  ,shipping_fax
+                  ,shipping_company
+                  ,del_flg
+                  ,date_created
+                  ,date_changed
+                  ,shipping_name1
+                  ,shipping_name2
+                  ,shipping_name_kana1
+                  ,shipping_name_kana2
+                  ,shipping_company_name
+                  ,shipping_company_post_name
+                  ,shipping_country_iso_code
+                  ,shipping_country_name
+                  ,shipping_addr5
+                  ,shipping_receiving_store_flg
+                  ,shipping_receiving_store_id
+                  ,shipping_receiving_store_type
+                )
+        VALUES  (
+                  @user_id
+                  ,@shipping_no
+                  ,@name
+                  ,@shipping_name
+                  ,@shipping_name_kana
+                  ,@shipping_zip
+                  ,@shipping_addr1
+                  ,@shipping_addr2
+                  ,@shipping_addr3
+                  ,@shipping_addr4
+                  ,@shipping_tel1
+                  ,@shipping_tel2
+                  ,@shipping_tel3
+                  ,@shipping_fax
+                  ,@shipping_company
+                  ,@del_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@shipping_name1
+                  ,@shipping_name2
+                  ,@shipping_name_kana1
+                  ,@shipping_name_kana2
+                  ,@shipping_company_name
+                  ,@shipping_company_post_name
+                  ,@shipping_country_iso_code
+                  ,@shipping_country_name
+                  ,@shipping_addr5
+                  ,@shipping_receiving_store_flg
+                  ,@shipping_receiving_store_id
+                  ,@shipping_receiving_store_type
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shipping_no" Type="int" />
+      <Input Name="name" Type="nvarchar" Size="30" />
+      <Input Name="shipping_name" Type="nvarchar" Size="40" />
+      <Input Name="shipping_name_kana" Type="nvarchar" Size="60" />
+      <Input Name="shipping_zip" Type="nvarchar" Size="8" />
+      <Input Name="shipping_addr1" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr2" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr3" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr4" Type="nvarchar" Size="50" />
+      <Input Name="shipping_tel1" Type="nvarchar" Size="16" />
+      <Input Name="shipping_tel2" Type="nvarchar" Size="16" />
+      <Input Name="shipping_tel3" Type="nvarchar" Size="16" />
+      <Input Name="shipping_fax" Type="nvarchar" Size="16" />
+      <Input Name="shipping_company" Type="nvarchar" Size="30" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_name1" Type="nvarchar" Size="20" />
+      <Input Name="shipping_name2" Type="nvarchar" Size="20" />
+      <Input Name="shipping_name_kana1" Type="nvarchar" Size="30" />
+      <Input Name="shipping_name_kana2" Type="nvarchar" Size="30" />
+      <Input Name="shipping_company_name" Type="nvarchar" Size="50" />
+      <Input Name="shipping_company_post_name" Type="nvarchar" Size="50" />
+      <Input Name="shipping_country_iso_code" Type="nvarchar" Size="3" />
+      <Input Name="shipping_country_name" Type="nvarchar" Size="100" />
+      <Input Name="shipping_addr5" Type="nvarchar" Size="50" />
+      <Input Name="shipping_receiving_store_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_receiving_store_id" Type="nvarchar" Size="20" />
+      <Input Name="shipping_receiving_store_type" Type="nvarchar" Size="5" />
+    </Parameter>
+  </Insert>
+  
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserShipping
+           SET  name = @name
+                ,shipping_name = @shipping_name
+                ,shipping_name_kana = @shipping_name_kana
+                ,shipping_zip = @shipping_zip
+                ,shipping_addr1 = @shipping_addr1
+                ,shipping_addr2 = @shipping_addr2
+                ,shipping_addr3 = @shipping_addr3
+                ,shipping_addr4 = @shipping_addr4
+                ,shipping_tel1 = @shipping_tel1
+                ,shipping_tel2 = @shipping_tel2
+                ,shipping_tel3 = @shipping_tel3
+                ,shipping_fax = @shipping_fax
+                ,shipping_company = @shipping_company
+                ,del_flg = @del_flg
+                ,date_changed = GETDATE()
+                ,shipping_name1 = @shipping_name1
+                ,shipping_name2 = @shipping_name2
+                ,shipping_name_kana1 = @shipping_name_kana1
+                ,shipping_name_kana2 = @shipping_name_kana2
+                ,shipping_company_name = @shipping_company_name
+                ,shipping_company_post_name = @shipping_company_post_name
+                ,shipping_country_iso_code = @shipping_country_iso_code
+                ,shipping_country_name = @shipping_country_name
+                ,shipping_addr5 = @shipping_addr5
+                ,shipping_receiving_store_flg = @shipping_receiving_store_flg
+                ,shipping_receiving_store_id = @shipping_receiving_store_id
+                ,shipping_receiving_store_type = @shipping_receiving_store_type
+         WHERE  user_id = @user_id
+           AND  shipping_no = @shipping_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shipping_no" Type="int" />
+      <Input Name="name" Type="nvarchar" Size="30" />
+      <Input Name="shipping_name" Type="nvarchar" Size="40" />
+      <Input Name="shipping_name_kana" Type="nvarchar" Size="60" />
+      <Input Name="shipping_zip" Type="nvarchar" Size="8" />
+      <Input Name="shipping_addr1" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr2" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr3" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr4" Type="nvarchar" Size="50" />
+      <Input Name="shipping_tel1" Type="nvarchar" Size="16" />
+      <Input Name="shipping_tel2" Type="nvarchar" Size="16" />
+      <Input Name="shipping_tel3" Type="nvarchar" Size="16" />
+      <Input Name="shipping_fax" Type="nvarchar" Size="16" />
+      <Input Name="shipping_company" Type="nvarchar" Size="30" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_name1" Type="nvarchar" Size="20" />
+      <Input Name="shipping_name2" Type="nvarchar" Size="20" />
+      <Input Name="shipping_name_kana1" Type="nvarchar" Size="30" />
+      <Input Name="shipping_name_kana2" Type="nvarchar" Size="30" />
+      <Input Name="shipping_company_name" Type="nvarchar" Size="50" />
+      <Input Name="shipping_company_post_name" Type="nvarchar" Size="50" />
+      <Input Name="shipping_country_iso_code" Type="nvarchar" Size="3" />
+      <Input Name="shipping_country_name" Type="nvarchar" Size="100" />
+      <Input Name="shipping_addr5" Type="nvarchar" Size="50" />
+      <Input Name="shipping_receiving_store_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_receiving_store_id" Type="nvarchar" Size="20" />
+      <Input Name="shipping_receiving_store_type" Type="nvarchar" Size="5" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserShipping
+         WHERE  user_id = @user_id
+           AND  shipping_no = @shipping_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shipping_no" Type="int" />
+    </Parameter>
+  </Delete>
+
+</UserShipping>

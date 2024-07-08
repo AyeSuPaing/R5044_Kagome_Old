@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザーポイント系SQLステートメントXML(UserPointDetail.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<UserPoint>
+
+  <!-- ユーザーポイント出力情報一覧取得 -->
+  <GetUserPointDetailListExport>
+    <Statement>
+      <![CDATA[
+        -- 本ポイント一覧取得し、ユーザーポイントテーブル変数に格納
+        SELECT  @@ fields @@
+          FROM  (
+                SELECT  w2_UserPoint.user_id,
+                        ISNULL(NULLIF(w2_UserPoint.point_type,''),'01') AS point_type,
+                        ISNULL(w2_UserPoint.point_kbn, '01') AS point_kbn,
+                        ISNULL(w2_UserPoint.point,0) AS point,
+                        w2_UserPoint.effective_date,
+                        ISNULL(NULLIF(w2_UserPoint.point_exp,''),DATEADD(year,1,GETDATE())) AS point_exp,
+                        w2_UserPoint.kbn1
+                  FROM  w2_UserPoint
+                ) AS w2_UserPoint
+                LEFT JOIN w2_User ON
+                (
+                  w2_User.user_id = w2_UserPoint.user_id
+                )
+        [[ USERPOINT_SEARCH_WHERE ]]
+        [[ USERPOINT_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="select_point_kbn" Type="int" />
+    </Parameter>
+  </GetUserPointDetailListExport>
+
+</UserPoint>

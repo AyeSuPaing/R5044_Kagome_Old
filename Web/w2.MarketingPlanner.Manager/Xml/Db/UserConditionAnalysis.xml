@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザー状況分析系SQLステートメントXML(UserConditionAnalysis.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<UserConditionAnalysis>
+  <GetUserAnalysisList>
+    <Statement>
+      <![CDATA[
+      DECLARE @last_day_of_month nvarchar(8)
+      DECLARE @last_day_of_month_tmp datetime
+      SET @last_day_of_month_tmp = CONVERT(datetime, CONVERT(nvarchar,@tgt_year) + '/' + CONVERT(nvarchar,@tgt_month) + '/1')
+      SET @last_day_of_month_tmp = DATEADD(mm,1,@last_day_of_month_tmp)
+      SET @last_day_of_month_tmp = DATEADD(dd,-1,@last_day_of_month_tmp)
+      SET @last_day_of_month = CONVERT(nvarchar,@tgt_year) + CONVERT(nvarchar,@tgt_month) + CONVERT(nvarchar,DAY( @last_day_of_month_tmp ))
+      
+      SELECT  A.*,
+          B.*,
+          (
+          CASE WHEN (tgt_year + tgt_month + tgt_day) = @last_day_of_month THEN
+            '1'
+          ELSE
+            '0'
+          END
+          ) AS final_flg
+        FROM  -- その月の最新の日付のデータを取得（総計）
+          (
+          SELECT  tgt_year,
+              tgt_month,
+              tgt_day,
+              potential_all,
+              potential_active,
+              potential_unactive1 + potential_unactive2 AS potential_unactive_total,
+              potential_unactive1,
+              potential_unactive2,
+              recognize_all,
+              recognize_active,
+              recognize_unactive1 + recognize_unactive2 AS recognize_unactive_total,
+              recognize_unactive1,
+              recognize_unactive2,
+              leave_all
+            FROM  w2_DispUserAnalysis
+           WHERE  dept_id = @dept_id
+             AND  tgt_year + tgt_month + tgt_day IN (
+                SELECT  MAX(tgt_year + tgt_month + tgt_day)
+                  FROM  w2_DispUserAnalysis
+                 WHERE  tgt_year = @tgt_year
+                   AND  tgt_month = @tgt_month
+              )
+          ) A,
+          -- 新規獲得・退会ユーザ数集計（新規獲得数合計）
+          (
+          SELECT  SUM(potential_new) AS potential_new_total,
+              SUM(recognize_new) AS recognize_new_total,
+              SUM(leave_new) AS leave_new_total
+            FROM  w2_DispUserAnalysis
+           WHERE  dept_id = @dept_id
+             AND  tgt_year = @tgt_year
+             AND  tgt_month = @tgt_month
+          ) B
+      ORDER BY tgt_year, tgt_month, tgt_day DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+    </Parameter>
+  </GetUserAnalysisList>
+
+  <GetUserAnalysisDetailDay>
+    <Statement>
+      <![CDATA[
+      SELECT  tgt_year,
+          tgt_month,
+          tgt_day,
+          potential_new,
+          potential_all,
+          potential_active,
+          potential_unactive1 + potential_unactive2 AS potential_unactive_total,
+          recognize_new,
+          recognize_all,
+          recognize_active,
+          recognize_unactive1 + recognize_unactive2 AS recognize_unactive_total,
+          leave_new,
+          leave_all
+        FROM  w2_DispUserAnalysis
+       WHERE  dept_id = @dept_id
+         AND  tgt_year = @tgt_year
+         AND  convert(int,tgt_month) = convert(int,@tgt_month)  -- 応急処置★
+      ORDER BY tgt_year, tgt_month, tgt_day
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+    </Parameter>
+  </GetUserAnalysisDetailDay>
+  <GetUserAnalysisDetailMonth>
+    <Statement>
+      <![CDATA[
+      SELECT  A.*,
+          B.*
+        FROM  (
+          SELECT  tgt_year,
+              tgt_month,
+              tgt_day,
+              potential_all,
+              potential_active,
+              potential_unactive1 + potential_unactive2 AS potential_unactive_total,
+              recognize_all,
+              recognize_active,
+              recognize_unactive1 + recognize_unactive2 AS recognize_unactive_total,
+              leave_all
+          FROM  w2_DispUserAnalysis
+          WHERE  dept_id = @dept_id
+            AND  (tgt_year + tgt_month + tgt_day) IN (
+                SELECT  MAX(tgt_year + tgt_month + tgt_day)
+                FROM  w2_DispUserAnalysis
+                WHERE  tgt_year = @tgt_year
+                GROUP BY tgt_month
+              )
+          ) A,
+          (
+          SELECT  tgt_month,
+              SUM(potential_new) AS potential_new,
+              SUM(recognize_new) AS recognize_new,
+              SUM(leave_new) AS leave_new_new
+            FROM  w2_DispUserAnalysis
+           WHERE  dept_id = @dept_id
+             AND  tgt_year = @tgt_year
+          GROUP BY tgt_month 
+          ) B
+       WHERE  A.tgt_month = B.tgt_month
+      ORDER BY A.tgt_year, A.tgt_month, A.tgt_day
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+    </Parameter>
+  </GetUserAnalysisDetailMonth>
+</UserConditionAnalysis>

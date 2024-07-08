@@ -1,0 +1,624 @@
+﻿@*
+=========================================================================================================
+  Module      : コーディネートページ コーディネート詳細(パーシャルビュー)(Detail.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Manager
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.ViewModels.Shared
+@using w2.Common.Web
+@using w2.Domain.MenuAuthority.Helper
+@model w2.Cms.Manager.ViewModels.Coordinate.DetailViewModel
+@{
+	var sessionWrapper = new SessionWrapper(Session);
+	var realShopLink = SingleSignOnUrlCreator.CreateForMvc(
+		MenuAuthorityHelper.ManagerSiteType.Ec,
+		new UrlCreator(Constants.PAGE_MANAGER_REALSHOP_REGISTER)
+			.AddParam(Constants.REQUEST_KEY_ACTION_STATUS, "update")
+			.AddParam(Constants.REQUEST_KEY_WINDOW_KBN, "1").CreateUrl());
+	var staffLink = Url.Action("Confirm", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_STAFF, new
+	{
+		ActionStatus = ActionStatus.Detail,
+		PageLayout = Constants.POPUP_LAYOUT_PATH_DEFAULT
+	});
+
+	var seoSettingLink = Url.Action("Modify", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_SEO_METADATAS, new
+	{
+		PageLayout = Constants.POPUP_LAYOUT_PATH_DEFAULT
+	});
+}
+@helper IdAttribute(int i)
+{
+	var id = "product" + i;
+	@:@id
+}
+
+<style>
+.tagsinput{ 
+	width: 50%;
+}
+.tagsinput .tag {
+	line-height: 1.4;
+	border-radius: 4px;
+	padding-left: 8px;
+	background: #4ca750;
+}
+.tagsinput .tag .tag-remove::before, .tagsinput .tag .tag-remove::after {
+	background: #fff;
+}
+.box2{
+	width:200px;
+	height:auto;
+	margin:0;
+	text-align:center;
+}
+.necessary{
+	color:#ff0000;
+}
+textarea {
+	outline: none;
+}
+
+</style>
+<div class="main-content-detail-inner">
+<a class="main-content-detail-btn-close"><span class="icon icon-close"></span>閉じる</a>
+
+@using (Html.BeginForm("UpdateDetailPage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE, new
+{
+}, FormMethod.Post, new
+{
+	Id = "detail_form",
+	Onsubmit = "return false;"
+}))
+{
+<p style="font-size: 13px">※フロントサイトにも表示されます<span class="necessary">*</span></p>
+<div class="main-content-detail-head">
+<div class="main-content-detail-head-title h2">
+	@Html.TextBox("coordinateTitle", this.Model.Input.CoordinateTitle,new{ Name="input.CoordinateTitle", placeholder="フロント/管理用ページ名を入力してください（必須）"})
+</div>
+<div class="main-content-detail-head-main-actions">
+<div class="form-element-group form-element-group-horizontal">
+	<div class="form-element-group-title">
+		<label for="form-select-page-status">状態</label>
+	</div>
+	<div class="form-element-group-content">
+		@Html.DropDownList("displayKbn", this.Model.DisplayKbns, new { Name="input.DisplayKbn", style = "width:125px" })
+	</div>
+</div>
+<a href="javascript:preview()" class="btn btn-txt btn-size-m">プレビュー</a>
+<input type="button" class="btn btn-main btn-size-l" onclick="main_content_detail_update();" value="@(Model.IsActionStatusUpdate ? "更新" : "登録")" id="update_button">
+@Html.Hidden("coordinateId", this.Model.CoordinateId,new{ Name="input.CoordinateId" })
+@Html.Hidden("controller", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)
+<div class="dropdown">
+<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle">
+	<span class="icon-dots"></span>
+</a>
+<div class="dropdown-menu">
+	@if (Model.IsActionStatusUpdate)
+	{
+		<a class="dropdown-menu-item" href="javascript:open_page_copy('@Model.CoordinateId', '@ActionStatus.CopyInsert')">複製して新規作成する</a>
+		<a class="dropdown-menu-item" href="javascript:delete_page('@Model.CoordinateId')">削除する</a>
+	}
+	<a class="dropdown-menu-item" href="javascript:open_page('@Model.CoordinateId')">リセットする</a>
+</div>
+</div>
+</div>
+</div>
+<div class="main-content-detail-body">
+<div class="form-element-group form-element-group-horizontal">
+<div class="form-element-group-title">
+	<label for="form-input-002">URL</label>
+</div>
+<div class="form-element-group-content">
+<div class="page-url">
+	<span class="page-url-value">@this.Model.CoordinateUrl</span>
+	<span class="page-url-btns">
+		<button id="url-copy-btn" class="btn btn-sub btn-size-s">コピー</button>
+	</span>
+</div>
+</div>
+</div>
+
+<label>コーディネート画像（D&Dで順番を変更できます）</label>
+<style>.image-upload-content-block-wrapper {display: none;}</style>
+<div id="uploadImage"></div>
+
+<div class="form-element-group form-element-group-horizontal-grid">
+	<div class="form-element-group-title">
+		<label for="staffId">スタッフ</label>
+	</div>
+	<div class="form-element-group-content">
+		<datalist id="staffList">
+			@foreach (var staff in Model.StaffList)
+			{
+				<option value="@staff.Value" label="@staff.Text"></option>
+			}
+		</datalist>
+		@Html.TextBox("staffId", this.Model.StaffId, new
+		 {
+			 Name = "input.StaffId",
+			 autocomplete = "on",
+			 list = "staffList",
+			 Onchange = "Javascript: set_real_shop_id();",
+			 placeholder = "設定なし",
+		 })
+		<a id="staffName"></a>
+	</div>
+</div>
+
+<div class="form-element-group form-element-group-horizontal-grid">
+	<div class="form-element-group-title">
+		<label for="realShopId">店舗</label>
+	</div>
+	<div class="form-element-group-content">
+		<datalist id="realShopList">
+			@foreach (var shop in Model.RealShopList)
+			{
+				<option value="@shop.Value" label="@shop.Text"></option>
+			}
+		</datalist>
+		@Html.TextBox("realShopId", @Model.RealShopId, new
+		 {
+			 Name = "input.RealShopId",
+			 autocomplete = "on",
+			 list = "realShopList",
+			 OnChange ="set_real_shop_name();",
+			 placeholder = "設定なし",
+		 })
+		<a id="realShopName"></a>
+	</div>
+</div>
+
+<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature">
+	<div class="form-element-group-title">
+		<label for="htmlTitle">SEOページタイトル</label>
+	</div>
+	<div class="form-element-group-content">
+		@Html.TextBox("htmlTitle", this.Model.Input.HtmlTitle, new { Name = "input.HtmlTitle", placeholder = "設定なし", style = "width:50%" }) <a href="javascript:open_seo_setting()">SEO設定画面</a>
+	</div>
+</div>
+<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature">
+	<div class="form-element-group-title">
+		<label for="metaDatadesc">SEOディスクリプション</label>
+	</div>
+	<div class="form-element-group-content">
+		@Html.TextBox("metaDatadesc", this.Model.Input.MetadataDesc, new { Name = "input.MetadataDesc", placeholder = "設定なし", style = "width:50%" })
+	</div>
+</div>
+
+
+<div class="form-element-group form-element-group-vertical">
+<div class="form-element-group-title">
+	<label for="coordinateSummary">概要（コーディネートのポイントなど）</label>
+</div>
+<div class="form-element-group-content">
+	@Html.TextArea("coordinateSummary", this.Model.Input.CoordinateSummary, new { Name = "input.CoordinateSummary", placeholder = "設定なし", style = "height:100px" })
+</div>
+</div>
+
+<div class="form-element-group form-element-group-vertical">
+<div class="form-element-group-title">
+	<label >商品設定</label>
+</div>
+<div class="feature-page-element">
+	<div class="feature-page-element-content" id="product0">
+		<div class="feature-item-list-btn">
+			<a href="javascript:void(0);" onclick="set_product_list_btn_click(0)" class="btn btn-main btn-size-m">商品一覧を設定する</a>
+		</div>
+	</div>
+</div>
+</div>
+
+@* カテゴリ入力 *@
+<div id="categoryInput"></div>
+
+<div class="form-element-group form-element-group-horizontal-grid">
+<div class="form-element-group-title">
+	<label for="contentsTagNames_tag">タグ</label>
+</div>
+<div class="form-element-group-content">
+	@Html.TextBox("contentsTagNames", this.Model.Input.ContentsTagNames, new { Name = "input.ContentsTagNames", @class = "custom-tags-input", data_autocomplete_source = this.Model.Tags, data_placeholder = "タグを指定してください" })
+</div>
+</div>
+
+<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature">
+	<div class="form-element-group-title">
+		<label for="access-authority-setting-period-start-input-date">公開日時<span class="necessary">*</span></label>
+	</div>
+<div class="access-authority-setting-period-start-input">
+	<div class="access-authority-setting-period-start-input-date">
+		@Html.Label("access-authority-setting-period-start-input-date", "日付")
+		@Html.TextBox("DisplayDate1", this.Model.Input.DisplayDate1,new
+		{
+			Id = "access-authority-setting-period-start-input-date",
+			Name = "input.DisplayDate1",
+			Class = "input-datepicker",
+		})
+	</div>
+	<div class="access-authority-setting-period-start-input-time">
+		@Html.Label("access-authority-setting-period-start-input-time", "時間")
+		@Html.TextBox("DisplayDate2", this.Model.Input.DisplayDate2,new
+		{
+			Id = "access-authority-setting-period-start-input-time",
+			Name = "input.DisplayDate2",
+			Class = "input-timepicker",
+		})
+	</div>
+	<a href="javascript:void(0)" onclick="period_input_clear(this);" class="btn btn-txt btn-size-s">クリア</a>
+</div>
+</div>
+
+<div class="form-element-group form-element-group-horizontal-grid">
+<div class="form-element-group-title">
+	<label for="internalMemo">内部用メモ</label>
+</div>
+<div class="form-element-group-content">
+	@Html.TextArea("internalMemo", this.Model.Input.InternalMemo, new { Name = "input.InternalMemo", placeholder = "設定なし", style = "width:50%;height:100px" })
+</div>
+</div>
+	<div class="bottom-notes">
+		<p>備考</p>
+		<p>■カテゴリ・タグについて</p>
+		・入力後、エンターキーを押してください。ブロックになりましたら、入力完了です。
+	</div>
+</div>
+}
+</div>
+<div class="modal-content-hide">
+@Html.Partial("_ProductModal", new ProductSettingModalModel(sessionWrapper.LoginShopId, Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE) { UseGroupSelectTab = false,SetProductControllerActionName = "SetVariationProductList" })
+</div>
+@Html.Partial("_ImageListModal", Model.ImageModalViewModel)
+
+<!-- モーダル：カテゴリ選択 -->
+<div class="modal-content-hide">
+<div id="modal-access-authority-setting-targetlist-1">
+<p class="modal-inner-ttl">カテゴリを選択する</p>
+<div class="access-authority-setting-targetlist">
+<div class="access-authority-setting-targetlist-list list">
+<div class="access-authority-setting-targetlist-list-head list-head">
+<div class="list-head-row">
+	<div class="list-head-col ta-left" style="width: 40%;">
+		カテゴリID
+	</div>
+	<div class="list-head-col ta-left">
+		カテゴリ名
+	</div>
+	<div class="list-head-col w30">
+		<div class="keyword-search">
+			@Html.TextBox("searchCategoryModal", "", new
+			{
+				Class = "keyword-search-input",
+				onchange ="category_list_redraw();"
+			})
+			<a href="javascript:category_list_redraw();" class="keyword-search-submit">
+				<span class="icon-search"></span>
+			</a>
+		</div>
+	</div>
+</div>
+</div>
+<div id="category-list-content"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- /モーダル：カテゴリ選択 -->
+
+<script type="text/javascript">
+	$(function() {
+		$("#update_button").prop("disabled", true);
+		height_fit.ini();
+		custom_scroll.ini();
+		tab.ini();
+		page_url_edit.ini();
+		page.ini();
+		parts.ini();
+		list.ini();
+		dropdown_toggle.ini();
+		custom_select.ini();
+		custom_tag_input.ini();
+		input_datepicker.ini();
+		access_authority_setting.ini();
+		set_product();
+		set_staff_name();
+		set_real_shop_name();
+		set_image_form();
+		set_coordinate_input();
+		history.replaceState("", "", "#page" + "@this.Model.CoordinateId");
+	});
+
+	// 商品リストをセット
+	function set_product() {
+		if ("@Model.ProductIds" == "") return;
+		var productIds = "@Model.ProductIds".split(',');
+		var variationIds = "@Model.VariationIds".split(',');
+		var regex = new RegExp(/^(product_search_error)/);
+		productIds.pop();
+		variationIds.pop();
+		$.ajax({
+			url: "@Url.Action("SetVariationProductList", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+		type: "POST",
+		data: {
+			'productIds': productIds,
+			'variationIds': variationIds,
+			'baseName': 'input.ProductInput[0]'
+		},
+		traditional: true,
+		}).done(function (viewHtml) {
+		if (viewHtml.match(regex)) {
+			eval(viewHtml);
+			return;
+		}
+		$('#product0').html(viewHtml);
+	});
+	}
+
+	// バリエーションを変更
+	function change_variation() {
+		var regex = new RegExp(/^(product_search_error)/);
+		$.ajax({
+			url: "@Url.Action("ChangeVariation", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+		type: "POST",
+		data: get_main_content_detail_date(),
+		traditional: true,
+	}).done(function (viewHtml) {
+		if (viewHtml.match(regex)) {
+			eval(viewHtml);
+			return;
+		}
+		$('#product0').html(viewHtml);
+	});
+	}
+
+	// クリップボードコピー コピー内容
+	function clipboard_url_copy(trigger) {
+		return "@Model.CoordinateUrl";
+	}
+
+	// 詳細エリアフォームの入力データ取得
+	function get_main_content_detail_date() {
+		var pageDate = $('#detail_form').serializeArray();
+		return pageDate;
+	}
+
+	// プレビュー表示
+	function preview() {
+		loading_animation.start();
+		var validateUrl = "@Url.Action("Validate", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)";
+		var url = "@Url.Action("Preview", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE, new
+					{
+						actionStatus = Model.ActionStatus
+					})";
+		var input = get_main_content_detail_date();
+
+		$.ajax({
+			type: "POST",
+			url: validateUrl,
+			data: input
+		}).done(function (errorMessage) {
+			if (errorMessage !== "") {
+				notification.show(errorMessage, 'warning', 'fixed');
+				loading_animation.end();
+			} else {
+				$.ajax({
+					type: "POST",
+					url: url,
+					data: input
+				}).done(function (url) {
+					setTimeout(function () {
+						loading_animation.end();
+						open_window(url, 'preview', "");
+					},
+						1500);
+				}).fail(function () {
+				});
+			}
+		}).fail(function () {
+		});
+	}
+
+	// ページ詳細更新
+	function main_content_detail_update() {
+		loading_animation.start();
+		$.ajax({
+			type: "POST",
+			url:
+				"@Url.Action("UpdateDetailPage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE, new
+				{
+					actionStatus = Model.ActionStatus
+				})",
+		data: get_main_content_detail_date()
+	}).done(function (errorMessage) {
+		setTimeout(function () { loading_animation.end(); }, 200);
+		// 警告表示を削除
+		$('.notification-message-warning').remove();
+		if (errorMessage === "") {
+			list_redraw();
+			open_page('@Model.CoordinateId')
+			notification.show('ページを@(Model.IsActionStatusUpdate ? "更新" : "登録")しました。', 'info', 'fadeout');
+		} else {
+			notification.show(errorMessage, 'warning', 'fixed');
+		}
+	}).fail(function () {
+	});
+	}
+
+	// 画像削除
+	function delete_image(imageNo) {
+		loading_animation.start();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("DeleteImage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+			data: {
+				'imageNo': imageNo,
+				'coordinateId': "@Model.CoordinateId"
+			}
+		}).done(function (errorMessage) {
+			setTimeout(function () { loading_animation.end(); }, 200);
+			// 警告表示を削除
+			$('.notification-message-warning').remove();
+			if (errorMessage === "") {
+				set_image_form();
+			} else {
+				notification.show(errorMessage, 'warning', 'fixed');
+			}
+		}).fail(function () {
+		});
+	};
+
+	// アップロード済み画像をセット
+	function set_uploaded_image() {
+		$.ajax({
+			url: "@Url.Action("SetUploadedImage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+		type: "POST",
+		data: { 'coordinateId': "@Model.CoordinateId" },
+		traditional: true,
+		}).done(function (viewHtml) {
+			$('#uploadedImage').html(viewHtml);
+		});
+	}
+
+	// 画像フォームをセット
+	function set_image_form() {
+		$.ajax({
+			url: "@Url.Action("SetImageForm", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+		type: "POST",
+		traditional: true
+		}).done(function (viewHtml) {
+			$('#uploadImage').html(viewHtml);
+			set_uploaded_image();
+		});
+	}
+
+	// カテゴリ入力をセット
+	function set_coordinate_input() {
+		$.ajax({
+			url: "@Url.Action("SetCategoryInput", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+			type: "POST",
+			data: {
+				'coordinateId': "@Model.CoordinateId",
+				'actionStatus' : "@Model.ActionStatus"
+			},
+			traditional: true,
+		}).done(function (viewHtml) {
+			$('#categoryInput').html(viewHtml);
+		}).done(function () {$("#update_button").prop("disabled", false);});
+	}
+
+	// 商品一覧を設定するをクリック
+	function set_product_list_btn_click(no) {
+		$('#modal-no').val(no);
+		$('#base-name').val('input.productInput[' + no + ']');
+		modal.open('#modal-item-list', 'modal-size-m modal-item-list');
+		$('.item-search-result').html('');
+		$('#ParamModel_ProductName').val('');
+		$('#ParamModel_ProductId').val('');
+	}
+
+	// 商品一覧の削除するボタンクリック
+	function delete_product_list() {
+		$('#productIdsHidden').val('');
+		$("#product0").html('<div class="feature-item-list-btn">'
+		+ '<a href="javascript:void(0);" onclick="set_product_list_btn_click(0)" class="btn btn-main btn-size-m">商品一覧を設定する</a></div>');
+	}
+
+	// 商品一覧の変更するボタンクリック
+	function change_product_list(obj) {
+		var no = $(obj).parent().parent().attr('id').slice(7);
+		$('#modal-no').val(no);
+		$('#base-name').val('input.productInput[' + no + ']');
+		modal.open('#modal-item-list', 'modal-size-m modal-item-list');
+		$('.item-search-result').html('');
+		$('#ParamModel_ProductName').val('');
+		$('#ParamModel_ProductId').val('');
+	}
+
+	// 商品リストのPartialViewを商品一覧にセット
+	function set_product_view_html(viewHtml) {
+		var modalNo = $('#modal-no').val();
+		$('#product' + modalNo).html(viewHtml);
+		$('.modal-header-close-btn').click();
+	}
+
+	// リアル店舗をセット
+	function set_real_shop_id() {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("SetRealShopId", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+	data: { 'staffId': $('#staffId').val() }
+	}).done(function (realShopId) {
+		$('#realShopId').val(realShopId);
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("SetRealShopName", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+		data: { 'realShopId': $('#realShopId').val() }
+		}).done(function (link) {
+			$('#realShopName').html(link);
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("SetStaffName", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+			data: { 'staffId': $('#staffId').val() }
+		}).done(function (staffName) {
+			$('#staffName').html('<a href="javascript:open_staff(' + '$(\'#staffId\').val()' + ')">' + staffName + '</a>');
+		});
+	});
+	});
+	}
+
+	// スタッフ名をセット
+	function set_staff_name() {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("SetStaffName", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+		data: { 'staffId': $('#staffId').val() }
+		}).done(function (staffName) {
+			$('#staffName').html('<a href="javascript:open_staff(' + '$(\'#staffId\').val()' + ')">' + staffName + '</a>');
+		});
+	}
+
+	// 店舗名をセット
+	function set_real_shop_name() {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("SetRealShopName", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_COORDINATE_PAGE)",
+		data: { 'realShopId': $('#realShopId').val() }
+			}).done(function (link) {
+				$('#realShopName').html(link);
+		});
+	}
+
+	// スタッフの詳細画面確認
+	function open_staff(staffId) {
+		var link = '@Html.Raw(staffLink)&staffId=' + staffId;
+		open_window(link, '',
+			'width=825,height=850,top=50,left=200,status=yes,scrollbars=yes,resizable=yes');
+	}
+
+	// リアル店舗の詳細画面確認
+	function open_real_shop(realShopId) {
+		var link = '@Html.Raw(realShopLink)%26rsid%3d' + realShopId;
+		open_window(link, '',
+			'width=825,height=850,top=50,left=200,status=yes,scrollbars=yes,resizable=yes');
+	}
+
+	// SEO設定画面
+	function open_seo_setting() {
+		var link = '@Html.Raw(seoSettingLink)';
+		open_window(link, '',
+			'width=1200,height=850,top=50,left=200,status=yes,scrollbars=yes,resizable=yes');
+	}
+
+	// 日付検索フォームクリア
+	function period_input_clear(self) {
+		var dateSearchInput = $(self).closest('.access-authority-setting-period-start-input').find('input');
+		dateSearchInput.val('');
+	}
+
+	// 例外項目定義
+	var exceptions = ["keyword", "ProductId", "ProductName", "searchCategoryModal"];
+
+	// エンターキーによるsubmit禁止
+	prohibit_submission_with_exceptions(exceptions);
+</script>

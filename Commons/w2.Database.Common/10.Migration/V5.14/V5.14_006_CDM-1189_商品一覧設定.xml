@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        -- DB定義
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_ProductListDispSetting' AND COLUMN_NAME = 'setting_kbn')
+        BEGIN
+          ALTER TABLE [w2_ProductListDispSetting] ADD [setting_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'SORT');
+          ALTER TABLE [w2_ProductListDispSetting] DROP CONSTRAINT [PK_w2_ProductListDispSetting];
+          ALTER TABLE [w2_ProductListDispSetting] WITH NOCHECK ADD CONSTRAINT [PK_w2_ProductListDispSetting] PRIMARY KEY NONCLUSTERED ([setting_id],[setting_kbn]) ON [PRIMARY]
+        END
+        GO
+
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_ProductListDispSetting' AND COLUMN_NAME = 'disp_count')
+          ALTER TABLE [w2_ProductListDispSetting] ADD [disp_count] [int];
+        GO
+
+        -- 既存案件用デフォルト設定
+        -- 件数(対象なし）
+
+        -- 在庫
+        IF NOT EXISTS (SELECT * FROM w2_ProductListDispSetting WHERE setting_kbn = 'STOCK')
+        BEGIN 
+            INSERT w2_ProductListDispSetting VALUES
+            ('0', 'すべて表示', 'OFF', 1, 'OFF', 'すべて表示します。', GETDATE(), 'ｗ２ユーザー', 'STOCK', NULL),
+            ('1', '在庫ありのみ表示', 'OFF', 3, 'OFF', '在庫のある商品のみ表示します。', GETDATE(), 'ｗ２ユーザー', 'STOCK', NULL),
+            ('2', 'すべて表示(在庫あり優先)', 'OFF', 2, 'OFF', '在庫のある商品を優先し、在庫のない商品も表示します。', GETDATE(), 'ｗ２ユーザー', 'STOCK', NULL),
+            ('3', '在庫なしのみ表示', 'OFF', 4, 'OFF', '在庫のない商品のみ表示します。', GETDATE(), 'ｗ２ユーザー', 'STOCK', NULL);
+
+            -- 翻訳情報の更新
+            UPDATE  w2_NameTranslationSetting
+               SET  master_id2 = 'SORT'
+             WHERE  data_kbn = 'ProductListDispSetting'
+        END
+        
+        -- 表示形式
+        IF NOT EXISTS (SELECT * FROM w2_ProductListDispSetting WHERE setting_kbn = 'IMG')
+        BEGIN 
+            INSERT w2_ProductListDispSetting VALUES
+            ('1', '一覧', 'OFF', 1, 'OFF', '商品を縦一列に並べる一覧形式の表示', GETDATE(), 'ｗ２ユーザー', 'IMG', NULL),
+            ('2', 'ウィンドウショッピング', 'OFF', 2, 'OFF', '商品を横に複数並べ、一画面に多く商品を表示するウィンドウショッピング形式の表示', GETDATE(), 'ｗ２ユーザー', 'IMG', NULL);
+        END
+
+/*
+        -- 新規案件用デフォルト設定
+        -- 件数
+        INSERT w2_ProductListDispSetting VALUES
+        ('15', '', 'ON', 1, 'ON', '', GETDATE(), 'ｗ２ユーザー', 'COUNT', 15),
+        ('20', '', 'ON', 2, 'OFF', '', GETDATE(), 'ｗ２ユーザー', 'COUNT', 20),
+        ('40', '', 'ON', 3, 'OFF', '', GETDATE(), 'ｗ２ユーザー', 'COUNT', 40),
+        ('60', '', 'ON', 4, 'OFF', '', GETDATE(), 'ｗ２ユーザー', 'COUNT', 60);
+        
+        -- 在庫
+        INSERT w2_ProductListDispSetting VALUES
+        ('0', 'すべて表示', 'ON', 1, 'ON', 'すべて表示します。', GETDATE(), 'ｗ２ユーザー', 'STOCK', NULL),
+        ('1', '在庫ありのみ表示', 'ON', 3, 'OFF', '在庫のある商品のみ表示します。', GETDATE(), 'ｗ２ユーザー', 'STOCK', NULL),
+        ('2', 'すべて表示(在庫あり優先)', 'ON', 2, 'OFF', '在庫のある商品を優先し、在庫のない商品も表示します。', GETDATE(), 'ｗ２ユーザー', 'STOCK', NULL),
+        ('3', '在庫なしのみ表示', 'ON', 4, 'OFF', '在庫のない商品のみ表示します。', GETDATE(), 'ｗ２ユーザー', 'STOCK', NULL);
+        
+        -- 表示形式
+        INSERT w2_ProductListDispSetting VALUES
+        ('1', '一覧', 'ON', 1, 'OFF', '商品を縦一列に並べる一覧形式の表示', GETDATE(), 'ｗ２ユーザー', 'IMG', NULL),
+        ('2', 'ウィンドウショッピング', 'ON', 2, 'ON', '商品を横に複数並べ、一画面に多く商品を表示するウィンドウショッピング形式の表示', GETDATE(), 'ｗ２ユーザー', 'IMG', NULL);
+*/
+
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

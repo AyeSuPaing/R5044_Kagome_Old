@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品セール系SQLサブステートメントXML(ProductSale_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductSale_Sub>
+
+  <!-- 商品セール情報一覧取得用WHERE文 -->
+  <PRODUCTSALE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_ProductSaleView.shop_id = @shop_id
+           AND  w2_ProductSaleView.productsale_id = @productsale_id
+           AND  w2_ProductSaleView.productsale_kbn = @productsale_kbn
+           AND  w2_ProductSaleView.validity = '1'             -- セール有効
+           AND  w2_ProductView.display_from <= GETDATE()  -- 表示期間内
+           AND ((w2_ProductView.display_to IS NULL) OR (w2_ProductView.display_to >= GETDATE()))
+           AND  w2_ProductView.mobile_disp_flg IN ('0','1')   -- PC&モバイル OR PCのみ
+           AND  w2_ProductView.valid_flg = '1'                -- 有効
+           AND  (
+                  @member_rank_id = 'nothing' -- 会員ランクオプション設定なし
+                  OR
+                  w2_ProductView.display_member_rank = ''
+                  OR
+                  (
+                    w2_ProductView.display_member_rank <> ''
+                    AND
+                    @member_rank_id <> ''
+                    AND
+                    (
+                      SELECT  w2_MemberRank.member_rank_order
+                        FROM  w2_MemberRank
+                       WHERE  w2_MemberRank.member_rank_id = w2_ProductView.display_member_rank
+                    )
+                    >=
+                    (
+                      SELECT  w2_MemberRank.member_rank_order
+                        FROM  w2_MemberRank
+                       WHERE  w2_MemberRank.member_rank_id = @member_rank_id
+                    )
+                  )
+                )
+      ]]>
+    </Statement>
+  </PRODUCTSALE_SEARCH_WHERE>
+
+  <!-- 商品セール情報一覧取得用ORDER_BY -->
+  <PRODUCTSALE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          w2_ProductSaleView.display_order ASC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_ProductSaleView.shop_id ASC, w2_ProductSaleView.productsale_id ASC
+      ]]>
+    </Statement>
+  </PRODUCTSALE_SEARCH_ORDER_BY>
+
+  <!-- 在庫有無のSELECT区用パラメータ -->
+  <PRODUCT_SOLD_OUT_SELECT>
+    <Statement>
+      <![CDATA[
+        (
+          CASE w2_ProductView.stock_management_kbn
+          WHEN '0' THEN 1  -- 在庫管理をしない
+          WHEN '1' THEN 1  -- 商品情報：在庫０以下の場合でも表示する。購入可能
+          WHEN '2' THEN    -- 商品情報：在庫０以下の場合でも表示する。購入不可
+              CASE
+              WHEN EXISTS(
+                SELECT  w2_ProductStock.stock
+                  FROM  w2_ProductStock
+                 WHERE  w2_ProductStock.shop_id = w2_ProductView.shop_id
+                   AND  w2_ProductStock.product_id = w2_ProductView.product_id
+                   AND  w2_ProductStock.stock > 0
+                  ) THEN 1
+              ELSE 0
+              END
+          ELSE 0
+          END
+        )
+      ]]>
+    </Statement>
+  </PRODUCT_SOLD_OUT_SELECT>
+</ProductSale_Sub>

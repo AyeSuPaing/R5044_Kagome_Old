@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 外部リンク設定画面系SQLステートメントXML(CsExternalLink.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+-->
+<CsExternalLink>
+  
+  <!-- 全件検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+       DECLARE  @row_count int
+       
+        -- 該当件数取得
+        SELECT  @row_count = ISNULL(COUNT(w2_CsExternalLink.dept_id), 0)
+          FROM  w2_CsExternalLink
+                [[ Search_Where_Link_Title ]]
+        
+        -- 一覧情報取得
+        SELECT  w2_CsExternalLink.*,
+                @row_count as row_count
+          FROM  (
+                  SELECT  w2_CsExternalLink.dept_id,
+                          w2_CsExternalLink.link_id,
+                          ROW_NUMBER() OVER (ORDER BY w2_CsExternalLink.display_order ASC, w2_CsExternalLink.link_id) AS row_num
+                    FROM  w2_CsExternalLink
+                    [[ Search_Where_Link_Title ]]
+                ) AS RowIndex
+                INNER JOIN  w2_CsExternalLink ON
+                ( 
+                  w2_CsExternalLink.dept_id = RowIndex.dept_id
+                  AND
+                  w2_CsExternalLink.link_id = RowIndex.link_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  w2_CsExternalLink.display_order ASC, w2_CsExternalLink.link_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="link_id" Type="nvarchar" Size="10" />
+      <Input Name="link_title" Type="nvarchar" Size="50" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 有効フラグを取得 -->
+  <GetValidFlg>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsExternalLink.*
+          FROM  w2_CsExternalLink
+         WHERE  w2_CsExternalLink.dept_id = @dept_id
+           AND  valid_flg = @valid_flg
+      ORDER BY  w2_CsExternalLink.display_order ASC, w2_CsExternalLink.link_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetValidFlg>
+
+  <!-- 全件取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsExternalLink.*
+          FROM  w2_CsExternalLink
+         WHERE  w2_CsExternalLink.dept_id = @dept_id
+           AND  w2_CsExternalLink.link_id = @link_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="link_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Get>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CsExternalLink
+          (
+            w2_CsExternalLink.dept_id,
+            w2_CsExternalLink.link_id,
+            w2_CsExternalLink.link_title,
+            w2_CsExternalLink.link_url,
+            w2_CsExternalLink.link_memo,
+            w2_CsExternalLink.display_order,
+            w2_CsExternalLink.valid_flg,
+            w2_CsExternalLink.date_created,
+            w2_CsExternalLink.date_changed,
+            w2_CsExternalLink.last_changed
+          )
+          VALUES
+          (
+            @dept_id,
+            @link_id,
+            @link_title,
+            @link_url,
+            @link_memo,
+            @display_order,
+            @valid_flg,
+            getdate(),
+            getdate(),
+            @last_changed
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="link_id" Type="nvarchar" Size="10" />
+      <Input Name="link_title" Type="nvarchar" Size="30" />
+      <Input Name="link_url" Type="nvarchar" Size="max" />
+      <Input Name="link_memo" Type="ntext" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+<!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsExternalLink
+           SET  w2_CsExternalLink.link_title = @link_title,
+                w2_CsExternalLink.link_url = @link_url,
+                w2_CsExternalLink.link_memo = @link_memo,
+                w2_CsExternalLink.display_order = @display_order,
+                w2_CsExternalLink.valid_flg = @valid_flg,
+                w2_CsExternalLink.date_changed = getdate(),
+                w2_CsExternalLink.last_changed = @last_changed
+         WHERE  w2_CsExternalLink.dept_id = @dept_id
+           AND  w2_CsExternalLink.link_id = @link_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="link_id" Type="nvarchar" Size="10" />
+      <Input Name="link_title" Type="nvarchar" Size="30" />
+      <Input Name="link_memo" Type="ntext" />
+      <Input Name="link_url" Type="nvarchar" Size="max" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE 
+          FROM  w2_CsExternalLink
+         WHERE  w2_CsExternalLink.dept_id = @dept_id 
+           AND  w2_CsExternalLink.link_id = @link_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="link_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+
+</CsExternalLink>

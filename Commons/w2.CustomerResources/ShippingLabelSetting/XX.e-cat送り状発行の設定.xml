@@ -1,0 +1,290 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<OrderDataExportSetting>
+
+
+  <!-- 出力ファイルの設定 -->
+  <ExportSetting>
+    <!-- 受注一覧・ワークフロー一覧画面に表示する送り状ダウンロードリンクの文言 -->
+    <DisplayName><![CDATA[e-cat送り状発行]]></DisplayName>
+    <!-- 出力ファイルの種類（設定可能値：csv） -->
+    <FormatType>csv</FormatType>
+    <!-- 出力単位（設定可能値：Order） -->
+    <UnitType>Order</UnitType>
+    <!-- 出力ファイル名 -->
+    <FileName>
+      <Value Type="string">ECat2000Okurijyo_</Value>
+      <Value Type="dateString" Format="yyyyMMddHHmmss">Now</Value>
+      <Value Type="string">.csv</Value>
+    </FileName>
+    <!-- ヘッダ行出力有無（設定可能値：true, false） -->
+    <ExportHeader>false</ExportHeader>
+    <!-- 引用符常時出力有無（設定可能値：true, false） -->
+    <!--
+         例：引用符が「"」、1列目の値は「123」、2列目の値は「abc」、3列目の値は「1,2」の場合、
+             ・true の場合、"123","abc","1,2"を出力しますが、
+             ・false の場合、123,abc,"1,2"を出力します。（値にカンマ(,)があるときは強制エスケープ）
+    -->
+    <AlwaysExportQuotation>true</AlwaysExportQuotation>
+    <!-- 列の引用符 -->
+    <StringQuotationMark><![CDATA["]]></StringQuotationMark>
+    <!-- 区切り文字（設定可能値：COMMA, TAB） -->
+    <Separator>COMMA</Separator>
+    <!-- 文字コード（設定可能値：Shift_JIS, UTF-8） -->
+    <Encoding>Shift_JIS</Encoding>
+  </ExportSetting>
+
+  <!-- 出力項目・内容の設定 -->
+  <FieldsSetting>
+    <!-- 1.運送依頼番号 -->
+    <Field Name="1.運送依頼番号">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_Order.gift_flg = '1']]></Condition>
+          <Value Type="field"><![CDATA[w2_Order.order_id + '_' + CAST(w2_OrderShipping.order_shipping_no AS nvarchar)]]></Value>
+        </Case>
+        <Else>
+          <Value Type="field">w2_Order.order_id</Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 2.運送送り状番号 -->
+    <Field Name="2.運送送り状番号">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 3.集荷希望日 -->
+    <Field Name="3.集荷希望日">
+      <Value Type="dateString" Format="yyyymmdd">DATEADD(DAY, 1, GETDATE())</Value>
+    </Field>
+
+    <!-- 4.荷受人住所コード -->
+    <Field Name="4.荷受人住所コード">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 5.荷受人コード -->
+    <Field Name="5.荷受人コード">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 6.荷受人名(漢字) -->
+    <Field Name="6.荷受人名(漢字)">
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_name)</Value>
+    </Field>
+
+    <!-- 7.荷受人電話番号 -->
+    <Field Name="7.荷受人電話番号">
+      <Value Type="field">w2_OrderShipping.shipping_tel1</Value>
+    </Field>
+
+    <!-- 8.荷受人郵便番号 -->
+    <Field Name="8.荷受人郵便番号">
+      <Value Type="field"><![CDATA[REPLACE(w2_OrderShipping.shipping_zip, '-', '')]]></Value>
+    </Field>
+
+    <!-- 9.荷受人住所(漢字)1 -->
+    <Field Name="9.荷受人住所(漢字)1">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[LEN(w2_OrderShipping.shipping_addr2) <= 16]]></Condition>
+          <Value Type="field">w2_OrderShipping.shipping_addr1</Value>
+        </Case>
+        <Else>
+          <Value Type="field">dbo.w2_ConvertToFullWidth(LEFT(w2_OrderShipping.shipping_addr1 + w2_OrderShipping.shipping_addr2, 16))</Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 10.荷受人住所(漢字)2 -->
+    <Field Name="10.荷受人住所(漢字)2">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[LEN(w2_OrderShipping.shipping_addr2) <= 16]]></Condition>
+          <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_addr2)</Value>
+        </Case>
+        <Else>
+          <Value Type="field">dbo.w2_ConvertToFullWidth(SUBSTRING(w2_OrderShipping.shipping_addr1 + w2_OrderShipping.shipping_addr2, 17, 100))</Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 11.荷受人住所(漢字)3 -->
+    <Field Name="11.荷受人住所(漢字)3">
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_addr3)</Value>
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_addr4)</Value>
+    </Field>
+
+    <!-- 12.荷受人部門名1 -->
+    <Field Name="12.荷受人部門名1">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 13.荷受人部門名2 -->
+    <Field Name="13.荷受人部門名2">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 14.荷送人コード -->
+    <Field Name="14.荷送人コード">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 15.荷送人名(漢字) -->
+    <Field Name="15.荷送人名(漢字)">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、ShopName値を「@@ ShopName @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShopName @@</Value>
+    </Field>
+
+    <!-- 16.荷送人電話番号 -->
+    <Field Name="16.荷送人電話番号">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、ShopTel値を「@@ ShopTel @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShopTel @@</Value>
+    </Field>
+
+    <!-- 17.荷送人郵便番号 -->
+    <Field Name="17.荷送人郵便番号">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、ShopZip値を「@@ ShopZip @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShopZip @@</Value>
+    </Field>
+
+    <!-- 18.荷送人住所(漢字)1 -->
+    <Field Name="18.荷送人住所(漢字)1">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、ShopAddr1値を「@@ ShopAddr1 @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShopAddr1 @@</Value>
+    </Field>
+
+    <!-- 19.荷送人住所(漢字)2 -->
+    <Field Name="19.荷送人住所(漢字)2">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、ShopAddr2値を「@@ ShopAddr2 @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShopAddr2 @@</Value>
+    </Field>
+
+    <!-- 20.荷送人住所(漢字)3 -->
+    <Field Name="20.荷送人住所(漢字)3">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、ShopAddr3値を「@@ ShopAddr3 @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShopAddr3 @@</Value>
+    </Field>
+
+    <!-- 21.荷送人部門名1 -->
+    <Field Name="21.荷送人部門名1">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 22.荷送人部門名2 -->
+    <Field Name="22.荷送人部門名2">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 23.運賃請求先コード1 -->
+    <Field Name="23.運賃請求先コード1">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、ShippingPriceClaimCode値を「@@ ShippingPriceClaimCode @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShippingPriceClaimCode @@</Value>
+    </Field>
+
+    <!-- 24.運賃請求先コード2 -->
+    <Field Name="24.運賃請求先コード2">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、ShippingPriceClaimCodeNo値を「@@ ShippingPriceClaimCodeNo @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShippingPriceClaimCodeNo @@</Value>
+    </Field>
+
+    <!-- 25.荷物取扱条件1 -->
+    <Field Name="25.荷物取扱条件1">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、HandlingConditions1値を「@@ HandlingConditions1 @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ HandlingConditions1 @@</Value>
+    </Field>
+
+    <!-- 26.荷物取扱条件2 -->
+    <Field Name="26.荷物取扱条件2">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、HandlingConditions2値を「@@ HandlingConditions2 @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ HandlingConditions2 @@</Value>
+    </Field>
+
+    <!-- 27.配達付帯作業(漢字) -->
+    <Field Name="27.配達付帯作業(漢字)">
+      <Value Type="field">w2_Order.order_id</Value>
+    </Field>
+
+    <!-- 28.品代金（＝徴収金額。つまり代引の際は支払金額合計を格納） -->
+    <Field Name="28.品代金">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_Order.order_payment_kbn = 'K20']]></Condition>
+          <Value Type="field">CAST(CAST( Floor(w2_Order.order_price_total * POWER(10,@@ KEY_CURRENCY_DIGITS @@)) / POWER(10,@@ KEY_CURRENCY_DIGITS @@) AS decimal(18,@@ KEY_CURRENCY_DIGITS @@)) AS nvarchar)</Value>
+        </Case>
+        <Else><Value Type="string"></Value></Else>
+      </Switch>
+    </Field>
+
+    <!-- 29.保管温度区分 -->
+    <Field Name="29.保管温度区分">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 30.運送品表記用品名コード1 -->
+    <Field Name="30.運送品表記用品名コード1">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 31.商品名1(漢字) -->
+    <Field Name="31.商品名1(漢字)">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、ProductName1値を「@@ ProductName1 @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ProductName1 @@</Value>
+    </Field>
+
+    <!-- 32.運送品表記用品名コード2 -->
+    <Field Name="32.運送品表記用品名コード2">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 33.商品名2(漢字) -->
+    <Field Name="33.商品名2(漢字)">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、ProductName2値を「@@ ProductName2 @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ProductName2 @@</Value>
+    </Field>
+
+    <!-- 34.記述式運送梱包寸法 -->
+    <Field Name="34.記述式運送梱包寸法">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"ECAT2000OKURIJYO"を検索して、ShippingSize値を「@@ ShippingSize @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShippingSize @@</Value>
+    </Field>
+
+    <!-- 35.着荷指定日 -->
+    <Field Name="35.着荷指定日">
+      <Switch>
+       <Case>
+          <Condition><![CDATA[w2_OrderShipping.shipping_date IS NOT NULL]]></Condition>
+          <Value Type="dateString" Format="yyyymmdd">w2_OrderShipping.shipping_date</Value>
+        </Case>
+        <Else><Value Type="string"></Value></Else>
+      </Switch>
+    </Field>
+
+    <!-- 36.着荷指定時刻条件 -->
+    <Field Name="36.着荷指定時刻条件">
+      <Value Type="field"><![CDATA[ISNULL(w2_OrderShipping.shipping_time, '')]]></Value>
+    </Field>
+
+    <!-- 37.個数(依頼) -->
+    <Field Name="37.個数(依頼)">
+      <Value Type="string">1</Value>
+    </Field>
+
+    <!-- 38.出荷区分 -->
+    <Field Name="38.出荷区分">
+      <Value Type="string">0</Value>
+    </Field>
+
+    <!-- 39.データ作成日 -->
+    <Field Name="39.データ作成日">
+      <Value Type="dateString" Format="yyyymmdd">Now</Value>
+    </Field>
+
+    <!-- 40.予備 -->
+    <Field Name="40.予備">
+      <Value Type="string"></Value>
+    </Field>
+
+  </FieldsSetting>
+
+</OrderDataExportSetting>

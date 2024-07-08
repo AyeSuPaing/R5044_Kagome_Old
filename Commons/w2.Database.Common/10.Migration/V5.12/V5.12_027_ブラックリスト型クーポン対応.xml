@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_CouponUseUser]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_CouponUseUser]
+GO
+/*
+=========================================================================================================
+  Module      : クーポン利用ユーザーテーブル (w2_CouponUseUser.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CouponUseUser] (
+	[coupon_id] [nvarchar] (30) NOT NULL,
+	[coupon_use_user] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[order_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CouponUseUser] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CouponUseUser] PRIMARY KEY  CLUSTERED
+	(
+		[coupon_id],
+		[coupon_use_user]
+	) ON [PRIMARY]
+GO
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_WorkCouponUseUser]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_WorkCouponUseUser]
+GO
+/*
+=========================================================================================================
+  Module      : クーポン利用ユーザーワークテーブル (w2_WorkCouponUseUser.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_WorkCouponUseUser] (
+	[coupon_id] [nvarchar] (30) NOT NULL,
+	[coupon_use_user] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[order_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_WorkCouponUseUser] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkCouponUseUser] PRIMARY KEY  CLUSTERED
+	(
+		[coupon_id],
+		[coupon_use_user]
+	) ON [PRIMARY]
+GO
+
+-- 削除不可のマスタ出力設定を追加
+IF NOT EXISTS ( SELECT * FROM w2_MasterExportSetting WHERE master_kbn = 'CouponUseUser' AND setting_id = '001' )
+BEGIN
+	INSERT INTO w2_MasterExportSetting
+	(
+		shop_id,
+		master_kbn,
+		setting_id,
+		setting_name,
+		fields,
+		del_flg,
+		date_created,
+		date_changed,
+		last_changed,
+		export_file_type
+	)
+	VALUES
+	(
+		'0',
+		'CouponUseUser',
+		'001',
+		'クーポン利用ユーザー情報（削除不可）',
+		'coupon_code,coupon_use_user,order_id,date_created,last_changed',
+		'0',
+		GETDATE(),
+		GETDATE(),
+		'ｗ２ユーザー',
+		'CSV'
+	)
+END
+			]]>
+    </Statement>
+  </Up>
+</Migration>

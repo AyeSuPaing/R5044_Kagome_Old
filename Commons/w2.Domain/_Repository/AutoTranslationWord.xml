@@ -1,0 +1,191 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 自動翻訳ワード管理系SQLステートメントXML (AutoTranslationWord.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<AutoTranslationWord>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_AutoTranslationWord
+                [[ AUTO_TRANSLATION_WORD_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_AutoTranslationWord.*
+          FROM  (
+                  SELECT  w2_AutoTranslationWord.word_hash_key,
+                          w2_AutoTranslationWord.language_code,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ AUTO_TRANSLATION_WORD_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_AutoTranslationWord
+                          [[ AUTO_TRANSLATION_WORD_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_AutoTranslationWord ON
+                (
+                  RowIndex.word_hash_key = w2_AutoTranslationWord.word_hash_key
+                  AND
+                  RowIndex.language_code = w2_AutoTranslationWord.language_code
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+         ORDER  BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_AutoTranslationWord
+         WHERE  word_hash_key = @word_hash_key
+           AND  language_code = @language_code
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="word_hash_key" Type="nvarchar" Size="64" />
+      <Input Name="language_code" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Get>
+
+  <!-- 全取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_AutoTranslationWord
+      ]]>
+    </Statement>
+  </GetAll>
+
+  <!-- 登録(同一のword_hash_key,language_codeが存在しない場合のみ) -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_AutoTranslationWord
+                (
+                  word_hash_key
+                  ,language_code
+                  ,word_before
+                  ,word_after
+                  ,clear_flg
+                  ,date_used
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        SELECT  @word_hash_key
+                ,@language_code
+                ,@word_before
+                ,@word_after
+                ,@clear_flg
+                ,GETDATE()
+                ,GETDATE()
+                ,GETDATE()
+                ,@last_changed
+         WHERE  NOT EXISTS
+                (
+                 SELECT  word_hash_key
+                         ,language_code
+                   FROM  w2_AutoTranslationWord
+                  WHERE  word_hash_key = @word_hash_key
+                    AND  language_code = @language_code
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="word_hash_key" Type="nvarchar" Size="64" />
+      <Input Name="language_code" Type="nvarchar" Size="10" />
+      <Input Name="word_before" Type="nvarchar" Size="MAX" />
+      <Input Name="word_after" Type="nvarchar" Size="MAX" />
+      <Input Name="clear_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_AutoTranslationWord
+           SET  word_before = @word_before
+                ,word_after = @word_after
+                ,clear_flg = @clear_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  word_hash_key = @word_hash_key
+           AND  language_code = @language_code
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="word_hash_key" Type="nvarchar" Size="64" />
+      <Input Name="language_code" Type="nvarchar" Size="10" />
+      <Input Name="word_before" Type="nvarchar" Size="MAX" />
+      <Input Name="word_after" Type="nvarchar" Size="MAX" />
+      <Input Name="clear_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 最終利用日の更新 -->
+  <UsedUpdate>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_AutoTranslationWord
+           SET  date_used = GETDATE()
+         WHERE  word_hash_key + language_code IN (@@ used_words @@)
+      ]]>
+    </Statement>
+  </UsedUpdate>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_AutoTranslationWord
+         WHERE  word_hash_key = @word_hash_key
+           AND  language_code = @language_code
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="word_hash_key" Type="nvarchar" Size="64" />
+      <Input Name="language_code" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+
+  <!-- 利用されていない古い翻訳ワードを削除 -->
+  <OldWordDelete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_AutoTranslationWord
+         WHERE  date_used <= @date_used_line
+           AND  clear_flg = @clear_flg
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date_used_line" Type="datetime" />
+      <Input Name="clear_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </OldWordDelete>
+
+</AutoTranslationWord>

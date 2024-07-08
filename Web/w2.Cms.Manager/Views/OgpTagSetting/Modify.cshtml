@@ -1,0 +1,160 @@
+﻿@*
+=========================================================================================================
+  Module      : OGPタグ設定ページ(Modify.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using System.Web.Mvc.Html
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Input
+@using w2.Cms.Manager.ViewModels.Shared
+
+@{
+	ViewBag.Title = "OGPタグ設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+@model w2.Cms.Manager.ViewModels.OgpTagSetting.ModifyViewModel
+@helper TopButtomControls(bool isTop)
+{
+	<div class="@(isTop ? "action_part_top" : "action_part_bottom")">
+		<input type="button" id="ogp-setting-button-update-@(isTop ? "top" : "bottom")" value="  更新する  " class="btn btn-main btn-size-m"/>
+	</div>
+}
+
+@section Style{
+<style>
+
+</style>
+}
+
+@{
+	var textBoxStyles = new
+	{
+		style
+			= "width: 100%;"
+			+ "resize: vertical;"
+	};
+}
+
+<form id="main-form" data-ajax-failure="handleError">
+	<table style="width: 100%;">
+	<tr>
+		<td>
+			<h1 class="page-title">OGPタグ設定</h1>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<h2 class="cmn-hed-h2">全体設定</h2>
+		</td>
+		<td colspan="2">
+			<span style="float:right"><input type="button" id="ogp-setting-button-update-top" value="  更新する  " class="btn btn-main btn-size-m"/></span>
+		</td>
+	</tr>
+	@LayoutHelper.PaddingTr(20)
+	<tr>
+	<td>
+	<table class="edit_table">
+		<tr>
+			<td class="edit_title_bg ta-center" colspan="2">全体設定</td>
+		</tr>
+		<tr>
+			<td class="edit_title_bg">サイトタイトル</td>
+			<td class="edit_item_bg">
+				@Html.TextBoxFor(m => m.InputForDefaultSetting.SiteTitle, textBoxStyles)
+			</td>
+		</tr>
+		<tr>
+			<td class="edit_title_bg">ページタイトル</td>
+			<td class="edit_item_bg">
+				@Html.TextBoxFor(m => m.InputForDefaultSetting.PageTitle, textBoxStyles)
+			</td>
+		</tr>
+		<tr>
+			<td class="edit_title_bg">ディスクリプション</td>
+			<td class="edit_item_bg">
+				@Html.TextAreaFor(m => m.InputForDefaultSetting.Description, textBoxStyles)
+			</td>
+		</tr>
+	</table>
+	</td>
+		<td>&nbsp;</td>
+		<td style="vertical-align: top;">
+			<table class="edit_table">
+				<tr>
+					<td class="edit_title_bg" colspan="2" style="text-align: center;">説明</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg" style="text-align: center; width: 30%;">表示項目</td>
+					<td class="edit_title_bg" style="text-align: center; width: 70%;">スクリプト</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg">SEOタイトル</td>
+					<td class="edit_item_bg">@Html.Label("@@ seo_title @@")</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg">SEOディスクリプション</td>
+					<td class="edit_item_bg">@Html.Label("@@ seo_description @@")</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	</table>
+	<h2 class="cmn-hed-h2">画像設定</h2>
+	@Html.Partial("_ImageForm", Model.InputForDefaultSetting.ImageInput)
+	@TopButtomControls(false)
+</form>
+
+@* 画像選択モーダル *@
+@Html.Partial("_ImageListModal", new ImageModalViewModel(ImageType.Ogp))
+
+@section JavaScript{
+
+<script>
+	var imageUrlOld = '@Model.InputForDefaultSetting.ImageUrl';
+
+	$(document).ready(function () {
+		first_view();
+	});
+
+	/**
+	 * 初期表示処理
+	 */
+	function first_view() {
+		image_file_select.ini();
+	}
+
+	/*
+	 * ファイルアップロード完了後
+	 */
+	function ogpSettingImageUploadDone(uploadUrl) {
+		var formData = $('#main-form').serializeArray();
+		formData.push({
+			name: "imageUrl",
+			value: (uploadUrl === "")
+				? imageUrlOld
+				: uploadUrl
+		});
+
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("Update", Constants.CONTROLLER_W2CMS_MANAGER_OGP_SETTING)",
+			data: formData,
+			traditional: true
+		})
+		.done(function (message) {
+			if (message === "") {
+				notification.show('OGPタグ設定を更新しました。', 'info', 'fadeout');
+			} else {
+				notification.show(message, 'warning', 'fixed');
+			}
+		})
+		.always(function () {
+			setTimeout(function () { loading_animation.end(); }, 500);
+		});
+	}
+</script>
+
+}

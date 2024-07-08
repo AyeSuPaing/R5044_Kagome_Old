@@ -1,0 +1,1450 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : タスクスケジュール系SQLステートメントXML(TaskSchedule.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<TaskSchedule>
+
+  <!-- Create task schedule target list -->
+  <CreateTaskScheduleTargetList>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @CREATE_DAYS INT
+        DECLARE @CREATE_COUNT INT
+        DECLARE @COUNT_SCHEDULE INT
+        DECLARE @COUNT_INDEX INT
+        DECLARE @DAY_LOOP INT
+        DECLARE @SCHEDULE_DATE datetime
+        DECLARE @SCHEDULE_DATETIME datetime
+        DECLARE @DEPT_ID nvarchar(30)
+        DECLARE @MASTER_ID nvarchar(10)
+        DECLARE @SCHEDULE_KBN nvarchar(10)
+        DECLARE @SCHEDULE_DAY_OF_WEEK nvarchar(10)
+        DECLARE @SCHEDULE_YEAR INT
+        DECLARE @SCHEDULE_MONTH INT
+        DECLARE @SCHEDULE_DAY INT
+        DECLARE @SCHEDULE_HOUR INT
+        DECLARE @SCHEDULE_MINUTE INT
+        DECLARE @SCHEDULE_SECOND INT
+        DECLARE @DATE_CHANGED datetime
+        DECLARE @ACTION_KBN nvarchar(30)
+
+        DECLARE @COUNT INT
+        DECLARE @ACTION_NO INT
+
+        ---------------------------------------
+        -- 変数初期化
+        ---------------------------------------
+        SET @CREATE_DAYS = 10
+        SET @CREATE_COUNT = 0
+        SET @COUNT_INDEX = 1
+
+        SELECT  IDENTITY(INT,1,1) AS index_row,
+                dept_id,
+                target_id,
+                schedule_kbn,
+                schedule_day_of_week,
+                schedule_year,
+                schedule_month,
+                schedule_day,
+                schedule_hour,
+                schedule_minute,
+                schedule_second,
+                date_changed,
+                @action_kbn_schedule AS action_kbn
+          INTO  #schedule_list_temp
+          FROM  w2_TargetList
+         WHERE  exec_timing = '02'  -- スケジュール実行
+           AND  schedule_kbn IN ('01', '02', '03', '05')  -- 日単位、週単位、月単位、一回のみ
+           AND  valid_flg = '1'
+           AND  del_flg = '0'
+
+          SET @COUNT_SCHEDULE = (SELECT COUNT(action_kbn) FROM #schedule_list_temp)
+
+          WHILE (@COUNT_SCHEDULE >= @COUNT_INDEX)
+          BEGIN
+            SELECT  @DEPT_ID = dept_id,
+                    @MASTER_ID = target_id,
+                    @SCHEDULE_KBN = schedule_kbn,
+                    @SCHEDULE_DAY_OF_WEEK = schedule_day_of_week,
+                    @SCHEDULE_YEAR = schedule_year,
+                    @SCHEDULE_MONTH = schedule_month,
+                    @SCHEDULE_DAY = schedule_day,
+                    @SCHEDULE_HOUR = schedule_hour,
+                    @SCHEDULE_MINUTE = schedule_minute,
+                    @SCHEDULE_SECOND = schedule_second,
+                    @DATE_CHANGED = date_changed,
+                    @ACTION_KBN = action_kbn
+              FROM  #schedule_list_temp
+             WHERE  index_row = @COUNT_INDEX
+
+          SET @COUNT_INDEX = @COUNT_INDEX + 1
+
+          ---------------------------------------
+          -- ターゲットリストスケジュール取得
+          ---------------------------------------
+          SET @DAY_LOOP = 0
+          WHILE (@DAY_LOOP < @CREATE_DAYS)
+          BEGIN
+            SET @SCHEDULE_DATE = DATEADD(dd, @DAY_LOOP, GETDATE())
+            IF
+            (
+              -- 日単位であれば確定
+              (@SCHEDULE_KBN = '01')
+              OR
+              (
+                -- 週単位であれば曜日があっていれば確定
+                (@SCHEDULE_KBN = '02')
+                AND
+                (
+                  (@SCHEDULE_DAY_OF_WEEK = 'Sunday' AND DATEPART(weekday, @SCHEDULE_DATE) = 1)  -- 日曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Monday' AND DATEPART(weekday, @SCHEDULE_DATE) = 2)  -- 月曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Tuesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 3)  -- 火曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Wednesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 4)  -- 水曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Thursday' AND DATEPART(weekday, @SCHEDULE_DATE) = 5)  -- 木曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Friday' AND DATEPART(weekday, @SCHEDULE_DATE) = 6)  -- 金曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Saturday' AND DATEPART(weekday, @SCHEDULE_DATE) = 7)  -- 土曜
+                )
+              )
+              OR
+              (
+                -- 月単位であれば日があっていれば確定
+                (@SCHEDULE_KBN = '03')
+                AND
+                (@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+              )
+              OR
+              (
+                -- 一回のみであれば、年月日があっていれば確定
+                (@SCHEDULE_KBN = '05')
+                AND
+                (@SCHEDULE_YEAR = DATEPART(yy, @SCHEDULE_DATE))
+                AND
+                (@SCHEDULE_MONTH = DATEPART(mm, @SCHEDULE_DATE))
+                AND
+                (@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+              )
+            )
+            BEGIN
+              -- スケジュール日付確定
+              SET @SCHEDULE_DATETIME = DATENAME(yyyy,@SCHEDULE_DATE) + '/' + DATENAME(mm,@SCHEDULE_DATE) + '/' + DATENAME(dd,@SCHEDULE_DATE) + ' ' + CONVERT(nvarchar, @SCHEDULE_HOUR) + ':' + CONVERT(nvarchar, @SCHEDULE_MINUTE) + ':' + CONVERT(nvarchar, @SCHEDULE_SECOND)
+
+              SELECT  @COUNT = COUNT(*)
+                FROM  w2_TaskSchedule
+                WHERE schedule_date = @SCHEDULE_DATETIME
+                  AND dept_id = @DEPT_ID
+                  AND action_kbn = @ACTION_KBN
+                  AND action_master_id = @MASTER_ID
+
+              IF
+              (
+                @COUNT = 0
+                AND
+                @DATE_CHANGED < @SCHEDULE_DATETIME
+              )
+              BEGIN
+                -- マスタNO発行
+                SELECT  @ACTION_NO = ISNULL(MAX(action_no), 0) + 1
+                  FROM  w2_TaskSchedule
+                  WHERE dept_id = @DEPT_ID
+                    AND action_kbn = @ACTION_KBN
+                    AND action_master_id = @MASTER_ID
+
+                -- 未登録であれば登録
+                INSERT w2_TaskSchedule
+                       (
+                        schedule_date,
+                        dept_id,
+                        action_kbn,
+                        action_master_id,
+                        action_no,
+                        execute_status
+                       )
+                VALUES (
+                        @SCHEDULE_DATETIME,
+                        @DEPT_ID,
+                        @ACTION_KBN,
+                        @MASTER_ID,
+                        @ACTION_NO,
+                        '00'
+                       )
+                SET @CREATE_COUNT = @CREATE_COUNT + 1
+              END
+            END
+
+            SET @DAY_LOOP = @DAY_LOOP + 1
+          END
+        END
+
+        DROP TABLE #schedule_list_temp
+
+        SELECT @CREATE_COUNT AS COUNT
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="action_kbn_schedule" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CreateTaskScheduleTargetList>
+
+  <!-- Create task schedule mail dist -->
+  <CreateTaskScheduleMailDist>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @CREATE_DAYS INT
+        DECLARE @CREATE_COUNT INT
+        DECLARE @COUNT_SCHEDULE INT
+        DECLARE @COUNT_INDEX INT
+        DECLARE @DAY_LOOP INT
+        DECLARE @SCHEDULE_DATE datetime
+        DECLARE @SCHEDULE_DATETIME datetime
+        DECLARE @DEPT_ID nvarchar(30)
+        DECLARE @MASTER_ID nvarchar(10)
+        DECLARE @SCHEDULE_KBN nvarchar(10)
+        DECLARE @SCHEDULE_DAY_OF_WEEK nvarchar(10)
+        DECLARE @SCHEDULE_YEAR INT
+        DECLARE @SCHEDULE_MONTH INT
+        DECLARE @SCHEDULE_DAY INT
+        DECLARE @SCHEDULE_HOUR INT
+        DECLARE @SCHEDULE_MINUTE INT
+        DECLARE @SCHEDULE_SECOND INT
+        DECLARE @DATE_CHANGED datetime
+        DECLARE @ACTION_KBN nvarchar(30)
+
+        DECLARE @COUNT INT
+        DECLARE @ACTION_NO INT
+
+        ---------------------------------------
+        -- 変数初期化
+        ---------------------------------------
+        SET @CREATE_DAYS = 10
+        SET @CREATE_COUNT = 0
+        SET @COUNT_INDEX = 1
+
+        SELECT  IDENTITY(INT,1,1) AS index_row,
+                dept_id,
+                maildist_id,
+                schedule_kbn,
+                schedule_day_of_week,
+                schedule_year,
+                schedule_month,
+                schedule_day,
+                schedule_hour,
+                schedule_minute,
+                schedule_second,
+                date_changed,
+                @action_kbn_schedule AS action_kbn
+          INTO  #schedule_list_temp
+          FROM  w2_MailDistSetting
+         WHERE  exec_timing = '02'  -- スケジュール実行
+           AND  schedule_kbn IN ('01', '02', '03', '05')  -- 日単位、週単位、月単位、一回のみ
+           AND  valid_flg = '1'
+           AND  del_flg = '0'
+
+          SET @COUNT_SCHEDULE = (SELECT COUNT(action_kbn) FROM #schedule_list_temp)
+
+          WHILE (@COUNT_SCHEDULE >= @COUNT_INDEX)
+          BEGIN
+            SELECT  @DEPT_ID = dept_id,
+                    @MASTER_ID = maildist_id,
+                    @SCHEDULE_KBN = schedule_kbn,
+                    @SCHEDULE_DAY_OF_WEEK = schedule_day_of_week,
+                    @SCHEDULE_YEAR = schedule_year,
+                    @SCHEDULE_MONTH = schedule_month,
+                    @SCHEDULE_DAY = schedule_day,
+                    @SCHEDULE_HOUR = schedule_hour,
+                    @SCHEDULE_MINUTE = schedule_minute,
+                    @SCHEDULE_SECOND = schedule_second,
+                    @DATE_CHANGED = date_changed,
+                    @ACTION_KBN = action_kbn
+              FROM  #schedule_list_temp
+             WHERE  index_row = @COUNT_INDEX
+
+          SET @COUNT_INDEX = @COUNT_INDEX + 1
+
+          ---------------------------------------
+          -- ターゲットリストスケジュール取得
+          ---------------------------------------
+          SET @DAY_LOOP = 0
+          WHILE (@DAY_LOOP < @CREATE_DAYS)
+          BEGIN
+            SET @SCHEDULE_DATE = DATEADD(dd, @DAY_LOOP, GETDATE())
+            IF
+            (
+              -- 日単位であれば確定
+              (@SCHEDULE_KBN = '01')
+              OR
+              (
+                -- 週単位であれば曜日があっていれば確定
+                (@SCHEDULE_KBN = '02')
+                AND
+                (
+                  (@SCHEDULE_DAY_OF_WEEK = 'Sunday' AND DATEPART(weekday, @SCHEDULE_DATE) = 1)  -- 日曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Monday' AND DATEPART(weekday, @SCHEDULE_DATE) = 2)  -- 月曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Tuesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 3)  -- 火曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Wednesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 4)  -- 水曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Thursday' AND DATEPART(weekday, @SCHEDULE_DATE) = 5)  -- 木曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Friday' AND DATEPART(weekday, @SCHEDULE_DATE) = 6)  -- 金曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Saturday' AND DATEPART(weekday, @SCHEDULE_DATE) = 7)  -- 土曜
+                )
+              )
+              OR
+              (
+                -- 月単位であれば日があっていれば確定
+                (@SCHEDULE_KBN = '03')
+                AND
+                (@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+              )
+              OR
+              (
+                -- 一回のみであれば、年月日があっていれば確定
+                (@SCHEDULE_KBN = '05')
+                AND
+                (@SCHEDULE_YEAR = DATEPART(yy, @SCHEDULE_DATE))
+                AND
+                (@SCHEDULE_MONTH = DATEPART(mm, @SCHEDULE_DATE))
+                AND
+                (@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+              )
+            )
+            BEGIN
+              -- スケジュール日付確定
+              SET @SCHEDULE_DATETIME = DATENAME(yyyy,@SCHEDULE_DATE) + '/' + DATENAME(mm,@SCHEDULE_DATE) + '/' + DATENAME(dd,@SCHEDULE_DATE) + ' ' + CONVERT(nvarchar, @SCHEDULE_HOUR) + ':' + CONVERT(nvarchar, @SCHEDULE_MINUTE) + ':' + CONVERT(nvarchar, @SCHEDULE_SECOND)
+
+              SELECT  @COUNT = COUNT(*)
+                FROM  w2_TaskSchedule
+                WHERE schedule_date = @SCHEDULE_DATETIME
+                  AND dept_id = @DEPT_ID
+                  AND action_kbn = @ACTION_KBN
+                  AND action_master_id = @MASTER_ID
+
+              IF
+              (
+                @COUNT = 0
+                AND
+                @DATE_CHANGED < @SCHEDULE_DATETIME
+              )
+              BEGIN
+                -- マスタNO発行
+                SELECT  @ACTION_NO = ISNULL(MAX(action_no), 0) + 1
+                  FROM  w2_TaskSchedule
+                  WHERE dept_id = @DEPT_ID
+                    AND action_kbn = @ACTION_KBN
+                    AND action_master_id = @MASTER_ID
+
+                -- 未登録であれば登録
+                INSERT w2_TaskSchedule
+                       (
+                        schedule_date,
+                        dept_id,
+                        action_kbn,
+                        action_master_id,
+                        action_no,
+                        execute_status
+                       )
+                VALUES (
+                        @SCHEDULE_DATETIME,
+                        @DEPT_ID,
+                        @ACTION_KBN,
+                        @MASTER_ID,
+                        @ACTION_NO,
+                        '00'
+                       )
+                SET @CREATE_COUNT = @CREATE_COUNT + 1
+              END
+            END
+
+            SET @DAY_LOOP = @DAY_LOOP + 1
+          END
+        END
+
+        DROP TABLE #schedule_list_temp
+
+        SELECT @CREATE_COUNT AS COUNT
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="action_kbn_schedule" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CreateTaskScheduleMailDist>
+
+  <!-- Create task schedule change member rank -->
+  <CreateTaskScheduleChangeMemberRank>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @CREATE_DAYS INT
+        DECLARE @CREATE_COUNT INT
+        DECLARE @COUNT_SCHEDULE INT
+        DECLARE @COUNT_INDEX INT
+        DECLARE @DAY_LOOP INT
+        DECLARE @SCHEDULE_DATE datetime
+        DECLARE @SCHEDULE_DATETIME datetime
+        DECLARE @DEPT_ID nvarchar(30)
+        DECLARE @MASTER_ID nvarchar(10)
+        DECLARE @SCHEDULE_KBN nvarchar(10)
+        DECLARE @SCHEDULE_DAY_OF_WEEK nvarchar(10)
+        DECLARE @SCHEDULE_YEAR INT
+        DECLARE @SCHEDULE_MONTH INT
+        DECLARE @SCHEDULE_DAY INT
+        DECLARE @SCHEDULE_HOUR INT
+        DECLARE @SCHEDULE_MINUTE INT
+        DECLARE @SCHEDULE_SECOND INT
+        DECLARE @DATE_CHANGED datetime
+        DECLARE @ACTION_KBN nvarchar(30)
+
+        DECLARE @COUNT INT
+        DECLARE @ACTION_NO INT
+
+        ---------------------------------------
+        -- 変数初期化
+        ---------------------------------------
+        SET @CREATE_DAYS = 10
+        SET @CREATE_COUNT = 0
+        SET @COUNT_INDEX = 1
+
+        SELECT  IDENTITY(INT,1,1) AS index_row,
+                '0' AS dept_id,
+                member_rank_rule_id,
+                schedule_kbn,
+                schedule_day_of_week,
+                schedule_year,
+                schedule_month,
+                schedule_day,
+                schedule_hour,
+                schedule_minute,
+                schedule_second,
+                date_changed,
+                @action_kbn_schedule AS action_kbn
+          INTO  #schedule_list_temp
+          FROM  w2_MemberRankRule
+         WHERE  exec_timing = '02'  -- スケジュール実行
+           AND  schedule_kbn IN ('01', '02', '03', '05')  -- 日単位、週単位、月単位、一回のみ
+           AND  valid_flg = 'ON'
+
+          SET @COUNT_SCHEDULE = (SELECT COUNT(action_kbn) FROM #schedule_list_temp)
+
+          WHILE (@COUNT_SCHEDULE >= @COUNT_INDEX)
+          BEGIN
+            SELECT  @DEPT_ID = dept_id,
+                    @MASTER_ID = member_rank_rule_id,
+                    @SCHEDULE_KBN = schedule_kbn,
+                    @SCHEDULE_DAY_OF_WEEK = schedule_day_of_week,
+                    @SCHEDULE_YEAR = schedule_year,
+                    @SCHEDULE_MONTH = schedule_month,
+                    @SCHEDULE_DAY = schedule_day,
+                    @SCHEDULE_HOUR = schedule_hour,
+                    @SCHEDULE_MINUTE = schedule_minute,
+                    @SCHEDULE_SECOND = schedule_second,
+                    @DATE_CHANGED = date_changed,
+                    @ACTION_KBN = action_kbn
+              FROM  #schedule_list_temp
+             WHERE  index_row = @COUNT_INDEX
+
+          SET @COUNT_INDEX = @COUNT_INDEX + 1
+
+          ---------------------------------------
+          -- ターゲットリストスケジュール取得
+          ---------------------------------------
+          SET @DAY_LOOP = 0
+          WHILE (@DAY_LOOP < @CREATE_DAYS)
+          BEGIN
+            SET @SCHEDULE_DATE = DATEADD(dd, @DAY_LOOP, GETDATE())
+            IF
+            (
+              -- 日単位であれば確定
+              (@SCHEDULE_KBN = '01')
+              OR
+              (
+                -- 週単位であれば曜日があっていれば確定
+                (@SCHEDULE_KBN = '02')
+                AND
+                (
+                  (@SCHEDULE_DAY_OF_WEEK = 'Sunday' AND DATEPART(weekday, @SCHEDULE_DATE) = 1)  -- 日曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Monday' AND DATEPART(weekday, @SCHEDULE_DATE) = 2)  -- 月曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Tuesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 3)  -- 火曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Wednesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 4)  -- 水曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Thursday' AND DATEPART(weekday, @SCHEDULE_DATE) = 5)  -- 木曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Friday' AND DATEPART(weekday, @SCHEDULE_DATE) = 6)  -- 金曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Saturday' AND DATEPART(weekday, @SCHEDULE_DATE) = 7)  -- 土曜
+                )
+              )
+              OR
+              (
+                -- 月単位であれば日があっていれば確定
+                (@SCHEDULE_KBN = '03')
+                AND
+                (@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+              )
+              OR
+              (
+                -- 一回のみであれば、年月日があっていれば確定
+                (@SCHEDULE_KBN = '05')
+                AND
+                (@SCHEDULE_YEAR = DATEPART(yy, @SCHEDULE_DATE))
+                AND
+                (@SCHEDULE_MONTH = DATEPART(mm, @SCHEDULE_DATE))
+                AND
+                (@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+              )
+            )
+            BEGIN
+              -- スケジュール日付確定
+              SET @SCHEDULE_DATETIME = DATENAME(yyyy,@SCHEDULE_DATE) + '/' + DATENAME(mm,@SCHEDULE_DATE) + '/' + DATENAME(dd,@SCHEDULE_DATE) + ' ' + CONVERT(nvarchar, @SCHEDULE_HOUR) + ':' + CONVERT(nvarchar, @SCHEDULE_MINUTE) + ':' + CONVERT(nvarchar, @SCHEDULE_SECOND)
+
+              SELECT  @COUNT = COUNT(*)
+                FROM  w2_TaskSchedule
+                WHERE schedule_date = @SCHEDULE_DATETIME
+                  AND dept_id = @DEPT_ID
+                  AND action_kbn = @ACTION_KBN
+                  AND action_master_id = @MASTER_ID
+
+              IF
+              (
+                @COUNT = 0
+                AND
+                @DATE_CHANGED < @SCHEDULE_DATETIME
+              )
+              BEGIN
+                -- マスタNO発行
+                SELECT  @ACTION_NO = ISNULL(MAX(action_no), 0) + 1
+                  FROM  w2_TaskSchedule
+                  WHERE dept_id = @DEPT_ID
+                    AND action_kbn = @ACTION_KBN
+                    AND action_master_id = @MASTER_ID
+
+                -- 未登録であれば登録
+                INSERT w2_TaskSchedule
+                       (
+                        schedule_date,
+                        dept_id,
+                        action_kbn,
+                        action_master_id,
+                        action_no,
+                        execute_status
+                       )
+                VALUES (
+                        @SCHEDULE_DATETIME,
+                        @DEPT_ID,
+                        @ACTION_KBN,
+                        @MASTER_ID,
+                        @ACTION_NO,
+                        '00'
+                       )
+                SET @CREATE_COUNT = @CREATE_COUNT + 1
+              END
+            END
+
+            SET @DAY_LOOP = @DAY_LOOP + 1
+          END
+        END
+
+        DROP TABLE #schedule_list_temp
+
+        SELECT @CREATE_COUNT AS COUNT
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="action_kbn_schedule" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CreateTaskScheduleChangeMemberRank>
+
+  <!-- クーポン発行スケージュール作成 -->
+  <CreateTaskSchedulePublishCoupon>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @CREATE_DAYS INT
+        DECLARE @CREATE_COUNT INT
+        DECLARE @COUNT_SCHEDULE INT
+        DECLARE @COUNT_INDEX INT
+        DECLARE @DAY_LOOP INT
+        DECLARE @SCHEDULE_DATE datetime
+        DECLARE @SCHEDULE_DATETIME datetime
+        DECLARE @DEPT_ID nvarchar(30)
+        DECLARE @MASTER_ID nvarchar(10)
+        DECLARE @SCHEDULE_KBN nvarchar(10)
+        DECLARE @SCHEDULE_DAY_OF_WEEK nvarchar(10)
+        DECLARE @SCHEDULE_YEAR INT
+        DECLARE @SCHEDULE_MONTH INT
+        DECLARE @SCHEDULE_DAY INT
+        DECLARE @SCHEDULE_HOUR INT
+        DECLARE @SCHEDULE_MINUTE INT
+        DECLARE @SCHEDULE_SECOND INT
+        DECLARE @DATE_CHANGED datetime
+        DECLARE @ACTION_KBN nvarchar(30)
+
+        DECLARE @COUNT INT
+        DECLARE @ACTION_NO INT
+
+        ---------------------------------------
+        -- 変数初期化
+        ---------------------------------------
+        SET @CREATE_DAYS = 10
+        SET @CREATE_COUNT = 0
+        SET @COUNT_INDEX = 1
+
+        SELECT  IDENTITY(INT,1,1) AS index_row,
+                '0' AS dept_id,
+                coupon_schedule_id,
+                schedule_kbn,
+                schedule_day_of_week,
+                schedule_year,
+                schedule_month,
+                schedule_day,
+                schedule_hour,
+                schedule_minute,
+                schedule_second,
+                date_changed,
+                @action_kbn_schedule AS action_kbn
+          INTO  #schedule_list_temp
+          FROM  w2_CouponSchedule
+         WHERE  exec_timing = '02'  -- スケジュール実行
+           AND  schedule_kbn IN ('01', '02', '03', '05')  -- 日単位、週単位、月単位、一回のみ
+           AND  valid_flg = 'ON'
+
+        SET @COUNT_SCHEDULE = (SELECT COUNT(action_kbn) FROM #schedule_list_temp)
+
+        WHILE (@COUNT_SCHEDULE >= @COUNT_INDEX)
+        BEGIN
+          SELECT  @DEPT_ID = dept_id,
+                    @MASTER_ID = coupon_schedule_id,
+                    @SCHEDULE_KBN = schedule_kbn,
+                    @SCHEDULE_DAY_OF_WEEK = schedule_day_of_week,
+                    @SCHEDULE_YEAR = schedule_year,
+                    @SCHEDULE_MONTH = schedule_month,
+                    @SCHEDULE_DAY = schedule_day,
+                    @SCHEDULE_HOUR = schedule_hour,
+                    @SCHEDULE_MINUTE = schedule_minute,
+                    @SCHEDULE_SECOND = schedule_second,
+                    @DATE_CHANGED = date_changed,
+                    @ACTION_KBN = action_kbn
+            FROM  #schedule_list_temp
+           WHERE  index_row = @COUNT_INDEX
+
+          SET @COUNT_INDEX = @COUNT_INDEX + 1
+
+          ---------------------------------------
+          -- ターゲットリストスケジュール取得
+          ---------------------------------------
+          SET @DAY_LOOP = 0
+          WHILE (@DAY_LOOP < @CREATE_DAYS)
+          BEGIN
+            SET @SCHEDULE_DATE = DATEADD(dd, @DAY_LOOP, GETDATE())
+            IF
+            (
+              -- 日単位であれば確定
+              (@SCHEDULE_KBN = '01')
+              OR
+              (
+                -- 週単位であれば曜日があっていれば確定
+                (@SCHEDULE_KBN = '02')
+                AND
+                (
+                  (@SCHEDULE_DAY_OF_WEEK = 'Sunday' AND DATEPART(weekday, @SCHEDULE_DATE) = 1)  -- 日曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Monday' AND DATEPART(weekday, @SCHEDULE_DATE) = 2)  -- 月曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Tuesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 3)  -- 火曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Wednesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 4)  -- 水曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Thursday' AND DATEPART(weekday, @SCHEDULE_DATE) = 5)  -- 木曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Friday' AND DATEPART(weekday, @SCHEDULE_DATE) = 6)  -- 金曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Saturday' AND DATEPART(weekday, @SCHEDULE_DATE) = 7)  -- 土曜
+                )
+              )
+              OR
+              (
+                -- 月単位であれば日があっていれば確定
+                (@SCHEDULE_KBN = '03')
+                AND
+                (@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+              )
+              OR
+              (
+                -- 一回のみであれば、年月日があっていれば確定
+                (@SCHEDULE_KBN = '05')
+                AND
+                (@SCHEDULE_YEAR = DATEPART(yy, @SCHEDULE_DATE))
+                AND
+                (@SCHEDULE_MONTH = DATEPART(mm, @SCHEDULE_DATE))
+                AND
+                (@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+              )
+            )
+            BEGIN
+              -- スケジュール日付確定
+              SET @SCHEDULE_DATETIME = DATENAME(yyyy,@SCHEDULE_DATE) + '/' + DATENAME(mm,@SCHEDULE_DATE) + '/' + DATENAME(dd,@SCHEDULE_DATE) + ' ' + CONVERT(nvarchar, @SCHEDULE_HOUR) + ':' + CONVERT(nvarchar, @SCHEDULE_MINUTE) + ':' + CONVERT(nvarchar, @SCHEDULE_SECOND)
+
+              SELECT  @COUNT = COUNT(*)
+                FROM  w2_TaskSchedule
+                WHERE schedule_date = @SCHEDULE_DATETIME
+                  AND dept_id = @DEPT_ID
+                  AND action_kbn = @ACTION_KBN
+                  AND action_master_id = @MASTER_ID
+
+              IF
+              (
+                @COUNT = 0
+                AND
+                @DATE_CHANGED < @SCHEDULE_DATETIME
+              )
+              BEGIN
+                -- マスタNO発行
+                SELECT  @ACTION_NO = ISNULL(MAX(action_no), 0) + 1
+                  FROM  w2_TaskSchedule
+                  WHERE dept_id = @DEPT_ID
+                    AND action_kbn = @ACTION_KBN
+                    AND action_master_id = @MASTER_ID
+
+                -- 未登録であれば登録
+                INSERT w2_TaskSchedule
+                       (
+                        schedule_date,
+                        dept_id,
+                        action_kbn,
+                        action_master_id,
+                        action_no,
+                        execute_status,
+                        last_changed
+                       )
+                VALUES (
+                        @SCHEDULE_DATETIME,
+                        @DEPT_ID,
+                        @ACTION_KBN,
+                        @MASTER_ID,
+                        @ACTION_NO,
+                        '00',
+                        'batch'
+                       )
+                SET @CREATE_COUNT = @CREATE_COUNT + 1
+              END
+            END
+
+            SET @DAY_LOOP = @DAY_LOOP + 1
+          END
+        END
+
+        DROP TABLE #schedule_list_temp
+
+        SELECT @CREATE_COUNT AS COUNT
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="action_kbn_schedule" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CreateTaskSchedulePublishCoupon>
+
+  <!-- ポイント付与スケージュール作成 -->
+  <CreateTaskScheduleAddPoint>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @CREATE_DAYS INT
+        DECLARE @CREATE_COUNT INT
+        DECLARE @COUNT_SCHEDULE INT
+        DECLARE @COUNT_INDEX INT
+        DECLARE @DAY_LOOP INT
+        DECLARE @SCHEDULE_DATE datetime
+        DECLARE @SCHEDULE_DATETIME datetime
+        DECLARE @DEPT_ID nvarchar(30)
+        DECLARE @MASTER_ID nvarchar(10)
+        DECLARE @SCHEDULE_KBN nvarchar(10)
+        DECLARE @SCHEDULE_DAY_OF_WEEK nvarchar(10)
+        DECLARE @SCHEDULE_YEAR INT
+        DECLARE @SCHEDULE_MONTH INT
+        DECLARE @SCHEDULE_DAY INT
+        DECLARE @SCHEDULE_HOUR INT
+        DECLARE @SCHEDULE_MINUTE INT
+        DECLARE @SCHEDULE_SECOND INT
+        DECLARE @DATE_CHANGED datetime
+        DECLARE @ACTION_KBN nvarchar(30)
+
+        DECLARE @COUNT INT
+        DECLARE @ACTION_NO INT
+
+        ---------------------------------------
+        -- 変数初期化
+        ---------------------------------------
+        SET @CREATE_DAYS = 10
+        SET @CREATE_COUNT = 0
+        SET @COUNT_INDEX = 1
+
+        SELECT  IDENTITY(INT,1,1) AS index_row,
+                '0' AS dept_id,
+                point_rule_schedule_id,
+                schedule_kbn,
+                schedule_day_of_week,
+                schedule_year,
+                schedule_month,
+                schedule_day,
+                schedule_hour,
+                schedule_minute,
+                schedule_second,
+                date_changed,
+                @action_kbn_schedule AS action_kbn
+          INTO  #schedule_list_temp
+          FROM  w2_PointRuleSchedule
+         WHERE  exec_timing = '02'  -- スケジュール実行
+           AND  schedule_kbn IN ('01', '02', '03', '05')  -- 日単位、週単位、月単位、一回のみ
+           AND  valid_flg = 'ON'
+
+        SET @COUNT_SCHEDULE = (SELECT COUNT(action_kbn) FROM #schedule_list_temp)
+
+        WHILE (@COUNT_SCHEDULE >= @COUNT_INDEX)
+        BEGIN
+          SELECT  @DEPT_ID = dept_id,
+                    @MASTER_ID = point_rule_schedule_id,
+                    @SCHEDULE_KBN = schedule_kbn,
+                    @SCHEDULE_DAY_OF_WEEK = schedule_day_of_week,
+                    @SCHEDULE_YEAR = schedule_year,
+                    @SCHEDULE_MONTH = schedule_month,
+                    @SCHEDULE_DAY = schedule_day,
+                    @SCHEDULE_HOUR = schedule_hour,
+                    @SCHEDULE_MINUTE = schedule_minute,
+                    @SCHEDULE_SECOND = schedule_second,
+                    @DATE_CHANGED = date_changed,
+                    @ACTION_KBN = action_kbn
+            FROM  #schedule_list_temp
+           WHERE  index_row = @COUNT_INDEX
+
+          SET @COUNT_INDEX = @COUNT_INDEX + 1
+
+          ---------------------------------------
+          -- ターゲットリストスケジュール取得
+          ---------------------------------------
+          SET @DAY_LOOP = 0
+          WHILE (@DAY_LOOP < @CREATE_DAYS)
+          BEGIN
+            SET @SCHEDULE_DATE = DATEADD(dd, @DAY_LOOP, GETDATE())
+            IF
+            (
+              -- 日単位であれば確定
+              (@SCHEDULE_KBN = '01')
+              OR
+              (
+                -- 週単位であれば曜日があっていれば確定
+                (@SCHEDULE_KBN = '02')
+                AND
+                (
+                  (@SCHEDULE_DAY_OF_WEEK = 'Sunday' AND DATEPART(weekday, @SCHEDULE_DATE) = 1)  -- 日曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Monday' AND DATEPART(weekday, @SCHEDULE_DATE) = 2)  -- 月曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Tuesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 3)  -- 火曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Wednesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 4)  -- 水曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Thursday' AND DATEPART(weekday, @SCHEDULE_DATE) = 5)  -- 木曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Friday' AND DATEPART(weekday, @SCHEDULE_DATE) = 6)  -- 金曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Saturday' AND DATEPART(weekday, @SCHEDULE_DATE) = 7)  -- 土曜
+                )
+              )
+              OR
+              (
+                -- 月単位であれば日があっていれば確定
+                (@SCHEDULE_KBN = '03')
+                AND
+                (@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+              )
+              OR
+              (
+                -- 一回のみであれば、年月日があっていれば確定
+                (@SCHEDULE_KBN = '05')
+                AND
+                (@SCHEDULE_YEAR = DATEPART(yy, @SCHEDULE_DATE))
+                AND
+                (@SCHEDULE_MONTH = DATEPART(mm, @SCHEDULE_DATE))
+                AND
+                (@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+              )
+            )
+            BEGIN
+              -- スケジュール日付確定
+              SET @SCHEDULE_DATETIME = DATENAME(yyyy,@SCHEDULE_DATE) + '/' + DATENAME(mm,@SCHEDULE_DATE) + '/' + DATENAME(dd,@SCHEDULE_DATE) + ' ' + CONVERT(nvarchar, @SCHEDULE_HOUR) + ':' + CONVERT(nvarchar, @SCHEDULE_MINUTE) + ':' + CONVERT(nvarchar, @SCHEDULE_SECOND)
+
+              SELECT  @COUNT = COUNT(*)
+                FROM  w2_TaskSchedule
+                WHERE schedule_date = @SCHEDULE_DATETIME
+                  AND dept_id = @DEPT_ID
+                  AND action_kbn = @ACTION_KBN
+                  AND action_master_id = @MASTER_ID
+
+              IF
+              (
+                @COUNT = 0
+                AND
+                @DATE_CHANGED < @SCHEDULE_DATETIME
+              )
+              BEGIN
+                -- マスタNO発行
+                SELECT  @ACTION_NO = ISNULL(MAX(action_no), 0) + 1
+                  FROM  w2_TaskSchedule
+                  WHERE dept_id = @DEPT_ID
+                    AND action_kbn = @ACTION_KBN
+                    AND action_master_id = @MASTER_ID
+
+                -- 未登録であれば登録
+                INSERT w2_TaskSchedule
+                       (
+                        schedule_date,
+                        dept_id,
+                        action_kbn,
+                        action_master_id,
+                        action_no,
+                        execute_status
+                       )
+                VALUES (
+                        @SCHEDULE_DATETIME,
+                        @DEPT_ID,
+                        @ACTION_KBN,
+                        @MASTER_ID,
+                        @ACTION_NO,
+                        '00'
+                       )
+                SET @CREATE_COUNT = @CREATE_COUNT + 1
+              END
+            END
+
+            SET @DAY_LOOP = @DAY_LOOP + 1
+          END
+        END
+
+        DROP TABLE #schedule_list_temp
+
+        SELECT @CREATE_COUNT AS COUNT
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="action_kbn_schedule" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CreateTaskScheduleAddPoint>
+
+  <!-- ワークフローシナリオ実行スケージュール作成 -->
+  <CreateTaskScheduleAddOrderWorkflowScenario>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @CREATE_DAYS INT
+        DECLARE @CREATE_COUNT INT
+        DECLARE @COUNT_SCHEDULE INT
+        DECLARE @COUNT_INDEX INT
+        DECLARE @DAY_LOOP INT
+        DECLARE @SCHEDULE_DATE datetime
+        DECLARE @SCHEDULE_DATETIME datetime
+        DECLARE @DEPT_ID nvarchar(30)
+        DECLARE @MASTER_ID nvarchar(10)
+        DECLARE @SCHEDULE_KBN nvarchar(10)
+        DECLARE @SCHEDULE_DAY_OF_WEEK nvarchar(10)
+        DECLARE @SCHEDULE_YEAR INT
+        DECLARE @SCHEDULE_MONTH INT
+        DECLARE @SCHEDULE_DAY INT
+        DECLARE @SCHEDULE_HOUR INT
+        DECLARE @SCHEDULE_MINUTE INT
+        DECLARE @SCHEDULE_SECOND INT
+        DECLARE @DATE_CHANGED datetime
+        DECLARE @ACTION_KBN nvarchar(30)
+        DECLARE @COUNT INT
+        DECLARE @ACTION_NO INT
+        ---------------------------------------
+        -- 変数初期化
+        ---------------------------------------
+        SET @CREATE_DAYS = 10
+        SET @CREATE_COUNT = 0
+        SET @COUNT_INDEX = 1
+        SELECT  IDENTITY(INT,1,1) AS index_row,
+                '0' AS dept_id,
+                scenario_setting_id,
+                schedule_kbn,
+                schedule_day_of_week,
+                schedule_year,
+                schedule_month,
+                schedule_day,
+                schedule_hour,
+                schedule_minute,
+                schedule_second,
+                date_changed,
+                @action_kbn_schedule AS action_kbn
+          INTO  #schedule_list_temp
+          FROM  w2_OrderWorkflowScenarioSetting
+         WHERE  exec_timing = '02'  -- スケジュール実行
+           AND  schedule_kbn IN ('01', '02', '03', '05')  -- 日単位、週単位、月単位、一回のみ
+           AND  valid_flg = 'ON'
+        SET @COUNT_SCHEDULE = (SELECT COUNT(action_kbn) FROM #schedule_list_temp)
+        WHILE (@COUNT_SCHEDULE >= @COUNT_INDEX)
+        BEGIN
+          SELECT  @DEPT_ID = dept_id,
+                    @MASTER_ID = scenario_setting_id,
+                    @SCHEDULE_KBN = schedule_kbn,
+                    @SCHEDULE_DAY_OF_WEEK = schedule_day_of_week,
+                    @SCHEDULE_YEAR = schedule_year,
+                    @SCHEDULE_MONTH = schedule_month,
+                    @SCHEDULE_DAY = schedule_day,
+                    @SCHEDULE_HOUR = schedule_hour,
+                    @SCHEDULE_MINUTE = schedule_minute,
+                    @SCHEDULE_SECOND = schedule_second,
+                    @DATE_CHANGED = date_changed,
+                    @ACTION_KBN = action_kbn
+            FROM  #schedule_list_temp
+           WHERE  index_row = @COUNT_INDEX
+          SET @COUNT_INDEX = @COUNT_INDEX + 1
+          ---------------------------------------
+          -- スケジュール取得
+          ---------------------------------------
+          SET @DAY_LOOP = 0
+          WHILE (@DAY_LOOP < @CREATE_DAYS)
+          BEGIN
+            SET @SCHEDULE_DATE = DATEADD(dd, @DAY_LOOP, GETDATE())
+            IF
+            (
+              -- 日単位であれば確定
+              (@SCHEDULE_KBN = '01')
+              OR
+              (
+                -- 週単位であれば曜日があっていれば確定
+                (@SCHEDULE_KBN = '02')
+                AND
+                (
+                  (@SCHEDULE_DAY_OF_WEEK = 'Sunday' AND DATEPART(weekday, @SCHEDULE_DATE) = 1)  -- 日曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Monday' AND DATEPART(weekday, @SCHEDULE_DATE) = 2)  -- 月曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Tuesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 3)  -- 火曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Wednesday' AND DATEPART(weekday, @SCHEDULE_DATE) = 4)  -- 水曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Thursday' AND DATEPART(weekday, @SCHEDULE_DATE) = 5)  -- 木曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Friday' AND DATEPART(weekday, @SCHEDULE_DATE) = 6)  -- 金曜
+                  OR
+                  (@SCHEDULE_DAY_OF_WEEK = 'Saturday' AND DATEPART(weekday, @SCHEDULE_DATE) = 7)  -- 土曜
+                )
+              )
+              OR
+              (
+                -- 月単位であれば日があっていれば確定
+                (@SCHEDULE_KBN = '03')
+                AND
+                (@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+              )
+              OR
+              (
+                -- 一回のみであれば、年月日があっていれば確定
+                (@SCHEDULE_KBN = '05')
+                AND
+                (@SCHEDULE_YEAR = DATEPART(yy, @SCHEDULE_DATE))
+                AND
+                (@SCHEDULE_MONTH = DATEPART(mm, @SCHEDULE_DATE))
+                AND
+                (@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+              )
+            )
+            BEGIN
+              -- スケジュール日付確定
+              SET @SCHEDULE_DATETIME = DATENAME(yyyy,@SCHEDULE_DATE) + '/' + DATENAME(mm,@SCHEDULE_DATE) + '/' + DATENAME(dd,@SCHEDULE_DATE) + ' ' + CONVERT(nvarchar, @SCHEDULE_HOUR) + ':' + CONVERT(nvarchar, @SCHEDULE_MINUTE) + ':' + CONVERT(nvarchar, @SCHEDULE_SECOND)
+              SELECT  @COUNT = COUNT(*)
+                FROM  w2_TaskSchedule
+                WHERE schedule_date = @SCHEDULE_DATETIME
+                  AND dept_id = @DEPT_ID
+                  AND action_kbn = @ACTION_KBN
+                  AND action_master_id = @MASTER_ID
+              IF
+              (
+                @COUNT = 0
+                AND
+                @DATE_CHANGED < @SCHEDULE_DATETIME
+              )
+              BEGIN
+                -- マスタNO発行
+                SELECT  @ACTION_NO = ISNULL(MAX(action_no), 0) + 1
+                  FROM  w2_TaskSchedule
+                  WHERE dept_id = @DEPT_ID
+                    AND action_kbn = @ACTION_KBN
+                    AND action_master_id = @MASTER_ID
+                -- 未登録であれば登録
+                INSERT w2_TaskSchedule
+                       (
+                        schedule_date,
+                        dept_id,
+                        action_kbn,
+                        action_master_id,
+                        action_no,
+                        execute_status,
+                        last_changed
+                       )
+                VALUES (
+                        @SCHEDULE_DATETIME,
+                        @DEPT_ID,
+                        @ACTION_KBN,
+                        @MASTER_ID,
+                        @ACTION_NO,
+                        '00',
+                        'batch'
+                       )
+                SET @CREATE_COUNT = @CREATE_COUNT + 1
+              END
+            END
+            SET @DAY_LOOP = @DAY_LOOP + 1
+          END
+        END
+        DROP TABLE #schedule_list_temp
+        SELECT @CREATE_COUNT AS COUNT
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="action_kbn_schedule" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CreateTaskScheduleAddOrderWorkflowScenario>
+
+  <!-- 実行タスクスケジュール取得＆進捗更新 -->
+  <GetTaskScheduleAndUpdateProgress>
+    <Statement>
+      <![CDATA[
+        IF @progress IS NOT NULL
+        BEGIN
+          UPDATE  w2_TaskSchedule
+             SET  progress = @progress,
+                  date_changed = GETDATE(),
+                  last_changed = 'batch'
+           WHERE  dept_id = @dept_id
+             AND  action_kbn = @action_kbn
+             AND  action_master_id = @action_master_id
+             AND  action_no = @action_no 
+        END
+        
+        SELECT  *
+          FROM  w2_TaskSchedule
+         WHERE  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           AND  action_no = @action_no
+		  ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <Input Name="progress" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetTaskScheduleAndUpdateProgress>
+
+  <!-- 実行タスクスケジュール取得 -->
+  <GetTaskScheduleForExecute>
+    <Statement>
+      <![CDATA[
+        DECLARE @target_date datetime
+        SET @target_date = GETDATE()
+      
+        -- スケジュール取得（重複排除しない）
+        SELECT  schedule_date,
+                dept_id,
+                action_kbn,
+                action_master_id,
+                action_no,
+                last_changed
+          FROM  w2_TaskSchedule
+         WHERE  @target_date > schedule_date
+           AND  execute_status = '00'       -- 未実行
+           @@ ACTION_KBNS @@
+        
+        -- ステータス更新（重複もいっぺんに更新）
+        UPDATE  w2_TaskSchedule
+           SET  execute_status = '01',      -- 実行中へ更新
+                date_begin = GETDATE(),
+                date_changed = GETDATE(),
+                last_changed = 'batch'
+         WHERE  @target_date > schedule_date
+           AND  execute_status = '00'
+           @@ ACTION_KBNS @@
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetTaskScheduleForExecute>
+
+  <!-- 準備ステータス更新 -->
+  <!--
+    本当はschedule_noで完了更新したいがスケジュール重複で実行されないタスクが
+    あった場合に両方更新したいため区分とかIDで更新するようにする
+  -->
+  <UpdatePrepareTaskStatus>
+    <Statement>
+      <![CDATA[
+        -- ステータス更新
+        UPDATE  w2_TaskSchedule
+           SET  prepare_status = @prepare_status,
+                date_changed = GETDATE(),
+                last_changed = 'batch'
+         WHERE  schedule_date = @schedule_date
+           AND  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           AND  action_no = @action_no
+           AND  (@prepare_status_target IS NULL OR prepare_status = @prepare_status_target)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="schedule_date" Type="datetime" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <Input Name="prepare_status" Type="nvarchar" Size="10" />
+      <Input Name="prepare_status_target" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdatePrepareTaskStatus>
+  
+  <!-- 本ステータス更新(開始) -->
+  <!--
+    本当はschedule_noで完了更新したいがスケジュール重複で実行されないタスクが
+    あった場合に両方更新したいため区分とかIDで更新するようにする
+  -->
+  <UpdateTaskStatusBegin>
+    <Statement>
+      <![CDATA[
+        -- ステータス更新
+        UPDATE  w2_TaskSchedule
+           SET  execute_status = @execute_status,
+                progress = @progress,
+                date_begin = GETDATE(),
+                date_changed = GETDATE(),
+                last_changed = 'batch'
+         WHERE  schedule_date = @schedule_date
+           AND  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           AND  action_no = @action_no
+           AND  (@execute_status_target IS NULL OR execute_status = @execute_status_target)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="schedule_date" Type="datetime" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <Input Name="execute_status" Type="nvarchar" Size="10" />
+      <Input Name="execute_status_target" Type="nvarchar" Size="10" />
+      <Input Name="progress" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UpdateTaskStatusBegin>
+  
+  <!-- 本ステータス更新(終了) -->
+  <!--
+    本当はschedule_noで完了更新したいがスケジュール重複で実行されないタスクが
+    あった場合に両方更新したいため区分とかIDで更新するようにする
+  -->
+  <UpdateTaskStatusEnd>
+    <Statement>
+      <![CDATA[
+        -- ステータス更新
+        UPDATE  w2_TaskSchedule
+           SET  execute_status = @execute_status,
+                progress = @progress,
+                date_end = GETDATE(),
+                date_changed = GETDATE(),
+                last_changed = 'batch'
+         WHERE  schedule_date = @schedule_date
+           AND  dept_id = @dept_id
+           AND  action_kbn = @action_kbn
+           AND  action_master_id = @action_master_id
+           AND  action_no = @action_no
+           AND  (@execute_status_target IS NULL OR execute_status = @execute_status_target)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="schedule_date" Type="datetime" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_kbn" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <Input Name="execute_status" Type="nvarchar" Size="10" />
+      <Input Name="execute_status_target" Type="nvarchar" Size="10" />
+      <Input Name="progress" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UpdateTaskStatusEnd>
+
+  <!-- HACK:前回のスレッドが正常終了(完了や停止)せず、ステータスがおかしい場合スケジュールを抽出 -->
+  <GetMailDistSettingAndTaskSchedule>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MailDistSetting.dept_id,
+                w2_MailDistSetting.maildist_id,
+                w2_MailDistSetting.status,
+                w2_MailDistSetting.valid_flg,
+                w2_MailDistSetting.del_flg,
+                w2_TaskSchedule.schedule_date,
+                w2_TaskSchedule.action_kbn,
+                w2_TaskSchedule.action_master_id,
+                w2_TaskSchedule.action_no,
+                w2_TaskSchedule.prepare_status,
+                w2_TaskSchedule.execute_status,
+                w2_TaskSchedule.progress,
+                w2_TaskSchedule.stop_flg,
+                w2_TaskSchedule.date_begin,
+                w2_TaskSchedule.date_end,
+                w2_TaskSchedule.date_created,
+                w2_TaskSchedule.date_changed,
+                w2_TaskSchedule.last_changed
+          FROM  w2_MailDistSetting
+          INNER JOIN w2_TaskSchedule ON
+          (
+            w2_MailDistSetting.maildist_id = w2_TaskSchedule.action_master_id
+            AND
+            w2_TaskSchedule.date_end is NULL -- 終了してない
+            AND
+            w2_TaskSchedule.execute_status = '01' --実行ST 実行中
+            AND
+            w2_TaskSchedule.action_kbn = 'MailDist' -- とりあえずメール配信のみチェック
+          )
+         WHERE  w2_MailDistSetting.del_flg = '0'
+           AND  w2_MailDistSetting.dept_id = @dept_id
+           AND  w2_MailDistSetting.status = '01' -- 送信中
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMailDistSettingAndTaskSchedule>
+
+  <!-- HACK:スケジュールが実行中ステータスなのに一定時間「更新日」が更新されない場合に終了 -->
+  <CloseScheduleTask>
+    <Statement>
+      <![CDATA[
+        -- ステータス更新
+        UPDATE  w2_MailDistSetting
+           SET  status = '09',      -- 送信エラー
+                last_changed = 'debug'
+         WHERE  dept_id = @dept_id
+           AND  maildist_id = @maildist_id
+           
+        UPDATE  w2_TaskSchedule
+                -- 実行中としておいてスレッドが他から開始されないようにする。（メール配信の最初のステータス変更 00 -> 01 は空更新される。）
+           SET  execute_status = '01',
+                last_changed = 'debug'
+         WHERE  dept_id = @dept_id
+           AND  action_kbn = 'MailDist'
+           AND  action_master_id = @maildist_id
+           AND  action_no = @action_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="10" />
+      <Input Name="action_no" Type="int" />
+    </Parameter>
+  </CloseScheduleTask>
+
+  <!-- 定期購入再開のタスクスケジュール作成 -->
+  <CreateTaskScheduleResumeFixedPurchase>
+    <Statement>
+      <![CDATA[
+        INSERT w2_TaskSchedule
+               (
+                schedule_date,
+                dept_id,
+                action_kbn,
+                action_master_id,
+                action_no,
+                execute_status
+               )
+        VALUES (
+                GETDATE(),
+                @dept_id,
+                @action_kbn_schedule,
+                @action_master_id,
+                1,
+                '00'
+               )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="action_kbn_schedule" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CreateTaskScheduleResumeFixedPurchase>
+
+  <!-- Create task schedule if not exists -->
+  <CreateTaskScheduleIfNotExists>
+    <Statement>
+      <![CDATA[
+        IF
+        (
+          NOT EXISTS
+          (
+            SELECT  w2_TaskSchedule.action_kbn
+              FROM  w2_TaskSchedule
+             WHERE  dept_id = @dept_id
+               AND  action_kbn = @action_kbn_schedule
+          )
+        )
+        BEGIN
+          INSERT w2_TaskSchedule
+                 (
+                   schedule_date,
+                   dept_id,
+                   action_kbn,
+                   action_master_id,
+                   action_no,
+                   execute_status
+                 )
+          VALUES (
+                   GETDATE(),
+                   @dept_id,
+                   @action_kbn_schedule,
+                   @action_master_id,
+                   1,
+                   '00'
+                 )
+        END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="action_kbn_schedule" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CreateTaskScheduleIfNotExists>
+
+</TaskSchedule>

@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : プレビューマスタSQLステートメントXML(Preview.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Application : w2.Commerce
+
+
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<Preview>
+  <!--  プレビューマスタ登録処理 -->
+  <InsertPreview>
+    <Statement>
+      <![CDATA[
+        INSERT
+          INTO w2_Preview
+          (
+          preview_kbn,
+          preview_id1,
+          preview_id2,
+          preview_id3,
+          preview_id4,
+          preview_id5,
+          preview_data,
+          date_created
+          )
+          VALUES
+          (
+          @preview_kbn,
+          @preview_id1, 
+          @preview_id2, 
+          @preview_id3,
+          @preview_id4,
+          @preview_id5,
+          @preview_data,
+          getdate()
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="preview_kbn" Type="nvarchar" Size="30" />
+      <Input Name="preview_id1" Type="nvarchar" Size="30" />
+      <Input Name="preview_id2" Type="nvarchar" Size="30" />
+      <Input Name="preview_id3" Type="nvarchar" Size="30" />
+      <Input Name="preview_id4" Type="nvarchar" Size="30" />
+      <Input Name="preview_id5" Type="nvarchar" Size="30" />
+      <Input Name="preview_data" Type="ntext" />
+    </Parameter>
+  </InsertPreview>
+
+  <!--  プレビューマスタ削除処理 -->
+  <DeletePreview>
+    <Statement>
+      <![CDATA[
+        DELETE
+          FROM  w2_Preview
+         WHERE  w2_Preview.preview_kbn = @preview_kbn
+           AND  w2_Preview.preview_id1 = @preview_id1
+           AND  w2_Preview.preview_id2 = @preview_id2
+           AND  w2_Preview.preview_id3 = @preview_id3
+           AND  w2_Preview.preview_id4 = @preview_id4
+           AND  w2_Preview.preview_id5 = @preview_id5
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="preview_kbn" Type="nvarchar" Size="30" />
+      <Input Name="preview_id1" Type="nvarchar" Size="30" />
+      <Input Name="preview_id2" Type="nvarchar" Size="30" />
+      <Input Name="preview_id3" Type="nvarchar" Size="30" />
+      <Input Name="preview_id4" Type="nvarchar" Size="30" />
+      <Input Name="preview_id5" Type="nvarchar" Size="30" />
+      <Input Name="preview_data" Type="ntext" />
+    </Parameter>
+  </DeletePreview>
+  
+  <!-- 商品詳細取得(商品詳細プレビュー用) -->
+  <GetProductDetailPreview>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+        
+        SELECT  w2_ProductView.*,
+                w2_ProductTag.*,
+                1 AS disp_flg,  -- 有効
+                1 AS valid_term_flg,  -- 有効
+                NULL AS member_rank_price,
+                NULL AS member_rank_price_variation
+          FROM  w2_ProductView
+                LEFT JOIN w2_ProductTag ON
+                (
+                  w2_ProductTag.product_id = w2_ProductView.product_id
+                )
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id = @product_id
+         ORDER BY w2_ProductView.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductDetailPreview>
+
+</Preview>

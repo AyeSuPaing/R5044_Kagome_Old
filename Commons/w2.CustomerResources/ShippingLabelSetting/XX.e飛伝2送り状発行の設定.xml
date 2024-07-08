@@ -1,0 +1,365 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<OrderDataExportSetting>
+
+  <!-- 出力ファイルの設定 -->
+  <ExportSetting>
+    <!-- 受注一覧・ワークフロー一覧画面に表示する送り状ダウンロードリンクの文言 -->
+    <DisplayName><![CDATA[e飛伝2送り状発行]]></DisplayName>
+    <!-- 出力ファイルの種類（設定可能値：csv） -->
+    <FormatType>csv</FormatType>
+    <!-- 出力単位（設定可能値：Order） -->
+    <UnitType>Order</UnitType>
+    <!-- 出力ファイル名 -->
+    <FileName>
+      <Value Type="string"><![CDATA[EHiden2Okurijyo_]]></Value>
+      <Value Type="dateString" Format="yyyyMMddHHmmss">Now</Value>
+      <Value Type="string">.csv</Value>
+    </FileName>
+    <!-- ヘッダ行出力有無（設定可能値：true, false） -->
+    <ExportHeader>false</ExportHeader>
+    <!-- 引用符常時出力有無（設定可能値：true, false） -->
+    <!--
+         例：引用符が「"」、1列目の値は「123」、2列目の値は「abc」、3列目の値は「1,2」の場合、
+             ・true の場合、"123","abc","1,2"を出力しますが、
+             ・false の場合、123,abc,"1,2"を出力します。（値にカンマ(,)があるときは強制エスケープ）
+    -->
+    <AlwaysExportQuotation>true</AlwaysExportQuotation>
+    <!-- 列の引用符 -->
+    <StringQuotationMark><![CDATA["]]></StringQuotationMark>
+    <!-- 区切り文字（設定可能値：COMMA, TAB） -->
+    <Separator>COMMA</Separator>
+    <!-- 文字コード（設定可能値：Shift_JIS, UTF-8） -->
+    <Encoding>Shift_JIS</Encoding>
+  </ExportSetting>
+
+  <!-- 出力項目・内容の設定 -->
+  <FieldsSetting>
+    <!-- 1.住所録コード -->
+    <Field Name="1.住所録コード">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、AddressBookCode値を「@@ AddressBookCode @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ AddressBookCode @@</Value>
+    </Field>
+
+    <!-- 2.お届け先電話番号 -->
+    <Field Name="2.お届け先電話番号" EscapeCsvColumn="true">
+      <Value Type="field">w2_OrderShipping.shipping_tel1</Value>
+    </Field>
+
+    <!-- 3.お届け先郵便番号-->
+    <Field Name="3.お届け先郵便番号" EscapeCsvColumn="true">
+      <Value Type="field">w2_OrderShipping.shipping_zip</Value>
+    </Field>
+
+    <!-- 4.お届け先住所１ -->
+    <Field Name="4.お届け先住所１" EscapeCsvColumn="true" StartBytePosition="0" ByteLength="32">
+      <Value Type="field">w2_OrderShipping.shipping_addr1</Value>
+    </Field>
+
+    <!-- 5.お届け先住所２（市区町村 + 番地） -->
+    <Field Name="5.お届け先住所２" EscapeCsvColumn="true" StartBytePosition="0" ByteLength="32">
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_addr2)</Value>
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_addr3)</Value>
+    </Field>
+
+    <!-- 6.お届け先住所３ -->
+    <Field Name="6.お届け先住所３" EscapeCsvColumn="true" StartBytePosition="0" ByteLength="32">
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_addr4)</Value>
+    </Field>
+
+    <!-- 7.お届け先名称１ -->
+    <Field Name="7.お届け先名称１" EscapeCsvColumn="true" StartBytePosition="0" ByteLength="32">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_OrderShipping.shipping_company_name != '']]></Condition>
+          <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_company_name)</Value>
+        </Case>
+        <Else>
+          <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_company_post_name + w2_OrderShipping.shipping_name)</Value>
+        </Else>
+      </Switch>
+    </Field>
+    
+    <!-- 8.お届け先名称２ -->
+    <Field Name="8.お届け先名称２（部署名 + 氏名）" EscapeCsvColumn="true" StartBytePosition="0" ByteLength="32">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_OrderShipping.shipping_company_name != '']]></Condition>
+          <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_company_post_name + w2_OrderShipping.shipping_name)</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+   
+    <!-- 9.お客様管理ナンバー -->
+    <Field Name="9.お客様管理ナンバー" EscapeCsvColumn="true">
+      <Value Type="field">w2_Order.order_id</Value>
+    </Field>
+
+    <!-- 10.お客様コード -->
+    <Field Name="10.お客様コード">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、CustomerCode値を「@@ CustomerCode @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ CustomerCode @@</Value>
+    </Field>
+
+    <!-- 11.部署・担当者 -->
+    <Field Name="11.部署・担当者">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ContactPersonnel値を「@@ ContactPersonnel @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ContactPersonnel @@</Value>
+    </Field>
+
+    <!-- 12.荷送人電話番号 -->
+    <Field Name="12.荷送人電話番号">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ConsignerTel値を「@@ ConsignerTel @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ConsignerTel @@</Value>
+    </Field>
+
+    <!-- 13.ご依頼主電話番号 -->
+    <Field Name="13.ご依頼主電話番号">
+      <Value Type="string"></Value>
+    </Field>
+    
+    <!-- 14.ご依頼主郵便番号 -->
+    <Field Name="14.ご依頼主郵便番号">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 15.ご依頼主住所１ -->
+    <Field Name="15.ご依頼主住所１">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 16.ご依頼主住所２ -->
+    <Field Name="16.ご依頼主住所２">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 17.ご依頼主名称１ -->
+    <Field Name="17.ご依頼主名称１">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 18.ご依頼主名称２ -->
+    <Field Name="18.ご依頼主名称２">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 19.荷姿コード -->
+    <Field Name="19.荷姿コード">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、PackingCode値を「@@ PackingCode @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ PackingCode @@</Value>
+    </Field>
+
+    <!-- 20.品名１ -->
+    <Field Name="20.品名１" ConvertString="ToZenkaku" StartBytePosition="0" ByteLength="32">
+      <Value Type="field"><![CDATA[(SELECT ISNULL(product_name, '') FROM (SELECT ROW_NUMBER() OVER (ORDER BY order_item_no) AS rownumber, product_name FROM w2_OrderItem WHERE w2_OrderItem.order_id = w2_Order.order_id) AS temp WHERE rownumber = 1)]]></Value>
+    </Field>
+
+    <!-- 21.品名２ -->
+    <Field Name="21.品名２" ConvertString="ToZenkaku" StartBytePosition="0" ByteLength="32">
+      <Value Type="field"><![CDATA[(SELECT ISNULL(product_name, '') FROM (SELECT ROW_NUMBER() OVER (ORDER BY order_item_no) AS rownumber, product_name FROM w2_OrderItem WHERE w2_OrderItem.order_id = w2_Order.order_id) AS temp WHERE rownumber = 2)]]></Value>
+    </Field>
+
+    <!-- 22.品名３ -->
+    <Field Name="22.品名３" ConvertString="ToZenkaku" StartBytePosition="0" ByteLength="32">
+      <Value Type="field"><![CDATA[(SELECT ISNULL(product_name, '') FROM (SELECT ROW_NUMBER() OVER (ORDER BY order_item_no) AS rownumber, product_name FROM w2_OrderItem WHERE w2_OrderItem.order_id = w2_Order.order_id) AS temp WHERE rownumber = 3)]]></Value>
+    </Field>
+
+    <!-- 23.品名４ -->
+    <Field Name="23.品名４" ConvertString="ToZenkaku" StartBytePosition="0" ByteLength="32">
+      <Value Type="field"><![CDATA[(SELECT ISNULL(product_name, '') FROM (SELECT ROW_NUMBER() OVER (ORDER BY order_item_no) AS rownumber, product_name FROM w2_OrderItem WHERE w2_OrderItem.order_id = w2_Order.order_id) AS temp WHERE rownumber = 4)]]></Value>
+    </Field>
+
+    <!-- 24.品名５ -->
+    <Field Name="24.品名５" ConvertString="ToZenkaku" StartBytePosition="0" ByteLength="32">
+      <Value Type="field"><![CDATA[(SELECT ISNULL(product_name, '') FROM (SELECT ROW_NUMBER() OVER (ORDER BY order_item_no) AS rownumber, product_name FROM w2_OrderItem WHERE w2_OrderItem.order_id = w2_Order.order_id) AS temp WHERE rownumber = 5)]]></Value>
+    </Field>
+
+    <!-- 25.出荷個数 -->
+    <Field Name="25.出荷個数">
+      <Value Type="string">1</Value>
+    </Field>
+
+    <!-- 26.便種（スピードで選択） -->
+    <Field Name="26.便種（スピードで選択）">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、MailClass1値を「@@ MailClass1 @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ MailClass1 @@</Value>
+    </Field>
+
+    <!-- 27.便種（商品） -->
+    <Field Name="27.便種（商品）">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、MailClass2値を「@@ MailClass2 @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ MailClass2 @@</Value>
+    </Field>
+
+    <!-- 28.配達日 -->
+    <Field Name="28.配達日">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[(w2_OrderShipping.shipping_date IS NOT NULL) AND (CONVERT(nvarchar(30), w2_OrderShipping.shipping_date, 112) != '19000101')]]></Condition>
+          <Value Type="dateString" Format="yyyymmdd">w2_OrderShipping.shipping_date</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 29.配達指定時間帯 -->
+    <Field Name="29.配達指定時間帯">
+      <Switch>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeIDMorning値を「@@ ShippingTimeIDMorning @@」箇所に差し替えください。 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time = '@@ ShippingTimeIDMorning @@']]></Condition>
+          <Value Type="string">01</Value>
+        </Case>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeID12to14値を「@@ ShippingTimeID12to14 @@」箇所に差し替えください。 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time = '@@ ShippingTimeID12to14 @@']]></Condition>
+          <Value Type="string">12</Value>
+        </Case>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeID14to16値を「@@ ShippingTimeID14to16 @@」箇所に差し替えください。 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time = '@@ ShippingTimeID14to16 @@']]></Condition>
+          <Value Type="string">14</Value>
+        </Case>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeID16to18値を「@@ ShippingTimeID16to18 @@」箇所に差し替えください。 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time = '@@ ShippingTimeID16to18 @@']]></Condition>
+          <Value Type="string">16</Value>
+        </Case>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeKbn値が'5'場合、 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time = '@@ ShippingTimeID18to21 @@']]></Condition>
+          <Value Type="string">04</Value>
+        </Case>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeKbn値が'6'場合、 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time = '@@ ShippingTimeID18to20 @@']]></Condition>
+          <Value Type="string">18</Value>
+        </Case>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeKbn値が'6'場合、 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time = '@@ ShippingTimeID19to21 @@']]></Condition>
+          <Value Type="string">19</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 30.配達指定時間（時分） -->
+    <Field Name="30.配達指定時間（時分）">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 31.代引金額 -->
+    <Field Name="31.代引金額">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_Order.order_payment_kbn = 'K20']]></Condition>
+          <Value Type="field">CAST(CAST( Floor(w2_Order.order_price_total * POWER(10,@@ KEY_CURRENCY_DIGITS @@)) / POWER(10,@@ KEY_CURRENCY_DIGITS @@) AS decimal(18,@@ KEY_CURRENCY_DIGITS @@)) AS nvarchar)</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 32.消費税 -->
+    <Field Name="32.消費税">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_Order.order_payment_kbn = 'K20']]></Condition>
+          <Value Type="field">CAST(CAST(w2_Order.order_price_tax AS Int) AS nvarchar)</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 33.決済種別 -->
+    <Field Name="33.決済種別">
+      <Value Type="string">0</Value>
+    </Field>
+
+    <!-- 34.保険金額 -->
+    <Field Name="34.保険金額">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 35.保険金額印字 -->
+    <Field Name="35.保険金額印字">
+      <Value Type="string">0</Value>
+    </Field>
+
+    <!-- 36.指定シール１ -->
+    <Field Name="36.指定シール１">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、SpecSeal1値を「@@ SpecSeal1 @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ SpecSeal1 @@</Value>
+    </Field>
+
+    <!-- 37.指定シール２ -->
+    <Field Name="37.指定シール２">
+      <Switch>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeIDMorning値を「@@ ShippingTimeIDMorning @@」箇所に差し替えください。 -->
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeID12to14値を「@@ ShippingTimeID12to14 @@」箇所に差し替えください。 -->
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeID14to16値を「@@ ShippingTimeID14to16 @@」箇所に差し替えください。 -->
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeID16to18値を「@@ ShippingTimeID16to18 @@」箇所に差し替えください。 -->
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeID18to21値を「@@ ShippingTimeID18to21 @@」箇所に差し替えください。 -->
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeID18to20値を「@@ ShippingTimeID18to20 @@」箇所に差し替えください。 -->
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeID19to21値を「@@ ShippingTimeID19to21 @@」箇所に差し替えください。 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time IN ('@@ ShippingTimeIDMorning @@', '@@ ShippingTimeID12to14 @@', '@@ ShippingTimeID14to16 @@', '@@ ShippingTimeID16to18 @@', '@@ ShippingTimeID18to21 @@', '@@ ShippingTimeID18to20 @@', '@@ ShippingTimeID19to21 @@')]]></Condition>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeKbn値が'5'場合、 -->
+          <Value Type="string">007</Value>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShippingTimeKbn値が'6'場合、 -->
+          <!-- 019のValue行をコメント外して、007のValue行をコメントしてください。-->
+          <!--Value Type="string">019</Value-->
+       </Case>
+        <Case>
+          <Condition><![CDATA[(w2_OrderShipping.shipping_date IS NOT NULL) AND (CONVERT(nvarchar(30), w2_OrderShipping.shipping_date, 112) != '19000101')]]></Condition>
+          <Value Type="string">005</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 38.指定シール３ -->
+    <Field Name="38.指定シール３">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、SpecSeal3値を「@@ SpecSeal3 @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ SpecSeal3 @@</Value>
+    </Field>
+
+    <!-- 39.営業店止め -->
+    <Field Name="39.営業店止め">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShopStop値を「@@ ShopStop @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShopStop @@</Value>
+    </Field>
+
+    <!-- 40.SRC区分 -->
+    <Field Name="40.SRC区分">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、SrcType値を「@@ SrcType @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ SrcType @@</Value>
+    </Field>
+
+    <!-- 41.営業店コード -->
+    <Field Name="41.営業店コード">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、ShopCode値を「@@ ShopCode @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShopCode @@</Value>
+    </Field>
+
+    <!-- 42.元着区分 -->
+    <Field Name="42.元着区分">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO_2"を検索して、CollectType値を「@@ CollectType @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ CollectType @@</Value>
+    </Field>
+
+  </FieldsSetting>
+
+</OrderDataExportSetting>

@@ -1,0 +1,528 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モール連携系SQLステートメントXML(MallCooperationSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MallCooperationSetting>
+
+  <!-- モール連携設定取得 -->
+  <GetMallCooperationSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MallCooperationSetting
+         WHERE  valid_flg = '1'
+           AND  mall_id = @mall_id
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMallCooperationSetting>
+  
+  <!-- モール連携設定取得 -->
+  <GetMallCooperationSettings>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MallCooperationSetting
+         WHERE  valid_flg = '1'
+           AND  mall_kbn IN ('R', 'Y')
+			]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetMallCooperationSettings>
+
+  <!-- 更新ログ件数を取得 -->
+  <GetCooperationUpdateLogCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  ##@@ tablename @@
+         WHERE  ##@@ tablename @@.mall_id = @mall_id
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCooperationUpdateLogCount>
+
+  <!-- 取り込みログをアクティブ状態にする -->
+  <UpdateCooperationUpdateLogActive>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallCooperationUpdateLog
+           SET  action_status = '10',
+                date_changed = getdate()
+         WHERE  w2_MallCooperationUpdateLog.action_status = '00'
+           AND  EXISTS
+                (
+                   SELECT * FROM ##@@ tablename @@
+                     WHERE
+                          w2_MallCooperationUpdateLog.shop_id = ##@@ tablename @@.shop_id
+                          AND
+                          w2_MallCooperationUpdateLog.mall_id = ##@@ tablename @@.mall_id
+                          AND
+                          w2_MallCooperationUpdateLog.product_id = ##@@ tablename @@.product_id
+                          AND
+                          w2_MallCooperationUpdateLog.variation_id = ##@@ tablename @@.variation_id
+                          AND
+                          w2_MallCooperationUpdateLog.master_kbn = ##@@ tablename @@.master_kbn
+                          AND
+                          w2_MallCooperationUpdateLog.action_kbn = ##@@ tablename @@.action_kbn
+                )
+			]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </UpdateCooperationUpdateLogActive>
+
+  <!-- 取り込みログを完了状態にする -->
+  <UpdateCooperationUpdateLogComplete>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallCooperationUpdateLog
+           SET  action_status='20',
+                date_changed = getdate()
+         WHERE  w2_MallCooperationUpdateLog.mall_id = @mall_id
+           AND  w2_MallCooperationUpdateLog.action_status = '10'
+           AND  EXISTS
+                (
+                   SELECT * FROM ##@@ tablename @@
+                     WHERE
+                          w2_MallCooperationUpdateLog.shop_id = ##@@ tablename @@.shop_id
+                          AND
+                          w2_MallCooperationUpdateLog.mall_id = ##@@ tablename @@.mall_id
+                          AND
+                          w2_MallCooperationUpdateLog.product_id = ##@@ tablename @@.product_id
+                          AND
+                          w2_MallCooperationUpdateLog.variation_id = ##@@ tablename @@.variation_id
+                          AND
+                          w2_MallCooperationUpdateLog.master_kbn = ##@@ tablename @@.master_kbn
+                          AND
+                          w2_MallCooperationUpdateLog.action_kbn = ##@@ tablename @@.action_kbn
+                )
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UpdateCooperationUpdateLogComplete>
+
+  <!-- 取り込みログを未処理状態に戻す -->
+  <UpdateCooperationUpdateLogRollBack>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallCooperationUpdateLog
+           SET  action_status='00',
+                date_changed = getdate()
+         WHERE  w2_MallCooperationUpdateLog.mall_id = @mall_id
+           AND  w2_MallCooperationUpdateLog.action_status = '10'
+           AND  EXISTS
+                (
+                   SELECT * FROM ##@@ tablename @@
+                     WHERE
+                          w2_MallCooperationUpdateLog.shop_id = ##@@ tablename @@.shop_id
+                          AND
+                          w2_MallCooperationUpdateLog.mall_id = ##@@ tablename @@.mall_id
+                          AND
+                          w2_MallCooperationUpdateLog.product_id = ##@@ tablename @@.product_id
+                          AND
+                          w2_MallCooperationUpdateLog.variation_id = ##@@ tablename @@.variation_id
+                          AND
+                          w2_MallCooperationUpdateLog.master_kbn = ##@@ tablename @@.master_kbn
+                          AND
+                          w2_MallCooperationUpdateLog.action_kbn = ##@@ tablename @@.action_kbn
+                )
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UpdateCooperationUpdateLogRollBack>
+
+  <!-- Yahoo取り込みログの取得 -->
+  <GetCooperationUpdateLogYahoo>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MallCooperationUpdateLog.log_no,
+                w2_MallCooperationUpdateLog.product_id,
+                w2_MallCooperationUpdateLog.variation_id,
+                w2_MallCooperationUpdateLog.mall_id,
+                w2_MallCooperationUpdateLog.date_created,
+                w2_ProductStock.stock
+          FROM  w2_MallCooperationUpdateLog
+                INNER JOIN w2_MallCooperationSetting ON
+                (
+				          w2_MallCooperationSetting.shop_id = w2_MallCooperationUpdateLog.shop_id
+				          AND w2_MallCooperationSetting.mall_id = w2_MallCooperationUpdateLog.mall_id
+				          AND w2_MallCooperationSetting.mall_kbn = 'Y'
+				          AND w2_MallCooperationSetting.valid_flg = '1'
+				          AND w2_MallCooperationSetting.del_flg = '0'
+                )
+                INNER JOIN w2_ProductStock ON
+                (
+                  w2_MallCooperationUpdateLog.shop_id = w2_ProductStock.shop_id
+                  AND
+                  w2_MallCooperationUpdateLog.product_id = w2_ProductStock.product_id
+                  AND
+                  w2_MallCooperationUpdateLog.variation_id = w2_ProductStock.variation_id
+                )
+                INNER JOIN w2_MallExhibitsConfig ON
+                (
+                  w2_MallExhibitsConfig.shop_id = w2_ProductStock.shop_id
+                  AND
+                  w2_MallExhibitsConfig.product_id = w2_ProductStock.product_id
+                )
+         WHERE  w2_MallCooperationUpdateLog.action_status = '00'
+           AND  w2_MallCooperationUpdateLog.master_kbn = 'ProductStock'
+           AND  w2_MallCooperationUpdateLog.action_kbn = 'U'
+           AND  (
+                  w2_MallCooperationSetting.mall_exhibits_config = ''
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH1'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg1 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH2'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg2 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH3'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg3 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH4'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg4 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH5'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg5 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH6'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg6 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH7'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg7 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH8'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg8 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH9'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg9 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH10'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg10 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH11'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg11 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH12'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg12 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH13'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg13 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH14'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg14 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH15'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg15 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH16'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg16 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH17'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg17 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH18'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg18 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH19'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg19 = '1'
+                  )
+                  OR
+                  (
+                    w2_MallCooperationSetting.mall_exhibits_config = 'EXH20'
+                    AND
+                    w2_MallExhibitsConfig.exhibits_flg20 = '1'
+                  )
+                )
+			]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetCooperationUpdateLogYahoo>
+
+  <!-- Yahoo取り込みログの更新 -->
+  <UpdateCooperationUpdateLogYahoo>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallCooperationUpdateLog
+           SET  action_status='20',
+                date_changed = getdate()
+         WHERE  log_no = @log_no
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="log_no" Type="bigint" />
+    </Parameter>
+  </UpdateCooperationUpdateLogYahoo>
+
+
+  <!-- Yahoo取り込みログの更新（対象外へ） -->
+  <UpdateCooperationUpdateLogYahooExcept>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallCooperationUpdateLog
+           SET  action_status='99',
+                date_changed = getdate()
+         WHERE  log_no = @log_no
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="log_no" Type="bigint" />
+    </Parameter>
+  </UpdateCooperationUpdateLogYahooExcept>
+
+  <!-- 最古ログ取得 -->
+  <CheckOldestLog>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1 
+                w2_MallCooperationUpdateLog.*,
+                w2_Product.use_variation_flg
+          FROM  w2_MallCooperationUpdateLog
+                INNER JOIN w2_Product ON 
+                (
+                  w2_MallCooperationUpdateLog.shop_id = w2_Product.shop_id
+	                AND 
+                  w2_MallCooperationUpdateLog.product_id = w2_Product.product_id
+                )
+         WHERE  (
+                  action_status = '00'
+                  OR
+                  action_status = '10'
+                )
+                AND
+	              mall_id IN (
+                            SELECT mall_id 
+                              FROM w2_MallCooperationSetting 
+                             WHERE valid_flg = '1'
+                           )
+        ORDER BY 
+                w2_MallCooperationUpdateLog.date_created ASC
+			]]>
+    </Statement>
+  </CheckOldestLog>
+
+  <!-- 在庫未更新情報取得 -->
+  <GetProductStockErrorInfo>
+    <Statement>
+      <![CDATA[
+      
+        -- 一時テーブル作成
+        CREATE TABLE #temp_table_productstock (
+          row_num int IDENTITY(1, 1) PRIMARY KEY,
+          shop_id nvarchar (10) NOT NULL,
+          product_id nvarchar (30) NOT NULL,
+          variation_id nvarchar (60) NOT NULL,
+          mall_id nvarchar (30) NOT NULL
+        )
+          
+        -- 一時テーブルに挿入
+        INSERT
+          INTO  #temp_table_productstock (
+		              shop_id,
+			            product_id,
+                  variation_id,
+                  mall_id
+			          )
+	      SELECT  DISTINCT
+                w2_MallCooperationUpdateLog.shop_id,
+                w2_MallCooperationUpdateLog.product_id,
+                w2_MallCooperationUpdateLog.variation_id,
+                w2_MallCooperationUpdateLog.mall_id
+          FROM  w2_MallCooperationUpdateLog
+                INNER JOIN w2_ProductStock ON 
+                (
+                  w2_MallCooperationUpdateLog.shop_id = w2_ProductStock.shop_id
+	                AND 
+                  w2_MallCooperationUpdateLog.product_id = w2_ProductStock.product_id
+                  AND
+                  w2_MallCooperationUpdateLog.variation_id = w2_ProductStock.variation_id
+                )         
+         WHERE  (
+                  w2_MallCooperationUpdateLog.action_status = '00'
+                  OR
+                  w2_MallCooperationUpdateLog.action_status = '10'
+                )
+                AND
+                w2_MallCooperationUpdateLog.master_kbn = 'ProductStock'
+                AND
+	              mall_id IN (
+                            SELECT mall_id 
+                              FROM w2_MallCooperationSetting 
+                             WHERE valid_flg = '1'
+                           )                
+        ORDER BY 
+                w2_MallCooperationUpdateLog.variation_id ASC
+      
+        SELECT  #temp_table_productstock.*,
+                w2_Product.name,
+                w2_Product.use_variation_flg,
+                w2_ProductVariationView.variation_name1,
+                w2_ProductStock.stock
+          FROM  #temp_table_productstock
+                INNER JOIN w2_Product ON 
+                (
+                  #temp_table_productstock.shop_id = w2_Product.shop_id
+	                AND 
+                  #temp_table_productstock.product_id = w2_Product.product_id
+                )
+                INNER JOIN w2_ProductVariationView ON 
+                (
+                  #temp_table_productstock.shop_id = w2_ProductVariationView.shop_id
+	                AND 
+                  #temp_table_productstock.product_id = w2_ProductVariationView.product_id
+                  AND
+                  #temp_table_productstock.variation_id = w2_ProductVariationView.variation_id
+                ) 
+                INNER JOIN w2_ProductStock ON 
+                (
+                  #temp_table_productstock.shop_id = w2_ProductStock.shop_id
+	                AND 
+                  #temp_table_productstock.product_id = w2_ProductStock.product_id
+                  AND
+                  #temp_table_productstock.variation_id = w2_ProductStock.variation_id
+                )
+        ORDER BY 
+                #temp_table_productstock.mall_id ASC,
+                #temp_table_productstock.variation_id ASC
+			]]>
+    </Statement>
+  </GetProductStockErrorInfo>
+
+  <!-- 不整合ログ対象外更新（商品情報との不整合） -->
+  <UpdateInconsistentLogExcept>
+    <Statement>
+      <![CDATA[
+      
+        -- 一時テーブル作成
+        CREATE TABLE #temp_table_inconsistentlog (
+          row_num int IDENTITY(1, 1) PRIMARY KEY,
+          log_no bigint NOT NULL
+        )
+          
+        -- 一時テーブルに挿入
+        INSERT
+          INTO  #temp_table_inconsistentlog (
+                  log_no
+			          )
+	      SELECT  w2_MallCooperationUpdateLog.log_no
+          FROM  w2_MallCooperationUpdateLog
+                LEFT JOIN w2_Product ON 
+                (
+                  w2_MallCooperationUpdateLog.shop_id = w2_Product.shop_id
+	                AND 
+                  w2_MallCooperationUpdateLog.product_id = w2_Product.product_id
+                )
+                LEFT JOIN w2_ProductVariationView ON 
+                (
+                  w2_MallCooperationUpdateLog.shop_id = w2_ProductVariationView.shop_id
+	                AND 
+                  w2_MallCooperationUpdateLog.product_id = w2_ProductVariationView.product_id
+                  AND
+                  (
+                    w2_MallCooperationUpdateLog.variation_id = w2_ProductVariationView.variation_id
+                    OR
+                    (
+                      w2_MallCooperationUpdateLog.variation_id = w2_ProductVariationView.product_id
+                      AND
+                      w2_MallCooperationUpdateLog.master_kbn = 'Product'
+                    )
+                  )
+                ) 
+         WHERE  (
+                  w2_MallCooperationUpdateLog.action_status = '00'
+                  OR
+                  w2_MallCooperationUpdateLog.action_status = '10'
+                )
+                AND
+                (
+                  w2_Product.product_id IS NULL
+                  OR
+                  w2_ProductVariationView.product_id IS NULL
+                ) 
+        ORDER BY
+                w2_MallCooperationUpdateLog.log_no
+      
+       -- 対象外ログとして更新
+        UPDATE  w2_MallCooperationUpdateLog
+           SET  action_status='99',
+                date_changed = getdate()
+         WHERE  log_no IN (
+                            SELECT  log_no
+                              FROM  #temp_table_inconsistentlog
+                          )
+			]]>
+    </Statement>
+  </UpdateInconsistentLogExcept>
+
+</MallCooperationSetting>

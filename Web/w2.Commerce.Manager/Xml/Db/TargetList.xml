@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ターゲットリスト系SQLステートメントXML(TargetList.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<TargetList>
+
+  <!-- ターゲット リストのデータ カウントを更新します。 -->
+  <UpdateTargetListDataCount>
+    <Statement>
+      <![CDATA[
+      UPDATE w2_TargetList
+          SET  data_count = @data_count,
+              data_count_date = GETDATE()
+          WHERE  dept_id = @dept_id
+          AND  target_id = @target_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="data_count" Type="int" />
+    </Parameter>
+  </UpdateTargetListDataCount>
+
+  <!-- ターゲット リストのデータ カウントを更新します。 -->
+  <UpdateTargetListDataCountByTargetListData>
+    <Statement>
+      <![CDATA[
+      DECLARE @data_count INT
+      SET @data_count = (SELECT COUNT(user_id) FROM w2_TargetListData WHERE dept_id = @dept_id AND target_kbn = 'TargetList' AND master_id = @master_id)
+      
+      UPDATE w2_TargetList
+          SET  data_count = @data_count,
+              data_count_date = GETDATE()
+          WHERE  dept_id = @dept_id
+          AND  target_id = @target_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="master_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateTargetListDataCountByTargetListData>
+
+  <!-- ターゲットリスト全取得 -->
+  <GetTargetListAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_TargetList
+         WHERE  dept_id = @dept_id
+           AND  del_flg = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetTargetListAll>
+  
+  <!-- ターゲットリストインサート -->
+  <InsertTargetList>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_TargetList
+                (
+                dept_id,
+                target_id,
+                target_name,
+                target_type,
+                target_condition,
+                --data_count,
+                --data_count_date,
+                exec_timing,
+                schedule_kbn,
+                schedule_day_of_week,
+                schedule_year,
+                schedule_month,
+                schedule_day,
+                schedule_hour,
+                schedule_minute,
+                schedule_second,
+                last_changed,
+                del_flg
+                )
+         VALUES (
+                @dept_id,
+                @target_id,
+                @target_name,
+                @target_type,
+                @target_condition,
+                --@data_count,
+                --@data_count_date,
+                @exec_timing,
+                @schedule_kbn,
+                @schedule_day_of_week,
+                @schedule_year,
+                @schedule_month,
+                @schedule_day,
+                @schedule_hour,
+                @schedule_minute,
+                @schedule_second,
+                @last_changed,
+                @del_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_name" Type="nvarchar" Size="30" />
+      <Input Name="target_type" Type="nvarchar" Size="20" />
+      <Input Name="target_condition" Type="ntext" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="schedule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="schedule_day_of_week" Type="nvarchar" Size="10" />
+      <Input Name="schedule_year" Type="int" />
+      <Input Name="schedule_month" Type="int" />
+      <Input Name="schedule_day" Type="int" />
+      <Input Name="schedule_hour" Type="int" />
+      <Input Name="schedule_minute" Type="int" />
+      <Input Name="schedule_second" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </InsertTargetList>
+
+  <!-- ターゲットリスト削除フラグ更新(表示状態へ変更) -->
+  <UpdateTargetListDelFlgToVisible>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_TargetList
+           SET  del_flg = '0'
+         WHERE  dept_id = @dept_id
+           AND  target_id = @target_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateTargetListDelFlgToVisible>
+
+  <!-- ターゲットユーザリスト一時保持テーブルに紐づくユーザ情報の取得 -->
+  <GetAllTargetUserList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.*
+          FROM  w2_TempTargetUser
+     LEFT JOIN  w2_User
+            ON  w2_TempTargetUser.user_id = w2_User.user_id
+      ]]>
+    </Statement>
+  </GetAllTargetUserList>
+
+  <!-- ターゲットユーザリスト一時保持テーブルの初期化 -->
+  <TruncateTempTargetUser>
+    <Statement>
+      <![CDATA[
+        TRUNCATE TABLE w2_TempTargetUser
+      ]]>
+    </Statement>
+  </TruncateTempTargetUser>
+
+</TargetList>

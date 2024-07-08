@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 共有情報系SQLサブステートメントXML(CsShareInfo_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsShareInfo_Sub>
+
+  <!-- 検索WHERE -->
+  <Search_Where>
+    <Statement>
+      <![CDATA[
+        w2_CsShareInfo.dept_id = @dept_id
+        AND
+        (@info_no IS NULL OR w2_CsShareInfo.info_no = @info_no)
+        AND
+        (@info_text_like_escaped = '' OR w2_CsShareInfo.info_text like '%' + @info_text_like_escaped + '%'  ESCAPE '#')
+        AND
+        (@info_kbn = '' OR w2_CsShareInfo.info_kbn = @info_kbn)
+        AND
+        (@info_importance IS NULL OR w2_CsShareInfo.info_importance = @info_importance)
+        AND 
+        (@sender = '' OR w2_CsShareInfo.sender = @sender)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="sender" Type="nvarchar" Size="20" />
+      <Input Name="info_text_like_escaped" Type="nvarchar" Size="MAX" />
+      <Input Name="info_kbn" Type="nvarchar" Size="10" />
+      <Input Name="info_importance" Type="int" />
+    </Parameter>
+  </Search_Where>
+
+  <!-- 検索ORDER BY -->
+  <Search_OrderBy>
+    <Statement>
+      <![CDATA[
+        CASE @sort_kbn
+          WHEN 0 THEN date_created
+          WHEN 2 THEN info_importance
+          ELSE 1
+        END ASC,
+        CASE @sort_kbn
+          WHEN 1 THEN date_created
+          WHEN 3 THEN info_importance
+          ELSE 1
+        END DESC,
+        date_created DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </Search_OrderBy>
+
+</CsShareInfo_Sub>

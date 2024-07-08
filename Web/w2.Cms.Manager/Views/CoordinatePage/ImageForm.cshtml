@@ -1,0 +1,99 @@
+﻿@*
+=========================================================================================================
+  Module      : 画像選択パーツ(_ImageForm.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common
+@model w2.Cms.Manager.Input.ImageInput
+@{
+	var parentName = Model.BaseName + ".";
+}
+
+@helper UploadFileName(string parent)
+{
+	var name = parent + "UploadFile";
+	@:@name
+}
+@Html.Hidden(parentName + "BaseName", Model.BaseName)
+<div>
+	<div class="image-upload-content" data-max-select-count="100">
+		<div class="image-upload-content-block-wrapper" id='@Model.BaseName'>
+		</div>
+		<div class="image-upload-content-drag">
+			<div id="uploadedImage"></div>
+			<p class="image-upload-content-drag-text">画像ファイルをドラッグ&amp;ドロップするか下記から選択してください。</p>
+			<div class="image-upload-content-drag-btns">
+				<label class="btn btn-main btn-size-m">画像ファイル選択
+					<input type="file" name="upload_img" class="upload_img" style="display: none;" />
+					@Html.Hidden(parentName + "ImageId", "0")
+				</label>
+				<p class="image-upload-content-drag-btns-text">または
+					<a href="javascript:void(0)" class="btn btn-main btn-size-m" onclick="modal.open('#modal-imagelist-select','modal-size-l modal-imagelist-select');select_image_list('@parentName');">画像リストから選択</a>
+				</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	image_file_select.ini();
+	// 画像リストから選択したときに画像IDをセットするべきフォーム
+	var imageIdInput;
+
+	$(function () {
+		var fileName = '@Model.FileName';
+		if (fileName !== "") {
+			// アップロード済画像を表示
+			var baseName = '@Model.BaseName';
+			var obj = $("#" + selectorEscape(baseName));
+			obj.append('<div class="image-upload-content-block"><div class="image-upload-content-block-image"><img src="'
+				+ '@Constants.PATH_ROOT_FRONT_PC'
+				+ "@Constants.PATH_FEATURE_IMAGE"
+				+ fileName
+				+ '" alt=""></div><div class="image-upload-content-block-control"><dl><dt>'
+				+ fileName
+				+ '</dt><dd></dd></dl><button id="'
+				+ 0
+				+ '" type="button" class="btn btn-main btn-size-s">削除</button></div></div>');
+
+			obj.find('.image-upload-content-block > .image-upload-content-block-control > button').off('click').on('click',
+				function () {
+					$(this).parent().parent().remove();
+				});
+		}
+	});
+
+	function selectorEscape(val) {
+		return val.replace(/[ !"#$%&'()*+,.\/:;<=>?\[\\\]^`{|}~]/g, '\\$&');
+	}
+
+	// 画像リストから選択された画像をコピー
+	function setImage(imageId, imagePath, fileName) {
+		var formData = new FormData();
+		var path =imagePath + fileName;
+		formData.append("path", path);
+		formData.append("coordinateId", $('#coordinateId').val());
+
+		$.ajax({
+			url: "CopyFromImageList",
+			type: "POST",
+			data: formData,
+			processData: false,
+			contentType: false,
+		}).done(function (message) {
+			if (message !== "") {
+				notification.show(message, 'warning', 'fadeout');;
+			}
+			set_image_form();
+			$('.modal-bg').click();
+		});
+	}
+
+	// どこに画像IDをセットすればいいか保存
+	function select_image_list(parent) {
+		var parentImageId = parent + "ImageId";
+		imageIdInput = $('input[name="' + parentImageId + '"]');
+	}
+</script>

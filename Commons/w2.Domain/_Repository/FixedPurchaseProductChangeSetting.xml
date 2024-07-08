@@ -1,0 +1,341 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期商品変更設定系SQLステートメントXML (FixedPurchaseProductChangeSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchaseProductChangeSetting>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_FixedPurchaseProductChangeSetting
+                [[ FIXEDPURCHASEPRODUCTCHANGESETTING_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchaseProductChangeSetting.*
+          FROM  (
+                  SELECT  w2_FixedPurchaseProductChangeSetting.fixed_purchase_product_change_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ FIXEDPURCHASEPRODUCTCHANGESETTING_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_FixedPurchaseProductChangeSetting
+                          [[ FIXEDPURCHASEPRODUCTCHANGESETTING_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_FixedPurchaseProductChangeSetting ON
+                (
+                  RowIndex.fixed_purchase_product_change_id = w2_FixedPurchaseProductChangeSetting.fixed_purchase_product_change_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseProductChangeSetting
+         WHERE  fixed_purchase_product_change_id = @fixed_purchase_product_change_id
+           AND  valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </Get>
+
+  <!-- 取得：定期商品変更設定ID -->
+  <GetByFixedPurchaseProductChangeIds>
+    <Statement>
+      <![CDATA[
+        SELECT TOP 1 *
+          FROM  w2_FixedPurchaseProductChangeSetting
+         WHERE  fixed_purchase_product_change_id IN (@@ fixed_purchase_product_change_ids @@)
+           AND  valid_flg = '1'
+         ORDER BY priority, fixed_purchase_product_change_id
+      ]]>
+    </Statement>
+  </GetByFixedPurchaseProductChangeIds>
+
+  <!-- 変更元商品取得 -->
+  <GetBeforeChangeItems>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseBeforeChangeItem
+         WHERE  fixed_purchase_product_change_id = @fixed_purchase_product_change_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </GetBeforeChangeItems>
+
+  <!-- 変更後商品取得 -->
+  <GetAfterChangeItems>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseAfterChangeItem
+         WHERE  fixed_purchase_product_change_id = @fixed_purchase_product_change_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </GetAfterChangeItems>
+
+  <!-- 変更元商品取得：商品ID-->
+  <GetBeforeChangeItemsByProductId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseBeforeChangeItem
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  (
+                  item_unit_type != 'VARIATION'
+                  OR
+                  variation_id = @variation_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetBeforeChangeItemsByProductId>
+
+  <!-- 表示用定期商品変更設定取得 -->
+  <GetContainer>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseProductChangeSetting
+         WHERE  fixed_purchase_product_change_id = @fixed_purchase_product_change_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </GetContainer>
+
+  <!-- 表示用定期変更元商品取得 -->
+  <GetBeforeChangeItemContainers>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchaseBeforeChangeItem.*,
+                w2_Product.name AS product_name,
+                w2_Product.shipping_type
+          FROM  w2_FixedPurchaseBeforeChangeItem
+                INNER JOIN w2_Product ON
+                (
+                  w2_Product.product_id = w2_FixedPurchaseBeforeChangeItem.product_id
+                )
+         WHERE  fixed_purchase_product_change_id = @fixed_purchase_product_change_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </GetBeforeChangeItemContainers>
+
+  <!-- 表示用定期変更後商品取得 -->
+  <GetAfterChangeItemContainers>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchaseAfterChangeItem.*,
+                w2_Product.name AS product_name,
+                w2_Product.shipping_type
+          FROM  w2_FixedPurchaseAfterChangeItem
+                INNER JOIN w2_Product ON
+                (
+                  w2_Product.product_id = w2_FixedPurchaseAfterChangeItem.product_id
+                )
+         WHERE  fixed_purchase_product_change_id = @fixed_purchase_product_change_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </GetAfterChangeItemContainers>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FixedPurchaseProductChangeSetting
+                (
+                  fixed_purchase_product_change_id,
+                  fixed_purchase_product_change_name,
+                  priority,
+                  valid_flg,
+                  last_changed
+                )
+        VALUES  (
+                  @fixed_purchase_product_change_id,
+                  @fixed_purchase_product_change_name,
+                  @priority,
+                  @valid_flg,
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+      <Input Name="fixed_purchase_product_change_name" Type="nvarchar" Size="100" />
+      <Input Name="priority" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 定期変更元商品登録 -->
+  <InsertBeforeChangeItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FixedPurchaseBeforeChangeItem
+                (
+                  fixed_purchase_product_change_id,
+                  item_unit_type,
+                  shop_id,
+                  product_id,
+                  variation_id,
+                  last_changed
+                )
+        VALUES  (
+                  @fixed_purchase_product_change_id,
+                  @item_unit_type,
+                  @shop_id,
+                  @product_id,
+                  @variation_id,
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+      <Input Name="item_unit_type" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertBeforeChangeItem>
+
+  <!-- 定期変更後商品登録 -->
+  <InsertAfterChangeItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FixedPurchaseAfterChangeItem
+                (
+                  fixed_purchase_product_change_id,
+                  item_unit_type,
+                  shop_id,
+                  product_id,
+                  variation_id,
+                  last_changed
+                )
+        VALUES  (
+                  @fixed_purchase_product_change_id,
+                  @item_unit_type,
+                  @shop_id,
+                  @product_id,
+                  @variation_id,
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+      <Input Name="item_unit_type" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertAfterChangeItem>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FixedPurchaseProductChangeSetting
+           SET  fixed_purchase_product_change_name = @fixed_purchase_product_change_name,
+                priority = @priority,
+                valid_flg = @valid_flg,
+                last_changed = @last_changed,
+                date_changed = GETDATE()
+         WHERE  fixed_purchase_product_change_id = @fixed_purchase_product_change_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+      <Input Name="fixed_purchase_product_change_name" Type="nvarchar" Size="100" />
+      <Input Name="priority" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FixedPurchaseProductChangeSetting
+         WHERE  fixed_purchase_product_change_id = @fixed_purchase_product_change_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </Delete>
+
+  <!-- 定期変更元商品削除 -->
+  <DeleteBeforeChangeItem>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FixedPurchaseBeforeChangeItem
+         WHERE  fixed_purchase_product_change_id = @fixed_purchase_product_change_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </DeleteBeforeChangeItem>
+
+  <!-- 定期変更後商品削除 -->
+  <DeleteAfterChangeItem>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FixedPurchaseAfterChangeItem
+         WHERE  fixed_purchase_product_change_id = @fixed_purchase_product_change_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </DeleteAfterChangeItem>
+
+</FixedPurchaseProductChangeSetting>

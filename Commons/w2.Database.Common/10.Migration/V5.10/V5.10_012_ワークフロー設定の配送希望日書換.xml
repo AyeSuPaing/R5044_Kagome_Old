@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+UPDATE w2_OrderWorkflowSetting
+SET search_setting = SUBSTRING(CAST(search_setting as nvarchar(max)), 0, CHARINDEX('shipping_date=',search_setting)) + 'shipping_date='
++REPLACE -- 配送希望日FROMの値
+	(
+		REPLACE
+		(
+			CAST(search_setting as nvarchar(max)) ,
+			SUBSTRING(CAST(search_setting as nvarchar(max)), 0, CHARINDEX('shipping_date=',search_setting)) + 'shipping_date=' ,
+			''
+		) , /* 数値前まで削った状態 */
+		SUBSTRING(CAST(search_setting as nvarchar(max)), CHARINDEX(',specified',search_setting), LEN(CAST(search_setting as nvarchar(max)))) ,
+		''
+	) /* 数値だけ残った状態 */
++'~'
++REPLACE -- 配送希望日TOの値
+	(
+		REPLACE
+		(
+			CAST(search_setting as nvarchar(max)) ,
+			SUBSTRING(CAST(search_setting as nvarchar(max)), 0, CHARINDEX('shipping_date=',search_setting)) + 'shipping_date=' ,
+			''
+		) , /* 数値前まで削った状態 */
+		SUBSTRING(CAST(search_setting as nvarchar(max)), CHARINDEX(',specified',search_setting), LEN(CAST(search_setting as nvarchar(max)))) ,
+		''
+	) /* 数値だけ残った状態 */
++
+SUBSTRING(CAST(search_setting as nvarchar(max)), CHARINDEX(',specified',search_setting), LEN(CAST(search_setting as nvarchar(max))))
+where 
+(
+   search_setting LIKE '%shipping_date=[0-9],specified%'
+OR search_setting LIKE '%shipping_date=[0-9][0-9],specified%'
+OR search_setting LIKE '%shipping_date=[0-9][0-9][0-9],specified%'
+--OR search_setting LIKE '%shipping_date=%,specified%'
+)
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

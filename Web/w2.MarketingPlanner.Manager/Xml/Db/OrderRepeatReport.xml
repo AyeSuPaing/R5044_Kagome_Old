@@ -1,0 +1,214 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期回数別レポート系SQLステートメントXML(OrderRepeatReport.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderRepeatReport>
+  <!--レポートデータ取得  -->
+  <GetOrderRepeatData>
+    <Statement>
+      <![CDATA[
+        -- ダーティリードを許可して共有ロックを掛けなくする 
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  *,
+                CASE
+                  WHEN isFixedPurchase=0 AND isRepeat=0 THEN '01_order_new' -- 通常【新規】 
+                  WHEN isFixedPurchase=0 AND isRepeat=1 THEN '02_order_repeat' --通常【リピート】
+                  WHEN isFixedPurchase=1 AND isRepeat=0 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=1 THEN '03_fp_order_new' --定期（初回）【新規】
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=1 THEN '04_fp_order_repeat' --定期（初回）【リピート】
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=2 THEN '05_fp_order2' --定期（2回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=3 THEN '06_fp_order3' --定期（3回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=4 THEN '07_fp_order4' --定期（4回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=5 THEN '08_fp_order5' --定期（5回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=6 THEN '09_fp_order6' --定期（6回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=7 THEN '10_fp_order7' --定期（7回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=8 THEN '11_fp_order8' --定期（8回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=9 THEN '12_fp_order9' --定期（9回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=10 THEN '13_fp_order10' --定期（10回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=11 THEN '14_fp_order11' --定期（11回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=12 THEN '15_fp_order12' --定期（12回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=13 THEN '16_fp_order13' --定期（13回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=14 THEN '17_fp_order14' --定期（14回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=15 THEN '18_fp_order15' --定期（15回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=16 THEN '19_fp_order16' --定期（16回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=17 THEN '20_fp_order17' --定期（17回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=18 THEN '21_fp_order18' --定期（18回目）
+                  WHEN isFixedPurchase=1 AND isRepeat=1 AND (@regular_type = 'all' OR (@regular_type = 'fixed_purchase' AND isSubscriptionBox=0) OR (@regular_type = 'subscription_box' AND isSubscriptionBox=1 AND (@subscription_box_course_id = '' OR subscription_box_course_id = @subscription_box_course_id))) AND fixed_purchase_order_count=19 THEN '22_fp_order19' --定期（19回目）
+                  ELSE '23_fp_order20_up' --定期（20回目以降）
+                END AS order_division
+        INTO  #Orders
+        FROM
+        (
+          SELECT  w2_Order.order_id,
+                  w2_Order.order_kbn,
+                  w2_Order.order_payment_kbn,
+                  w2_Order.order_price_total,
+                  w2_Order.order_price_shipping,
+                  w2_Order.order_product_count,
+                  w2_Order.fixed_purchase_id,
+                  w2_Order.fixed_purchase_order_count,
+                  CASE WHEN w2_Order.fixed_purchase_id <> '' THEN 1 ELSE 0 END AS isFixedPurchase,
+                  CASE WHEN w2_Order.subscription_box_course_id <> '' THEN 1 ELSE 0 END AS isSubscriptionBox,
+                  w2_Order.subscription_box_course_id,
+                  CASE WHEN EXISTS
+                    (
+                      SELECT order_id FROM w2_Order a WHERE a.user_id = w2_Order.user_id AND a.date_created < w2_Order.date_created
+                        AND ((a.fixed_purchase_id = '' AND w2_Order.fixed_purchase_id = '') OR (a.fixed_purchase_id <> '' AND w2_Order.fixed_purchase_id <> ''))
+                    )
+                    THEN 1 ELSE 0
+                  END AS isRepeat
+            FROM  w2_Order
+           WHERE  @@ date_search_condition @@
+             AND  (@mall_id = '' OR w2_Order.mall_id = @mall_id)  -- モールID（サイト）
+             AND  w2_Order.order_status NOT IN ('TMP', 'TMP_CNSL', 'ODR_CNSL')  -- 注文ステータス（仮注文、仮注文キャンセル、キャンセル以外）
+             AND  w2_Order.order_kbn IN (@@ order_device_type @@)  -- 注文区分
+             AND  w2_Order.order_payment_kbn IN (@@ order_payment_division @@)  -- 決済種別
+             AND  w2_Order.return_exchange_kbn = '00'  -- 交換・返品以外
+             AND  (
+                    @regular_type = 'all'  -- すべての定期
+                    OR  (@regular_type = 'fixed_purchase' AND w2_Order.subscription_box_course_id = '')  -- 通常の定期
+                    OR  (
+                          @regular_type = 'subscription_box'
+                          AND  (
+                                 (
+                                   w2_Order.subscription_box_course_id != ''
+                                   <@@hasval:subscription_box_course_id@@>
+                                     AND  w2_Order.subscription_box_course_id = @subscription_box_course_id  --頒布会ID選択時
+                                   </@@hasval:subscription_box_course_id@@>
+                                 )
+                                 OR  w2_Order.fixed_purchase_id = ''
+                               )  -- 頒布会の定期
+                        )
+                  )
+             @@ advcode_search_condition @@
+        ) tmp
+
+      -- 注文種別の注文数、商品数、各金額を集計 
+      SELECT  order_division, order_count, amount_total, product_count, amount_shipping,
+              CASE  WHEN order_count > 0 THEN CONVERT(DECIMAL(18,3), amount_total / order_count) ELSE 0 END AS amount_average,
+              CASE  WHEN order_count > 0 THEN CONVERT(DECIMAL(18,3), product_count / order_count) ELSE 0 END AS product_count_average
+        FROM
+        (
+          (
+            SELECT  '00_total' AS order_division, --合計
+                    COUNT(*) AS order_count,
+                    ISNULL(SUM(order_price_total), 0) AS amount_total,
+                    ISNULL(SUM(order_price_shipping), 0) AS amount_shipping,
+                    ISNULL(SUM(order_product_count), 0) AS product_count
+              FROM  #Orders
+          )
+          UNION ALL
+          (
+            SELECT  order_division,
+                    COUNT(*) AS order_count,
+                    ISNULL(SUM(order_price_total), 0) AS amount_total,
+                    ISNULL(SUM(order_price_shipping), 0) AS amount_shipping,
+                    ISNULL(SUM(order_product_count), 0) AS product_count
+              FROM  #Orders
+            GROUP BY order_division
+          )
+          UNION ALL
+          (
+            SELECT  '24_fp_order2_up' AS order_division, --定期2回目以降
+                    COUNT(*) AS order_count,
+                    ISNULL(SUM(order_price_total), 0) AS amount_total,
+                    ISNULL(SUM(order_price_shipping), 0) AS amount_shipping,
+                    ISNULL(SUM(order_product_count), 0) AS product_count
+              FROM  #Orders
+             WHERE  order_division NOT IN ('01_order_new', '02_order_repeat', '03_fp_order_new', '04_fp_order_repeat')
+          )
+        ) main
+      ORDER BY order_division
+
+      -- 注文種別と注文区分別の集計 
+      SELECT  *,
+              CASE  WHEN order_count > 0 THEN CONVERT(DECIMAL(18,3), amount_total / order_count) ELSE 0 END AS amount_average,
+              CASE  WHEN order_count > 0 THEN CONVERT(DECIMAL(18,3), product_count / order_count) ELSE 0 END AS product_count_average
+        FROM
+        (
+          (
+            SELECT  order_division, order_kbn,
+                    COUNT(*) AS order_count,
+                    ISNULL(SUM(order_price_total), 0) AS amount_total,
+                    ISNULL(SUM(order_price_shipping), 0) AS amount_shipping,
+                    ISNULL(SUM(order_product_count), 0) AS product_count
+              FROM  #Orders
+            GROUP BY order_division, order_kbn
+          )
+          UNION ALL
+          (
+            SELECT  '00_total' AS order_division, order_kbn,
+                    COUNT(*) AS order_count,
+                    ISNULL(SUM(order_price_total), 0) AS amount_total,
+                    ISNULL(SUM(order_price_shipping), 0) AS amount_shipping,
+                    ISNULL(SUM(order_product_count), 0) AS product_count
+              FROM  #Orders
+            GROUP BY order_kbn
+          )
+          UNION ALL
+          (
+            SELECT  '24_fp_order2_up' AS order_division, order_kbn,
+                    COUNT(*) AS order_count,
+                    ISNULL(SUM(order_price_total), 0) AS amount_total,
+                    ISNULL(SUM(order_price_shipping), 0) AS amount_shipping,
+                    ISNULL(SUM(order_product_count), 0) AS product_count
+              FROM  #Orders
+             WHERE  order_division NOT IN ('01_order_new', '02_order_repeat', '03_fp_order_new', '04_fp_order_repeat')
+            GROUP BY order_kbn
+          )
+        ) detail1
+      ORDER BY order_division
+
+      -- 注文種別と決済種別の集計 
+      SELECT  *,
+              CASE  WHEN order_count > 0 THEN CONVERT(DECIMAL(18,3), amount_total / order_count) ELSE 0 END AS amount_average,
+              CASE  WHEN order_count > 0 THEN CONVERT(DECIMAL(18,3), product_count / order_count) ELSE 0 END AS product_count_average
+        FROM
+        (
+          (
+            SELECT  order_division, order_payment_kbn,
+                    COUNT(*) AS order_count,
+                    ISNULL(SUM(order_price_total), 0) AS amount_total,
+                    ISNULL(SUM(order_price_shipping), 0) AS amount_shipping,
+                    ISNULL(SUM(order_product_count), 0) AS product_count
+              FROM  #Orders
+            GROUP BY order_division, order_payment_kbn
+          )
+          UNION ALL
+          (
+            SELECT  '00_total' AS order_division, order_payment_kbn,
+                    COUNT(*) AS order_count,
+                    ISNULL(SUM(order_price_total), 0) AS amount_total,
+                    ISNULL(SUM(order_price_shipping), 0) AS amount_shipping,
+                    ISNULL(SUM(order_product_count), 0) AS product_count
+              FROM  #Orders
+            GROUP BY order_payment_kbn
+          )
+          UNION ALL
+          (
+            SELECT  '24_fp_order2_up' AS order_division, order_payment_kbn,
+                    COUNT(*) AS order_count,
+                    ISNULL(SUM(order_price_total), 0) AS amount_total,
+                    ISNULL(SUM(order_price_shipping), 0) AS amount_shipping,
+                    ISNULL(SUM(order_product_count), 0) AS product_count
+              FROM  #Orders
+             WHERE  order_division NOT IN ('01_order_new', '02_order_repeat', '03_fp_order_new', '04_fp_order_repeat')
+            GROUP BY order_payment_kbn
+          )
+        ) detail2
+      ORDER BY order_division
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date_from" Type="datetime" />
+      <Input Name="date_to" Type="datetime" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="regular_type" Type="nvarchar" Size="30" />
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetOrderRepeatData>
+</OrderRepeatReport>

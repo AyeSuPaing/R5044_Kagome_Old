@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品在庫系SQLステートメントXML(ProductStock.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductStock>
+
+  <!-- 注文向け商品在庫数取得（更新ロック） -->
+  <GetProductStockWithUpdLockForOrder>
+    <Statement>
+      <![CDATA[
+        SELECT  stock
+          FROM  w2_ProductStock WITH (UPDLOCK)
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetProductStockWithUpdLockForOrder>
+
+  <!-- 注文向け商品在庫数更新 -->
+  <UpdateProductStockForOrder>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductStock
+           SET  w2_ProductStock.stock = w2_ProductStock.stock + @item_quantity,
+                w2_ProductStock.date_changed = getdate(),
+                w2_ProductStock.last_changed = @last_changed
+          FROM  w2_ProductStock
+         WHERE  w2_ProductStock.shop_id  = @shop_id
+           AND  w2_ProductStock.product_id  = @product_id
+           AND  w2_ProductStock.variation_id  = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="item_quantity" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateProductStockForOrder>
+
+  <!-- 注文向け商品在庫履歴挿入 -->
+  <InsertProductStockHistoryForOrder>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductStockHistory
+                (
+                  order_id,
+                  shop_id,
+                  product_id,
+                  variation_id,
+                  action_status,
+                  add_stock,
+                  add_realstock,
+                  add_realstock_reserved,
+                  update_stock,
+                  update_realstock,
+                  update_realstock_reserved,
+                  last_changed
+                )
+          VALUES
+                (
+                  @order_id,
+                  @shop_id,
+                  @product_id,
+                  @variation_id,
+                  @action_status,
+                  @add_stock,
+                  @add_realstock,
+                  @add_realstock_reserved,
+                  @update_stock,
+                  @update_realstock,
+                  @update_realstock_reserved,
+                  @last_changed
+                )
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="action_status" Type="nvarchar" Size="10" />
+      <Input Name="add_stock" Type="int" />
+      <Input Name="add_realstock" Type="int" />
+      <Input Name="add_realstock_reserved" Type="int" />
+      <Input Name="update_stock" Type="int" />
+      <Input Name="update_realstock" Type="int" />
+      <Input Name="update_realstock_reserved" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertProductStockHistoryForOrder>
+
+</ProductStock>

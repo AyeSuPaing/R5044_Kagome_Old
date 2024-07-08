@@ -1,0 +1,101 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+		IF NOT EXISTS (SELECT * FROM SYSOBJECTS WHERE NAME='w2_FeaturePage')
+			BEGIN
+				CREATE TABLE [dbo].[w2_FeaturePage] (
+					[feature_page_id] [bigint] IDENTITY (1, 1) NOT NULL,
+					[management_title] [nvarchar] (100) NOT NULL DEFAULT (N''),
+					[page_type] [nvarchar] (20) NOT NULL DEFAULT (N'GROUP'),
+					[category_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+					[permitted_brand_ids] [nvarchar] (300) NOT NULL DEFAULT (N''),
+					[file_name] [nvarchar] (60) NOT NULL DEFAULT (N''),
+					[file_dir_path] [nvarchar] (300) NOT NULL DEFAULT (N''),
+					[page_sort_number] [int] NOT NULL DEFAULT (0),
+					[use_type] [nvarchar] (20) NOT NULL DEFAULT (N''),
+					[publish] [nvarchar] (20) NOT NULL DEFAULT (N'PUBLIC'),
+					[html_page_title] [nvarchar] (100) NOT NULL DEFAULT (N''),
+					[metadata_desc] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+					[condition_publish_date_from] [datetime],
+					[condition_publish_date_to] [datetime],
+					[condition_member_only_type] [nvarchar] (20) NOT NULL DEFAULT (N'ALL'),
+					[condition_member_rank_id] [nvarchar] (30),
+					[condition_target_list_type] [nvarchar] (20) NOT NULL DEFAULT (N'OR'),
+					[condition_target_list_ids] [nvarchar] (MAX),
+					[date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+					[date_changed] [datetime] NOT NULL DEFAULT (GETDATE()),
+					[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+				) ON [PRIMARY]
+
+				ALTER TABLE [dbo].[w2_FeaturePage] WITH NOCHECK ADD
+					CONSTRAINT [PK_w2_FeaturePage] PRIMARY KEY CLUSTERED
+					(
+						[feature_page_id]
+					) ON [PRIMARY]
+
+				CREATE INDEX [IX_w2_FeaturePage_1] ON [dbo].[w2_FeaturePage]([page_type]) ON [PRIMARY]
+
+				CREATE INDEX [IX_w2_FeaturePage_2] ON [dbo].[w2_FeaturePage]([file_name]) ON [PRIMARY]
+			END
+		GO
+
+		IF NOT EXISTS (SELECT * FROM SYSOBJECTS WHERE NAME='w2_FeaturePageCategory')
+			BEGIN
+				CREATE TABLE [dbo].[w2_FeaturePageCategory] (
+					[shop_id] [nvarchar](10) NOT NULL DEFAULT (N''),
+					[category_id] [nvarchar](30) NOT NULL DEFAULT (N''),
+					[parent_category_id] [nvarchar](30) NOT NULL DEFAULT (N''),
+					[category_name] [nvarchar](40) NOT NULL DEFAULT (N''),
+					[category_outline] [nvarchar](200) NOT NULL DEFAULT (N''),
+					[display_order] [int] NOT NULL DEFAULT (1),
+					[valid_flg] [nvarchar](1) NOT NULL DEFAULT (N'1'),
+					[date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+					[date_changed] [datetime] NOT NULL DEFAULT (GETDATE()),
+					[last_changed] [nvarchar](20) NOT NULL DEFAULT (N''),
+				) ON [PRIMARY]
+
+				ALTER TABLE [dbo].[w2_FeaturePageCategory] WITH NOCHECK ADD
+					CONSTRAINT [PK_w2_FeaturePageCategory] PRIMARY KEY CLUSTERED
+					(
+						[shop_id],
+						[category_id]
+					) ON [PRIMARY]
+
+				CREATE INDEX [IX_w2_FeaturePageCategory_1] ON [dbo].[w2_FeaturePageCategory]([shop_id], [parent_category_id]) ON [PRIMARY]
+			END
+		GO
+
+		IF NOT EXISTS (SELECT * FROM SYSOBJECTS WHERE NAME='w2_FeaturePageContents')
+			BEGIN
+				CREATE TABLE [dbo].[w2_FeaturePageContents] (
+					[feature_page_id] [bigint] NOT NULL,
+					[contents_kbn] [nvarchar] (1) NOT NULL DEFAULT (N''),
+					[contents_type] [nvarchar] (30) NOT NULL DEFAULT (N''),
+					[contents_sort_number] [int] NOT NULL DEFAULT (0),
+					[page_title] [nvarchar] (200) NOT NULL DEFAULT (N''),
+					[alt_text] [nvarchar] (200) NOT NULL DEFAULT (N''),
+					[product_group_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+					[product_list_title] [nvarchar] (200) NOT NULL DEFAULT (N''),
+					[display_number] [int] NOT NULL DEFAULT (0),
+					[pagination_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+					[date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+					[date_changed] [datetime] NOT NULL DEFAULT (GETDATE()),
+					[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+				) ON [PRIMARY]
+
+				ALTER TABLE [dbo].[w2_FeaturePageContents] WITH NOCHECK ADD
+					CONSTRAINT [PK_w2_FeaturePageContents] PRIMARY KEY CLUSTERED
+					(
+						[feature_page_id],
+						[contents_kbn],
+						[contents_type],
+						[contents_sort_number]
+					) ON [PRIMARY]
+			END
+		GO
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

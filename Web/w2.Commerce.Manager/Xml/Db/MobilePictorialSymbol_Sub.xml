@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モバイル絵文字系SQLサブステートメントXML(MobilePictorialSymbol_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MobilePictorialSymbol_Sub>
+
+  <!-- モバイル絵文字情報一覧取得用WHERE文 -->
+  <MOBILEPICTORIALSYMBOL_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_MobilePictorialSymbol.dept_id = @dept_id
+           AND  (
+                  (@symbol_id_like_escaped = '' OR w2_MobilePictorialSymbol.symbol_id like @symbol_id_like_escaped + '%' ESCAPE '#')      -- 絵文字ID
+                  AND 
+                  (@symbol_name_like_escaped = '' OR w2_MobilePictorialSymbol.symbol_name like '%' + @symbol_name_like_escaped + '%' ESCAPE '#')          -- 絵文字名
+                  AND 
+                  (@symbol_tag_like_escaped = '' OR w2_MobilePictorialSymbol.symbol_tag like '%' + @symbol_tag_like_escaped + '%' ESCAPE '#')          -- 絵文字タグ
+                )
+      ]]>
+    </Statement>
+  </MOBILEPICTORIALSYMBOL_SEARCH_WHERE>
+
+  <!-- モバイル絵文字情報一覧取得用ORDER_BY -->
+  <MOBILEPICTORIALSYMBOL_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_MobilePictorialSymbol.symbol_id
+            WHEN  2 THEN w2_MobilePictorialSymbol.symbol_name
+            WHEN  4 THEN w2_MobilePictorialSymbol.symbol_tag
+            ELSE '1'
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_MobilePictorialSymbol.symbol_id
+            WHEN  3 THEN w2_MobilePictorialSymbol.symbol_name
+            WHEN  5 THEN w2_MobilePictorialSymbol.symbol_tag
+            ELSE '1'
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_MobilePictorialSymbol.dept_id ASC, w2_MobilePictorialSymbol.symbol_id ASC
+      ]]>
+    </Statement>
+  </MOBILEPICTORIALSYMBOL_SEARCH_ORDER_BY>
+
+</MobilePictorialSymbol_Sub>

@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メールクリック設定系SQLステートメントXML(MailClick.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MailClick>
+
+  <!-- メールクリック情報取得 -->
+  <GetMailClick>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailClick
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  maildist_id = @maildist_id
+           AND  action_no = @action_no
+           AND  valid_flg = '1'
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+    </Parameter>
+  </GetMailClick>
+
+  <!-- メールクリック情報作成 -->
+  <InsertMailClick>
+    <Statement>
+      <![CDATA[
+        DECLARE @counts int
+        SELECT  @counts = COUNT(*)
+          FROM  w2_MailClick
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  maildist_id = @maildist_id
+           AND  action_no = @action_no
+           AND  mailclick_id = @mailclick_id
+      
+        IF @counts = 0
+          BEGIN
+            -- 登録
+            INSERT  w2_MailClick
+                    (
+                    dept_id,
+                    mailtext_id,
+                    maildist_id,
+                    action_no,
+                    mailclick_id,
+                    mailclick_url,
+                    mailclick_key,
+                    pcmobile_kbn,
+                    valid_flg,
+                    last_changed
+                    )
+            VALUES  (
+                    @dept_id,
+                    @mailtext_id,
+                    @maildist_id,
+                    @action_no,
+                    @mailclick_id,
+                    @mailclick_url,
+                    @mailclick_key,
+                    @pcmobile_kbn,
+                    '1',
+                    'batch'
+                    )
+          END
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <Input Name="mailclick_id" Type="nvarchar" Size="30" />
+      <Input Name="mailclick_url" Type="nvarchar" Size="MAX" />
+      <Input Name="mailclick_key" Type="nvarchar" Size="20" />
+      <Input Name="pcmobile_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </InsertMailClick>
+
+</MailClick>

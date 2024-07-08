@@ -1,0 +1,344 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Product Sub(Product_Sub.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2020 All Rights Reserved.
+=========================================================================================================
+-->
+<Product_Sub>
+
+  <!-- User member rank order -->
+  <USER_MEMBER_RANK_ORDER>
+    <Statement>
+      <![CDATA[
+        -- 会員ランク順位取得
+        DECLARE @member_rank_order INT
+        SET     @member_rank_order = ISNULL(
+                (
+                  SELECT  member_rank_order
+                    FROM  w2_MemberRank
+                   WHERE  member_rank_id = @member_rank_id
+                     AND  valid_flg = 'ON'
+                ), 999)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </USER_MEMBER_RANK_ORDER>
+
+  <!-- Member rank price product variation -->
+  <MEMBER_RANK_PRICE_PRODUCTVARIATION>
+    <Statement>
+      <![CDATA[
+        (
+          SELECT  TOP 1
+                  w2_ProductPrice.member_rank_price
+            FROM  w2_ProductPrice
+                  LEFT JOIN w2_MemberRank ON
+                  (
+                    w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                  )
+           WHERE  w2_ProductPrice.shop_id = w2_ProductView.shop_id
+             AND  w2_ProductPrice.product_id = w2_ProductView.product_id
+             AND  w2_ProductPrice.variation_id = ''
+             AND  @member_rank_id <> ''
+             AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = @member_rank_id AND valid_flg = 'ON')
+             AND  w2_MemberRank.valid_flg = 'ON'
+        ORDER BY  w2_MemberRank.member_rank_order
+        ) AS member_rank_price,
+        (
+          SELECT  TOP 1
+                  w2_ProductPrice.member_rank_price
+            FROM  w2_ProductPrice
+                  LEFT JOIN w2_MemberRank ON
+                  (
+                    w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                  )
+           WHERE  w2_ProductPrice.shop_id = w2_ProductView.shop_id
+             AND  w2_ProductPrice.product_id = w2_ProductView.product_id
+             AND  (w2_ProductPrice.variation_id = w2_ProductView.variation_id OR ((w2_ProductView.use_variation_flg = '0') AND (w2_ProductPrice.variation_id = '')))
+             AND  @member_rank_id <> ''
+             AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = @member_rank_id AND valid_flg = 'ON')
+             AND  w2_MemberRank.valid_flg = 'ON'
+        ORDER BY  w2_MemberRank.member_rank_order
+        ) AS member_rank_price_variation
+      ]]>
+    </Statement>
+  </MEMBER_RANK_PRICE_PRODUCTVARIATION>
+
+  <!-- User member rank order -->
+  <USER_MEMBER_RANK_ORDER>
+    <Statement>
+      <![CDATA[
+        DECLARE @member_rank_order INT
+        SET     @member_rank_order = ISNULL(
+                (
+                  SELECT  member_rank_order
+                    FROM  w2_MemberRank 
+                   WHERE  member_rank_id = @member_rank_id
+                     AND  valid_flg = 'ON'
+                ), 999)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </USER_MEMBER_RANK_ORDER>
+
+  <!-- Product view sold out select -->
+  <PRODUCTVIEW_SOLD_OUT_SELECT>
+    <Statement>
+      <![CDATA[
+        (
+          CASE w2_ProductView.stock_management_kbn
+          WHEN '0' THEN 1  -- 在庫管理をしない
+          WHEN '1' THEN 1  -- 商品情報：在庫０以下の場合でも表示する。購入可能
+          WHEN '2' THEN    -- 商品情報：在庫０以下の場合でも表示する。購入不可
+              CASE
+              WHEN EXISTS(
+                SELECT  w2_ProductStock.stock
+                  FROM  w2_ProductStock
+                 WHERE  w2_ProductStock.shop_id = w2_ProductView.shop_id
+                   AND  w2_ProductStock.product_id = w2_ProductView.product_id
+                   AND  w2_ProductStock.stock > 0
+                  ) THEN 1
+              ELSE 0
+              END
+          ELSE 0
+          END
+        )
+      ]]>
+    </Statement>
+  </PRODUCTVIEW_SOLD_OUT_SELECT>
+
+  <!-- Join product category view -->
+  <JOIN_PRODUCT_CATEGORY_VIEW>
+    <Statement>
+      <![CDATA[
+        LEFT JOIN w2_ProductCategory cat1 ON (w2_ProductView.shop_id = cat1.shop_id AND w2_ProductView.category_id1 = cat1.category_id)
+        LEFT JOIN w2_MemberRank mem1 ON (cat1.member_rank_id = mem1.member_rank_id)
+        LEFT JOIN w2_ProductCategory cat2 ON (w2_ProductView.shop_id = cat2.shop_id AND w2_ProductView.category_id2 = cat2.category_id)
+        LEFT JOIN w2_MemberRank mem2 ON (cat2.member_rank_id = mem2.member_rank_id)
+        LEFT JOIN w2_ProductCategory cat3 ON (w2_ProductView.shop_id = cat3.shop_id AND w2_ProductView.category_id3 = cat3.category_id)
+        LEFT JOIN w2_MemberRank mem3 ON (cat3.member_rank_id = mem3.member_rank_id)
+        LEFT JOIN w2_ProductCategory cat4 ON (w2_ProductView.shop_id = cat4.shop_id AND w2_ProductView.category_id4 = cat4.category_id)
+        LEFT JOIN w2_MemberRank mem4 ON (cat4.member_rank_id = mem4.member_rank_id)
+        LEFT JOIN w2_ProductCategory cat5 ON (w2_ProductView.shop_id = cat5.shop_id AND w2_ProductView.category_id5 = cat5.category_id)
+        LEFT JOIN w2_MemberRank mem5 ON (cat5.member_rank_id = mem5.member_rank_id)
+      ]]>
+    </Statement>
+  </JOIN_PRODUCT_CATEGORY_VIEW>
+
+  <!-- Product category search where -->
+  <PRODUCT_CATEGORY_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+          AND
+          (
+            (
+              cat1.category_id IS NULL
+              OR
+              (
+                (
+                  cat1.only_fixed_purchase_member_flg = '0'
+                  OR
+                  (
+                    cat1.only_fixed_purchase_member_flg = '1'
+                    AND
+                    @fixed_purchase_member_flg = '1'
+                  )
+                )
+                AND
+                (
+                  mem1.member_rank_id IS NULL
+                  OR
+                  mem1.member_rank_order >= @member_rank_order
+                )
+                AND
+                EXISTS
+                (
+                  SELECT  parent.category_id
+                    FROM  w2_ProductCategory parent
+                   WHERE  parent.shop_id = @shop_id
+                     AND  parent.parent_category_id = 'ROOT'
+                     AND  cat1.category_id LIKE parent.category_id + '%'
+                     AND  (
+                            parent.only_fixed_purchase_member_flg = '0'
+                            OR
+                            (
+                              parent.only_fixed_purchase_member_flg = '1'
+                              AND
+                              @fixed_purchase_member_flg = '1'
+                            )
+                          )
+                )
+              )
+            )
+            AND
+            (
+              cat2.category_id IS NULL
+              OR
+              (
+                (
+                  cat2.only_fixed_purchase_member_flg = '0'
+                  OR
+                  (
+                    cat2.only_fixed_purchase_member_flg = '1'
+                    AND
+                    @fixed_purchase_member_flg = '1'
+                  )
+                )
+                AND
+                (
+                  mem2.member_rank_id IS NULL
+                  OR
+                  mem2.member_rank_order >= @member_rank_order
+                )
+                AND
+                EXISTS
+                (
+                  SELECT  parent.category_id
+                    FROM  w2_ProductCategory parent
+                   WHERE  parent.shop_id = @shop_id
+                     AND  parent.parent_category_id = 'ROOT'
+                     AND  cat2.category_id LIKE parent.category_id + '%'
+                     AND  (
+                            parent.only_fixed_purchase_member_flg = '0'
+                            OR
+                            (
+                              parent.only_fixed_purchase_member_flg = '1'
+                              AND
+                              @fixed_purchase_member_flg = '1'
+                            )
+                          )
+                )
+              )
+            )
+            AND
+            (
+              cat3.category_id IS NULL
+              OR
+              (
+                (
+                  cat3.only_fixed_purchase_member_flg = '0'
+                  OR
+                  (
+                    cat3.only_fixed_purchase_member_flg = '1'
+                    AND
+                    @fixed_purchase_member_flg = '1'
+                  )
+                )
+                AND
+                (
+                  mem3.member_rank_id IS NULL
+                  OR
+                  mem3.member_rank_order >= @member_rank_order
+                )
+                AND
+                EXISTS
+                (
+                  SELECT  parent.category_id
+                    FROM  w2_ProductCategory parent
+                   WHERE  parent.shop_id = @shop_id
+                     AND  parent.parent_category_id = 'ROOT'
+                     AND  cat3.category_id LIKE parent.category_id + '%'
+                     AND  (
+                            parent.only_fixed_purchase_member_flg = '0'
+                            OR
+                            (
+                              parent.only_fixed_purchase_member_flg = '1'
+                              AND
+                              @fixed_purchase_member_flg = '1'
+                            )
+                          )
+                )
+              )
+            )
+            AND
+            (
+              cat4.category_id IS NULL
+              OR
+              (
+                (
+                  cat4.only_fixed_purchase_member_flg = '0'
+                  OR
+                  (
+                    cat4.only_fixed_purchase_member_flg = '1'
+                    AND
+                    @fixed_purchase_member_flg = '1'
+                  )
+                )
+                AND
+                (
+                  mem4.member_rank_id IS NULL
+                  OR
+                  mem4.member_rank_order >= @member_rank_order
+                )
+                AND
+                EXISTS
+                (
+                  SELECT  parent.category_id
+                    FROM  w2_ProductCategory parent
+                   WHERE  parent.shop_id = @shop_id
+                     AND  parent.parent_category_id = 'ROOT'
+                     AND  cat4.category_id LIKE parent.category_id + '%'
+                     AND  (
+                            parent.only_fixed_purchase_member_flg = '0'
+                            OR
+                            (
+                              parent.only_fixed_purchase_member_flg = '1'
+                              AND
+                              @fixed_purchase_member_flg = '1'
+                            )
+                          )
+                )
+              )
+            )
+            AND
+            (
+              cat5.category_id IS NULL
+              OR
+              (
+                (
+                  cat5.only_fixed_purchase_member_flg = '0'
+                  OR
+                  (
+                    cat5.only_fixed_purchase_member_flg = '1'
+                    AND
+                    @fixed_purchase_member_flg = '1'
+                  )
+                )
+                AND
+                (
+                  mem5.member_rank_id IS NULL
+                  OR
+                  mem5.member_rank_order >= @member_rank_order
+                )
+                AND
+                EXISTS
+                (
+                  SELECT  parent.category_id
+                    FROM  w2_ProductCategory parent
+                   WHERE  parent.shop_id = @shop_id
+                     AND  parent.parent_category_id = 'ROOT'
+                     AND  cat5.category_id LIKE parent.category_id + '%'
+                     AND  (
+                            parent.only_fixed_purchase_member_flg = '0'
+                            OR
+                            (
+                              parent.only_fixed_purchase_member_flg = '1'
+                              AND
+                              @fixed_purchase_member_flg = '1'
+                            )
+                          )
+                )
+              )
+            )
+          )
+      ]]>
+    </Statement>
+  </PRODUCT_CATEGORY_SEARCH_WHERE>
+
+</Product_Sub>

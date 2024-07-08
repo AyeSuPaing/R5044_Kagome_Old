@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 広告コード系SQLサブステートメントXML(AdvertisementCode_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<AdvertisementCode_Sub>
+
+  <!-- 広告コード情報一覧取得用WHERE文 -->
+  <ADVCODE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_AdvCode.dept_id = @dept_id
+           AND  (
+                  @advertisement_code_like_escaped = ''
+                  OR
+                  w2_AdvCode.advertisement_code LIKE '%' + @advertisement_code_like_escaped + '%'  ESCAPE '#'
+                )
+                @@ where_advertisement_code @@
+           AND  (
+                  @media_name_like_escaped = ''
+                  OR
+                  w2_AdvCode.media_name LIKE '%' + @media_name_like_escaped + '%'  ESCAPE '#'
+                )
+           AND  (
+                  @advcode_media_type_id = ''
+                  OR
+                  w2_AdvCode.advcode_media_type_id = @advcode_media_type_id
+                )
+           AND  (
+                  @valid_flg <> '1'
+                  OR
+                  (
+                    @valid_flg = '1'
+                    AND
+                    w2_AdvCode.valid_flg = @valid_flg
+                  )
+                )
+      ]]>
+    </Statement>
+  </ADVCODE_SEARCH_WHERE>
+
+  <!-- 広告媒体区分情報一覧取得用WHERE文 -->
+  <ADVCODEMEDIATYPE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (
+                    @advcode_media_type_id_like_escaped = ''
+                    OR
+                    w2_AdvCodeMediaType.advcode_media_type_id LIKE @advcode_media_type_id_like_escaped + '%'  ESCAPE '#'
+                  )
+                  AND 
+                  (
+                    @advcode_media_type_name_like_escaped = ''
+                    OR
+                    w2_AdvCodeMediaType.advcode_media_type_name LIKE '%' + @advcode_media_type_name_like_escaped + '%'  ESCAPE '#'
+                  )
+                )
+      ]]>
+    </Statement>
+  </ADVCODEMEDIATYPE_SEARCH_WHERE>
+
+  <!-- 広告コード情報一覧取得用ORDER_BY -->
+  <ADVCODE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_AdvCode.date_created
+            WHEN  8 THEN w2_AdvCode.date_changed
+            ELSE NULL
+          END ASC,
+          CASE @sort_kbn
+            WHEN  2 THEN w2_AdvCode.advertisement_code
+            WHEN  4 THEN w2_AdvCode.advcode_media_type_id
+            ELSE  '1'
+          END ASC,
+          CASE @sort_kbn
+            WHEN  6 THEN w2_AdvCodeMediaType.display_order
+            ELSE  1
+          END ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_AdvCode.date_created
+            WHEN  9 THEN w2_AdvCode.date_changed
+            ELSE NULL
+          END DESC,
+          CASE @sort_kbn
+            WHEN  3 THEN w2_AdvCode.advertisement_code
+            WHEN  5 THEN w2_AdvCode.advcode_media_type_id
+            ELSE  '1'
+          END DESC,
+          CASE @sort_kbn
+            WHEN  7 THEN w2_AdvCodeMediaType.display_order
+            ELSE  1
+          END DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_AdvCode.advcode_no ASC
+        ]]>
+    </Statement>
+  </ADVCODE_SEARCH_ORDER_BY>
+
+  <!-- 広告媒体区分情報一覧取得用ORDER_BY -->
+  <ADVCODEMEDIATYPE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_AdvCodeMediaType.date_created
+            ELSE NULL
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  2 THEN w2_AdvCodeMediaType.advcode_media_type_id
+            ELSE '1'
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_AdvCodeMediaType.date_created
+            ELSE NULL
+          END 
+          DESC,
+          CASE @sort_kbn
+            WHEN  3 THEN w2_AdvCodeMediaType.advcode_media_type_id
+            ELSE '1'
+          END 
+         DESC
+      ]]>
+    </Statement>
+  </ADVCODEMEDIATYPE_SEARCH_ORDER_BY>
+
+</AdvertisementCode_Sub>

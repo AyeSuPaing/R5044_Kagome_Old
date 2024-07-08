@@ -1,0 +1,108 @@
+﻿<%--
+=========================================================================================================
+  Module      : ランディング注文ページマスタ(LandingOrderPage.master)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+--%>
+<%@ Register TagPrefix="uc" TagName="HeaderScriptDeclaration" Src="~/Form/Common/HeaderScriptDeclaration.ascx" %>
+<%@ Register TagPrefix="uc" TagName="AffiliateTag" Src="~/Form/Common/AffiliateTag.ascx" %>
+<%@ Register TagPrefix="uc" TagName="Loading" Src="~/Form/Common/Loading.ascx" %>
+<%@ Register TagPrefix="uc" TagName="BodyHeaderMain" Src="~/Form/Common/BodyHeaderMain.ascx" %>
+<%@ Register TagPrefix="uc" TagName="BodyFooterMain" Src="~/Form/Common/BodyFooterMain.ascx" %>
+<%@ Master Language="C#" AutoEventWireup="true" CodeFile="~/Form/Common/LandingOrderPage.master.cs" Inherits="Form_Common_LandingOrderPage" %>
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja">
+<head id="Head1" runat="server">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+	<title>タイトルはページ生成時に置き換えられます</title>
+	<meta http-equiv="Content-Script-Type" content="text/javascript"/>
+	<%-- キャッシュ無効設定：ここから（消さないでください） --%>
+	<meta http-equiv="Pragma" content="no-cache"/>
+	<meta http-equiv="Cache-Control" content="no-cache"/>
+	<meta http-equiv="Expires" content="-1"/>
+	<%
+		Response.AddHeader("Cache-Control", "private, no-store, no-cache, must-revalidate");
+		Response.AddHeader("Pragma", "no-cache");
+	%>
+	<%-- キャッシュ無効設定：ここまで --%>
+	<%
+	SetCssLink("lCommonCss", Constants.PATH_ROOT + "Css/common.css?20180216");
+	SetCssLink("lPrintCss", Constants.PATH_ROOT + "Css/imports/print.css");
+	%>
+	<link id="lCommonCss" rel="stylesheet" type="text/css" media="screen,print"/>
+	<link id="lPrintCss" rel="stylesheet" type="text/css" media="print"/>
+	<asp:ContentPlaceHolder id="head" runat="server">
+	</asp:ContentPlaceHolder>
+
+	<%--▽CVタグ出力 head▽--%>
+	<uc:AffiliateTag ID="AffiliateTagHeadAll" Location="head" AllTag="true" runat="server"/>
+	<asp:contentplaceholder id="AffiliateTagHead" runat="server"></asp:contentplaceholder>
+	<%--△CVタグ出力 head△--%>
+
+	<%-- 各種Js読み込み --%>
+	<uc:HeaderScriptDeclaration id="HeaderScriptDeclaration" runat="server"></uc:HeaderScriptDeclaration>
+	
+	<% if (SessionManager.LpValidateErrorElementClientId != null){ %>
+		<script type="text/javascript">
+			$(window).on('load', function () {
+				setTimeout(function () {
+					scrollToElementCenter("<%= SessionManager.LpValidateErrorElementClientId %>");
+				}, 0);
+			});
+		</script>
+	<% } %>
+</head>
+<body onload="<%= OnLoadEvents %>">
+<%--▽CVタグ出力 body上▽--%>
+<uc:AffiliateTag ID="AffiliateTagBodyTopAll" Location="body_top" AllTag="true" runat="server"/>
+<asp:contentplaceholder id="AffiliateTagBodyTop" runat="server"></asp:contentplaceholder>
+<%--△CVタグ出力 body上△--%>
+<%-- EFOCUBE用id指定(削除禁止) --%>
+<input type="hidden" id="PcLanding" />
+<%
+	// テキストボックスでEnterキー押下時、意図しないSubmitを防止する（Safari、Opera対策）
+	if (Regex.IsMatch(StringUtility.ToEmpty(Request.UserAgent), "safari|opera", RegexOptions.IgnoreCase))
+	{
+		form1.Attributes.Add("onkeypress", "return ((event.keyCode != 13) || (window.event.srcElement.type != 'text'));");
+	}%>
+<form id="form1" onsubmit="return (document.getElementById('__EVENTVALIDATION') != null);" runat="server">
+
+	<script type="text/javascript">
+		<!--
+		// クリックジャック攻撃対策
+		CheckClickJack('<%= Constants.PATH_ROOT + Constants.PAGE_FRONT_BLANK %>');
+//-->
+	</script>
+	<%-- スクリプトマネージャ --%>
+	<asp:ScriptManager ID="smScriptManager" runat="server" OnAsyncPostBackError="smScriptManager_AsyncPostBackError" ScriptMode="Release"></asp:ScriptManager>
+
+	<%--▽ヘッダーエリア▽--%>
+	<div id="Header" style="display:<%: this.IsCartListLp ? "block" : "none" %>">
+		<uc:BodyHeaderMain id="BodyHeaderMain" runat="server"></uc:BodyHeaderMain>
+	</div><!--Header-->
+	<%--△ヘッダーエリア△--%>
+
+	<%--▽コンテンツエリア▽--%>
+	<div id="Contents">
+		<asp:contentplaceholder id="ContentPlaceHolder1" runat="server"></asp:contentplaceholder>
+	</div>
+	<%--△コンテンツエリア△--%>
+
+	<%--▽フッターエリア▽--%>
+	<div id="Foot" style="display:<%: this.IsCartListLp ? "block" : "none" %>">
+		<uc:BodyFooterMain id="BodyFooterMain" runat="server"></uc:BodyFooterMain>
+	</div>
+	<%--△フッターエリア△--%>
+</form>
+
+<uc:Loading id="ucLoading" UpdatePanelReload="True" runat="server" />
+
+<%--▽CVタグ出力 body下▽--%>
+<uc:AffiliateTag ID="AffiliateTagBodyBottomAll" Location="body_bottom" AllTag="true" runat="server"/>
+<asp:contentplaceholder id="AffiliateTagBodyBottom" runat="server"></asp:contentplaceholder>
+<%--△CVタグ出力 body下△--%>
+</body>
+</html>

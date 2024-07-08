@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : リアル店舗商品在庫SQLステートメントXML(RealShopProductStock.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<RealShopProductStock>
+
+  <!-- リアル店舗商品在庫情報マスタ取得 -->
+  <GetRealShopProductStockMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_RealShopProductStock
+                LEFT JOIN w2_RealShop ON
+                (
+                  w2_RealShopProductStock.real_shop_id = w2_RealShop.real_shop_id
+                )
+                LEFT JOIN w2_ProductView ON
+                (
+                  w2_RealShopProductStock.product_id = w2_ProductView.product_id
+                  AND
+                  w2_RealShopProductStock.variation_id = w2_ProductView.variation_id
+                )
+                [[ REALSHOPPRODUCTSTOCK_SEARCH_WHERE ]]
+                [[ REALSHOPPRODUCTSTOCK_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="real_shop_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="real_shop_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="product_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="variation_id_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="real_shop_stock" Type="int"/>
+      <Input Name="real_shop_stock_type" Type="int" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetRealShopProductStockMaster>
+
+  <!-- リアル店舗商品在庫キーマスタフィールドチェック -->
+  <CheckRealShopProductStockFields>
+    <Statement>
+      <![CDATA[
+         SELECT  TOP 1
+                 @@ fields @@
+           FROM  w2_RealShopProductStock
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </CheckRealShopProductStockFields>
+
+</RealShopProductStock>

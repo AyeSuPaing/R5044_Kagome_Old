@@ -1,0 +1,675 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Summary Report SQL sub-statement XML (SummaryReport_Sub.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<SummaryReport_Sub>
+
+  <!-- Create day calendar table -->
+  <CREATE_DAY_CALENDAR_TABLE>
+    <Statement>
+      <![CDATA[
+        DECLARE @calendar TABLE
+        (
+          [tgt_year] int,
+          [tgt_month] int,
+          [tgt_day] int,
+          [tgt_date] datetime
+        )
+        DECLARE @loop int
+        DECLARE @date datetime
+        DECLARE @number_of_days int
+        SET @loop = 0
+        SET @date = @start_date
+        SET @number_of_days = DATEDIFF(DAY, @start_date, @end_date)
+
+        WHILE (@loop <= @number_of_days)
+          BEGIN
+            INSERT  @calendar
+            (
+              tgt_year,
+              tgt_month,
+              tgt_day,
+              tgt_date
+            )
+            VALUES
+            (
+              YEAR(@date),
+              MONTH(@date),
+              DAY(@date),
+              CAST(@date AS DATE)
+            )
+            SET @loop = @loop + 1
+            SET @date = DATEADD(DAY, 1, @date)
+          END
+      ]]>
+    </Statement>
+  </CREATE_DAY_CALENDAR_TABLE>
+
+  <!-- Create month calendar table -->
+  <CREATE_MONTH_CALENDAR_TABLE>
+    <Statement>
+      <![CDATA[
+        DECLARE @calendar TABLE
+        (
+          [tgt_year] int,
+          [tgt_month] int,
+          [tgt_day] int,
+          [tgt_date] datetime
+        )
+        DECLARE @loop int
+        DECLARE @date datetime
+        DECLARE @number_of_months int
+        SET @loop = 0
+        SET @date = @start_date
+        SET @number_of_months = DATEDIFF(MONTH, @start_date, @end_date)
+
+        WHILE (@loop <= @number_of_months)
+          BEGIN
+            INSERT @calendar
+            (
+              tgt_year,
+              tgt_month,
+              tgt_day,
+              tgt_date
+            )
+            VALUES
+            (
+              YEAR(@date),
+              MONTH(@date),
+              DAY(@date),
+              CAST(@date AS DATE)
+            )
+            SET @loop = @loop + 1
+            SET @date = DATEADD(MONTH, 1, @date)
+          END
+      ]]>
+    </Statement>
+  </CREATE_MONTH_CALENDAR_TABLE>
+
+  <!-- Begin process create report by day -->
+  <BEGIN_PROCESS_CREATE_REPORT_BY_DAY>
+    <Statement>
+      <![CDATA[
+        DECLARE @tgt_year int
+        DECLARE @tgt_month int
+        DECLARE @tgt_day int
+        DECLARE @tgt_date datetime
+        DECLARE @tgt_date_bgn datetime
+        DECLARE @tgt_date_end datetime
+        DECLARE @report_data decimal(18, 3)
+        DECLARE @current_date datetime
+        SET @current_date = GETDATE()
+
+        DECLARE cur_calendar CURSOR FOR SELECT DISTINCT
+          tgt_year,
+          tgt_month,
+          tgt_day,
+          tgt_date
+        FROM @calendar
+
+        OPEN cur_calendar
+        FETCH NEXT FROM cur_calendar
+        INTO @tgt_year, @tgt_month, @tgt_day, @tgt_date
+
+        WHILE @@FETCH_STATUS = 0
+          BEGIN
+            SET @tgt_date_bgn = @tgt_date
+            SET @tgt_date_end = DATEADD(DAY, 1, @tgt_date)
+      ]]>
+    </Statement>
+  </BEGIN_PROCESS_CREATE_REPORT_BY_DAY>
+
+  <!-- Begin process create report by month -->
+  <BEGIN_PROCESS_CREATE_REPORT_BY_MONTH>
+    <Statement>
+      <![CDATA[
+        DECLARE @tgt_year int
+        DECLARE @tgt_month int
+        DECLARE @tgt_day int
+        DECLARE @tgt_date datetime
+        DECLARE @tgt_date_bgn datetime
+        DECLARE @tgt_date_end datetime
+        DECLARE @report_data decimal(18, 3)
+        DECLARE @current_date datetime
+        SET @current_date = GETDATE()
+
+        DECLARE cur_calendar CURSOR FOR SELECT DISTINCT
+          tgt_year,
+          tgt_month,
+          tgt_day,
+          tgt_date
+        FROM @calendar
+
+        OPEN cur_calendar
+        FETCH NEXT FROM cur_calendar
+        INTO @tgt_year, @tgt_month, @tgt_day, @tgt_date
+
+        WHILE @@FETCH_STATUS = 0
+          BEGIN
+            SET @tgt_date_bgn = @tgt_date
+            SET @tgt_date_end = DATEADD(MONTH, 1, @tgt_date)
+      ]]>
+    </Statement>
+  </BEGIN_PROCESS_CREATE_REPORT_BY_MONTH>
+
+  <!-- End process create report by day -->
+  <END_PROCESS_CREATE_REPORT_BY_DAY>
+    <Statement>
+      <![CDATA[
+        -- Check has record in database
+        IF NOT EXISTS (
+          SELECT  w2_SummaryReport.period_kbn
+            FROM  w2_SummaryReport
+           WHERE  w2_SummaryReport.period_kbn = @period_kbn
+             AND  w2_SummaryReport.data_kbn = @data_kbn
+             AND  w2_SummaryReport.report_date = @tgt_date)
+              BEGIN
+                -- Insert new record
+                INSERT  w2_SummaryReport
+                (
+                  period_kbn,
+                  data_kbn,
+                  report_date,
+                  data
+                )
+                VALUES
+                (
+                  @period_kbn,
+                  @data_kbn,
+                  @tgt_date,
+                  @report_data
+                )
+              END
+            ELSE
+              BEGIN
+                -- Only update for current day report
+                UPDATE  w2_SummaryReport
+                   SET  w2_SummaryReport.data = @report_data
+                 WHERE  w2_SummaryReport.period_kbn = @period_kbn
+                   AND  w2_SummaryReport.data_kbn = @data_kbn
+                   AND  w2_SummaryReport.report_date = @tgt_date
+                   AND  w2_SummaryReport.report_date >= @tgt_date_bgn
+                   AND  w2_SummaryReport.report_date < @tgt_date_end
+              END
+
+            FETCH NEXT FROM cur_calendar
+            INTO @tgt_year, @tgt_month, @tgt_day, @tgt_date
+          END
+
+        CLOSE cur_calendar
+        DEALLOCATE cur_calendar
+      ]]>
+    </Statement>
+  </END_PROCESS_CREATE_REPORT_BY_DAY>
+
+  <!-- End process create report by month -->
+  <END_PROCESS_CREATE_REPORT_BY_MONTH>
+    <Statement>
+      <![CDATA[
+        -- Check has record in database
+        IF NOT EXISTS (
+          SELECT  w2_SummaryReport.period_kbn
+            FROM  w2_SummaryReport
+           WHERE  w2_SummaryReport.period_kbn = @period_kbn
+             AND  w2_SummaryReport.data_kbn = @data_kbn
+             AND  w2_SummaryReport.report_date = @tgt_date)
+              BEGIN
+                -- Insert new record
+                INSERT  w2_SummaryReport
+                (
+                  period_kbn,
+                  data_kbn,
+                  report_date,
+                  data
+                )
+                VALUES
+                (
+                  @period_kbn,
+                  @data_kbn,
+                  @tgt_date,
+                  @report_data
+                )
+              END
+             ELSE
+              BEGIN
+                -- Only update for current month report
+                UPDATE  w2_SummaryReport
+                   SET  w2_SummaryReport.data = @report_data
+                 WHERE  w2_SummaryReport.period_kbn = @period_kbn
+                   AND  w2_SummaryReport.data_kbn = @data_kbn
+                   AND  w2_SummaryReport.report_date = @tgt_date
+                   AND  @current_date >= @tgt_date_bgn
+              END
+
+            FETCH NEXT FROM cur_calendar
+            INTO @tgt_year, @tgt_month, @tgt_day, @tgt_date
+          END
+
+        CLOSE cur_calendar
+        DEALLOCATE cur_calendar
+      ]]>
+    </Statement>
+  </END_PROCESS_CREATE_REPORT_BY_MONTH>
+
+  <!-- Select summary user access report -->
+  <SELECT_SUMMARY_USER_ACCESS_REPORT>
+    <Statement>
+      <![CDATA[
+        ISNULL(SUM(w2_DispAccessAnalysis.total_users), 0)
+      ]]>
+    </Statement>
+  </SELECT_SUMMARY_USER_ACCESS_REPORT>
+
+  <!-- Summary user access report where condition -->
+  <SUMMARY_USER_ACCESS_REPORT_WHERE_CONDITION>
+    <Statement>
+      <![CDATA[
+        WHERE  (
+                 w2_DispAccessAnalysis.access_kbn = '0'
+                 OR
+                 w2_DispAccessAnalysis.access_kbn = '1'
+                 OR
+                 w2_DispAccessAnalysis.access_kbn = '2'
+               )
+          AND  CAST(w2_DispAccessAnalysis.tgt_year AS INT) = @tgt_year
+          AND  CAST(w2_DispAccessAnalysis.tgt_month AS INT) = @tgt_month
+      ]]>
+    </Statement>
+  </SUMMARY_USER_ACCESS_REPORT_WHERE_CONDITION>
+
+  <!-- Select summary order count report -->
+  <SELECT_SUMMARY_ORDER_COUNT_REPORT>
+    <Statement>
+      <![CDATA[
+        SELECT  @report_data = ISNULL(COUNT(w2_Order.order_id), 0)
+          FROM  w2_Order
+                [[ SUMMARY_ORDER_REPORT_WHERE_CONDITION ]]
+      ]]>
+    </Statement>
+  </SELECT_SUMMARY_ORDER_COUNT_REPORT>
+
+  <!-- Select summary order amount report -->
+  <SELECT_SUMMARY_ORDER_AMOUNT_REPORT>
+    <Statement>
+      <![CDATA[
+        SELECT  @report_data = ISNULL(SUM(w2_Order.order_price_total), 0)
+          FROM  w2_Order
+                [[ SUMMARY_ORDER_REPORT_WHERE_CONDITION ]]
+      ]]>
+    </Statement>
+  </SELECT_SUMMARY_ORDER_AMOUNT_REPORT>
+
+  <!-- Summary order report where condition -->
+  <SUMMARY_ORDER_REPORT_WHERE_CONDITION>
+    <Statement>
+      <![CDATA[
+        WHERE  w2_Order.del_flg = '0'
+          AND  w2_Order.return_exchange_kbn = '00'
+          AND  w2_Order.shipped_changed_kbn = '01'
+          AND  w2_Order.order_status NOT IN ('TMP', 'ODR_CNSL', 'TMP_CNSL')
+          AND  w2_Order.order_date >= @tgt_date_bgn
+          AND  w2_Order.order_date < @tgt_date_end
+      ]]>
+    </Statement>
+  </SUMMARY_ORDER_REPORT_WHERE_CONDITION>
+
+  <!-- Select summary conversion report -->
+  <SELECT_SUMMARY_CONVERSION_REPORT>
+    <Statement>
+      <![CDATA[
+        SELECT  @report_data = CASE WHEN ISNULL(ConversionReport.user_count, 0) > 0
+                                 THEN ROUND((ISNULL(ConversionReport.price_total, 0) / ConversionReport.user_count), 3)
+                                 ELSE 0
+                               END
+          FROM  (
+                  SELECT  ISNULL(COUNT(DISTINCT(w2_Order.user_id)), 0) AS user_count,
+                          ISNULL(SUM(w2_Order.order_price_total), 0) AS price_total
+                    FROM  w2_Order
+                   WHERE  w2_Order.del_flg = '0'
+                     AND  w2_Order.return_exchange_kbn = '00'
+                     AND  w2_Order.order_status NOT IN ('TMP','TMP_CNSL', 'ODR_CNSL')
+                     AND  w2_Order.order_date >= @tgt_date_bgn
+                     AND  w2_Order.order_date < @tgt_date_end
+                 ) AS ConversionReport
+      ]]>
+    </Statement>
+  </SELECT_SUMMARY_CONVERSION_REPORT>
+
+  <!-- Summary ltv report join table -->
+  <SUMMARY_LTV_REPORT_JOIN_TABLE>
+    <Statement>
+      <![CDATA[
+        INNER JOIN w2_User ON
+        (
+          w2_User.user_id = w2_Order.user_id
+          AND
+          w2_User.user_kbn IN ('PC_USER', 'SP_USER', 'MB_USER')
+        )
+      ]]>
+    </Statement>
+  </SUMMARY_LTV_REPORT_JOIN_TABLE>
+
+  <!-- Select summary ltv report -->
+  <SELECT_SUMMARY_LTV_REPORT>
+    <Statement>
+      <![CDATA[
+        SELECT  @report_data = ROUND (
+                                 ISNULL (
+                                   -- ARPU = Total Revenue (excluded: order cancel, order return and guest user order ) / Total user order (excluded: guest user)
+                                   (
+                                     
+                                      CASE WHEN ISNULL(OrderReport.user_count, 0) > 0
+                                        THEN ((ISNULL(OrderReport.price_total, 0) - ISNULL(OrderCancelReport.cancel_price_total, 0) + ISNULL(OrderReturnReport.return_price_total, 0) + ISNULL(OrderExchangeReport.exchange_price_total, 0)) / OrderReport.user_count)
+                                        ELSE 0
+                                      END
+                                   )
+                                   /
+                                   -- Churn = Withdrawal Users / Active Users
+                                   (
+                                     CASE WHEN ISNULL(UserWithdrawalReport.total_withdrawal_user_count, 0) > 0
+                                       THEN
+                                         CASE WHEN ISNULL(UserActiveReport.total_active_user_count, 0) > 0
+                                           THEN (CAST(ISNULL(UserWithdrawalReport.total_withdrawal_user_count, 0) AS decimal(18,3)) / ISNULL(UserActiveReport.total_active_user_count, 0))
+                                           ELSE 1
+                                         END
+                                       ELSE 1
+                                     END
+                                   ),
+                                 0),
+                               3)
+          FROM  (
+                   SELECT  @tgt_date AS date,
+                           ISNULL(COUNT(DISTINCT(w2_Order.user_id)), 0) AS user_count,
+                           ISNULL(SUM(w2_Order.order_price_total), 0) AS price_total
+                     FROM  w2_Order
+                           [[ SUMMARY_LTV_REPORT_JOIN_TABLE ]]
+                    WHERE  w2_Order.del_flg = '0'
+                      AND  w2_Order.return_exchange_kbn = '00'
+                      AND  w2_Order.order_status NOT IN ('TMP','TMP_CNSL')
+                      AND  w2_Order.order_date >= @tgt_date_bgn
+                      AND  w2_Order.order_date < @tgt_date_end
+                 ) AS OrderReport
+                 LEFT JOIN
+                 (
+                   SELECT  @tgt_date AS date,
+                           ISNULL(SUM(w2_Order.order_price_total), 0) AS cancel_price_total
+                     FROM  w2_Order
+                           [[ SUMMARY_LTV_REPORT_JOIN_TABLE ]]
+                    WHERE  w2_Order.del_flg = '0'
+                      AND  w2_Order.return_exchange_kbn = '00'
+                      AND  w2_Order.order_status = 'ODR_CNSL'
+                      AND  w2_Order.order_cancel_date >= @tgt_date_bgn
+                      AND  w2_Order.order_cancel_date < @tgt_date_end
+                 ) AS OrderCancelReport ON
+                 (
+                   OrderCancelReport.date = OrderReport.date
+                 )
+                 LEFT JOIN
+                 (
+                   SELECT  @tgt_date AS date,
+                           ISNULL(SUM(w2_Order.order_price_total), 0) AS return_price_total
+                     FROM  w2_Order
+                           [[ SUMMARY_LTV_REPORT_JOIN_TABLE ]]
+                    WHERE  w2_Order.del_flg = '0'
+                      AND  w2_Order.return_exchange_kbn = '01'
+                      AND  w2_Order.order_return_exchange_status = '03'
+                      AND  w2_Order.order_return_exchange_complete_date >= @tgt_date_bgn
+                      AND  w2_Order.order_return_exchange_complete_date < @tgt_date_end
+                 ) AS OrderReturnReport ON
+                 (
+                   OrderReturnReport.date = OrderReport.date
+                 )
+                 LEFT JOIN
+                 (
+                   SELECT  @tgt_date AS date,
+                           ISNULL(SUM(w2_Order.order_price_total), 0) AS exchange_price_total
+                     FROM  w2_Order
+                           [[ SUMMARY_LTV_REPORT_JOIN_TABLE ]]
+                    WHERE  w2_Order.del_flg = '0'
+                      AND  w2_Order.return_exchange_kbn = '10'
+                      AND  w2_Order.order_return_exchange_status = '03'
+                      AND  w2_Order.order_return_exchange_complete_date >= @tgt_date_bgn
+                      AND  w2_Order.order_return_exchange_complete_date < @tgt_date_end
+                 ) AS OrderExchangeReport ON
+                 (
+                   OrderExchangeReport.date = OrderReport.date
+                 )
+                 LEFT JOIN
+                 (
+                   SELECT  @tgt_date AS date,
+                           ISNULL(COUNT(w2_User.user_id), 0) AS total_active_user_count
+                     FROM  w2_User
+                    WHERE  w2_User.del_flg = '0'
+                      AND  w2_User.integrated_flg = '0'
+                      AND  w2_User.user_kbn <> 'MAIL'
+                      AND  w2_User.date_created < @tgt_date_end
+                      AND  w2_User.date_created <= @current_date
+                 ) AS UserActiveReport ON
+                 (
+                   UserActiveReport.date = OrderReport.date
+                 )
+                 LEFT JOIN
+                 (
+                   SELECT  @tgt_date AS date,
+                           ISNULL(COUNT(w2_User.user_id), 0) AS total_withdrawal_user_count
+                     FROM  w2_User
+                    WHERE  w2_User.del_flg = '1'
+                      AND  w2_User.integrated_flg = '0'
+                      AND  w2_User.user_kbn <> 'MAIL'
+                      AND  w2_User.date_created < @tgt_date_end
+                      AND  w2_User.date_created <= @current_date
+                 ) AS UserWithdrawalReport ON
+                 (
+                   UserWithdrawalReport.date = OrderReport.date
+                 )
+      ]]>
+    </Statement>
+  </SELECT_SUMMARY_LTV_REPORT>
+
+  <!-- Select summary fixed purchase register report -->
+  <SELECT_SUMMARY_FIXED_PURCHASE_REGISTER_REPORT>
+    <Statement>
+      <![CDATA[
+        SELECT  @report_data = ISNULL(COUNT(w2_FixedPurchase.fixed_purchase_id), 0)
+          FROM  w2_FixedPurchase
+         WHERE  w2_FixedPurchase.del_flg = '0'
+           AND  w2_FixedPurchase.valid_flg = '1'
+           AND  w2_FixedPurchase.fixed_purchase_status NOT IN ('01', '30', '31')  -- 仮登録 / キャンセル / 仮登録キャンセル
+           AND  w2_FixedPurchase.fixed_purchase_date_bgn >= @tgt_date_bgn
+           AND  w2_FixedPurchase.fixed_purchase_date_bgn < @tgt_date_end
+      ]]>
+    </Statement>
+  </SELECT_SUMMARY_FIXED_PURCHASE_REGISTER_REPORT>
+
+  <!-- Select summary fixed purchase cancel report -->
+  <SELECT_SUMMARY_FIXED_PURCHASE_CANCEL_REPORT>
+    <Statement>
+      <![CDATA[
+        SELECT  @report_data = ISNULL(COUNT(w2_FixedPurchase.fixed_purchase_id), 0)
+          FROM  w2_FixedPurchase
+         WHERE  w2_FixedPurchase.del_flg = '0'
+           AND  w2_FixedPurchase.valid_flg = '1'
+           AND  w2_FixedPurchase.cancel_date IS NOT NULL
+           AND  w2_FixedPurchase.fixed_purchase_status = '30'  -- キャンセル
+           AND  w2_FixedPurchase.cancel_date >= @tgt_date_bgn
+           AND  w2_FixedPurchase.cancel_date < @tgt_date_end
+      ]]>
+    </Statement>
+  </SELECT_SUMMARY_FIXED_PURCHASE_CANCEL_REPORT>
+
+  <!-- Select summary user register report -->
+  <SELECT_SUMMARY_USER_REGISTER_REPORT>
+    <Statement>
+      <![CDATA[
+        SELECT  @report_data = ISNULL(COUNT(w2_User.user_id), 0)
+          FROM  w2_User
+         WHERE  w2_User.integrated_flg = '0'
+           AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+           AND  w2_User.date_created >= @tgt_date_bgn
+           AND  w2_User.date_created < @tgt_date_end
+      ]]>
+    </Statement>
+  </SELECT_SUMMARY_USER_REGISTER_REPORT>
+
+  <!-- Select summary user withdrawal report -->
+  <SELECT_SUMMARY_USER_WITHDRAWAL_REPORT>
+    <Statement>
+      <![CDATA[
+        SELECT  @report_data = ISNULL(COUNT(w2_User.user_id), 0)
+          FROM  w2_User
+         WHERE  w2_User.del_flg = '1'
+           AND  w2_User.integrated_flg = '0'
+           AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+           AND  w2_User.date_created >= @tgt_date_bgn
+           AND  w2_User.date_created < @tgt_date_end
+      ]]>
+    </Statement>
+  </SELECT_SUMMARY_USER_WITHDRAWAL_REPORT>
+
+  <!-- Select summary membership count report -->
+  <SELECT_SUMMARY_MEMBERSHIP_COUNT_REPORT>
+    <Statement>
+      <![CDATA[
+        SELECT  @report_data = ISNULL(COUNT(w2_User.user_id), 0)
+          FROM  w2_User
+         WHERE  w2_User.del_flg = '0'
+           AND  w2_User.user_kbn IN ('PC_USER', 'SP_USER', 'MB_USER', 'OFF_USER')
+           AND  w2_User.date_created < @tgt_date_end
+           AND  w2_User.date_created <= @current_date
+      ]]>
+    </Statement>
+  </SELECT_SUMMARY_MEMBERSHIP_COUNT_REPORT>
+
+  <!-- Select summary fixed purchase count report -->
+  <SELECT_SUMMARY_FIXED_PURCHASE_COUNT_REPORT>
+    <Statement>
+      <![CDATA[
+        SELECT  @report_data = ISNULL(COUNT(w2_FixedPurchase.fixed_purchase_id), 0)
+          FROM  w2_FixedPurchase
+         WHERE  w2_FixedPurchase.del_flg = '0'
+           AND  w2_FixedPurchase.valid_flg = '1'
+           AND  w2_FixedPurchase.fixed_purchase_status = '10'
+           AND  w2_FixedPurchase.payment_status = '10'
+           AND  w2_FixedPurchase.order_count > 1
+           AND  w2_FixedPurchase.last_order_date IS NOT NULL
+           AND  w2_FixedPurchase.last_order_date >= @tgt_date_bgn
+           AND  w2_FixedPurchase.last_order_date < @tgt_date_end
+      ]]>
+    </Statement>
+  </SELECT_SUMMARY_FIXED_PURCHASE_COUNT_REPORT>
+
+  <!-- Advertising code order ranking search where -->
+  <ADVERTISING_CODE_ORDERRANKING_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        AND  w2_Order.order_status NOT IN ('TMP_CNSL', 'ODR_CNSL')
+        AND  w2_Order.return_exchange_kbn = '00'
+        AND  w2_Order.del_flg = '0'
+        AND  w2_Order.advcode_first <> ''
+        AND  (
+               @begin_date <= w2_Order.order_date
+               AND
+               w2_Order.order_date <= @end_date
+             )
+      ]]>
+    </Statement>
+  </ADVERTISING_CODE_ORDERRANKING_SEARCH_WHERE>
+
+  <!-- Product stock where condition for report -->
+  <PRODUCTSTOCK_WHERE_CONDITION_FOR_REPORT>
+    <Statement>
+      <![CDATA[
+         AND  w2_ProductView.valid_flg = '1'
+         AND  w2_ProductView.stock_management_kbn != 0
+         AND  w2_ProductView.shop_id = @shop_id
+         AND  w2_ProductView.stock IS NOT NULL
+         AND  w2_ProductView.stock_alert IS NOT NULL
+      ]]>
+    </Statement>
+  </PRODUCTSTOCK_WHERE_CONDITION_FOR_REPORT>
+
+  <!-- Latest report registered user search where -->
+  <LATEST_REPORT_REGISTERED_USER_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        AND  (
+               @begin_date <= w2_User.date_created
+               AND
+               w2_User.date_created <= @end_date
+             )
+        AND  w2_User.del_flg = '0'
+        AND  w2_User.integrated_flg = '0'
+      ]]>
+    </Statement>
+  </LATEST_REPORT_REGISTERED_USER_SEARCH_WHERE>
+
+  <!-- Order shipped status daily report search where -->
+  <ORDER_SHIPPED_STATUS_DAILY_REPORT_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        AND  w2_Order.return_exchange_kbn = '00'
+        AND  w2_Order.del_flg = '0'
+        AND  w2_Order.order_status NOT IN('SHP_COMP', 'DLV_COMP', 'ODR_CNSL', 'TMP_CNSL')  -- 出荷完了/配送完了/キャンセル/仮注文キャンセル
+      ]]>
+    </Statement>
+  </ORDER_SHIPPED_STATUS_DAILY_REPORT_SEARCH_WHERE>
+
+  <!-- Inner join order shipping for count order shipped status daily report -->
+  <INNER_JOIN_ORDERSHIPPING_FOR_COUNT_ORDER_SHIPPED_STATUS_DAILY_REPORT>
+    <Statement>
+      <![CDATA[
+        INNER JOIN w2_OrderShipping ON
+        (
+          w2_OrderShipping.order_id = w2_Order.order_id
+          AND
+          w2_OrderShipping.scheduled_shipping_date IS NOT NULL
+        )
+      ]]>
+    </Statement>
+  </INNER_JOIN_ORDERSHIPPING_FOR_COUNT_ORDER_SHIPPED_STATUS_DAILY_REPORT>
+
+  <!-- Latest Report Order Search Where -->
+  <LATEST_REPORT_ORDER_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        AND  (
+               @begin_date <= w2_Order.order_date
+               AND
+               w2_Order.order_date <= @end_date
+             )
+        AND  w2_Order.del_flg = '0'
+        AND  w2_Order.return_exchange_kbn = '00'
+        AND  w2_Order.order_status NOT IN ('TMP', 'ODR_CNSL', 'TMP_CNSL')
+      ]]>
+    </Statement>
+  </LATEST_REPORT_ORDER_SEARCH_WHERE>
+
+  <!-- メール配信数を取得 -->
+  <SELECT_SENT_MAIL_COUNT>
+    <Statement>
+      <![CDATA[
+        SELECT @report_data = COUNT (*)
+          FROM w2_TaskScheduleHistory
+         WHERE action_result = 'MLOK'
+           AND schedule_date >= @tgt_date_bgn
+           AND schedule_date < @tgt_date_end
+      ]]>
+    </Statement>
+  </SELECT_SENT_MAIL_COUNT>
+
+  <!-- クリック数を取得 -->
+  <SELECT_MAIL_CLICK_COUNT>
+    <Statement>
+      <![CDATA[
+        SELECT @report_data = COUNT (*)
+          FROM w2_MailClickLog
+         WHERE date_created >= @tgt_date_bgn
+           AND date_created < @tgt_date_end
+      ]]>
+    </Statement>
+  </SELECT_MAIL_CLICK_COUNT>
+</SummaryReport_Sub>

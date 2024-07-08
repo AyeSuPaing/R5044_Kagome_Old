@@ -1,0 +1,842 @@
+﻿@*
+=========================================================================================================
+  Module      : サイト基本情報設定ページ(Modify.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using Castle.Core.Internal
+@using w2.App.Common.Manager
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.View
+@using w2.Common.Web
+@using w2.Domain.MenuAuthority.Helper
+@{
+	ViewBag.Title = "サイト基本情報設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+	var nameTranslationSettingListUrl = SingleSignOnUrlCreator.CreateForMvc(
+		MenuAuthorityHelper.ManagerSiteType.Ec,
+		new UrlCreator(Constants.PAGE_MANAGER_NAMETRANSLATIONSETTING_LIST)
+			.AddParam(Constants.REQUEST_KEY_WINDOW_KBN, "1")
+			.AddParam(Constants.REQUEST_KEY_NAME_TRANSLATION_SETTING_DATA_KBN, Constants.FLG_NAMETRANSLATIONSETTING_DATA_KBN_SITEINFORMATION)
+			.CreateUrl());
+}
+@model w2.Cms.Manager.ViewModels.SiteInformation.ModifyViewModel
+@helper TopButtomControls()
+{
+	<input type="button" value="  追加する  " class="btn btn-main" onclick="add()"/>
+	<input type="button" value="  更新する  " class="btn btn-main" onclick="update()"/>
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<!--▽ タイトル ▽-->
+	<tr><td><h1 class="page-title">サイト基本情報設定</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	<tr><td><h2 class="cmn-hed-h2">サイト基本情報設定編集</h2></td></tr>
+	<!--△ タイトル △-->
+	<!--▽ 編集入力 ▽-->
+	<tr>
+	<td>
+		<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+		<tr>
+		<td>
+		<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+		<tr>
+		<td align="center">
+		<table cellspacing="0" cellpadding="0" border="0">
+		<tr>
+		<td>
+			@using (Ajax.BeginForm("Update", Constants.CONTROLLER_W2CMS_MANAGER_SITE_INFORMATION,
+				new DefaultAjaxOptions { UpdateTargetId = "divComp" }))
+			{
+				<div id="divComp" class="action_part_top">
+				</div>
+				<div class="action_part_top">
+					@TopButtomControls()
+				</div>
+				<table class="edit_table" cellspacing="1" cellpadding="15" width="758" border="0">
+					<tbody>
+					<tr>
+						<td class="edit_title_bg"  align="center" colspan="2"  style="font-size: 15px">サイト情報</td>
+						<td class="edit_title_bg"  align="center" style="font-size: 15px">削除</td>
+					</tr>
+					@for (var xmlIndex = 0; xmlIndex < Model.Input.XmlInfo.Length; xmlIndex++)
+					{
+						<tr>
+							<td class="edit_title_bg" align="left" style="font-size: 15px; padding: 10px;">
+								@Html.HiddenFor(m => m.Input.XmlInfo[xmlIndex].NodeName)
+								管理名：
+								@if (Model.Input.XmlInfo[xmlIndex].AddTag != null)
+								{
+
+									@Html.TextBoxFor(m => m.Input.XmlInfo[xmlIndex].TagName, new
+									{
+										style = "width:200px"
+									})
+								}
+								else
+								{
+									@Model.Input.XmlInfo[xmlIndex].TagName
+								}
+								<br/>ID
+								@if (Model.Input.XmlInfo[xmlIndex].AddTag != null)
+								{
+									@Html.Raw("<span class=\"notice\">*</span>　&nbsp&nbsp：")
+								}
+								else
+								{
+									@Html.Raw("&nbsp&nbsp&nbsp&nbsp　：")
+								}
+								@if (Model.Input.XmlInfo[xmlIndex].AddTag != null)
+								{
+									@Html.TextBoxFor(m => m.Input.XmlInfo[xmlIndex].InputNodeName, new
+									{
+										style = "width:200px"
+									})
+								}
+								else
+								{
+									@Model.Input.XmlInfo[xmlIndex].NodeName
+								}
+								<br>
+								@if (Model.Input.XmlInfo[xmlIndex].AddTag == null)
+								{
+									<a href="javascript:void(0)" class="btn-modal-open" data-modal-selector="#@Model.Input.XmlInfo[xmlIndex].NodeName" data-modal-classname="modal-size-m" style="font-size: 12px">デフォルト利用箇所</a>
+								}
+							</td>
+							<td class="edit_item_bg" align="left" style="font-size: 15px; padding: 10px;">
+								表示文言
+								@if (Model.Input.XmlInfo[xmlIndex].IsEditHtml != null)
+								{
+									<input type="button" onclick='OpenWysiwyg("Input_XmlInfo_9__Text");' value="  HTMLエディタ  " class="btn btn-main"/>
+									<br/>
+								}
+
+								@if (Model.Input.XmlInfo[xmlIndex].TextBoxRows == 1)
+								{
+									@Html.TextBoxFor(m => m.Input.XmlInfo[xmlIndex].Text, new
+									{
+										rows = "1",
+										style = "width:590px; height:32px; margin-top:5px; margin-bottom:7px",
+										onFocus = "javascript:inputClick(this.id);"
+									})
+								}
+								else
+								{
+									@Html.TextAreaFor(m => m.Input.XmlInfo[xmlIndex].Text, new
+									{
+										rows = Model.Input.XmlInfo[xmlIndex].TextBoxRows,
+										style = "width:590px; margin-top:5px; margin-bottom:7px",
+										onFocus = "javascript:inputClick(this.id);"
+									})
+								}
+								<br/>
+								@if ((Model.Input.XmlInfo[xmlIndex].Description.IsNullOrEmpty() == false) || (Model.Input.XmlInfo[xmlIndex].AddTag != null))
+								{
+									@("メモ ")<br>
+								}
+								@if (Model.Input.XmlInfo[xmlIndex].AddTag != null)
+								{
+									@Html.TextBoxFor(m => m.Input.XmlInfo[xmlIndex].Description, new
+									{
+										style = "width:590px; margin:3px"
+									})
+								}
+								else
+								{
+									@Html.Raw(HtmlSanitizer.HtmlEncodeChangeToBr(Model.Input.XmlInfo[xmlIndex].Description))
+								}
+								@if (xmlIndex == 9)
+								{
+									<div style="margin-top: 3px;">
+										埋込タグ（フロント）： <%= ShopMessage.GetMessageByPaymentId() %>
+										<button class="copy-value btn btn-sub btn-size-s" data-clipboard-text='<%= ShopMessage.GetMessageByPaymentId() %>' type="button">コピー</button><br/>
+									</div>
+								}
+								else
+								{
+									<div style="margin-top: 3px;">
+										埋込タグ（フロント）： <%= ShopMessage.GetMessageHtmlEncodeChangeToBr("@Html.Raw(HtmlSanitizer.HtmlEncodeChangeToBr(Model.Input.XmlInfo[xmlIndex].NodeName))") %>
+										<button class="copy-value btn btn-sub btn-size-s" data-clipboard-text='<%= ShopMessage.GetMessageHtmlEncodeChangeToBr("@Model.Input.XmlInfo[xmlIndex].NodeName") %>' type="button">コピー</button><br/>
+										埋込タグ（メール） ： @@@@ ShopMessage.@Html.Raw(HtmlSanitizer.HtmlEncodeChangeToBr(Model.Input.XmlInfo[xmlIndex].NodeName)) @@@@
+										<button class="copy-value btn btn-sub btn-size-s" data-clipboard-text="@@@@ ShopMessage.@Html.Raw(Model.Input.XmlInfo[xmlIndex].NodeName) @@@@" type="button">コピー</button>
+									</div>
+								}
+							</td>
+							<td class="edit_item_bg" align="center">
+								@if (Model.Input.XmlInfo[xmlIndex].AddTag != null)
+								{
+									<input type="button" class="btn btn-sub btn-size-m" value="  削除  " onclick="deleteNode('@Model.Input.XmlInfo[xmlIndex].NodeName')"/>
+								}
+								else
+								{
+									@("―")
+								}
+							</td>
+						</tr>
+					}
+				</table>
+				<div class="action_part_bottom">
+					@TopButtomControls()
+				</div>
+				if (Constants.GLOBAL_OPTION_ENABLE)
+				{
+					<h2 class="cmn-hed-h2">
+						サイト基本情報翻訳設定
+					</h2>
+					<div class="action_part_top">
+						<a href="NameTranslationSettingExport">  翻訳データ出力  </a>
+						<button class="btn btn-main" onclick="open_edit_window()">  編集  </button>
+					</div>
+					foreach (var translation in Model.Input.SiteInformationTranslation)
+					{
+						<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+							<tbody>
+							<tr>
+								<td class="edit_title_bg" align="center" colspan="2">サイト情報(言語ロケールID:@translation.LanguageLocaleId)</td>
+							</tr>
+							<tr>
+								<td class="edit_title_bg" align="left" width="200">サイト名</td>
+								<td class="edit_item_bg" align="left">@translation.ShopName</td>
+							</tr>
+							<tr>
+								<td class="edit_title_bg" align="left" width="200">企業名</td>
+								<td class="edit_item_bg" align="left">@translation.CompanyName</td>
+							</tr>
+							<tr>
+								<td class="edit_title_bg" align="left" width="200">問い合わせ窓口情報</td>
+								<td class="edit_item_bg" align="left">@Html.Raw(HtmlSanitizer.HtmlEncodeChangeToBr(@translation.ContactCenterInfo))</td>
+							</tr>
+							</tbody>
+						</table>
+						@LayoutHelper.PaddingTr(10)
+					}
+				}
+			}
+		</td>
+		</tr>
+		@LayoutHelper.PaddingTr(10)
+		<tr>
+			<td>
+				<table class="info_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					<tr class="info_item_bg">
+						<td align="left">備考<br />
+							・サイト情報の表示は標準デザインでは、規約や問い合わせ、会員系のページに表示されます。<br />
+							・「埋込タグ」とは、サイト情報の設定値をPCサイトページに表示させたい場合に、デザイン側ページ（aspxファイル等）に直接記述するタグです。
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+	</td>
+	</tr>
+	<!--△ 詳細 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+<div class="modal-content-hide">
+	<div id="SenderMailAddress">
+		<p class="modal-inner-ttl">デフォルト利用箇所（送信元メールアドレス）</p>
+		デフォルトの状態で埋込タグ（送信元メールアドレス）は<br />以下ファイルで使用されています。<br />
+		・メールテンプレートの送信元メールアドレスで使用されています。<br />
+	</div>
+</div>
+<div class="modal-content-hide">
+	<div id="SenderMailName">
+		<p class="modal-inner-ttl">デフォルト利用箇所（送信元名）</p>
+		デフォルトの状態で埋込タグ（送信元名）は<br />以下ファイルで使用されています。<br />
+		・メールテンプレートの送信元名で使用されています。<br />
+	</div>
+</div>
+<div class="modal-content-hide">
+	<div id="ShopName">
+		<p class="modal-inner-ttl">デフォルト利用箇所（サイト名）</p>
+		デフォルトの状態で埋込タグ（サイト名）は<br />以下ファイルで使用されています。<br />
+		<table class="site-infomation-content-table">
+			<tr>
+				<td>・Form\Common\PayPalScriptsForm.ascx</td>
+			</tr>
+			<tr>
+				<td>・Form\Inquiry\InquiryComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\MailMagazineCancelComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\PasswordModifyComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\PasswordReminderComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\UserEasyRegistInput.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\UserModifyComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\UserRegistComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\UserRegistInput.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\UserRegistRegulation.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\UserWithdrawalComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\UserWithdrawalInput.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\UserRegistRegulationMessage.ascx</td>
+			</tr>
+			<tr>
+				<td>・Landing\LandingCartInput.aspx</td>
+			</tr>
+			<tr>
+				<td>・Landing\formlp\LpInputForm.ascx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\Inquiry\InquiryComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\MailMagazineCancelComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\PasswordModifyComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\PasswordReminderComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\UserModifyComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\UserRegistComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\UserWithdrawalComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\UserWithdrawalInput.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Landing\LandingCartInput.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Landing\formlp\LpInputForm.ascx</td>
+			</tr>
+		</table>
+	</div>
+</div>
+<div class="modal-content-hide">
+	<div id="CompanyName">
+		<p class="modal-inner-ttl">デフォルト利用箇所（企業名）</p>
+		デフォルトの状態で埋込タグ（企業名）は<br />以下ファイルで使用されています。<br />
+		<table class="site-infomation-content-table">
+			<tr>
+				<td>・Form\User\UserRegistRegulationMessage.ascx</td>
+			</tr>
+		</table>
+	</div>
+</div>
+<div class="modal-content-hide">
+	<div id="ContactMail">
+		<p class="modal-inner-ttl">デフォルト利用箇所（問い合わせメールアドレス）</p>
+		デフォルトの状態で埋込タグ（問い合わせメールアドレス）は<br />以下ファイルで使用されています。<br />
+		・未使用<br />
+
+	</div>
+</div>
+<div class="modal-content-hide">
+	<div id="ContactCenterInfo">
+		<p class="modal-inner-ttl">デフォルト利用箇所（問い合わせ窓口情報）</p>
+		デフォルトの状態で埋込タグ（問い合わせ窓口情報）は<br />以下ファイルで使用されています。<br />
+		<table class="site-infomation-content-table">
+			<tr>
+				<td>・Form\Inquiry\InquiryComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\MailMagazineCancelComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\MailMagazineRegistComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\PasswordModifyComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\PasswordReminderComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\UserModifyComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\UserRegistComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\User\UserRegistRegulationMessage.ascx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\Inquiry\InquiryComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\MailMagazineCancelComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\MailMagazineRegistComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\PasswordModifyComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\PasswordReminderComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\UserModifyComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\User\UserRegistComplete.aspx</td>
+			</tr>
+		</table>
+	</div>
+</div>
+<div class="modal-content-hide">
+	<div id="Signature">
+		<p class="modal-inner-ttl">デフォルト利用箇所（署名）</p>
+		デフォルトの状態で埋込タグ（署名）は<br />以下ファイルで使用されています。<br />
+		・未使用<br />
+	</div>
+</div>
+<div class="modal-content-hide">
+	<div id="ShopMailDomain">
+		<p class="modal-inner-ttl">デフォルト利用箇所（メールアドレスドメイン）</p>
+		デフォルトの状態で埋込タグ（メールアドレスドメイン）は<br />以下ファイルで使用されています。<br />
+		<table class="site-infomation-content-table">
+			<tr>
+				<td>・Form\Order\OrderComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\Order\OrderPayment.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\Order\OrderComplete.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\Order\OrderPayment.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Landing\LandingCartInput.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Landing\formlp\LpInputForm.ascx</td>
+			</tr>
+		</table>
+	</div>
+</div>
+<div class="modal-content-hide">
+	<div id="ReturnSpecialContractPage">
+		<p class="modal-inner-ttl">デフォルト利用箇所（返品特約ページパス）</p>
+		デフォルトの状態で埋込タグ（返品特約ページパス）は<br />以下ファイルで使用されています。<br />
+		<table class="site-infomation-content-table">
+			<tr>
+				<td>・Form\Order\CartSelect_ProductItem.ascx</td>
+			</tr>
+			<tr>
+				<td>・Form\Product\ProductDetail.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\Product\ProductSetList.aspx</td>
+			</tr>
+			<tr>
+				<td>・Form\Product\ProductVariationList.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\Product\ProductDetail.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\Product\ProductVariationList.aspx</td>
+			</tr>
+		</table>
+	</div>
+</div>
+<div class="modal-content-hide">
+	<div id="SpecifiedCommercialTransactions">
+		<p class="modal-inner-ttl">デフォルト利用箇所（特定商取引法に基づく表記）</p>
+		デフォルトの状態で埋込タグ（特定商取引法に基づく表記）は<br />以下ファイルで使用されています。<br />
+		<table class="site-infomation-content-table">
+			<tr>
+				<td>・Form\Order\OrderConfirm.ascx</td>
+			</tr>
+			<tr>
+				<td>・Landing\formlp\LpInputForm.ascx</td>
+			</tr>
+			<tr>
+				<td>・Landing\LandingCartConfirm.aspx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Form\Order\OrderConfirm.ascx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Landing\formlp\LpInputForm.ascx</td>
+			</tr>
+			<tr>
+				<td>・SmartPhone\Landing\LandingCartConfirm.aspx</td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<!-- ▽ 置換タグ説明 ▽ -->
+@Html.Partial("_ReplaceTag")
+<!--△ 置換タグ説明 △ -->
+<script type="text/javascript">
+	function open_edit_window() {
+		open_window('@Html.Raw(nameTranslationSettingListUrl)',
+			'SiteInformation',
+			'width=1050,height=700,top=120,left=420,status=NO,scrollbars=yes');
+	}
+	// ステータス確認
+	$(function(){
+		$.ajax({
+			url: '@Url.Action("CheckStatus")',
+			type: 'POST',
+			data: {}
+		}).done(function(status) {
+			if (status !== "") {
+				if (status === "Add") {
+					window.scroll( 0, document.body.scrollHeight );
+				}
+				switch (status){ 
+				case 'Add':
+					notification.show('追加しました。', 'info', 'fadeout');
+					break;
+				case 'Update':
+					notification.show('更新しました。', 'info', 'fadeout');
+					break;
+				case 'Delete':
+					notification.show('削除しました。', 'info', 'fadeout');
+					break;
+				}
+			}
+				
+		});
+	});
+
+	// 削除
+	function deleteNode(nodeName) {
+		if( window.confirm('フロント、メールテンプレートで使用されていないか確認してから削除してください。\n削除してよろしいでしょうか？') ) {
+			$.ajax({
+				url: '@Url.Action("Delete")',
+				type: 'POST',
+				data: { nodeName: nodeName }
+			}).done(function(result) {
+				if (result !== "") {
+					notification.show(result, 'warning', 'fadeout');
+				} else {
+					location.reload();
+				}
+			});
+		}
+	}
+
+	// 追加
+	function add() {
+		$.ajax({
+			url: '@Url.Action("Add")',
+			type: 'POST',
+			data: { }
+		}).done(function(result) {
+			if (result !== "") {
+				notification.show(result, 'warning', 'fadeout');
+			} else {
+				location.reload();
+			}
+		});
+	}
+
+	// 更新
+	function update() {
+		$.ajax({
+			url: '@Url.Action("Update")',
+			type: 'POST',
+			data: $("#form0").serializeArray(),
+			traditional: true
+		}).done(function(result) {
+			if (result !== "") {
+				notification.show(result, 'warning', 'fadeout');
+			} else {
+				location.reload();
+			}
+		});
+	}
+
+	var clipboardSiteInfomation = new ClipboardJS('.copy-value');
+	// クリップ成功
+	clipboardSiteInfomation.off('success').on('success',
+		function (e) {
+			notification.show("「" + e.text + "」をクリップボードにコピーしました", 'info', 'fadeout');
+			e.clearSelection();
+		});
+
+	// エンターキーによるsubmit禁止
+	prohibit_submission();
+
+	// Wysiwygエディタで編集中のTextarea
+	var textAreaWysiwygBinded;
+
+	// Wysiwygエディタを開く
+	function OpenWysiwyg(textAreaId) {
+		textAreaWysiwygBinded = document.getElementById(textAreaId);
+		open_window('@Url.Action("Edit", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_WYSIWYG_EDITOR)',
+			'wysiwyg',
+			'width=1000,height=740,top=120,left=420,status=NO, resizable=yes,scrollbars=yes');
+		textAreaWysiwygBinded.setAttribute("disabled", "disabled");
+	}
+	// 置換タグ
+	$(".payment_tag_description").hide();
+	// 最後にフォーカスされている商品タグのテキストエリア
+	var area;
+
+	// テキストエリアのキャレット位置に文言を挿入
+	function tagInput(tag) {
+		if (area == null) return;
+		var textarea = area;
+		textarea.focus();
+		var sentence = textarea.value;
+		var len = sentence.length;
+		var pos = textarea.selectionStart;
+		var before = sentence.substr(0, pos);
+		var word = tag;
+		var after = sentence.substr(pos, len);
+		sentence = before + word + after;
+		textarea.value = sentence;
+		textarea.focus();
+		textarea.selectionStart = pos + word.length;
+		textarea.selectionEnd = pos + word.length;
+	}
+
+	// 現在、フォーカスされている商品タグのテキストエリアを保持
+	function inputClick(ele) {
+		area = document.getElementById(ele);
+		changeTagsList(area.id);
+	}
+
+	// 使用できる置き換えタグを切り替え
+	function changeTagsList(id) {
+		$(".payment_tag_description").show();
+		$(".Input_XmlInfo_9__Text").css('display', 'none');
+
+		switch (id) {
+			case 'Input_XmlInfo_9__Text':
+				// 全体設定
+				$(".Input_XmlInfo_9__Text").css('display', 'table-row');
+				$("#remarks").attr("colSpan", "2");
+				break;
+			default:
+				$(".payment_tag_description").hide();
+		}
+	}
+	var flgMove = false;
+
+	// 移動時にフォーカスされるのを防止
+	$('[id^="InputFor"]').mousemove(function (e) {
+		if (flgMove) {
+			$(this).blur();
+		}
+	});
+
+	(function ($) {
+		$.fn.funcResizeBox = function (userOptions) {
+			var elements = this;
+			var defaults = {
+				minWidth: 0,
+				minHeight: 0,
+				maxWidth: 10000,
+				maxHeight: 10000,
+				mouseRange: 10,
+				isWidthResize: true,
+				isHeightResize: true
+			};
+
+			var option = $.extend(defaults, userOptions);
+
+			$(this).css('resize', 'none');
+			$(this).css('overflow', 'auto');
+			var pos_left = $(this).offset().left;
+			var pos_top = $(this).get(0).offsetTop;
+			var pos_right = $(this).outerWidth() + pos_left;
+			var pos_bottom = $(this).outerHeight() + pos_top;
+			var right_min = pos_right - option.mouseRange;
+			var bottom_min = pos_bottom - option.mouseRange;
+			var right_flg = false;
+			var bottom_flg = false;
+			var $box = $(this);
+			var resize_flg = false;
+			var diffX, diffY;
+
+			$(this).mousemove(function (e) {
+				right_flg = false;
+				left_flg = false;
+				top_flg = false;
+				bottom_flg = false;
+
+				if (resize_flg) return;
+
+				pos_left = Math.floor($box.offset().left);
+				pos_top = Math.floor($box.offset().top);
+				pos_right = Math.floor($box.outerWidth() + pos_left);
+				pos_bottom = Math.floor($box.outerHeight() + pos_top);
+				right_min = pos_right - option.mouseRange;
+				bottom_min = pos_bottom - option.mouseRange;
+
+				var pagex = Math.floor(window.event.clientX + (document.body.scrollLeft || document.documentElement.scrollLeft));
+				var pagey = Math.floor(window.event.clientY + (document.body.scrollTop || document.documentElement.scrollTop));
+
+				// right
+				if (pos_right - 5 <= pagex && option.isWidthResize) {
+					right_flg = true;
+				}
+				// left
+				if (pagex <= pos_left + 5 && option.isWidthResize) {
+					left_flg = true;
+				}
+				// top
+				if (pagey <= pos_top + 5 && option.isWidthResize) {
+					top_flg = true;
+				}
+				// bottom
+				if (pagey >= pos_bottom - 5 && option.isHeightResize) {
+					bottom_flg = true;
+				}
+
+				if (right_flg && bottom_flg) {
+					$(this).css('cursor', 'se-resize');
+				}
+				else if (right_flg && top_flg) {
+					$(this).css('cursor', 'nesw-resize');
+				}
+				else if (left_flg && bottom_flg) {
+					$(this).css('cursor', 'sw-resize');
+				}
+				else if (left_flg && top_flg) {
+					$(this).css('cursor', 'nw-resize');
+				}
+				else if (right_flg) {
+					$(this).css('cursor', 'e-resize');
+				}
+				else if (left_flg) {
+					$(this).css('cursor', 'w-resize');
+				}
+				else if (top_flg) {
+					$(this).css('cursor', 'n-resize');
+				}
+				else if (bottom_flg) {
+					$(this).css('cursor', 's-resize');
+				}
+				else {
+					$(this).css('cursor', 'auto');
+				}
+			});
+
+			$(this).mousedown(function (e) {
+
+				var resize_right_flg = false;
+				var resize_left_flg = false;
+				var resize_top_flg = false;
+				var resize_bottom_flg = false;
+
+				var pagex = e.pageX;
+				var pagey = e.pageY;
+				var boxWidth = $box.width();
+				var boxHeight = $box.height();
+
+				if (right_flg) {
+					resize_right_flg = true;
+				}
+
+				if (left_flg) {
+					resize_left_flg = true;
+				}
+
+				if (top_flg) {
+					resize_top_flg = true;
+				}
+
+				if (bottom_flg) {
+					resize_bottom_flg = true;
+				}
+
+				flgMove = true;
+
+				diffX = e.clientX - $(".payment_tag_description").position().left;
+				diffY = e.clientY - $(".payment_tag_description").position().top;
+
+				$(document).mousemove(function (e) {
+
+					if (!resize_right_flg && !resize_left_flg && !resize_top_flg && !resize_bottom_flg) {
+
+						if (flgMove) {
+							$(".payment_tag_description")
+								.css('right', 'auto')
+								.css('bottom', 'auto')
+								.css('left', (e.clientX - diffX))
+								.css('top', (e.clientY - diffY));
+						}
+						return;
+					}
+
+					$('body').css('cursor', $box.css('cursor'));
+					resize_flg = true;
+
+					var addWidth = e.pageX - pagex;
+					var resize_width = (resize_right_flg) ? boxWidth + addWidth : boxWidth + (-1 * addWidth);
+
+					if (resize_right_flg && resize_width <= option.maxWidth
+											&& option.minWidth <= resize_width) {
+						$box.width(resize_width);
+					}
+
+					if (resize_left_flg && resize_width <= option.maxWidth
+											&& option.minWidth <= resize_width) {
+						$box.css('left', pos_right - resize_width);
+						$box.width(resize_width);
+					}
+
+					var addheight = e.pageY - pagey;
+					var resize_height = (resize_bottom_flg) ? boxHeight + addheight : boxHeight + (-1 * addheight);
+						
+					if (resize_bottom_flg && resize_height <= option.maxHeight
+											&& option.minHeight <= resize_height) {
+						$box.height(resize_height);
+					}
+
+					if (resize_top_flg && resize_height <= option.maxHeight
+											&& option.minHeight <= resize_height) {
+						$box.css('top', (e.clientY - diffY));
+						$box.height(resize_height);
+					}
+
+				}).mouseup(function () {
+					$(document).off("mousemove");
+					resize_bottom_flg = false;
+					resize_right_flg = false;
+					resize_flg = false;
+					$('body').css('cursor', 'auto');
+					flgMove = false;
+				});
+			});
+			return (this);
+		};
+	})(jQuery);
+
+	$('#tags').funcResizeBox({});
+</script>

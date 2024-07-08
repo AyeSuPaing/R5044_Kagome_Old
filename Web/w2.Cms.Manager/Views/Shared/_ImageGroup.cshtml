@@ -1,0 +1,72 @@
+﻿@*
+=========================================================================================================
+  Module      : 画像リストから選択画面(_ImageForm.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common
+@using w2.Cms.Manager.Input
+@model w2.Cms.Manager.ViewModels.FeatureImage.GroupListViewModel
+<div class="list-content custom-scroll-area">
+	@foreach (var groupModel in Model.GroupImageViewModel)
+	{
+		<div class="list-group" data-list-group-id="@groupModel.GroupId">
+			@if (Model.ImageType != ImageType.Normal)
+			{
+				<div class="list-group-row">
+					<p class="list-group-name list-group-toggle-btn">@groupModel.GroupName</p>
+				</div>
+			}
+			<div class="list-group-toggle-content">
+				@foreach (var imageModel in groupModel.ListImageViewModels)
+				{
+					<div class="list-row" data-list-id="@imageModel.ImagePath">
+						<div class="list-col list-col-thumb w10 hide-style-list">
+							<div class="list-col-inner">
+								<figure>
+									@if (Model.ImageType != ImageType.Normal)
+									{
+										<img onclick="imageModal('@Constants.PATH_ROOT_FRONT_PC@imageModel.ImagePath')"
+											style="cursor: hand; cursor:pointer;"
+											 src="@Constants.PATH_ROOT_FRONT_PC@imageModel.ImagePath" alt="">
+									}
+									else
+									{
+										<img src="~/@imageModel.ImagePath" alt="">
+									}
+								</figure>
+							</div>
+						</div>
+						<div class="list-col list-col-title">
+							<div class="list-col-inner">
+								<p class="list-col-title-label line-clamp ta-left">
+									<a href="javascript:void(0)" onclick="imageModal('@Constants.PATH_ROOT_FRONT_PC@imageModel.ImagePath')" class="list-col-title-a">@imageModel.RealFileName</a>
+								</p>
+							</div>
+						</div>
+						<div class="list-col w15">
+							<p>@imageModel.DataChanged</p>
+						</div>
+						<div class="list-col w15">
+							<p>@imageModel.FileSize</p>
+						</div>
+						<div class="list-col w15">
+							<p>@imageModel.ImageSize</p>
+						</div>
+						<div class="list-col w15">
+							<a href="javascript:selectClick(@imageModel.ImageId, '@imageModel.ImagePath', '@imageModel.FileName')" class="btn btn-main btn-size-s btn-image-select">選択する</a>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	}
+</div>
+
+<script type="text/javascript">
+	function selectClick(imageId, imagePath, fileName) {
+		var realFileName = fileName;
+		setImage(imageId, imagePath.replace(/([^/]+?)?$/, ""), fileName.replace(/%/g, '%25').replace(/#/g, '%23'), realFileName);
+	}
+</script>

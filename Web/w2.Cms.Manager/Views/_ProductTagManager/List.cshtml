@@ -1,0 +1,498 @@
+﻿@*
+=========================================================================================================
+  Module      : 商品タグ一覧・登録・更新・削除画面(List.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using System.Web.UI.WebControls
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.ProductTagManager.ProductTagManagerListViewModel
+@{
+	ViewBag.Title = "商品タグ一覧・登録・更新・削除ページ";
+	Layout = Constants.POPUP_LAYOUT_PATH_DEFAULT;
+}
+
+@helper BulkUpdateButton()
+{
+	<input type="button" value="  このページの一括更新  " class="btn btn-main" onclick="return validate_update();">
+	<input type="submit" name="Update" id="update" style="display: none;">
+}
+
+@helper ContinueButton()
+{
+	using (Html.BeginForm("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_TAG_MANAGER, FormMethod.Get))
+	{
+		<input type="submit" name="Continue" value="  続けて処理をする  " class="btn btn-main">
+	}
+}
+
+<table cellspacing="0" cellpadding="0" width="98%" border="0">
+	<tbody>
+	<!--▽ タイトル ▽-->
+	<tr>
+		<td>
+			<h2 class="cmn-hed-h2 product_tag_manager_h2">商品タグ設定</h2>
+		</td>
+	</tr>
+	@LayoutHelper.PaddingTr(10)
+	<!--△ タイトル △-->
+	<!--▽ 検索 ▽-->
+	<tr>
+	<td>
+	@if (Model.IsActionStatusUpdate == false)
+	{
+	<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+	<tr>
+	<td class="search_box_bg">
+		@using (Html.BeginForm("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_TAG_MANAGER, FormMethod.Get))
+		{
+			<table cellspacing="0" cellpadding="0" width="100%" border="0">
+			<tr>
+			<td align="center">
+			<table cellspacing="0" cellpadding="0" border="0">
+				@LayoutHelper.PaddingTr(10)
+				<tr>
+					<td class="search_box">
+						<table class="search_table" cellspacing="1" cellpadding="2" width="758" border="0">
+							<tr>
+								<td class="search_title_bg" width="100">
+									<img height="5" alt="" src="/Images/CohfAdvCodeMediaTypeIdmmon/arrow_01.gif" width="10" style="vertical-align: middle" border="0" />商品タグ設定名
+								</td>
+								<td class="search_item_bg" width="150">
+									@Html.TextBoxFor(model => model.ParamModel.AffiliateProductTagName, new
+									{
+										Name = "AffiliateProductTagName"
+									})
+								</td>
+								<td class="search_btn_bg" width="100">
+									<div class="search_btn_main">
+										<input type="submit" name="search" value="  検索  " class="btn btn-main"/>
+									</div>
+									<div class="search_btn_sub">
+										@Html.ActionLink("クリア", "List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_TAG_MANAGER)
+									</div>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				@LayoutHelper.PaddingTr(10)
+			</table>
+			</td>
+			</tr>
+			</table>
+		}
+	</td>
+	</tr>
+	</table>
+	}
+	</td>
+	</tr>
+	<!--△ 検索 △-->
+	@LayoutHelper.PaddingTr(10)
+	<!--▽ 一覧 ▽-->
+	<tr>
+		<td>
+			<h2 class="cmn-hed-h2 product_tag_manager_h2">商品タグ設定一覧</h2>
+		</td>
+	</tr>
+	<tr>
+	<td width="80%">
+	<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+	<tr>
+	<td>
+	<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+		@if (Model.IsActionStatusUpdate == false)
+		{
+			using (Html.BeginForm("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_TAG_MANAGER, FormMethod.Post,new { Id = "input_form_update" }))
+			{
+				<table cellspacing="0" cellpadding="0" border="0">
+					@LayoutHelper.PaddingTr(6)
+					<tr>
+						<td>
+							<div class="action_part_top">
+								<!--▽ ページング ▽-->
+								<table class="list_pager" cellspacing="0" cellpadding="0" width="758" border="0">
+									<tr>
+										<td>
+											@Html.Raw(Model.PagerHtml)
+										</td>
+										<td class="action_list_sp">
+											@BulkUpdateButton()
+										</td>
+									</tr>
+								</table>
+								<!-- ページング-->
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<table class="list_table" cellspacing="1" cellpadding="3" width="758" border="0">
+								<tr class="list_title_bg">
+									<td align="center" width="10">ID</td>
+									<td align="center" width="50">商品タグ設定名</td>
+									<td align="center" width="342">タグ内容</td>
+									<td align="center" width="70">区切り文字</td>
+									<td align="center" width="58">削除</td>
+								</tr>
+								@{ var lineNo = 1; }
+								@for (var index = 0; index < Model.ModifyInputs.Length; index++)
+								{
+									lineNo = (lineNo + 1) % 2;
+									var listItemBgClass = "list_item_bg" + (lineNo + 1).ToString();
+									<tr>
+										<td align="center" class="@listItemBgClass">@Model.ModifyInputs[index].AffiliateProductTagId</td>
+										@Html.HiddenFor(model => Model.ModifyInputs[index].AffiliateProductTagId)
+										<td align="left" class="@listItemBgClass">
+											@Html.TextBoxFor(model => Model.ModifyInputs[index].TagName)
+											@Html.HiddenFor(model => Model.ModifyInputs[index].TagName, new
+											{
+												Name = string.Format("ModifyInputs[{0}].BeforeTagName", index)
+											})
+										</td>
+										<td align="left" class="@listItemBgClass">
+											@Html.TextAreaFor(model => Model.ModifyInputs[index].TagContent, 3, 50, new
+											{
+												onFocus = "javascript:inputClick(this.id)",
+												SpellCheck = "False"
+											})
+											@Html.HiddenFor(model => Model.ModifyInputs[index].TagContent, new
+											{
+												Name = string.Format("ModifyInputs[{0}].BeforeTagContent", index)
+											})
+										</td>
+										<td align="center" class="@listItemBgClass">
+											@Html.TextBoxFor(model => Model.ModifyInputs[index].TagDelimiter)
+											@Html.HiddenFor(model => Model.ModifyInputs[index].TagDelimiter, new
+											{
+												Name = string.Format("ModifyInputs[{0}].BeforeTagDelimiter", index)
+											})
+										</td>
+										<td align="center" class="@listItemBgClass">
+											<input type="button" value="  削除  " onclick="Javascript: Delete('@Model.ModifyInputs[index].AffiliateProductTagId')" class="btn btn-main"/>
+										</td>
+									</tr>
+								}
+								@if (string.IsNullOrEmpty(Model.ErrorMessage) == false)
+								{
+									<tr class="list_alert">
+										<td colspan="5" style="height: 17px">@Model.ErrorMessage</td>
+									</tr>
+								}
+							</table>
+						</td>
+					</tr>
+					<tr>
+						<td >
+							<div class="action_part_bottom">
+								@BulkUpdateButton()
+							</div>
+						</td>
+					</tr>
+				</table>
+			}
+		}
+		@if (Model.IsActionStatusUpdate)
+		{
+			<table cellspacing="0" cellpadding="0" border="0">
+				@LayoutHelper.PaddingTr(6)
+				<tr>
+					<td>
+						<div class="action_part_top">
+							<table class="list_pager" cellspacing="0" cellpadding="0" width="758" border="0">
+								<tr>
+									<td width="625">以下の商品タグを更新いたしました｡</td>
+									<td width="133" class="action_list_sp">
+										@ContinueButton()
+									</td>
+								</tr>
+							</table>
+						</div>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<table class="list_table" cellspacing="1" cellpadding="3" width="758" border="0">
+							<tr class="list_title_bg">
+								<td align="center" width="250">商品タグ設定名</td>
+								<td align="center" width="342">タグ内容</td>
+								<td align="center" width="70">区切り文字</td>
+							</tr>
+							@{ var lineNo = 1; }
+							@foreach (var cm in Model.ConformModel)
+							{
+								lineNo = (lineNo + 1) % 2;
+								var listItemBgClass = "list_item_bg" + (lineNo + 1).ToString();
+								<tr class="@listItemBgClass">
+									<td align="center">@cm.TagName</td>
+									<td align="left">@cm.TagContent</td>
+									<td align="center">@cm.TagDelimiter</td>
+								</tr>
+							}
+						</table>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<div class="action_part_bottom">
+							@ContinueButton()
+						</div>
+					</td>
+				</tr>
+			</table>
+		}
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 一覧 △ -->
+	@if (Model.IsActionStatusUpdate == false)
+	{
+	@LayoutHelper.PaddingTr(10)
+	<!--▽ 追加 ▽-->
+	<tr>
+		<td>
+			<h2 class="cmn-hed-h2 product_tag_manager_h2">商品タグ設定の追加</h2>
+		</td>
+	</tr>
+	<tr>
+	<td>
+	<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+	<tr>
+	<td>
+		<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+			<tr>
+				<td align="center">
+					@using (Html.BeginForm("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_TAG_MANAGER, FormMethod.Post, new { Id = "input_form_insert" }))
+					{
+						<table cellspacing="0" cellpadding="0" border="0">
+							@LayoutHelper.PaddingTr(6)
+							<tr>
+								<td>
+									<table class="list_table" cellspacing="1" cellpadding="3" width="758" border="0">
+										<tr class="list_title_bg">
+											<td align="center" width="150">商品タグ設定名<span class="notice">*</span></td>
+											<td align="center" width="342">タグ内容<span class="notice">*</span></td>
+											<td align="center" width="70">区切り文字<span class="notice">*</span></td>
+											<td align="center" width="58">追加</td>
+										</tr>
+										<tr>
+											<td align="left" class="list_item_bg1">
+												@Html.TextBoxFor(model => Model.RegisterInput.TagName)
+											</td>
+											<td align="left" class="list_item_bg1">
+												@Html.TextAreaFor(model => Model.RegisterInput.TagContent, 3, 50, new
+												{
+													onFocus = "javascript:inputClick(this.id)",
+													SpellCheck = "False"
+												})
+											</td>
+											<td align="center" class="list_item_bg1">
+												@Html.TextBoxFor(model => Model.RegisterInput.TagDelimiter)
+											</td>
+											<td align="center" class="list_item_bg1">
+												<input type="button" value="  追加  " class="btn btn-main" onclick="return validate_insert();">
+												<input type="submit" name="Insert" id="insert" style="display: none;">
+											</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+							@LayoutHelper.PaddingTr(10)
+						</table>
+					}
+				</td>
+			</tr>
+		</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<tr class="product_tag_description">
+		<td>
+			<!-- ▽ 置換タグ説明 ▽ -->
+			@if (Model.IsActionStatusUpdate == false)
+   {
+				<div style="display: inline-block;">
+				<h2>置き換えタグ説明</h2>
+					<table class="edit_table" cellspacing="1" cellpadding="3" border="0">
+						<tr class="edit_title_bg">
+							<td align="left">置換タグ</td>
+							<td align="left">説明</td>
+						</tr>
+						@foreach (ListItem item in Model.ReplaseTagDescriptionList)
+	  {
+							<tr class="list_item_bg1"
+								style="background-color: blanchedalmond"
+								onmouseover="listselect_mover(this)"
+								onmouseout="listselect_mout1(this)"
+								onmousedown="listselect_mdown(this)"
+								onclick="tagInput('@item.Value');">
+								<td align="left">@item.Value</td>
+								<td align="left">@item.Text</td>
+							</tr>
+	  }
+					</table>
+				</div>
+   }
+			<!--△ 置換タグ説明 △ -->
+		</td>
+	</tr>
+	}
+	<!--△ 一覧 △-->
+	@LayoutHelper.PaddingTr(10)
+	</tbody>
+</table>
+
+@section JavaScript
+{
+	@if (Model.IsActionStatusUpdate)
+ {
+		<script type="text/javascript">
+			window.onload = function () {
+				listChange();
+			}
+		</script>
+ }
+
+	<script type="text/javascript">
+		// 親ウィンドウの商品タグを更新
+		function listChange() {
+			// 親ウィンドウが存在する場合
+			if (window.opener != null && typeof window.opener.listChange == "function") {
+				window.opener.listChange();
+			}
+		}
+
+		// 最後にフォーカスされている商品タグのテキストエリア
+		var area;
+
+		// テキストエリアのキャレット位置に文言を挿入
+		function tagInput(tag) {
+			if (area == null) return;
+			var textarea = area;
+
+			textarea.focus();
+			var sentence = textarea.value;
+			var len = sentence.length;
+			var pos = textarea.selectionStart;
+			var before = sentence.substr(0, pos);
+			var word = tag;
+			var after = sentence.substr(pos, len);
+			sentence = before + word + after;
+			textarea.value = sentence;
+			textarea.focus();
+			textarea.selectionStart = pos + word.length;
+			textarea.selectionEnd = pos + word.length;
+		}
+
+		// 現在、フォーカスされている商品タグのテキストエリアを保持
+		function inputClick(ele) {
+			area = document.getElementById(ele);
+		}
+
+		// 削除処理
+		function Delete(affiliateProductTagId) {
+			if (window.confirm('削除してもよろしいですか？')) {
+				$.ajax({
+					type: "POST",
+					url: "@Url.Action("Delete", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_TAG_MANAGER)",
+					data: "affiliateProductTagId=" + affiliateProductTagId
+				}).done(function(success) {
+					console.log(success);
+					if (success.toLowerCase() === "true") {
+						listChange();
+						location.reload();
+					} else {
+						location.href = "@Url.Action("", Constants.CONTROLLER_W2CMS_MANAGER_ERROR, new
+				  {
+					  ErrorPageLayout = Constants.POPUP_LAYOUT_PATH_DEFAULT
+				  })";
+					}
+				}).fail(function() {
+				});
+			}
+		}
+		// 入力データ取得
+		function get_input_date(name) {
+			var pageDate = $('#input_form_' + name).serializeArray();
+			return pageDate;
+		}
+
+		// 確認
+		function validate_update() {
+			loading_animation.start();
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("ValidateUpdate", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_TAG_MANAGER)",
+				data: get_input_date('update')
+			}).done(function (errorMessage) {
+				setTimeout(function () { loading_animation.end(); }, 200);
+				// 警告表示を削除
+				$('.notification-message-warning').remove();
+				if (errorMessage === "") {
+					$('#update').click();
+				} else {
+					notification.show(errorMessage, 'warning', 'fixed');
+					return false;
+				}
+			}).fail(function () {
+			});
+		}
+
+		// 確認
+		function validate_insert() {
+			loading_animation.start();
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("ValidateInsert", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_TAG_MANAGER)",
+				data: get_input_date('insert')
+			}).done(function (errorMessage) {
+				setTimeout(function () { loading_animation.end(); }, 200);
+				// 警告表示を削除
+				$('.notification-message-warning').remove();
+				if (errorMessage === "") {
+					$('#insert').click();
+				} else {
+					notification.show(errorMessage, 'warning', 'fixed');
+					return false;
+				}
+			}).fail(function () {
+			});
+		}
+
+		$(function() {
+			console.log("loaded");
+			var flgMove = false;
+			var diffX, diffY;
+			$(".product_tag_description").on({
+				'mousedown' : function(e) {
+					flgMove = true;
+					
+					diffX = e.clientX - $(".product_tag_description").position().left;
+					diffY = e.clientY - $(".product_tag_description").position().top;
+					console.log(diffX + ":" + diffY);},
+				'mouseup' : function(e) { flgMove = false; }
+			});
+			
+			$(document).mousemove(function(e) {
+			    if(flgMove) {
+			    	$(".product_tag_description")
+						.css('right', 'auto')
+						.css('bottom', 'auto')
+						.css('left',(e.clientX - diffX))
+						.css('top',(e.clientY - diffY));
+				}
+			});
+		});
+	</script>
+}

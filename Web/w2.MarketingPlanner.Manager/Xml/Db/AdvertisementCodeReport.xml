@@ -1,0 +1,1171 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 広告コードレポート系SQLステートメントXML(AdvertisementCodeReport.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<AdvertisementCodeReport>
+  <!-- ユーザ集計レポート -->
+  <GetAdvertisementCodeUser>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        -- 期間指定1に998ミリ秒を追加します。
+        IF @term1_to IS NOT NULL
+          BEGIN
+           SET @term1_to = DATEADD(ms, 998, @term1_to);
+          END
+
+        SELECT
+                advcode.advcode_first AS advertisement_code,
+                ISNULL(report_regist.regist_count, 0) AS regist_count,
+                ISNULL(report_withdrawal.withdrawal_count, 0) AS withdrawal_count,
+                ISNULL(total_regist.regist_count, 0) AS regist_count_total,
+                ISNULL(total_withdrawal.withdrawal_count, 0) AS withdrawal_count_total,
+                ISNULL(w2_AdvCode.media_name, '') AS media_name,
+                ISNULL(w2_AdvCodeMediaType.advcode_media_type_name, '') AS advcode_media_type_name
+          FROM  (
+                  SELECT  w2_User.advcode_first
+                    FROM  w2_User
+                   WHERE  w2_User.advcode_first <> ''
+                     <@@hasval:advcode_media_type_id@@>
+                     AND  EXISTS
+                          ( 
+                             SELECT  advertisement_code
+                               FROM  w2_AdvCode
+                              WHERE  advertisement_code = w2_User.advcode_first
+                                AND  advcode_media_type_id = @advcode_media_type_id
+                          )
+                     </@@hasval:advcode_media_type_id@@>
+                     <@@hasval:advertisement_code@@>
+                     AND  w2_User.advcode_first LIKE '%' + @advertisement_code + '%' ESCAPE '#'
+                     </@@hasval:advertisement_code@@>
+                          @@ where_adv_code @@
+                GROUP BY  w2_User.advcode_first
+                ) advcode
+          -- 広告コード別、登録ユーザ
+          LEFT JOIN  (
+                  SELECT  w2_User.advcode_first,
+                          COUNT(w2_User.user_id) AS regist_count
+                    FROM  w2_User
+                   WHERE  w2_User.advcode_first <> ''
+                     <@@hasval:career_id@@>
+                     AND  (
+                            w2_User.career_id = @career_id
+                            OR
+                            ( @career_id = '00pc' AND w2_User.career_id = '' )
+                          )
+                     </@@hasval:career_id@@>
+                     AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+                     AND  (
+                              -- 期間指定1
+                              <@@val:term_flg:0@@>
+                                0 = 0
+                                <@@hasval:term1_from@@>
+                                AND w2_User.date_created >= @term1_from
+                                </@@hasval:term1_from@@>
+                                <@@hasval:term1_to@@>
+                                AND w2_User.date_created <= @term1_to
+                                </@@hasval:term1_to@@>
+                              </@@val:term_flg:0@@>
+                              -- 期間指定2
+                              <@@val:term_flg:1@@>
+                                0 = 0
+                                <@@hasval:term1_from@@>
+                                AND w2_User.date_created >= @term1_from
+                                </@@hasval:term1_from@@>
+                                <@@hasval:term1_to@@>
+                                AND w2_User.date_created <= @term1_to
+                                </@@hasval:term1_to@@>
+                                AND NOT
+                                (
+                                  w2_User.del_flg = '1'
+                                  <@@hasval:term2_from@@>
+                                  AND w2_User.date_changed >= @term2_from
+                                  </@@hasval:term2_from@@>
+                                  <@@hasval:term2_to@@>
+                                  AND w2_User.date_changed < @term2_to
+                                  </@@hasval:term2_to@@>
+                                )
+                              </@@val:term_flg:1@@>
+                          )
+                     <@@hasval:advertisement_code@@>
+                     AND  w2_User.advcode_first LIKE '%' + @advertisement_code + '%' ESCAPE '#'
+                     </@@hasval:advertisement_code@@>
+                GROUP BY  w2_User.advcode_first
+                     ) report_regist
+              ON advcode.advcode_first = report_regist.advcode_first
+          -- 広告コード別、退会ユーザ
+          LEFT JOIN  (
+                  SELECT  w2_User.advcode_first,
+                          COUNT(w2_User.user_id) AS withdrawal_count
+                    FROM  w2_User
+                   WHERE  w2_User.advcode_first <> ''
+                          @@ where_adv_code @@
+                     <@@hasval:career_id@@>
+                     AND  (
+                            w2_User.career_id = @career_id
+                            OR
+                            ( @career_id = '00pc' AND w2_User.career_id = '' )
+                          )
+                     </@@hasval:career_id@@>
+                     AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+                     AND  (
+                              -- 期間指定1
+                              <@@val:term_flg:0@@>
+                                w2_User.del_flg = '1'
+                                <@@hasval:term1_from@@>
+                                AND w2_User.date_changed >= @term1_from
+                                </@@hasval:term1_from@@>
+                                <@@hasval:term1_to@@>
+                                AND w2_User.date_changed <= @term1_to
+                                </@@hasval:term1_to@@>
+                              </@@val:term_flg:0@@>
+                              -- 期間指定2
+                              <@@val:term_flg:1@@>
+                                w2_User.del_flg = '1'
+                                <@@hasval:term1_from@@>
+                                AND w2_User.date_created >= @term1_from
+                                </@@hasval:term1_from@@>
+                                <@@hasval:term1_to@@>
+                                AND w2_User.date_created <= @term1_to
+                                </@@hasval:term1_to@@>
+                                <@@hasval:term2_from@@>
+                                AND ( @term2_from IS NULL OR w2_User.date_changed >= @term2_from )
+                                </@@hasval:term2_from@@>
+                                <@@hasval:term2_to@@>
+                                AND ( @term2_to IS NULL OR w2_User.date_changed < @term2_to )
+                                </@@hasval:term2_to@@>
+                              </@@val:term_flg:1@@>
+                          )
+                     <@@hasval:advertisement_code@@>
+                     AND  w2_User.advcode_first LIKE '%' + @advertisement_code + '%' ESCAPE '#'
+                     </@@hasval:advertisement_code@@>
+                GROUP BY  w2_User.advcode_first
+                     ) report_withdrawal
+              ON advcode.advcode_first = report_withdrawal.advcode_first
+          -- トータル、登録ユーザ
+          LEFT JOIN  (
+                  SELECT  
+                          COUNT(w2_User.user_id) AS regist_count
+                    FROM  w2_User
+                   WHERE  w2_User.advcode_first <> ''
+                          @@ where_adv_code @@
+                     <@@hasval:career_id@@>
+                     AND  (
+                            w2_User.career_id = @career_id
+                            OR ( @career_id = '00pc' AND w2_User.career_id = '' )
+                          )
+                     </@@hasval:career_id@@>
+                     AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+                     AND  (
+                              -- 期間指定1
+                              <@@val:term_flg:0@@>
+                                0 = 0
+                                <@@hasval:term1_from@@>
+                                AND w2_User.date_created >= @term1_from
+                                </@@hasval:term1_from@@>
+                                <@@hasval:term1_to@@>
+                                AND w2_User.date_created <= @term1_to
+                                </@@hasval:term1_to@@>
+                              </@@val:term_flg:0@@>
+                              -- 期間指定2
+                              <@@val:term_flg:1@@>
+                                0 = 0
+                                <@@hasval:term1_from@@>
+                                AND w2_User.date_created >= @term1_from
+                                </@@hasval:term1_from@@>
+                                <@@hasval:term1_to@@>
+                                AND w2_User.date_created <= @term1_to
+                                </@@hasval:term1_to@@>
+                                AND NOT
+                                (
+                                  w2_User.del_flg = '1'
+                                  <@@hasval:term2_from@@>
+                                  AND w2_User.date_changed >= @term2_from
+                                  </@@hasval:term2_from@@>
+                                  <@@hasval:term2_to@@>
+                                  AND w2_User.date_changed < @term2_to
+                                  </@@hasval:term2_to@@>
+                                )
+                              </@@val:term_flg:1@@>
+                          )
+                     <@@hasval:advertisement_code@@>
+                     AND  w2_User.advcode_first LIKE '%' + @advertisement_code + '%' ESCAPE '#'
+                     </@@hasval:advertisement_code@@>
+                     ) total_regist
+              ON ( 0 = 0 )
+          -- トータル、退会ユーザ
+          LEFT JOIN  (
+                  SELECT  
+                          COUNT(w2_User.user_id) AS withdrawal_count
+                    FROM  w2_User
+                   WHERE  w2_User.advcode_first <> ''
+                          @@ where_adv_code @@
+                     <@@hasval:career_id@@>
+                     AND  (
+                            w2_User.career_id = @career_id
+                            OR 
+                            ( @career_id = '00pc' AND w2_User.career_id = '' )
+                          )
+                     </@@hasval:career_id@@>
+                     AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+                     AND  (
+                              -- 期間指定1
+                              <@@val:term_flg:0@@>
+                                w2_User.del_flg = '1'
+                                <@@hasval:term1_from@@>
+                                AND w2_User.date_changed >= @term1_from
+                                </@@hasval:term1_from@@>
+                                <@@hasval:term1_to@@>
+                                AND w2_User.date_changed <= @term1_to
+                                </@@hasval:term1_to@@>
+                              </@@val:term_flg:0@@>
+                              -- 期間指定2
+                              <@@val:term_flg:1@@>
+                                w2_User.del_flg = '1'
+                                <@@hasval:term1_from@@>
+                                AND w2_User.date_created >= @term1_from
+                                </@@hasval:term1_from@@>
+                                <@@hasval:term1_to@@>
+                                AND w2_User.date_created <= @term1_to
+                                </@@hasval:term1_to@@>
+                                <@@hasval:term2_from@@>
+                                AND ( @term2_from IS NULL OR w2_User.date_changed >= @term2_from )
+                                </@@hasval:term2_from@@>
+                                <@@hasval:term2_to@@>
+                                AND ( @term2_to IS NULL OR w2_User.date_changed < DATEADD(day, 1, @term2_to) )
+                                </@@hasval:term2_to@@>
+                              </@@val:term_flg:1@@>
+                          )
+                     <@@hasval:advertisement_code@@>
+                     AND  w2_User.advcode_first LIKE '%' + @advertisement_code + '%' ESCAPE '#'
+                     </@@hasval:advertisement_code@@>
+                     ) total_withdrawal
+              ON ( 0 = 0 )
+          LEFT JOIN w2_AdvCode
+          ON advcode.advcode_first = w2_AdvCode.advertisement_code
+          LEFT JOIN w2_AdvCodeMediaType
+          ON w2_AdvCodeMediaType.advcode_media_type_id = w2_AdvCode.advcode_media_type_id
+      ORDER BY  advcode.advcode_first
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="advertisement_code" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="term_flg" Type="nvarchar" Size="1" />
+      <Input Name="term1_from" Type="datetime" />
+      <Input Name="term1_to" Type="datetime" />
+      <Input Name="term2_from" Type="datetime" />
+      <Input Name="term2_to" Type="datetime" />
+      <Input Name="advcode_media_type_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAdvertisementCodeUser>
+
+  <!-- 売上表示(出荷基準)レポート -->
+  <GetAdvertisementCodeOrder>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- 期間指定1に998ミリ秒を追加します。
+        IF @term1_to IS NOT NULL
+          BEGIN
+           SET @term1_to = DATEADD(ms, 998, @term1_to);
+          END
+
+        -- 変数宣言
+        DECLARE @table_temp TABLE(
+          [adv_code] nvarchar(30) NOT NULL,
+          [user_count] int NOT NULL DEFAULT (0),
+          [order_count] int NOT NULL DEFAULT (0),
+          [order_price] decimal NOT NULL DEFAULT (0),
+          [user_count_total] int NOT NULL DEFAULT (0),
+          [order_count_total] int NOT NULL DEFAULT (0),
+          [order_price_total] decimal NOT NULL DEFAULT (0)
+        )
+
+        -- レポート情報格納
+        INSERT INTO @table_temp
+        (
+          adv_code,
+          user_count,
+          order_count,
+          order_price
+        )
+        SELECT  order_adv.adv_code,
+                ISNULL(order_summary.user_count,0),
+                ISNULL(order_summary.order_count,0),
+                ISNULL(order_summary.order_price,0)
+          FROM  (
+                  SELECT  DISTINCT 
+                          (CASE WHEN @advertisement_code_target = '0' THEN w2_Order.advcode_new ELSE w2_Order.advcode_first END) AS adv_code
+                    FROM  w2_Order
+                  -- ※対象広告コード「@advertisement_code_target」が「0」の場合は最新広告コード(advcode_new)、
+                  --  「1」の場合は初回広告コード(advcode_first)を条件に含める
+                   WHERE  (
+                              CASE WHEN @advertisement_code_target = '0' THEN w2_Order.advcode_new
+                              ELSE w2_Order.advcode_first
+                              END
+                          ) <> '' -- 広告コード空以外
+                     <@@hasval:advcode_media_type_id@@>
+                     AND  EXISTS
+                          (
+                            SELECT  advertisement_code
+                              FROM  w2_AdvCode
+                             WHERE  advcode_media_type_id = @advcode_media_type_id
+                               AND  advertisement_code = (
+                                      CASE WHEN @advertisement_code_target = '0'
+                                        THEN w2_Order.advcode_new
+                                        ELSE w2_Order.advcode_first
+                                      END
+                                    )
+                          )
+                     </@@hasval:advcode_media_type_id@@> 
+                     <@@hasval:advertisement_code@@>
+                     AND  CASE WHEN @advertisement_code_target = '0' THEN w2_Order.advcode_new
+                          ELSE w2_Order.advcode_first
+                          END
+                          LIKE '%' + @advertisement_code + '%' ESCAPE '#'
+                     </@@hasval:advertisement_code@@>
+                     @@ where_adv_code @@
+                ) AS order_adv
+     LEFT JOIN  (
+                  SELECT  (CASE WHEN @advertisement_code_target = '0' THEN w2_Order.advcode_new ELSE w2_Order.advcode_first END) AS adv_code,
+                          COUNT(DISTINCT w2_Order.user_id) AS user_count,
+                          COUNT(w2_Order.order_id) AS order_count,
+                          SUM(w2_Order.order_price_total) AS order_price
+                    FROM  w2_Order
+                   WHERE  (
+                            (
+                              w2_Order.order_status = 'SHP_COMP' -- 出荷完了
+                              <@@hasval:term1_from@@>
+                              AND
+                              w2_Order.order_shipped_date >= @term1_from
+                              </@@hasval:term1_from@@>
+                              <@@hasval:term1_to@@>
+                              AND
+                              w2_Order.order_shipped_date <= @term1_to
+                              </@@hasval:term1_to@@>
+                            )
+                            OR
+                            (
+                              w2_Order.order_status = 'DLV_COMP' -- 配送完了
+                              <@@hasval:term1_from@@>
+                              AND
+                              w2_Order.order_delivering_date >= @term1_from
+                              </@@hasval:term1_from@@>
+                              <@@hasval:term1_to@@>
+                              AND
+                              w2_Order.order_delivering_date <= @term1_to
+                              </@@hasval:term1_to@@>
+                            )
+                          )
+                     <@@hasval:career_id@@>
+                     AND　w2_Order.career_id = @career_id
+                     </@@hasval:career_id@@>
+                     AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                GROUP BY  (CASE WHEN @advertisement_code_target = '0' THEN w2_Order.advcode_new ELSE w2_Order.advcode_first END)
+                ) AS order_summary
+                ON
+                (
+                  order_adv.adv_code = order_summary.adv_code
+                )
+
+         -- 合計更新
+        UPDATE  @table_temp
+           SET  user_count_total = (SELECT SUM(user_count) FROM @table_temp),   -- 注文ユーザ数
+                order_count_total = (SELECT SUM(order_count) FROM @table_temp), -- 注文件数
+                order_price_total = (SELECT SUM(order_price) FROM @table_temp)  -- 注文金額
+
+         -- 結果出力
+         SELECT  adv_code AS advertisement_code,
+                 user_count,
+                 order_count,
+                 order_price,
+                 user_count_total,
+                 order_count_total,
+                 order_price_total,
+                 ISNULL(w2_AdvCode.media_name, '') AS media_name,
+                 ISNULL(w2_AdvCodeMediaType.advcode_media_type_name, '') AS advcode_media_type_name
+           FROM  @table_temp
+      LEFT JOIN  w2_AdvCode
+             ON  adv_code = w2_AdvCode.advertisement_code
+      LEFT JOIN  w2_AdvCodeMediaType
+             ON  w2_AdvCodeMediaType.advcode_media_type_id = w2_AdvCode.advcode_media_type_id
+       ORDER BY  advertisement_code
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="advertisement_code" Type="nvarchar" Size="30" />
+      <Input Name="advertisement_code_target" Type="nvarchar" Size="1" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="term1_from" Type="datetime" />
+      <Input Name="term1_to" Type="datetime" />
+      <Input Name="advcode_media_type_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAdvertisementCodeOrder>
+
+  <!-- PV集計レポート -->
+  <GetAdvertisementCodePV>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- 期間指定1に998ミリ秒を追加します。
+        IF @term1_to IS NOT NULL
+          BEGIN
+           SET @term1_to = DATEADD(ms, 998, @term1_to);
+          END
+
+        -- 変数宣言
+        DECLARE @table_temp TABLE(
+          [adv_code] nvarchar(30) NOT NULL,
+          [click_count] int NOT NULL DEFAULT (0),
+          [click_unique_count] int NOT NULL DEFAULT (0),
+          [click_count_total] int NOT NULL DEFAULT (0),
+          [click_unique_count_total] int NOT NULL DEFAULT (0)
+        )
+
+        -- レポート情報格納
+        INSERT INTO @table_temp
+        (
+          adv_code,
+          click_count
+        )
+        SELECT  adv_log.adv_code,
+                ISNULL(adv_log_summary.click_count,0)
+          FROM  (
+                  SELECT  DISTINCT
+                          w2_AdvCodeLog.advertisement_code AS adv_code
+                    FROM  w2_AdvCodeLog
+                   WHERE  w2_AdvCodeLog.advertisement_code <> '' -- 広告コードが空以外
+                     <@@hasval:advcode_media_type_id@@>
+                     AND  EXISTS
+                          (
+                            SELECT  advertisement_code
+                              FROM  w2_AdvCode
+                             WHERE  advertisement_code = w2_AdvCodeLog.advertisement_code
+                               AND  advcode_media_type_id = @advcode_media_type_id
+                          )
+                     </@@hasval:advcode_media_type_id@@>
+                     <@@hasval:advertisement_code@@>
+                     AND  w2_AdvCodeLog.advertisement_code LIKE '%' + @advertisement_code + '%' ESCAPE '#'
+                     </@@hasval:advertisement_code@@>
+                     @@ where_adv_code @@
+                ) AS adv_log
+     LEFT JOIN  (
+                  SELECT  w2_AdvCodeLog.advertisement_code AS adv_code,
+                          ISNULL(COUNT(w2_AdvCodeLog.advcodelog_no), 0) AS click_count
+                    FROM  w2_AdvCodeLog
+                   WHERE  w2_AdvCodeLog.advertisement_code <> '' -- 広告コードが空以外
+                     <@@hasval:advertisement_code@@>
+                     AND  w2_AdvCodeLog.advertisement_code LIKE '%' + @advertisement_code + '%' ESCAPE '#'
+                     </@@hasval:advertisement_code@@>
+                     <@@hasval:career_id@@>
+                     AND  w2_AdvCodeLog.career_id = @career_id
+                     </@@hasval:career_id@@>
+                     <@@hasval:term1_from@@>
+                     AND  CONVERT(datetime, w2_AdvCodeLog.access_date + ' ' + w2_AdvCodeLog.access_time) >= @term1_from
+                     </@@hasval:term1_from@@>
+                     <@@hasval:term1_to@@>
+                     AND  CONVERT(datetime, w2_AdvCodeLog.access_date + ' ' + w2_AdvCodeLog.access_time) <= @term1_to
+                     </@@hasval:term1_to@@>
+                GROUP BY  w2_AdvCodeLog.advertisement_code
+                ) AS adv_log_summary
+                ON
+                (
+                  adv_log.adv_code = adv_log_summary.adv_code
+                )
+
+        -- PCユニークユーザ数更新
+        -- 全て、PCの場合
+        IF @career_id = '' OR @career_id = '00pc'
+          BEGIN
+            UPDATE  temp
+               SET  temp.click_unique_count = temp.click_unique_count + ISNULL(adv_log_summary.click_unique_count, 0)
+              FROM  @table_temp AS temp
+        INNER JOIN  (
+                      SELECT  w2_AdvCodeLog.advertisement_code,
+                              COUNT(DISTINCT w2_AdvCodeLog.access_user_id) AS click_unique_count
+                        FROM  w2_AdvCodeLog
+                       WHERE  w2_AdvCodeLog.career_id = '00pc'
+                         <@@hasval:term1_from@@>
+                         AND  CONVERT(datetime, w2_AdvCodeLog.access_date + ' ' + w2_AdvCodeLog.access_time) >= @term1_from
+                         </@@hasval:term1_from@@>
+                         <@@hasval:term1_to@@>
+                         AND  CONVERT(datetime, w2_AdvCodeLog.access_date + ' ' + w2_AdvCodeLog.access_time) <= @term1_to
+                         </@@hasval:term1_to@@>
+                    GROUP BY  w2_AdvCodeLog.advertisement_code
+                    ) AS adv_log_summary
+                    ON
+                    (
+                      temp.adv_code = adv_log_summary.advertisement_code
+                    )
+          END
+
+        -- モバイルユニークユーザ数更新
+        -- 全て、モバイルの場合
+        IF @career_id = '' OR @career_id <>'00pc'
+          BEGIN
+            UPDATE  temp
+               SET  temp.click_unique_count = temp.click_unique_count + ISNULL(adv_log_summary.click_unique_count, 0)
+              FROM  @table_temp AS temp
+        INNER JOIN  (
+                      SELECT  w2_AdvCodeLog.advertisement_code,
+                              COUNT(DISTINCT w2_AdvCodeLog.mobile_uid) AS click_unique_count
+                        FROM  w2_AdvCodeLog
+                       WHERE  (
+                                (@career_id = '' AND w2_AdvCodeLog.career_id <> '00pc')
+                                <@@hasval:career_id@@>
+                                OR w2_AdvCodeLog.career_id = @career_id
+                                </@@hasval:career_id@@>
+                              )
+                         <@@hasval:term1_from@@>
+                         AND  CONVERT(datetime, w2_AdvCodeLog.access_date + ' ' + w2_AdvCodeLog.access_time) >= @term1_from
+                         </@@hasval:term1_from@@>
+                         <@@hasval:term1_to@@>
+                         AND  CONVERT(datetime, w2_AdvCodeLog.access_date + ' ' + w2_AdvCodeLog.access_time) <= @term1_to
+                         </@@hasval:term1_to@@>
+                    GROUP BY  w2_AdvCodeLog.advertisement_code
+                    ) AS adv_log_summary
+                    ON
+                    (
+                     temp.adv_code = adv_log_summary.advertisement_code
+                    )
+          END
+
+        -- 合計更新
+        UPDATE  @table_temp
+           SET  click_count_total = (SELECT SUM(click_count) FROM @table_temp),
+                click_unique_count_total = (SELECT SUM(click_unique_count) FROM @table_temp)
+
+        -- 結果出力
+        SELECT  adv_code AS advertisement_code,
+                click_count,
+                click_unique_count,
+                click_count_total,
+                click_unique_count_total,
+                ISNULL(w2_AdvCode.media_name, '') AS media_name,
+                ISNULL(w2_AdvCodeMediaType.advcode_media_type_name, '') AS advcode_media_type_name
+          FROM  @table_temp
+      LEFT JOIN  w2_AdvCode
+             ON  adv_code = w2_AdvCode.advertisement_code
+      LEFT JOIN  w2_AdvCodeMediaType
+             ON  w2_AdvCodeMediaType.advcode_media_type_id = w2_AdvCode.advcode_media_type_id
+      ORDER BY  advertisement_code
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="advertisement_code" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="term1_from" Type="datetime" />
+      <Input Name="term1_to" Type="datetime" />
+      <Input Name="advcode_media_type_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAdvertisementCodePV>
+
+  <!-- コンバージョンレート集計レポート -->
+  <GetAdvertisementCodeConversionRate>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        -- 期間指定1に998ミリ秒を追加します。
+        IF @term1_to IS NOT NULL
+          BEGIN
+           SET @term1_to = DATEADD(ms, 998, @term1_to);
+          END
+
+        DECLARE @term1_to_date varchar(10) = CONVERT(varchar(10), @term1_to, 111)
+        DECLARE @term1_from_date varchar(10) = CONVERT(varchar(10), @term1_from, 111)
+
+        ;WITH _target_advcodelog AS
+        (
+        -- 広告コードが入った対象ログ
+          SELECT  w2_AdvCodeLog.advertisement_code AS adv_code,
+                  w2_AdvCodeLog.access_user_id,
+                  CONVERT(datetime, w2_AdvCodeLog.access_date + ' ' + w2_AdvCodeLog.access_time) AS access_datetime
+            FROM  w2_AdvCodeLog
+           WHERE  w2_AdvCodeLog.advertisement_code <> '' -- 広告コードが空以外
+             <@@hasval:career_id@@>
+             AND  w2_AdvCodeLog.career_id = @career_id
+             </@@hasval:career_id@@>
+             <@@hasval:term1_from@@>
+             AND  (w2_AdvCodeLog.access_date >= @term1_from_date)
+             </@@hasval:term1_from@@>
+             <@@hasval:term1_to@@>
+             AND  (w2_AdvCodeLog.access_date <= @term1_to_date)
+             </@@hasval:term1_to@@>
+        ), _target_order AS
+        (
+        -- 広告コードが入った対象注文
+          SELECT  w2_Order.advcode_new,
+                  w2_Order.order_price_total,
+                  w2_Order.order_status,
+                  w2_Order.return_exchange_kbn,
+                  w2_Order.user_id,
+                  w2_Order.order_shipped_date,
+                  w2_Order.order_delivering_date
+            FROM  w2_Order
+           WHERE  w2_Order.advcode_new <> '' -- 広告コードが空以外
+             <@@hasval:career_id@@>
+             AND  w2_Order.career_id = @career_id
+             </@@hasval:career_id@@>
+             <@@hasval:term1_from@@>
+             AND  w2_Order.order_date >= @term1_from
+             </@@hasval:term1_from@@>
+             <@@hasval:term1_to@@>
+             AND  w2_Order.order_date <= @term1_to
+             </@@hasval:term1_to@@>
+        ), _target_user AS
+        (
+        -- 広告コードが入った対象ユーザー
+          SELECT  w2_User.advcode_first,
+                  w2_User.user_kbn,
+                  w2_User.date_created,
+                  w2_User.date_changed,
+                  w2_User.del_flg
+            FROM  w2_User
+           WHERE  w2_User.advcode_first <> '' -- 広告コードが空以外
+             <@@hasval:career_id@@>
+             AND  w2_User.career_id = @career_id
+             </@@hasval:career_id@@>
+        ) ,_all_advcode AS
+        (
+        -- 表示する広告コード
+          SELECT  DISTINCT
+                  temp.adv_code
+            FROM
+            (
+              SELECT  DISTINCT
+                      _target_advcodelog.adv_code
+                FROM  _target_advcodelog
+               UNION ALL
+              SELECT  DISTINCT
+                      _target_order.advcode_new
+                FROM  _target_order
+               UNION ALL
+              SELECT  DISTINCT
+                      _target_user.advcode_first
+                FROM  _target_user
+            ) AS temp
+           WHERE  ( 0 = 0 )
+           <@@hasval:advcode_media_type_id@@>
+             AND  EXISTS
+                  (
+                    SELECT  w2_AdvCode.advertisement_code
+                      FROM  w2_AdvCode
+                     WHERE  w2_AdvCode.advertisement_code = temp.adv_code
+                       AND  w2_AdvCode.advcode_media_type_id = @advcode_media_type_id
+                  )
+           </@@hasval:advcode_media_type_id@@>
+           <@@hasval:advertisement_code_like_escaped@@>
+             AND  (
+                    temp.adv_code LIKE '%' + @advertisement_code_like_escaped + '%' ESCAPE '#'
+                    OR  EXISTS
+                    (
+                      SELECT  w2_AdvCode.advertisement_code
+                        FROM  w2_AdvCode
+                       WHERE  w2_AdvCode.advertisement_code = temp.adv_code
+                         AND  w2_AdvCode.media_name LIKE '%' + @advertisement_code_like_escaped + '%' ESCAPE '#'
+                    )  -- 媒体名
+                  )
+           </@@hasval:advertisement_code_like_escaped@@>
+              @@ where_adv_code @@
+        ), _click AS
+        (
+        -- ユニークユーザー数
+          SELECT  _target_advcodelog.adv_code,
+                  COUNT(DISTINCT _target_advcodelog.access_user_id) AS click_unique_count
+            FROM  _target_advcodelog
+           WHERE  (0 = 0)
+             <@@hasval:term1_from@@>
+             AND  _target_advcodelog.access_datetime >= @term1_from
+             </@@hasval:term1_from@@>
+             <@@hasval:term1_to@@>
+             AND  _target_advcodelog.access_datetime <= @term1_to
+             </@@hasval:term1_to@@>
+        GROUP BY  _target_advcodelog.adv_code
+        ), _user_regist AS
+        (
+        -- 登録ユーザー数
+          SELECT  _target_user.advcode_first AS adv_code,
+                  COUNT(_target_user.advcode_first) AS regist_count
+            FROM  _target_user
+           WHERE  _target_user.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+             <@@hasval:term1_from@@>
+             AND  _target_user.date_created >= @term1_from
+             </@@hasval:term1_from@@>
+             <@@hasval:term1_to@@>
+             AND  _target_user.date_created <= @term1_to
+             </@@hasval:term1_to@@>
+        GROUP BY  _target_user.advcode_first
+        ), _user_withdrawal AS
+        (
+        -- 退会ユーザー数
+          SELECT  _target_user.advcode_first AS adv_code,
+                  COUNT(_target_user.advcode_first) AS withdrawal_count
+            FROM  _target_user
+           WHERE  _target_user.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+             AND  _target_user.del_flg = '1' -- 退会ユーザ
+             <@@hasval:term1_from@@>
+             AND  _target_user.date_changed >= @term1_from
+             </@@hasval:term1_from@@>
+             <@@hasval:term1_to@@>
+             AND  _target_user.date_changed <= @term1_to
+             </@@hasval:term1_to@@>
+        GROUP BY  _target_user.advcode_first
+        ), _order_order AS
+        (
+        -- 注文基準 ユーザー数、注文金額
+           SELECT  _target_order.advcode_new AS adv_code,
+                   COUNT(DISTINCT _target_order.user_id) AS user_count,
+                   SUM(_target_order.order_price_total) AS order_price
+             FROM  _target_order
+            WHERE  _target_order.order_status IN ('ODR','ODR_RECG','STK_RSVD','SHP_ARGD','SHP_COMP','DLV_COMP') -- 注文済み OR 受注承認 OR 在庫引当済み OR 出荷手配済み OR 出荷完了 OR 配送完了
+              AND  _target_order.return_exchange_kbn IN ('00', '10')  -- 返品以外
+         GROUP BY  _target_order.advcode_new
+        ), _order_shipped AS
+        (
+        -- 出荷基準 ユーザー数、注文金額
+           SELECT  _target_order.advcode_new AS adv_code,
+                   COUNT(DISTINCT _target_order.user_id) AS user_count,
+                   SUM(_target_order.order_price_total) AS order_price
+             FROM  _target_order
+            WHERE  (
+                     (
+                       _target_order.order_status = 'SHP_COMP' -- 出荷完了
+                       <@@hasval:term1_from@@>
+                       AND
+                       _target_order.order_shipped_date >= @term1_from
+                       </@@hasval:term1_from@@>
+                       <@@hasval:term1_to@@>
+                       AND
+                       _target_order.order_shipped_date <= @term1_to
+                       </@@hasval:term1_to@@>
+                     )
+                     OR
+                     (
+                       _target_order.order_status = 'DLV_COMP' -- 配送完了
+                       <@@hasval:term1_from@@>
+                       AND
+                       _target_order.order_delivering_date >= @term1_from
+                       </@@hasval:term1_from@@>
+                       <@@hasval:term1_to@@>
+                       AND
+                       _target_order.order_delivering_date <= @term1_to
+                       </@@hasval:term1_to@@>
+                     )
+                   )
+              AND  _target_order.return_exchange_kbn IN ('00', '10')  -- 返品以外
+         GROUP BY  _target_order.advcode_new
+        ), _report AS
+        (
+        -- 集計
+          SELECT  _all_advcode.adv_code,
+                  ISNULL(_click.click_unique_count, 0) AS click_unique_count,
+                  ISNULL(_user_regist.regist_count, 0) AS regist_count,
+                  ISNULL(_user_withdrawal.withdrawal_count, 0) AS withdrawal_count,
+                  ISNULL(_order.user_count, 0) AS user_count,
+                  ISNULL(_order.order_price, 0) AS order_price
+            FROM  _all_advcode
+                  LEFT JOIN _click ON
+                  (
+                    _all_advcode.adv_code = _click.adv_code
+                  )
+                  LEFT JOIN _user_regist ON
+                  (
+                    _all_advcode.adv_code = _user_regist.adv_code
+                  )
+                  LEFT JOIN _user_withdrawal ON
+                  (
+                    _all_advcode.adv_code = _user_withdrawal.adv_code
+                  )
+        <@@val:advertisement_conversion_rate_kbn:0@@>
+        -- 注文基準
+                  LEFT JOIN _order_order AS _order ON
+                  (
+                    _all_advcode.adv_code = _order.adv_code
+                  )
+        </@@val:advertisement_conversion_rate_kbn:0@@>
+        <@@val:advertisement_conversion_rate_kbn:1@@>
+        -- 出荷基準
+                  LEFT JOIN _order_shipped AS _order ON
+                  (
+                    _all_advcode.adv_code = _order.adv_code
+                  )
+        </@@val:advertisement_conversion_rate_kbn:1@@>
+        ), _report_withtotal AS
+        (
+        -- 集計 合計も取得
+          SELECT  _report.adv_code,
+                  _report.click_unique_count,
+                  _report.regist_count,
+                  _report.withdrawal_count,
+                  _report.user_count,
+                  CAST(_report.order_price AS decimal) AS order_price,
+                  CAST((_report.order_price / (CASE WHEN _report.user_count > 0 THEN _report.user_count ELSE 1 END)) AS decimal) AS order_price_avg,
+                  SUM(_report.click_unique_count) OVER () AS click_unique_count_total,
+                  SUM(_report.regist_count) OVER () AS regist_count_total,
+                  SUM(_report.withdrawal_count) OVER () AS withdrawal_count_total,
+                  SUM(_report.user_count) OVER () AS user_count_total,
+                  CAST(SUM(_report.order_price) OVER () AS decimal) AS order_price_total,
+                  CAST((SUM(_report.order_price) OVER () / (CASE WHEN SUM(_report.user_count) OVER () > 0 THEN SUM(_report.user_count) OVER () ELSE 1 END)) AS decimal) AS order_price_avg_total
+            FROM  _report
+        )
+        -- 結果出力
+        SELECT  adv_code AS advertisement_code,
+                click_unique_count,
+                regist_count,
+                withdrawal_count,
+                user_count,
+                order_price,
+                order_price_avg,
+                click_unique_count_total,
+                regist_count_total,
+                withdrawal_count_total,
+                user_count_total,
+                order_price_total,
+                order_price_avg_total,
+                ISNULL(w2_AdvCode.media_name, '') AS media_name,
+                ISNULL(w2_AdvCodeMediaType.advcode_media_type_name, '') AS advcode_media_type_name
+          FROM  _report_withtotal
+                LEFT JOIN w2_AdvCode ON
+                (
+                  adv_code = w2_AdvCode.advertisement_code
+                )
+                LEFT JOIN w2_AdvCodeMediaType ON
+                (
+                  w2_AdvCodeMediaType.advcode_media_type_id = w2_AdvCode.advcode_media_type_id
+                )
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN adv_code
+            WHEN  2 THEN media_name
+            ELSE '1'
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  4 THEN click_unique_count
+            WHEN  6 THEN regist_count
+            WHEN  8 THEN withdrawal_count
+            WHEN  10 THEN user_count
+            WHEN  12 THEN order_price
+            WHEN  14 THEN order_price_avg
+            ELSE 1
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN adv_code
+            WHEN  3 THEN media_name
+            ELSE '1'
+          END
+          DESC,
+          CASE @sort_kbn
+            WHEN  5 THEN click_unique_count
+            WHEN  7 THEN regist_count
+            WHEN  9 THEN withdrawal_count
+            WHEN  11 THEN user_count
+            WHEN  13 THEN order_price
+            WHEN  15 THEN order_price_avg
+            ELSE 1
+          END
+          DESC
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="advertisement_code_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="term1_from" Type="datetime" />
+      <Input Name="term1_to" Type="datetime" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="advertisement_conversion_rate_kbn" Type="nvarchar" Size="1" />
+      <Input Name="advcode_media_type_id" Type="nvarchar" Size="30" />
+      <Input Name="targetUpdateAdvCode" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAdvertisementCodeConversionRate>
+
+  <!-- オーダ集計レポート(商品売上ランキング) -->
+  <GetAdvertisementCodeRankingProductBuy>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- 期間指定1に998ミリ秒を追加します。
+        IF @term1_to IS NOT NULL
+          BEGIN
+           SET @term1_to = DATEADD(ms, 998, @term1_to);
+          END
+          
+        -- 変数宣言
+        DECLARE @table_temp TABLE(
+          [row_num] [int] IDENTITY(1, 1),
+          [row_count] int NOT NULL DEFAULT (0),
+          [product_id] nvarchar(30) NOT NULL,
+          [variation_id] nvarchar(60) NOT NULL,
+          [product_name] nvarchar(200) NOT NULL,
+          [item_quantity] int NOT NULL DEFAULT (1),
+          [item_quantity_total] int NOT NULL DEFAULT (1),
+          [item_price] decimal NOT NULL DEFAULT (0),
+          [item_price_total] decimal NOT NULL DEFAULT (0)
+        )
+
+        -- レポート情報格納
+        INSERT INTO @table_temp
+        (
+          product_id,
+          variation_id,
+          product_name,
+          item_quantity,
+          item_price
+        )
+        SELECT  TOP 20
+                w2_OrderItem.product_id,
+                w2_OrderItem.variation_id,
+                w2_OrderItem.product_name,
+                ISNULL(SUM(w2_OrderItem.item_quantity),0),
+                ISNULL(SUM(w2_OrderItem.item_price),0)
+          FROM  w2_Order
+                INNER JOIN w2_OrderItem ON
+                (
+                  w2_Order.order_id = w2_OrderItem.order_id
+                )
+         WHERE  ( @advertisement_code = ''
+                  OR
+                  ( CASE
+                    WHEN @advertisement_code_target = '0'
+                    THEN w2_Order.advcode_new ELSE w2_Order.advcode_first
+                     END
+                  ) LIKE '%' + @advertisement_code + '%' ESCAPE '#'
+                )
+           AND  (CASE WHEN @advertisement_code_target = '0' THEN w2_Order.advcode_new ELSE w2_Order.advcode_first END) <> ''  -- 広告コード空以外
+           @@ where_adv_code @@
+           <@@hasval:career_id@@>
+           AND  w2_Order.career_id = @career_id
+           </@@hasval:career_id@@>
+           AND  (
+                  (
+                    w2_Order.order_status = 'SHP_COMP' -- 出荷完了
+                    <@@hasval:term1_from@@>
+                    AND  w2_Order.order_shipped_date >= @term1_from
+                    </@@hasval:term1_from@@>
+                    <@@hasval:term1_to@@>
+                    AND  w2_Order.order_shipped_date <= @term1_to
+                    </@@hasval:term1_to@@>
+                  )
+                  OR
+                  (
+                    w2_Order.order_status = 'DLV_COMP' -- 配送完了
+                    <@@hasval:term1_from@@>
+                    AND  w2_Order.order_delivering_date >= @term1_from
+                    </@@hasval:term1_from@@>
+                    <@@hasval:term1_to@@>
+                    AND  w2_Order.order_delivering_date <= @term1_to
+                    </@@hasval:term1_to@@>
+                  )
+                )
+           AND  w2_Order.return_exchange_kbn IN('00', '10')   -- 返品以外
+      GROUP BY  w2_OrderItem.product_name, w2_OrderItem.product_id, w2_OrderItem.variation_id
+        HAVING  ISNULL(SUM(w2_OrderItem.item_quantity),0) > 0 -- 注文数が0以上
+      ORDER BY  ISNULL(SUM(w2_OrderItem.item_quantity),0) DESC, w2_OrderItem.product_id, w2_OrderItem.variation_id
+
+        -- 合計更新
+        UPDATE  @table_temp
+           SET  row_count = (SELECT COUNT(*) FROM @table_temp),
+                item_quantity_total = (SELECT SUM(item_quantity) FROM @table_temp),
+                item_price_total = (SELECT SUM(item_price) FROM @table_temp)
+
+        -- 結果出力
+        SELECT  RANK() OVER (ORDER BY item_quantity DESC) rank,
+                *
+          FROM  @table_temp
+      ORDER BY  row_num ASC
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="advertisement_code" Type="nvarchar" Size="30" />
+      <Input Name="advertisement_code_target" Type="nvarchar" Size="1" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="term1_from" Type="datetime" />
+      <Input Name="term1_to" Type="datetime" />
+      <Input Name="advcode_media_type_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAdvertisementCodeRankingProductBuy>
+
+  <!-- オーダ集計レポート(初回コード付き購入者詳細) -->
+  <GetAdvertisementCodeFirstOrderOwner>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_Order.order_id), 0)
+          FROM  w2_Order
+                INNER JOIN w2_OrderOwner ON
+                (
+                  w2_Order.order_id = w2_OrderOwner.order_id
+                )
+                INNER JOIN w2_OrderItem ON
+                (
+                  w2_Order.order_id = w2_OrderItem.order_id
+                )
+                [[ FIRSTORDEROWNER_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_Order.order_date,
+                w2_OrderItem.product_id,
+                w2_OrderItem.variation_id,
+                w2_OrderItem.product_name,
+                w2_Order.user_id,
+                w2_OrderOwner.owner_name,
+                w2_OrderItem.item_price,
+                w2_Order.advcode_first,
+                RowIndex.row_num,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_Order.order_id,
+                          w2_OrderItem.order_item_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ FIRSTORDEROWNER_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Order
+                          INNER JOIN w2_OrderOwner ON
+                          (
+                            w2_Order.order_id = w2_OrderOwner.order_id
+                          )
+                          INNER JOIN w2_OrderItem ON
+                          (
+                            w2_Order.order_id = w2_OrderItem.order_id
+                          )
+                          [[ FIRSTORDEROWNER_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Order ON
+                (
+                  RowIndex.order_id = w2_Order.order_id
+                )
+                INNER JOIN w2_OrderOwner ON
+                (
+                  w2_Order.order_id = w2_OrderOwner.order_id
+                )
+                INNER JOIN w2_OrderItem ON
+                (
+                  w2_Order.order_id = w2_OrderItem.order_id
+                  AND
+                  RowIndex.order_item_no = w2_OrderItem.order_item_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="advertisement_code" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="term1_from" Type="datetime" />
+      <Input Name="term1_to" Type="datetime" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="advcode_media_type_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAdvertisementCodeFirstOrderOwner>
+
+  <!-- オーダ集計レポート(注文時広告コード購入者詳細) -->
+  <GetAdvertisementCodeOrderOrderOwner>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_Order.order_id), 0)
+          FROM  w2_Order
+                INNER JOIN w2_OrderOwner ON
+                (
+                  w2_Order.order_id = w2_OrderOwner.order_id
+                )
+                INNER JOIN w2_OrderItem ON
+                (
+                  w2_Order.order_id = w2_OrderItem.order_id
+                )
+                [[ ORDEROWNER_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_Order.order_date,
+                w2_OrderItem.product_id,
+                w2_OrderItem.variation_id,
+                w2_OrderItem.product_name,
+                w2_Order.user_id,
+                w2_OrderOwner.owner_name,
+                w2_OrderItem.item_price,
+                w2_Order.advcode_new,
+                RowIndex.row_num,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_Order.order_id,
+                          w2_OrderItem.order_item_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ ORDEROWNER_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Order
+                          INNER JOIN w2_OrderOwner ON
+                          (
+                            w2_Order.order_id = w2_OrderOwner.order_id
+                          )
+                          INNER JOIN w2_OrderItem ON
+                          (
+                            w2_Order.order_id = w2_OrderItem.order_id
+                          )
+                          [[ ORDEROWNER_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Order ON
+                (
+                  RowIndex.order_id = w2_Order.order_id
+                )
+                INNER JOIN w2_OrderOwner ON
+                (
+                  w2_Order.order_id = w2_OrderOwner.order_id
+                )
+                INNER JOIN w2_OrderItem ON
+                (
+                  w2_Order.order_id = w2_OrderItem.order_id
+                  AND
+                  RowIndex.order_item_no = w2_OrderItem.order_item_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="advertisement_code" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="term1_from" Type="datetime" />
+      <Input Name="term1_to" Type="datetime" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="advcode_media_type_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAdvertisementCodeOrderOrderOwner>
+  
+</AdvertisementCodeReport>

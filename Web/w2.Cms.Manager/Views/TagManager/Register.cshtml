@@ -1,0 +1,520 @@
+﻿@*
+=========================================================================================================
+  Module      : タグマネージャー タグ設定編集ページ(Register.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Input
+@model w2.Cms.Manager.ViewModels.TagManager.TagManagerRegisterViewModel
+@{
+	ViewBag.Title = "タグマネージャー";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+
+@helper TopBottomControls()
+{
+	<input type="submit" name="BackList" value="  一覧へ戻る  " class="btn btn-main"/>
+	if (Model.IsActionStatusUpdate)
+	{
+	<input type="submit" name="CopyInsert" value="  コピー新規登録する  " class="btn btn-main"/>
+	<input type="button" value="  削除する  " class="btn btn-main" onclick="return validateForDelete('delete');">
+	<input type="submit" name="Delete" id="delete" style="display: none"/>
+	<input type="button" value="  更新する  " class="btn btn-main" onclick="return validate('update');">
+	<input type="submit" name="Update" id="update" style="display: none;">
+	}
+	if (Model.IsActionStatusInsert)
+	{
+	<input type="button" value="  登録する  " class="btn btn-main" onclick="return validate('insert');">
+	<input type="submit" name="Insert" id="insert" style="display: none;">
+	}
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr><td><h1 class="page-title">タグマネージャー</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	@if (Model.IsActionStatusInsert)
+	{
+		<tr id="trRegister">
+			<td>
+				<h2 class="cmn-hed-h2">タグ設定登録</h2>
+			</td>
+		</tr>
+	}
+	@if (Model.IsActionStatusUpdate)
+	{
+		<tr id="trEdit">
+			<td>
+				<h2 class="cmn-hed-h2">タグ設定編集</h2>
+			</td>
+		</tr>
+	}
+	<!--▽ 登録・編集 ▽-->
+	<tr>
+	<td>
+	<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+	<tr>
+	<td>
+	<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+		@using (Html.BeginForm("Register", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_TAG_MANAGER, new
+		{
+			Model.ActionStatus,
+			Model.Input.AffiliateId
+		}, FormMethod.Post,new {Id ="input_form"}))
+		{
+			<table cellspacing="0" cellpadding="0" border="0">
+			<tr>
+			<td>
+				@if (Model.UpdateInsertSuccessFlg)
+				{
+					<table class="info_table" cellspacing="1" cellpadding="3" width="100%" border="0">
+						<tr class="info_item_bg">
+							<td align="left">タグ設定を登録/更新しました。
+							</td>
+						</tr>
+					</table>
+				}
+				<div class="action_part_top">
+					@TopBottomControls()
+				</div>
+				<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					<tbody>
+						<tr>
+							<td class="edit_title_bg" align="center" colspan="2">基本情報</td>
+						</tr>
+						@if (Model.IsActionStatusInsert == false)
+						{
+							<tr id="trAffiliateId">
+								<td class="edit_title_bg" align="left">タグID</td>
+								<td class="edit_item_bg" align="left">
+									@Model.Input.AffiliateId
+									@Html.HiddenFor(model => model.Input.AffiliateId, new { Name = "Input.AffiliateId" })
+								</td>
+							</tr>
+						}
+						<tr>
+							<td class="edit_title_bg" align="left">タグ名<span class="notice">*</span></td>
+							<td class="edit_item_bg" align="left">
+								@Html.TextBoxFor(model => model.Input.AffiliateName, new { Name = "Input.AffiliateName" })
+							</td>
+						</tr>
+						<tr>
+							<td class="edit_title_bg" align="left">表示区分</td>
+							<td class="edit_item_bg" align="left">
+								@Html.DropDownListFor(model => model.Input.AffiliateKbn, Model.AffiliateKbnItems, new { Name = "Input.AffiliateKbn" })
+							</td>
+						</tr>
+						<tr>
+							<td class="edit_title_bg" align="left">設置箇所/出力箇所<span class="notice">*</span>
+							</td>
+							<td class="edit_item_bg" align="left">
+								@{
+									var checkBoxAllAttributes = new Dictionary<string, object>{
+										{ "onchange", "ReplaceTagDisplayUpdateAll();" },
+										{ "Id", "cbIsAllPageCheck" }
+									};
+
+									// Vup直後の案件では、注文完了画面にしか手動マージを行わないため、注文完了ページ以外では利用できないので選択不可にする
+									if (Constants.TAG_TARGETPAGECHECKBOX_OPTION == false)
+									{
+										checkBoxAllAttributes.Add("disabled", "disabled");
+									}
+
+									if (Model.IsAllowAllLocations() == false)
+									{
+										checkBoxAllAttributes.Add("style", "display: none;");
+									}
+								}
+								@Html.CheckBoxFor(x => Model.Input.IsAllPageCheck, checkBoxAllAttributes)
+								@Html.Label("cbIsAllPageCheck", "全ページ出力", checkBoxAllAttributes)
+								<br />
+								<div id="divPageCheckBoxGroup">
+									@for (int i = 0; i < Model.Input.Pages.Count; i++)
+									{
+										var checkBoxAttributes = new Dictionary<string, object>{
+											{ "onchange", "ReplaceTagDisplayUpdate();" }
+										};
+
+										// Vup直後の案件では、注文完了画面にしか手動マージを行わないため、注文完了ページ以外では利用できないので選択不可にする
+										if (((Constants.TAG_TARGETPAGECHECKBOX_OPTION == false)
+											&& (Model.Input.Pages[i].Name != "注文完了"))
+											|| Model.Input.IsAllPageCheck)
+										{
+											checkBoxAttributes.Add("disabled", "disabled");
+										}
+
+										@Html.HiddenFor(x => Model.Input.Pages[i].Path)
+										@Html.CheckBoxFor(x => Model.Input.Pages[i].IsCheck, checkBoxAttributes)
+										@Html.LabelFor(x => Model.Input.Pages[i].IsCheck, @Model.Input.Pages[i].Name)
+										@Html.HiddenFor(x => Model.Input.Pages[i].Name)
+										<br/>
+									}
+								</div>
+								<br/>
+								@Html.DropDownListFor(model => model.Input.OutputLocation, Model.OutputLocationItems, new
+								{
+									Name = "Input.OutputLocation"
+								})
+							</td>
+						</tr>
+						<tr>
+							<td class="edit_title_bg" align="left">表示順<span class="notice">*</span></td>
+							<td class="edit_item_bg" align="left">
+								@Html.TextBoxFor(model => model.Input.DisplayOrder, new { Name = "Input.DisplayOrder" })
+							</td>
+						</tr>
+						<tr>
+							<td class="edit_title_bg" align="left">有効フラグ</td>
+							<td class="edit_item_bg" align="left" colspan="2">
+								@Html.CheckBoxFor(m => m.Input.IsValidFlg, new
+								{
+									Name = "Input.IsValidFlg"
+								})
+								@Html.LabelFor(m =>  m.Input.IsValidFlg, "有効")
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<br />
+				<table class="info_table" width="758" border="0" cellspacing="1" cellpadding="3">
+					<tr>
+						<td align="left" class="info_item_bg" colspan="2">■成果報告形式<br />
+							IMGタグ、JavaScriptを記述して頂き画面に表示させることで成果報告を行います。<br />
+							※URL記述によるソケット通信形式の成果報告はできません。
+						</td>
+					</tr>
+				</table>
+				<br />
+				<table class="edit_table" cellspacing="1" cellpadding="4" width="758" border="0">
+					<tbody>
+						<tr>
+							<td class="edit_title_bg" align="center" colspan="4">メインタグ設定</td>
+						</tr>
+						<tr>	
+							<td class="edit_title_bg" align="left" width="100px">タグ設定</td>
+							<td class="edit_item_bg" align="left" colspan="2">
+								@Html.TextAreaFor(model => model.Input.AffiliateTag1,
+									new { Name = "Input.AffiliateTag1", Id = "AffiliateTag1", style="width:95%;height:300px" })
+								<br/>
+							</td>
+							<td class="edit_item_bg" width="500">
+								<div id="divReplaseTagDescriptionList">
+									@Html.Partial("_ReplaceTag", Model.ReplaseTagDescriptionList)
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td class="edit_title_bg" align="center" colspan="4">商品タグ設定(<strong>@Html.Raw("@@PRODUCT@@")</strong>が置換されます)</td>
+						</tr>
+						<tr>
+							<td class="edit_title_bg" align="left" width="100px">商品タグ内容
+							</td>
+							<td class="edit_item_bg" align="left" colspan="3">
+								<div id="divAffiliateProductTagId">
+									@Html.Partial("_ProductTag", Model.ProductTagViewModel)
+								</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<br />
+				<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					<tbody>
+						<tr>
+							<td class="edit_title_bg" align="center" colspan="3">広告媒体区分(アクセス時) 表示条件</td>
+						</tr>
+						<tr>
+							<td class="edit_title_bg" align="left" colspan="3">
+								@Html.RadioButtonFor(m => m.ConditionInput.IsNoConditionAdcodeMediaType,
+									TagManagerConditionInput.CONDITION_RADIOBUTTON_YES_VALUE,
+									new { Id = "IsConditionAdcodeMediaType" })
+								@Html.Label("条件指定", new{@for="IsConditionAdcodeMediaType"})
+								@Html.RadioButtonFor(m => m.ConditionInput.IsNoConditionAdcodeMediaType,
+									TagManagerConditionInput.CONDITION_RADIOBUTTON_NO_VALUE,
+									new { Id = "IsNoConditionAdcodeMediaType" })
+								@Html.Label("条件指定なし", new{@for="IsNoConditionAdcodeMediaType"})
+							</td>
+						</tr>
+						<tr id="trAdcodeMediaType">
+							<td class="edit_title_bg" align="left" width="100px">広告媒体ID<br/>
+								(改行区切り)
+							</td>
+							<td class="edit_item_bg" align="left" width="50%">
+								<div>
+									@Html.TextAreaFor(model => model.ConditionInput.ConditionValuesAdcodeMediaType, 
+										10, 
+										100, 
+										new { Name = "ConditionInput.ConditionValuesAdcodeMediaType", Id = "ConditionValuesAdcodeMediaType" })
+								</div>
+								@Html.CheckBoxFor(m => m.ConditionInput.IsMatchTypeForwordAdcodeMediaType, new
+								{
+									Name = "ConditionInput.IsMatchTypeForwordAdcodeMediaType"
+								})前方一致
+							</td>
+							<td class="edit_item_bg" align="left">
+								<input type="button" value=" 検索 " onclick="Javascript: OpenAdvMediaTypeWindows();" class="btn btn-main" />
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<br />
+				<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					<tbody>
+						<tr>
+							<td class="edit_title_bg" align="center" colspan="3">広告コード(アクセス時) 表示条件</td>
+						</tr>
+						<tr>
+							<td class="edit_title_bg" align="left" colspan="3">
+								@Html.RadioButtonFor(m => m.ConditionInput.IsNoConditionAdvertisementCode, 
+									TagManagerConditionInput.CONDITION_RADIOBUTTON_YES_VALUE, 
+									new { Id = "IsConditionAdvertisementCode" })
+								@Html.Label("条件指定", new{@for="IsConditionAdvertisementCode"})
+								@Html.RadioButtonFor(m => m.ConditionInput.IsNoConditionAdvertisementCode, 
+									TagManagerConditionInput.CONDITION_RADIOBUTTON_NO_VALUE, 
+									new { Id = "IsNoConditionAdvertisementCode" })
+								@Html.Label("条件指定なし", new{@for="IsNoConditionAdvertisementCode"})
+							</td>
+						</tr>
+						<tr id="trAdvertisementCode">
+							<td class="edit_title_bg" align="left" width="100px">広告コード<br/>
+								(改行区切り)
+							</td>
+							<td class="edit_item_bg" align="left" width="50%">
+								<div>
+									@Html.TextAreaFor(model => model.ConditionInput.ConditionValuesAdvertisementCode, 
+										10, 
+										100, 
+										new { Name = "ConditionInput.ConditionValuesAdvertisementCode", Id = "ConditionValuesAdvertisementCode" })
+								</div>
+								@Html.CheckBoxFor(m => m.ConditionInput.IsMatchTypeForwordAdvertisementCode, new
+								{
+									Name = "ConditionInput.IsMatchTypeForwordAdvertisementCode"
+								})前方一致
+							</td>
+							<td class="edit_item_bg" align="left">
+								<input id="inputSearchAdvCode" type="button" value=" 検索 " onclick="Javascript: OpenAdvWindows();" class="btn btn-main" />
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<br />
+				<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+					<tbody>
+						<tr>
+							<td class="edit_title_bg" align="center" colspan="3">商品ID(カート内または注文内) 表示条件</td>
+						</tr>
+						<tr>
+							<td class="edit_title_bg" align="left" colspan="3">
+								@Html.RadioButtonFor(m => m.ConditionInput.IsNoConditionProductIdCode, 
+									TagManagerConditionInput.CONDITION_RADIOBUTTON_YES_VALUE, 
+									new { Id = "IsNoConditionProductIdCode" })
+								@Html.Label("条件指定", new{@for="IsNoConditionProductIdCode"})
+								@Html.RadioButtonFor(m => m.ConditionInput.IsNoConditionProductIdCode, 
+									TagManagerConditionInput.CONDITION_RADIOBUTTON_NO_VALUE, 
+									new { Id = "IsConditionProductIdCode" })
+								@Html.Label("条件指定なし", new{@for="IsConditionProductIdCode"})
+							</td>
+						</tr>
+						<tr id="trProductId">
+							<td class="edit_title_bg" align="left" width="100px">商品ID<br/>
+								(改行区切り)
+							</td>
+							<td class="edit_item_bg" align="left" width="50%">
+								<div>
+									@Html.TextAreaFor(model => model.ConditionInput.ConditionValuesProductId,
+										10,
+										100,
+										new { Name = "ConditionInput.ConditionValuesProductId", Id = "ConditionValuesProductId" })
+								</div>
+								@Html.CheckBoxFor(m => m.ConditionInput.IsMatchTypeForwordProductId, new
+								{
+									Name = "ConditionInput.IsMatchTypeForwordProductId"
+								})前方一致
+							</td>
+							<td class="edit_item_bg" align="left">
+								<input id="inputSearchProductId" type="button" value="  検索  " style="display: inline-block; vertical-align: middle;" onclick="javascript: OpenProductWindows();" class="btn btn-main" />
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<div class="action_part_bottom">
+					@TopBottomControls()
+				</div>
+				<br />
+				<table class="info_table" width="758" border="0" cellspacing="1" cellpadding="3">
+					<tr>
+						<td align="left" class="info_item_bg" colspan="2">〇 出力箇所「任意箇所出力」について<br />
+							「任意箇所出力」につきましては該当ページ内body部分の任意箇所に出力できる区分となります。<br />
+							利用例としましてカートリスト内UpdatePanel内に出力できるようにして、カート内容が更新されるたび再度タグ情報を送信するといった利用が可能となります。<br />
+							※ 現在「任意箇所出力」につきましては設置箇所[カートリスト]のみ対応しております。<br />
+							<br />
+							〇 置換タグについて<br />
+							■ カート系<br />
+							「@Html.Raw("@@CART_LOOP_START@@")」,「@Html.Raw("@@CART_LOOP_END@@")」１回で複数カートをご利用の場合、カートが存在しない場合にタグ内容を表示したくない場合にご利用ください。<br />
+							その場合、説明欄で[カート]または[注文・カート]となっているタグはループ開始終了タグの間となるようにしてください。<br />
+							■ 注文系<br />
+							「@Html.Raw("@@ORDER_LOOP_START@@")」,「@Html.Raw("@@ORDER_LOOP_END@@")」1回で複数注文をご利用の場合にご利用ください。<br />
+							その場合、説明欄で[注文]または[注文・カート]となっているタグはループ開始終了タグの間となるようにしてください。<br />
+							■ 商品系<br />
+							「@Html.Raw("@@PRODUCT@@")」タグが置換されます。<br />
+							置換内容については上記( 商品タグの登録 )にて設定してください。<br />
+							<br />
+							〇 表示条件について<br />
+							広告媒体区分、広告コード、商品IDのそれぞれで条件が指定されている場合は全ての条件が満たされる場合にタグ内容が出力されます。<br />
+							各表示条件内で複数設定されている場合、いずれか１つでも条件を満たす場合にその条件は達成されたと判断します。
+						</td>
+					</tr>
+				</table>
+			</td>
+			</tr>
+			</table>
+		}
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 登録 △-->
+</table>
+
+@section JavaScript
+{
+	<script type="text/javascript">
+
+		$(function() {
+			SetConditionRadioButton('input[name="ConditionInput.IsNoConditionAdcodeMediaType"]', '#trAdcodeMediaType');
+			SetConditionRadioButton('input[name="ConditionInput.IsNoConditionAdvertisementCode"]',
+				'#trAdvertisementCode');
+			SetConditionRadioButton('input[name="ConditionInput.IsNoConditionProductIdCode"]', '#trProductId');
+		});
+
+		// 設置箇所条件 全ページチェック時
+		function ReplaceTagDisplayUpdateAll() {
+			PageCheckBoxGroupDisabledChange();
+			ReplaceTagDisplayUpdate();
+		}
+
+		// 設置箇所条件 全ページチェック時 他選択肢の有効・無効切り替え
+		function PageCheckBoxGroupDisabledChange() {
+			if ($('#cbIsAllPageCheck').prop('checked')) {
+				$('#divPageCheckBoxGroup > input').attr({ 'disabled': true });
+			} else {
+				$('#divPageCheckBoxGroup > input').attr({ 'disabled': false });
+			}
+		}
+
+		// 置換タグリストの更新
+		function ReplaceTagDisplayUpdate() {
+			$.ajax({
+				type: "POST",
+				url:
+					"@Url.Action("ReplaceTagDisplayUpdate", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_TAG_MANAGER)",
+				data: $('form').serialize()
+			}).done(function(viewHTML) {
+				$("#divReplaseTagDescriptionList").html(viewHTML);
+			}).fail(function() {
+			});
+		}
+
+		// 各条件あり・なしラジオボタンの変更イベント設定
+		function SetConditionRadioButton(radioSelecter, areaSelecter) {
+			ConditionAreaDisplayChange($(radioSelecter + ':checked').val(), areaSelecter);
+			$(radioSelecter).change(function() {
+				ReplaceTagDisplayUpdate();
+				ConditionAreaDisplayChange($(this).val(), areaSelecter);
+			});
+		}
+
+		// 各条件あり・なしラジオボタンの変更時の各設定エリアの表示状態切り替え
+		function ConditionAreaDisplayChange(value, selecter) {
+			if (value == '@TagManagerConditionInput.CONDITION_RADIOBUTTON_NO_VALUE') {
+				$(selecter).hide();
+			} else {
+				$(selecter).show();
+			}
+		}
+
+		// 広告媒体区分検索のポップアップウィンドウの呼び出し
+		function OpenAdvMediaTypeWindows() {
+			open_window(
+				'@Url.Action("AdCodeMediaTypeSearchList", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_SEARCH_POPUP)',
+				'advertisementCodeMediaTypeSearch',
+				'width=920,height=700,top=120,left=420,status=NO,scrollbars=yes');
+		}
+
+		// 広告コード検索のポップアップウィンドウの呼び出し
+		function OpenAdvWindows() {
+			open_window('@Url.Action("AdCodeSearchList", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_SEARCH_POPUP)',
+				'advertisementCodeMediaTypeSearch',
+				'width=920,height=700,top=120,left=420,status=NO,scrollbars=yes');
+		}
+
+		// 商品検索のポップアップウィンドウの呼び出し
+		function OpenProductWindows() {
+			open_window('@Html.Raw(Model.ProductSearchUrl)',
+				'ProductSearch',
+				'width=920,height=700,top=120,left=420,status=NO,scrollbars=yes');
+		}
+
+		// 広告媒体検索で選択されたコードを設定
+		function setAdvcodeMediaType(advcodeMediaType) {
+			var textArea = document.getElementById('ConditionValuesAdcodeMediaType');
+			var advcodeMediaTypes = textArea.value;
+			textArea.value =
+				(advcodeMediaTypes == "") ? advcodeMediaType : (advcodeMediaTypes + "\n" + advcodeMediaType);
+			textArea.focus();
+			textArea.selectionStart = textArea.value.length;
+			textArea.selectionEnd = textArea.value.length;
+			textArea.scrollTop = textArea.scrollHeight;
+		}
+
+
+		// 広告コード検索で選択されたコードを設定
+		function setAdvertisementCode(advcode) {
+			var textArea = document.getElementById('ConditionValuesAdvertisementCode');
+			var advCodes = textArea.value;
+			textArea.value = (advCodes == "") ? advcode : (advCodes + "\n" + advcode);
+			textArea.focus();
+			textArea.selectionStart = textArea.value.length;
+			textArea.selectionEnd = textArea.value.length;
+			textArea.scrollTop = textArea.scrollHeight;
+		}
+
+		// 商品一覧で選択された商品情報を設定
+		function set_productinfo(product_id) {
+			var textArea = document.getElementById('ConditionValuesProductId');
+			var productIds = textArea.value;
+			textArea.value = (productIds == "") ? product_id : (productIds + "\n" + product_id);
+			textArea.focus();
+			textArea.selectionStart = textArea.value.length;
+			textArea.selectionEnd = textArea.value.length;
+			textArea.scrollTop = textArea.scrollHeight;
+		}
+
+		// テキストエリアのキャレット位置に文言を挿入
+		function tagInput(tag) {
+			var textarea = document.getElementById('AffiliateTag1');
+			var sentence = textarea.value;
+			var len = sentence.length;
+			var pos = textarea.selectionStart;
+			var before = sentence.substr(0, pos);
+			var word = tag;
+			var after = sentence.substr(pos, len);
+			sentence = before + word + after;
+			textarea.value = sentence;
+			textarea.focus();
+			textarea.selectionStart = pos + word.length;
+			textarea.selectionEnd = pos + word.length;
+		}
+
+		// エンターキーによるsubmit禁止
+		prohibit_submission();
+	</script>
+}

@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+-- テーブル作成
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_WorkProductSalePrice]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_WorkProductSalePrice]
+GO
+
+CREATE TABLE [dbo].[w2_WorkProductSalePrice] (
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[productsale_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[product_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[variation_id] [nvarchar] (60) NOT NULL DEFAULT (N''),
+	[sale_price] [decimal] NOT NULL DEFAULT (0),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_WorkProductSalePrice] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkProductSalePrice] PRIMARY KEY  CLUSTERED
+	(
+		[shop_id],
+		[productsale_id],
+		[product_id],
+		[variation_id]
+	) ON [PRIMARY]
+GO
+
+-- 商品バリエーションIDがブランクのデータ削除
+DELETE FROM w2_ProductSalePrice WHERE variation_id = ''
+			]]>
+    </Statement>
+  </Up>
+</Migration>

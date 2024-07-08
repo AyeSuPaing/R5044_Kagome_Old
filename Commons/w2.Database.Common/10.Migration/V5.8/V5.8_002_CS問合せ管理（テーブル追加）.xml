@@ -1,0 +1,809 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+-- テーブル作成
+
+/*
+=========================================================================================================
+  Module      : 回答例マスタ(w2_CsAnswerTemplate.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsAnswerTemplate] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[answer_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[answer_category_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[answer_title] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[answer_text] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'1'),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsAnswerTemplate] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsAnswerTemplate] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[answer_id]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : 回答例カテゴリマスタ(w2_CsAnswerTemplateCategory.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsAnswerTemplateCategory] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[category_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[parent_category_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[category_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'1'),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsAnswerTemplateCategory] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsAnswerTemplateCategory] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[category_id]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : CSグループマスタ(w2_CsGroup.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsGroup] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[cs_group_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[cs_group_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[valid_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsGroup] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsGroup] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[cs_group_id]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : インシデントマスタ(w2_CsIncident.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsIncident] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[incident_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[user_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[incident_category_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[incident_title] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[status] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[voc_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[voc_memo] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[comment] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[importance] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[user_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[user_contact] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[cs_group_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[lock_status] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[lock_operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'1'),
+	[date_last_received] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_completed] [datetime],
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsIncident] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsIncident] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[incident_id]
+	) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_CsIncident_1] ON [dbo].[w2_CsIncident]([user_id]) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_CsIncident_2] ON [dbo].[w2_CsIncident]([dept_id], [status]) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : インシデントカテゴリマスタ(w2_CsIncidentCategory.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsIncidentCategory] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[category_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[parent_category_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[category_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'1'),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsIncidentCategory] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsIncidentCategory] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[category_id]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : インシデント集計区分値(w2_CsIncidentSummaryValue.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsIncidentSummaryValue] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[incident_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[summary_no] [int] NOT NULL DEFAULT (1),
+	[value] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsIncidentSummaryValue] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsIncidentSummaryValue] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[incident_id],
+		[summary_no]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : インシデントVOCマスタ(w2_CsIncidentVoc.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsIncidentVoc] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[voc_id] [nvarchar] (10) NOT NULL DEFAULT (1),
+	[voc_text] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'1'),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsIncidentVoc] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsIncidentVoc] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[voc_id]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : 受信メール振分設定(w2_CsMailAssignSetting.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsMailAssignSetting] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mail_assign_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[assign_priority] [int] NOT NULL DEFAULT (1),
+	[logical_operator] [nvarchar] (10) NOT NULL DEFAULT (N'AND'),
+	[stop_filtering] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[assign_incident_category_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[assign_operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[assign_cs_group_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[assign_importance] [nvarchar] (1) NOT NULL DEFAULT (N''),
+	[assign_status] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[trash] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[auto_response] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[auto_response_from] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[auto_response_cc] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[auto_response_bcc] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[auto_response_subject] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[auto_response_body] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[valid_flg] [nvarchar] (max) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsMailAssignSetting] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsMailAssignSetting] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[mail_assign_id]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : 受信メール振分設定アイテム(w2_CsMailAssignSettingItem.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsMailAssignSettingItem] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mail_assign_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[item_no] [int] NOT NULL DEFAULT (1),
+	[matching_target] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[matching_value] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[matching_type] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[ignore_case] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsMailAssignSettingItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsMailAssignSettingItem] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[mail_assign_id],
+		[item_no]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : メール送信元マスタ(w2_CsMailFrom.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsMailFrom] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mail_from_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[mail_address] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[display_name] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'1'),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsMailFrom] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsMailFrom] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[mail_from_id]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : メール署名マスタ(w2_CsMailSignature.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsMailSignature] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mail_signature_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[signature_title] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[signature_text] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[owner_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'1'),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsMailSignature] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsMailSignature] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[mail_signature_id]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : メッセージマスタ(w2_CsMessage.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsMessage] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[incident_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[message_no] [int] NOT NULL DEFAULT (1),
+	[media_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'TEL'),
+	[direction_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'REC'),
+	[operator_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[inquiry_reply_date] [datetime],
+	[message_status] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[user_name1] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[user_name2] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[user_name_kana1] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[user_name_kana2] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[user_mail_addr] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[user_tel1] [nvarchar] (16) NOT NULL DEFAULT (N''),
+	[inquiry_title] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[inquiry_text] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[reply_text] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[reply_operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[receive_mail_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[send_mail_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsMessage] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsMessage] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[incident_id],
+		[message_no]
+	) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_CsMessage_1] ON [dbo].[w2_CsMessage]([dept_id], [operator_id], [message_status], [valid_flg]) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_CsMessage_2] ON [dbo].[w2_CsMessage]([dept_id], [message_status]) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_CsMessage_3] ON [dbo].[w2_CsMessage]([dept_id], [reply_operator_id]) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : メッセージメール(w2_CsMessageMail.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsMessageMail] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mail_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mail_kbn] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[mail_from] [nvarchar] (512) NOT NULL DEFAULT (N''),
+	[mail_to] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[mail_cc] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[mail_bcc] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[mail_subject] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[mail_body] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[send_operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[send_datetime] [datetime],
+	[receive_datetime] [datetime],
+	[message_id] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[in_reply_to] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsMessageMail] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsMessageMail] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[mail_id]
+	) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_CsMessageMail_1] ON [dbo].[w2_CsMessageMail]([message_id]) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : メッセージメール添付ファイル(w2_CsMessageMailAttachment.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsMessageMailAttachment] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mail_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[file_no] [int] NOT NULL,
+	[file_name] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[file_data] [varbinary] (max) NOT NULL,
+	[date_created] [datetime] NOT NULL DEFAULT (getdate())
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsMessageMailAttachment] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsMessageMailAttachment] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[mail_id],
+		[file_no]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : メッセージメールデータ(w2_CsMessageMailData.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsMessageMailData] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mail_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mail_data] [nvarchar] (max) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsMessageMailData] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsMessageMailData] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[mail_id]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : メッセージ依頼マスタ(w2_CsMessageRequest.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsMessageRequest] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[incident_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[message_no] [int] NOT NULL DEFAULT (1),
+	[request_no] [int] NOT NULL DEFAULT (1),
+	[request_operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[request_status] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[request_type] [nvarchar] (10) NOT NULL,
+	[urgency_flg] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[approval_type] [nvarchar] (10) NOT NULL DEFAULT (N'CONS'),
+	[comment] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[working_operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsMessageRequest] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsMessageRequest] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[incident_id],
+		[message_no],
+		[request_no]
+	) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_CsMessageRequest_1] ON [dbo].[w2_CsMessageRequest]([dept_id], [request_operator_id]) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : メッセージ依頼アイテムマスタ(w2_CsMessageRequestItem.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsMessageRequestItem] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[incident_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[message_no] [int] NOT NULL DEFAULT (1),
+	[request_no] [int] NOT NULL DEFAULT (1),
+	[branch_no] [int] NOT NULL DEFAULT (1),
+	[appr_operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[result_status] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[comment] [nvarchar] (max) NOT NULL,
+	[date_status_changed] [datetime],
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsMessageRequestItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsMessageRequestItem] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[incident_id],
+		[message_no],
+		[request_no],
+		[branch_no]
+	) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_CsMessageRequestItem_1] ON [dbo].[w2_CsMessageRequestItem]([dept_id], [appr_operator_id], [result_status]) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : CSオペレータマスタ(w2_CsOperator.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsOperator] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[operator_authority_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[mail_from_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[notify_info_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[notify_warn_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[mail_addr] [nvarchar] (256) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsOperator] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsOperator] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[operator_id]
+	) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_CsOperator_1] ON [dbo].[w2_CsOperator]([display_order]) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : CSオペレータ権限マスタ(w2_CsOperatorAuthority.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsOperatorAuthority] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[operator_authority_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[operator_authority_name] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[permit_edit_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[permit_mail_send_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[permit_approval_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[permit_unlock_flg] [nvarchar] (1) NOT NULL DEFAULT (N''),
+	[permit_edit_signature_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[receive_no_assign_warning_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsOperatorAuthority] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsOperatorAuthority] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[operator_authority_id]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : CSオペレータ所属グループ(w2_CsOperatorGroup.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsOperatorGroup] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[cs_group_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsOperatorGroup] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsOperatorGroup] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[cs_group_id],
+		[operator_id]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : 共有情報マスタ(w2_CsShareInfo.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsShareInfo] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[info_no] [bigint] NOT NULL DEFAULT (1),
+	[info_text_kbn] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[info_text] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[info_kbn] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[info_importance] [int] NOT NULL DEFAULT (3),
+	[sender] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsShareInfo] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsShareInfo] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[info_no]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : 共有情報既読管理マスタ(w2_CsShareInfoRead.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsShareInfoRead] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[info_no] [bigint] NOT NULL DEFAULT (1),
+	[operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[read_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[pinned_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsShareInfoRead] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsShareInfoRead] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[info_no],
+		[operator_id]
+	) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_CsShareInfoRead_1] ON [dbo].[w2_CsShareInfoRead]([operator_id], [read_flg]) ON [PRIMARY]
+GO
+
+CREATE INDEX [IX_w2_CsShareInfoRead_2] ON [dbo].[w2_CsShareInfoRead]([operator_id], [pinned_flg]) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : 集計区分マスタ(w2_CsSummarySetting.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsSummarySetting] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[summary_setting_no] [int] NOT NULL DEFAULT (1),
+	[summary_setting_title] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[summary_setting_type] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'1'),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsSummarySetting] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsSummarySetting] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[summary_setting_no]
+	) ON [PRIMARY]
+GO
+
+/*
+=========================================================================================================
+  Module      : 集計区分アイテムマスタ(w2_CsSummarySettingItem.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CsSummarySettingItem] (
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[summary_setting_no] [int] NOT NULL DEFAULT (1),
+	[summary_setting_item_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[summary_setting_item_text] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'1'),
+	[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_CsSummarySettingItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CsSummarySettingItem] PRIMARY KEY  CLUSTERED
+	(
+		[dept_id],
+		[summary_setting_no],
+		[summary_setting_item_id]
+	) ON [PRIMARY]
+GO
+
+
+
+
+
+INSERT [w2_CsMailAssignSetting] ([dept_id], [mail_assign_id], [assign_priority], [logical_operator], [stop_filtering], [assign_incident_category_id], [assign_operator_id], [assign_cs_group_id], [assign_importance], [assign_status], [trash], [valid_flg], [date_created], [date_changed], [last_changed]) VALUES (N'0', N'000', 0, N'AND', N'1', N'', N'', N'', N'', N'', N'0', N'1', GETDATE(), GETDATE(), N'initial')
+INSERT [w2_CsMailAssignSetting] ([dept_id], [mail_assign_id], [assign_priority], [logical_operator], [stop_filtering], [assign_incident_category_id], [assign_operator_id], [assign_cs_group_id], [assign_importance], [assign_status], [trash], [valid_flg], [date_created], [date_changed], [last_changed]) VALUES (N'0', N'001', 1000, N'AND', N'1', N'', N'', N'', N'', N'', N'0', N'1', GETDATE(), GETDATE(), N'initial')
+INSERT [w2_CsMailAssignSettingItem] ([dept_id], [mail_assign_id], [item_no], [matching_target], [matching_value], [matching_type], [ignore_case], [date_created], [date_changed], [last_changed]) VALUES (N'0', N'000', 1, N'1', N'', N'1', N'1', GETDATE(), GETDATE(), N'initial')
+INSERT [w2_CsMailAssignSettingItem] ([dept_id], [mail_assign_id], [item_no], [matching_target], [matching_value], [matching_type], [ignore_case], [date_created], [date_changed], [last_changed]) VALUES (N'0', N'001', 1, N'1', N'', N'1', N'1', GETDATE(), GETDATE(), N'initial')
+
+INSERT [w2_CsMailFrom] ([dept_id], [mail_from_id], [mail_address], [display_name], [display_order], [valid_flg], [del_flg], [date_created], [date_changed], [last_changed]) 
+VALUES (N'0', N'001', N'pkg-cstest@w2solution.co.jp', N'CSテストアドレス（共用）', 1, N'1', N'0', GETDATE(), GETDATE(), N'initialize')
+
+INSERT [w2_CsOperatorAuthority] ([dept_id], [operator_authority_id], [operator_authority_name], [permit_mail_send_flg], [permit_approval_flg], [permit_edit_flg], [permit_unlock_flg], [permit_edit_signature_flg], [receive_no_assign_warning_flg], [date_created], [date_changed], [last_changed]) 
+VALUES (N'0', N'0000000001', N'スーパーユーザー', N'1', N'1', N'1', N'1', N'1', N'1', GETDATE(), GETDATE(), N'migration')
+
+INSERT [w2_CsOperator] ([dept_id], [operator_id], [operator_authority_id], [mail_from_id], [notify_info_flg], [notify_warn_flg], [mail_addr], [display_order], [date_created], [date_changed], [last_changed]) 
+VALUES (N'0', N'0000000001', N'0000000001', N'', N'1', N'1', N'ochiai@w2solution.co.jp', 1, GETDATE(), GETDATE(), N'migration')
+
+
+
+
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

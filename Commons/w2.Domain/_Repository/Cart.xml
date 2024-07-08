@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : カート系SQLステートメントXML(Cart.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+-->
+<Cart>
+
+  <!-- 商品削除チェック処理 -->
+  <GetProductForDeleteCheck>
+    <Statement>
+      <![CDATA[
+        -- 有効フラグが無効になったもの、モバイルフラグで非表示になったものも
+        -- 削除済みであると認識する。
+  
+        SELECT  w2_Cart.*,
+                w2_Product.name
+          FROM  w2_Cart
+                INNER JOIN w2_Product ON
+                (
+                  w2_Cart.shop_id  = w2_Product.shop_id
+                  AND
+                  w2_Cart.product_id = w2_Product.product_id
+                  AND
+                  w2_Product.mobile_disp_flg IN ('0','1') -- PC&モバイル OR PCのみ
+                  AND
+                  w2_Product.valid_flg = '1'
+                )
+         WHERE  w2_Cart.cart_id = @cart_id
+           AND  w2_Cart.product_set_id = '' -- セット商品以外
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+    </Parameter>
+  </GetProductForDeleteCheck>
+
+</Cart>

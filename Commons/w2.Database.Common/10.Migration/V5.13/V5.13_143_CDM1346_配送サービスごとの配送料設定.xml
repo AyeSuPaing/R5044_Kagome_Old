@@ -1,0 +1,377 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+--========w2_ShopShippingZone=========--
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_ShopShippingZone' AND column_name = 'delivery_company_id')
+BEGIN
+	ALTER TABLE [w2_ShopShippingZone] ADD [delivery_company_id] [nvarchar] (10) NOT NULL DEFAULT (N'');
+
+	/*主キー削除 */
+	ALTER TABLE [dbo].[w2_ShopShippingZone] DROP CONSTRAINT [PK_w2_ShopShippingZone];
+
+	/*主キー作成 */
+	ALTER TABLE [dbo].[w2_ShopShippingZone] WITH NOCHECK ADD
+		CONSTRAINT [PK_w2_ShopShippingZone] PRIMARY KEY  CLUSTERED
+		(
+			[shop_id],
+			[shipping_id],
+			[delivery_company_id],
+			[shipping_zone_no]
+		) ON [PRIMARY]
+
+	/* 一時テーブル作成 */
+	IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id = object_id(N'[dbo].[tmp_ShopShippingZone]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+		DROP TABLE [dbo].[tmp_ShopShippingZone]
+
+	CREATE TABLE [dbo].[tmp_ShopShippingZone] (
+		[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+		[shipping_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+		[delivery_company_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+		[shipping_zone_no] [int] NOT NULL DEFAULT (N'0'),
+		[shipping_zone_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+		[zip] [ntext] NOT NULL DEFAULT (N''),
+		[size_xxs_shipping_price] [decimal] (18,3) NOT NULL DEFAULT (0),
+		[size_xs_shipping_price] [decimal] (18,3) NOT NULL DEFAULT (0),
+		[size_s_shipping_price] [decimal] (18,3) NOT NULL DEFAULT (0),
+		[size_m_shipping_price] [decimal] (18,3) NOT NULL DEFAULT (0),
+		[size_l_shipping_price] [decimal] (18,3) NOT NULL DEFAULT (0),
+		[size_xl_shipping_price] [decimal] (18,3) NOT NULL DEFAULT (0),
+		[size_xxl_shipping_price] [decimal] (18,3) NOT NULL DEFAULT (0),
+		[del_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+		[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+		[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+		[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N''),
+		[size_mail_shipping_price] [decimal] NOT NULL DEFAULT (0)
+	) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+	ALTER TABLE [dbo].[tmp_ShopShippingZone] WITH NOCHECK ADD
+		CONSTRAINT [PK_tmp_ShopShippingZone] PRIMARY KEY  CLUSTERED
+		(
+			[shop_id],
+			[shipping_id],
+			[delivery_company_id],
+			[shipping_zone_no]
+		) ON [PRIMARY]
+
+	/*一時テーブルにデータ追加*/
+	DECLARE @shipping_id NVARCHAR(10)
+	DECLARE @delivery_company_id NVARCHAR(10)
+
+	DECLARE cur CURSOR FOR
+		SELECT DISTINCT shipping_id, delivery_company_id
+		FROM w2_ShopShippingCompany
+
+	OPEN cur
+	FETCH NEXT FROM cur
+	INTO @shipping_id, @delivery_company_id
+
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		INSERT INTO tmp_ShopShippingZone
+		(
+			shop_id
+			,shipping_id
+			,delivery_company_id
+			,shipping_zone_no
+			,shipping_zone_name
+			,zip
+			,size_xxs_shipping_price
+			,size_xs_shipping_price
+			,size_s_shipping_price
+			,size_m_shipping_price
+			,size_l_shipping_price
+			,size_xl_shipping_price
+			,size_xxl_shipping_price
+			,del_flg
+			,date_created
+			,date_changed
+			,last_changed
+			,size_mail_shipping_price
+		)
+		SELECT
+			shop_id
+			,shipping_id
+			,@delivery_company_id
+			,shipping_zone_no
+			,shipping_zone_name
+			,zip
+			,size_xxs_shipping_price
+			,size_xs_shipping_price
+			,size_s_shipping_price
+			,size_m_shipping_price
+			,size_l_shipping_price
+			,size_xl_shipping_price
+			,size_xxl_shipping_price
+			,del_flg
+			,date_created
+			,date_changed
+			,last_changed
+			,size_mail_shipping_price
+		FROM w2_ShopShippingZone
+		WHERE shipping_id = @shipping_id
+
+		FETCH NEXT FROM cur
+		INTO @shipping_id, @delivery_company_id
+	END
+	CLOSE cur
+	DEALLOCATE cur
+
+	/* 店舗配送料地帯データ補正 */
+	TRUNCATE TABLE w2_ShopShippingZone
+	INSERT INTO w2_ShopShippingZone
+	(
+		shop_id
+		,shipping_id
+		,delivery_company_id
+		,shipping_zone_no
+		,shipping_zone_name
+		,zip
+		,size_xxs_shipping_price
+		,size_xs_shipping_price
+		,size_s_shipping_price
+		,size_m_shipping_price
+		,size_l_shipping_price
+		,size_xl_shipping_price
+		,size_xxl_shipping_price
+		,del_flg
+		,date_created
+		,date_changed
+		,last_changed
+		,size_mail_shipping_price
+	)
+	SELECT
+		shop_id
+		,shipping_id
+		,delivery_company_id
+		,shipping_zone_no
+		,shipping_zone_name
+		,zip
+		,size_xxs_shipping_price
+		,size_xs_shipping_price
+		,size_s_shipping_price
+		,size_m_shipping_price
+		,size_l_shipping_price
+		,size_xl_shipping_price
+		,size_xxl_shipping_price
+		,del_flg
+		,date_created
+		,date_changed
+		,last_changed
+		,size_mail_shipping_price
+	FROM tmp_ShopShippingZone
+
+	/* 一時テーブル削除 */
+	DROP TABLE tmp_ShopShippingZone
+
+END
+GO
+
+--========w2_GlobalShippingPostage=========--
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_GlobalShippingPostage' AND column_name = 'delivery_company_id')
+BEGIN
+	ALTER TABLE [w2_GlobalShippingPostage] ADD [delivery_company_id] [nvarchar] (10) NOT NULL DEFAULT (N'');
+
+	/*インデックス削除 */
+	DROP INDEX [dbo].[w2_GlobalShippingPostage].[IX_w2_GlobalShippingPostage_1]; 
+
+	/*インデックス作成 */
+	CREATE INDEX [IX_w2_GlobalShippingPostage_1] ON [dbo].[w2_GlobalShippingPostage]
+		(
+			[shop_id],
+			[shipping_id],
+			[delivery_company_id],
+			[global_shipping_area_id]
+		) ON [PRIMARY]
+
+	/* 一時テーブル作成 */
+	IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id = object_id(N'[dbo].[tmp_GlobalShippingPostage]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+		DROP TABLE [dbo].[tmp_GlobalShippingPostage]
+
+	CREATE TABLE [dbo].[tmp_GlobalShippingPostage] (
+		[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+		[shipping_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+		[delivery_company_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+		[global_shipping_area_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+		[weight_gram_greater_than_or_equal_to] [bigint] NOT NULL DEFAULT (0),
+		[weight_gram_less_than] [bigint] NOT NULL DEFAULT (0),
+		[global_shipping_postage] [decimal] (18,3) NOT NULL DEFAULT (0),
+		[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+		[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+		[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+	) ON [PRIMARY]
+
+	CREATE INDEX [IX_tmp_GlobalShippingPostage_1] ON [dbo].[tmp_GlobalShippingPostage]([shop_id], [shipping_id], [delivery_company_id], [global_shipping_area_id]) ON [PRIMARY]
+
+	/*一時テーブルにデータ追加*/
+	DECLARE @shipping_id NVARCHAR(10)
+	DECLARE @delivery_company_id NVARCHAR(10)
+
+	DECLARE cur CURSOR FOR
+		SELECT DISTINCT shipping_id, delivery_company_id
+		FROM w2_ShopShippingCompany
+
+	OPEN cur
+	FETCH NEXT FROM cur
+	INTO @shipping_id, @delivery_company_id
+
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		INSERT INTO tmp_GlobalShippingPostage
+		(
+			shop_id
+			,shipping_id
+			,delivery_company_id
+			,global_shipping_area_id
+			,weight_gram_greater_than_or_equal_to
+			,weight_gram_less_than
+			,global_shipping_postage
+			,date_created
+			,date_changed
+			,last_changed
+		)
+		SELECT
+			shop_id
+			,shipping_id
+			,@delivery_company_id
+			,global_shipping_area_id
+			,weight_gram_greater_than_or_equal_to
+			,weight_gram_less_than
+			,global_shipping_postage
+			,date_created
+			,date_changed
+			,last_changed
+		FROM w2_GlobalShippingPostage
+		WHERE shipping_id = @shipping_id
+
+		FETCH NEXT FROM cur
+		INTO @shipping_id, @delivery_company_id
+	END
+	CLOSE cur
+	DEALLOCATE cur
+
+	/* 海外配送料金表データ補正 */
+	TRUNCATE TABLE w2_GlobalShippingPostage
+	INSERT INTO w2_GlobalShippingPostage
+	(
+		shop_id
+		,shipping_id
+		,delivery_company_id
+		,global_shipping_area_id
+		,weight_gram_greater_than_or_equal_to
+		,weight_gram_less_than
+		,global_shipping_postage
+		,date_created
+		,date_changed
+		,last_changed
+	)
+	SELECT
+		shop_id
+		,shipping_id
+		,delivery_company_id
+		,global_shipping_area_id
+		,weight_gram_greater_than_or_equal_to
+		,weight_gram_less_than
+		,global_shipping_postage
+		,date_created
+		,date_changed
+		,last_changed
+	FROM tmp_GlobalShippingPostage
+
+	/* 一時テーブル削除 */
+	DROP TABLE tmp_GlobalShippingPostage
+
+END
+GO
+
+--========w2_ShippingDeliveryPostage=========--
+IF NOT EXISTS (SELECT * FROM dbo.sysobjects WHERE id = object_id(N'[dbo].[w2_ShippingDeliveryPostage]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+BEGIN
+	/*
+	=========================================================================================================
+	  Module      : 配送料マスタ(w2_ShippingDeliveryPostage.sql)
+	 ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+	  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+	=========================================================================================================
+	*/
+	CREATE TABLE [dbo].[w2_ShippingDeliveryPostage] (
+		[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+		[shipping_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+		[delivery_company_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+		[shipping_price_kbn] [nvarchar] (2) NOT NULL DEFAULT (N'0'),
+		[shipping_free_price_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+		[shipping_free_price] [decimal] (18,3),
+		[announce_free_shipping_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+		[calculation_plural_kbn] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+		[plural_shipping_price] [decimal] (18,3),
+		[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+		[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+		[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+	) ON [PRIMARY]
+
+	ALTER TABLE [dbo].[w2_ShippingDeliveryPostage] WITH NOCHECK ADD
+		CONSTRAINT [PK_w2_ShippingDeliveryPostage] PRIMARY KEY  CLUSTERED
+		(
+			[shop_id],
+			[shipping_id],
+			[delivery_company_id]
+		) ON [PRIMARY]
+
+	/*配送料マスタテーブルにデータ追加*/
+	DECLARE @shipping_id NVARCHAR(10)
+	DECLARE @delivery_company_id NVARCHAR(10)
+
+	DECLARE cur CURSOR FOR
+		SELECT DISTINCT shipping_id, delivery_company_id
+		FROM w2_ShopShippingCompany
+
+	OPEN cur
+	FETCH NEXT FROM cur
+	INTO @shipping_id, @delivery_company_id
+
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		INSERT INTO w2_ShippingDeliveryPostage
+		(
+			shop_id
+			,shipping_id
+			,delivery_company_id
+			,shipping_price_kbn
+			,shipping_free_price_flg
+			,shipping_free_price
+			,announce_free_shipping_flg
+			,calculation_plural_kbn
+			,plural_shipping_price
+			,date_created
+			,date_changed
+			,last_changed
+		)
+		SELECT
+			shop_id
+			,shipping_id
+			,@delivery_company_id
+			,shipping_price_kbn
+			,shipping_free_price_flg
+			,shipping_free_price
+			,announce_free_shipping_flg
+			,calculation_plural_kbn
+			,plural_shipping_price
+			,date_created
+			,date_changed
+			,last_changed
+		FROM w2_ShopShipping
+		WHERE shipping_id = @shipping_id
+
+		FETCH NEXT FROM cur
+		INTO @shipping_id, @delivery_company_id
+	END
+	CLOSE cur
+	DEALLOCATE cur
+
+END
+GO
+		]]>
+    </Statement>
+  </Up>
+</Migration>

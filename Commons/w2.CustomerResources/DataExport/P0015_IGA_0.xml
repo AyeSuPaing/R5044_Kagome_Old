@@ -1,0 +1,789 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ExportData>
+  <!-- 出力情報取得SQL -->
+  <export>
+    <statement>
+      <![CDATA[
+        -- 出力用データ
+        SELECT  w2_Order.*,
+                w2_OrderShipping.shipping_name,
+                w2_OrderShipping.shipping_tel1,
+                REPLACE(w2_OrderShipping.shipping_zip, '-', '') AS shipping_zip,
+                substring(w2_OrderShipping.shipping_addr1 + w2_OrderShipping.shipping_addr2 + w2_OrderShipping.shipping_addr3 + w2_OrderShipping.shipping_addr4,1,16) as shipping_addr1,
+                substring(w2_OrderShipping.shipping_addr1 + w2_OrderShipping.shipping_addr2 + w2_OrderShipping.shipping_addr3 + w2_OrderShipping.shipping_addr4,17,16) as shipping_addr2,
+                substring(w2_OrderShipping.shipping_addr1 + w2_OrderShipping.shipping_addr2 + w2_OrderShipping.shipping_addr3 + w2_OrderShipping.shipping_addr4,33,16) as shipping_addr3,
+                w2_OrderShipping.shipping_date,
+                w2_OrderShipping.shipping_time,
+                w2_OrderOwner.owner_name,
+                w2_OrderOwner.owner_tel1,
+                REPLACE(w2_OrderOwner.owner_zip, '-', '') AS owner_zip,
+                substring(w2_OrderOwner.owner_addr1 + w2_OrderOwner.owner_addr2 + w2_OrderOwner.owner_addr3 + w2_OrderOwner.owner_addr4,1,16) as owner_addr1,
+                substring(w2_OrderOwner.owner_addr1 + w2_OrderOwner.owner_addr2 + w2_OrderOwner.owner_addr3 + w2_OrderOwner.owner_addr4,17,16) as owner_addr2,
+                substring(w2_OrderOwner.owner_addr1 + w2_OrderOwner.owner_addr2 + w2_OrderOwner.owner_addr3 + w2_OrderOwner.owner_addr4,33,16) as owner_addr3,
+                w2_OrderItem.*,
+                w2_PaymentPrice.payment_price,
+                w2_ShopShipping.*,
+                '00' + RIGHT(w2_Order.order_id, 5) AS receipt_no,
+                w2_Order.order_payment_kbn AS package_size,
+                w2_ProductView.variation_cooperation_id1 AS jan_code,
+                w2_ProductView.variation_name1,
+                w2_ProductView.variation_name2,
+                w2_ProductView.desc_detail3 AS category_code,
+                w2_ProductView.desc_detail4 AS item_code,
+                getdate() AS picking_date,
+                CAST(ABS(CAST(w2_OrderItem.product_price AS MONEY) / (1 + w2_OrderItem.product_tax_rate / 100)) AS DECIMAL) AS price_without_vat, -- 税抜商品単価
+                w2_OrderItem.product_price * w2_OrderItem.item_quantity AS invoice_price, -- 税込商品小計
+                CAST(ABS(CAST(w2_OrderItem.product_price AS MONEY) / (1 + w2_OrderItem.product_tax_rate / 100)) AS DECIMAL) * w2_OrderItem.item_quantity AS invoice_price_without_vat, -- 税抜商品小計
+                '' As vat_per_order,
+                w2_Order.order_payment_kbn AS collect_price,
+                w2_Order.order_payment_kbn AS payment_kbn,
+                
+                -- 以下はデフォルト値を固定で使用するため、名前のみ定義する
+                '' AS shipping_no,
+                '' AS dest_addr_code,
+                '' AS dest_code,
+                '' AS dest_department1,
+                '' AS dest_department2,
+                '' AS src_code,
+                '' AS src_department1,
+                '' AS src_department2,
+                '' AS yamato_cust_code,
+                '' AS yamato_cust_code2,
+                '' AS assertion1,
+                '' AS assertion2,
+                '' AS assertion3,
+                '' AS cool_kbn,
+                '' AS product_code1,
+                '' AS product_code2,
+                '' AS product_name2,
+                '' AS shipping_num,
+                '' AS shipping_kbn,
+                '' AS date_created,
+                '' AS FILLER,
+                '' AS gift_flg,
+                '' AS store_code,
+                '' AS noshi_flg,
+                '' AS black_name,
+                '' AS charge_code,
+                '' AS return_flg,
+                '' AS invoice_price,
+                '' AS invoice_price_without_tax,
+                '' AS image_flg,
+                '' AS shipping_memo
+          FROM  w2_Order
+    INNER JOIN  ##order_id ON (w2_Order.order_id = ##order_id.order_id)
+    INNER JOIN  w2_OrderOwner ON (w2_Order.order_id = w2_OrderOwner.order_id)
+    INNER JOIN  w2_OrderShipping ON (w2_Order.order_id = w2_OrderShipping.order_id)
+    INNER JOIN  w2_OrderItem ON (w2_Order.order_id = w2_OrderItem.order_id )
+    INNER JOIN  w2_PaymentPrice ON (w2_Order.shop_id = w2_PaymentPrice.shop_id AND w2_Order.order_payment_kbn = w2_PaymentPrice.payment_id)
+    INNER JOIN  w2_ShopShipping ON (w2_Order.shop_id = w2_ShopShipping.shop_id AND w2_Order.shipping_id = w2_ShopShipping.shipping_id)
+    INNER JOIN  w2_ProductView ON (w2_Order.shop_id = w2_ProductView.shop_id AND w2_OrderItem.product_id = w2_ProductView.product_id AND w2_OrderItem.variation_id = w2_ProductView.variation_id)
+      ORDER BY  w2_Order.order_id
+      ]]>
+    </statement>
+    <Parameter>
+    </Parameter>
+  </export>
+  
+  <!-- 出力設定 -->
+  <export_format>
+    <!-- 運送依頼番号 -->
+    <field>
+      <name>order_id</name>
+      <data_type>varchar</data_type>
+      <data_size>20</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 運送送り状番号 -->
+    <field>
+      <name>shipping_no</name>
+      <data_type>varchar</data_type>
+      <data_size>12</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 集荷希望日 -->
+    <field>
+      <name>picking_date</name>
+      <data_type>date_iga</data_type>
+      <data_size>8</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷受人住所ｺｰﾄﾞ -->
+    <field>
+      <name>dest_addr_code</name>
+      <data_type>varchar</data_type>
+      <data_size>5</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷受人ｺｰﾄﾞ -->
+    <field>
+      <name>dest_code</name>
+      <data_type>varchar</data_type>
+      <data_size>17</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷受人名(漢字） -->
+    <field>
+      <name>shipping_name</name>
+      <data_type>varchar</data_type>
+      <data_size>30</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷受人電話番号 -->
+    <field>
+      <name>shipping_tel1</name>
+      <data_type>varchar</data_type>
+      <data_size>15</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷受人郵便番号 -->
+    <field>
+      <name>shipping_zip</name>
+      <data_type>varchar</data_type>
+      <data_size>7</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷受人住所(漢字）１ -->
+    <field>
+      <name>shipping_addr1</name>
+      <data_type>varchar</data_type>
+      <data_size>32</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷受人住所(漢字）２ -->
+    <field>
+      <name>shipping_addr2</name>
+      <data_type>rigidchar</data_type>
+      <data_size>32</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷受人住所（漢字）３ -->
+    <field>
+      <name>shipping_addr3</name>
+      <data_type>rigidchar</data_type>
+      <data_size>32</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷受人部門名１ -->
+    <field>
+      <name>dest_department1</name>
+      <data_type>varchar</data_type>
+      <data_size>50</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷受人部門名２ -->
+    <field>
+      <name>dest_department2</name>
+      <data_type>varchar</data_type>
+      <data_size>50</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷送人ｺｰﾄﾞ -->
+    <field>
+      <name>src_code</name>
+      <data_type>varchar</data_type>
+      <data_size>17</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷送人名(漢字） -->
+    <field>
+      <name>owner_name</name>
+      <data_type>varchar</data_type>
+      <data_size>30</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷送人電話番号 -->
+    <field>
+      <name>owner_tel1</name>
+      <data_type>varchar</data_type>
+      <data_size>15</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷送人郵便番号 -->
+    <field>
+      <name>owner_zip</name>
+      <data_type>varchar</data_type>
+      <data_size>7</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷送人住所（漢字）１ -->
+    <field>
+      <name>owner_addr1</name>
+      <data_type>varchar</data_type>
+      <data_size>32</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷送人住所（漢字）2 -->
+    <field>
+      <name>owner_addr2</name>
+      <data_type>rigidchar</data_type>
+      <data_size>32</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷送人住所（漢字）3 -->
+    <field>
+      <name>owner_addr3</name>
+      <data_type>rigidchar</data_type>
+      <data_size>32</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷送人部門名１ -->
+    <field>
+      <name>src_department1</name>
+      <data_type>varchar</data_type>
+      <data_size>50</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷送人部門名2 -->
+    <field>
+      <name>src_department2</name>
+      <data_type>varchar</data_type>
+      <data_size>50</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 運賃請求先コード1 -->
+    <field>
+      <name>yamato_cust_code</name>
+      <data_type>varchar</data_type>
+      <data_size>12</data_size>
+      <default>077823320060</default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 運賃請求先コード2 -->
+    <field>
+      <name>yamato_cust_code2</name>
+      <data_type>varchar</data_type>
+      <data_size>3</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷物取扱条件１ -->
+    <field>
+      <name>assertion1</name>
+      <data_type>varchar</data_type>
+      <data_size>1</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 荷物取扱条件２ -->
+    <field>
+      <name>assertion2</name>
+      <data_type>varchar</data_type>
+      <data_size>1</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 配達付帯作業(漢字） -->
+    <field>
+      <name>assertion3</name>
+      <data_type>varchar</data_type>
+      <data_size>30</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 品代金 -->
+    <field>
+      <name>collect_price</name>
+      <data_type></data_type>
+      <data_size>7</data_size>
+      <default></default>
+      <conversion_table>collect_price</conversion_table>
+    </field>
+
+    <!-- 保管温度区分 -->
+    <field>
+      <name>cool_kbn</name>
+      <data_type>varchar</data_type>
+      <data_size>1</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 運送品標記用品名ｺｰﾄﾞ１ -->
+    <field>
+      <name>product_code1</name>
+      <data_type>varchar</data_type>
+      <data_size>30</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 商品名１(漢字） -->
+    <field>
+      <name>product_name</name>
+      <data_type>rigidchar</data_type>
+      <data_size>60</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 運送品標記用品名ｺｰﾄﾞ２ -->
+    <field>
+      <name>product_code2</name>
+      <data_type>varchar</data_type>
+      <data_size>30</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 商品名２(漢字） -->
+    <field>
+      <name>product_name2</name>
+      <data_type>rigidchar</data_type>
+      <data_size>60</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 記述式運送梱包寸法 -->
+    <field>
+      <name>package_size</name>
+      <data_type>varchar</data_type>
+      <data_size>4</data_size>
+      <default></default>
+      <conversion_table>package_size</conversion_table>
+    </field>
+
+    <!-- 着荷指定日 -->
+    <field>
+      <name>shipping_date</name>
+      <data_type>date_iga</data_type>
+      <data_size>8</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 着荷指定時刻条件 -->
+    <field>
+      <name>shipping_time</name>
+      <data_type>num02cnv</data_type>
+      <data_size>2</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 個数(依頼） -->
+    <field>
+      <name>shipping_num</name>
+      <data_type>varchar</data_type>
+      <data_size>3</data_size>
+      <default>1</default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 出荷区分 -->
+    <field>
+      <name>shipping_kbn</name>
+      <data_type>varchar</data_type>
+      <data_size>1</data_size>
+      <default>0</default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- データ作成日 -->
+    <field>
+      <name>date_created</name>
+      <data_type>date_iga</data_type>
+      <data_size>8</data_size>
+      <default>${DATE}</default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- FILLER -->
+    <field>
+      <name>FILLER</name>
+      <data_type>varchar</data_type>
+      <data_size>25</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 受注番号 -->
+    <field>
+      <name>order_id</name>
+      <data_type>varchar</data_type>
+      <data_size>20</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 受注枝番（行№） -->
+    <field>
+      <name>order_item_no</name>
+      <data_type>order_item_no</data_type>
+      <data_size>7</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- ギフトフラグ -->
+    <field>
+      <name>gift_flg</name>
+      <data_type>varchar</data_type>
+      <data_size>1</data_size>
+      <default>0</default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 店舗コード -->
+    <field>
+      <name>store_code</name>
+      <data_type>varchar</data_type>
+      <data_size>3</data_size>
+      <default>801</default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- のしフラグ -->
+    <field>
+      <name>noshi_flg</name>
+      <data_type>varchar</data_type>
+      <data_size>1</data_size>
+      <default>0</default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 商品合計(税込) -->
+    <field>
+      <name>order_price_subtotal</name>
+      <data_type>numeric</data_type>
+      <data_size>20</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- ブラック顧客表記名（漢字） -->
+    <field>
+      <name>black_name</name>
+      <data_type>varchar</data_type>
+      <data_size>50</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 色（漢字） -->
+    <field>
+      <name>variation_name1</name>
+      <data_type>varchar</data_type>
+      <data_size>30</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- サイズ（漢字） -->
+    <field>
+      <name>variation_name2</name>
+      <data_type>varchar</data_type>
+      <data_size>30</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 送料合計 -->
+    <field>
+      <name>order_price_shipping</name>
+      <data_type>numeric</data_type>
+      <data_size>30</data_size>
+      <default>0</default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 担当者コード -->
+    <field>
+      <name>charge_code</name>
+      <data_type>varchar</data_type>
+      <data_size>3</data_size>
+      <default>801</default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- レシート -->
+    <field>
+      <name>receipt_no</name>
+      <data_type>varchar</data_type>
+      <data_size>7</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 受注or返品フラグ -->
+    <field>
+      <name>return_flg</name>
+      <data_type>varchar</data_type>
+      <data_size>1</data_size>
+      <default>1</default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 受注日or返品日 -->
+    <field>
+      <name>order_date</name>
+      <data_type>date_iga</data_type>
+      <data_size>8</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 決済手数料 -->
+    <field>
+      <name>payment_price</name>
+      <data_type>numeric</data_type>
+      <data_size>8</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 商品コード -->
+    <field>
+      <name>jan_code</name>
+      <data_type>varchar</data_type>
+      <data_size>13</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- カテゴリコード -->
+    <field>
+      <name>category_code</name>
+      <data_type>varchar</data_type>
+      <data_size>3</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- アイテムコード -->
+    <field>
+      <name>item_code</name>
+      <data_type>varchar</data_type>
+      <data_size>3</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 商品型番 -->
+    <field>
+      <name>product_id</name>
+      <data_type>varchar</data_type>
+      <data_size>20</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 商品名 -->
+    <field>
+      <name>product_name</name>
+      <data_type>rigidchar</data_type>
+      <data_size>60</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 税込単価 -->
+    <field>
+      <name>product_price</name>
+      <data_type>numeric</data_type>
+      <data_size>7</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 税抜単価 -->
+    <field>
+      <name>price_without_vat</name>
+      <data_type>numeric</data_type>
+      <data_size>7</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 数量 -->
+    <field>
+      <name>item_quantity</name>
+      <data_type>numeric</data_type>
+      <data_size>4</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 値引き額 -->
+    <field>
+      <name>order_point_use_yen</name>
+      <data_type>minuscnv</data_type>
+      <data_size>10</data_size>
+      <default></default>
+      <conversion_table>order_point_use</conversion_table>
+    </field>
+
+    <!-- 税込金額 -->
+    <field>
+      <name>invoice_price</name>
+      <data_type>numeric</data_type>
+      <data_size>7</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 税抜金額 -->
+    <field>
+      <name>invoice_price_without_vat</name>
+      <data_type>numeric</data_type>
+      <data_size>7</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 消費税 -->
+    <field>
+      <name>vat_per_order</name>
+      <data_type>numeric</data_type>
+      <data_size>1</data_size>
+      <default>0</default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 合計金額 -->
+    <field>
+      <name>order_price_total</name>
+      <data_type>numeric</data_type>
+      <data_size>6</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 備考（漢字） -->
+    <field>
+      <name>memo</name>
+      <data_type>crlfcnv</data_type>
+      <data_size>1024</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- IMAGEフラグ -->
+    <field>
+      <name>image_flg</name>
+      <data_type>varchar</data_type>
+      <data_size>1</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 支払い方法 -->
+    <field>
+      <name>payment_kbn</name>
+      <data_type>varchar</data_type>
+      <data_size>20</data_size>
+      <default></default>
+      <conversion_table>payment_kbn</conversion_table>
+    </field>
+
+    <!-- 使用ポイント数 -->
+    <field>
+      <name>order_point_use</name>
+      <data_type>varchar</data_type>
+      <data_size>6</data_size>
+      <default></default>
+      <conversion_table>order_point_use</conversion_table>
+    </field>
+
+    <!-- 配送メモ（漢字） -->
+    <field>
+      <name>shipping_memo</name>
+      <data_type>varchar</data_type>
+      <data_size>160</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+
+    <!-- 時間 -->
+    <field>
+      <name>order_date</name>
+      <data_type>time</data_type>
+      <data_size>4</data_size>
+      <default></default>
+      <conversion_table></conversion_table>
+    </field>
+  </export_format>
+  
+  <!-- 変換テーブル -->
+  <conversion_table>
+    <!-- 代引き金額 -->
+    <collect_price>
+      <!-- 代引き -->
+      <Value text="${order_price_total}" value="K20"></Value>
+      <!-- ※代引き時以外は、空文字を設定する -->
+      <Value text="" value="" default="true"></Value>
+    </collect_price>
+    
+    <!-- 記述式運送梱包寸法 -->
+    <package_size>
+      <Value text="0101" value="K10"></Value><!-- クレジット -->
+      <Value text="0401" value="K20"></Value><!-- 代引き -->
+      <Value text="" value="" default="true"></Value><!-- その他 -->
+    </package_size>
+    
+    <!-- 支払方法 -->
+    <payment_kbn>
+      <Value text="クレジット決済" value="K10"></Value>
+      <Value text="代金引換" value="K20"></Value>
+      <Value text="決済なし" value="K90"></Value>
+      <Value text="" value="" default="true"></Value><!-- その他 -->
+    </payment_kbn>
+
+    <!-- 使用ポイント数 -->
+    <order_point_use>
+      <!-- 使用ポイント数が0の時は空白、それ以外ならその値を直接使う -->
+      <Value text="" value="0"></Value>
+      <Value text="${VALUE}" value="" default="true"></Value>
+    </order_point_use>
+  </conversion_table>
+</ExportData>

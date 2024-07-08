@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+    UPDATE  w2_OrderOwner
+       SET  w2_OrderOwner.owner_mail_addr2 = w2_OrderOwner.owner_mail_addr
+      FROM  w2_OrderOwner
+INNER JOIN  w2_Order  ON (
+          w2_Order.order_id = w2_OrderOwner.order_id
+        )
+INNER JOIN  w2_User  ON (
+              w2_Order.user_id = w2_User.user_id
+            )
+     WHERE  (
+              w2_User.user_kbn = 'MB_USER'
+              OR  w2_User.user_kbn = 'MB_GUEST'
+            )
+            AND
+            (
+              w2_OrderOwner.owner_mail_addr <> ''
+            )
+
+    UPDATE  w2_OrderOwner
+       SET  w2_OrderOwner.owner_mail_addr = ''
+      FROM  w2_OrderOwner
+INNER JOIN  w2_Order  ON (
+          w2_Order.order_id = w2_OrderOwner.order_id
+        )
+INNER JOIN  w2_User  ON (
+              w2_Order.user_id = w2_User.user_id
+            )
+     WHERE  (
+              w2_User.user_kbn = 'MB_USER'
+              OR  w2_User.user_kbn = 'MB_GUEST'
+            )
+            AND
+            (
+              w2_OrderOwner.owner_mail_addr <> ''
+              AND
+              w2_OrderOwner.owner_mail_addr2 <> ''
+            )
+			]]>
+    </Statement>
+  </Up>
+</Migration>

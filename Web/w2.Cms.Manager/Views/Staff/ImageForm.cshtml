@@ -1,0 +1,67 @@
+﻿@*
+=========================================================================================================
+  Module      : 画像選択パーツ(_ImageForm.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common
+@model w2.Cms.Manager.Input.ImageInput
+
+<div class="image-upload-content">
+	<div class="image-upload-content-drag">
+		<p class="image-upload-content-drag-text">サムネイルをアップロードします。ファイルをドラッグ＆ドロップするか下記から選択してください。</p>
+		<div class="image-upload-content-drag-btns">
+			<label class="btn btn-main btn-size-m" id="">
+				画像ファイル選択
+				<input type="file" name="upload_img" id="upload_img" class="upload_img" accept="image/*" value="" style="display:none;">
+			</label>
+		</div>
+	</div>
+	<div class="image-upload-content-block-wrapper">
+	</div>
+	<button id="btnUploadImage" class="upload_staff_image btn btn-main btn-size-m" style="display: none">ファイルアップロード</button>
+</div>
+
+<script type="text/javascript">
+	$('[name=group]').change(function () {
+		imageSearch();
+	});
+
+	$('#image_keyword').keypress(function (e) {
+		if (e.which === 13) {
+			imageSearch();
+		}
+	});
+
+	function imageSearch() {
+		var gid = $('[name=group]').val();
+		var keyword = $('#image_keyword').val();
+		var url = "@Url.Action("ImageSearch", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE)";
+		$.ajax({
+			url: url,
+			type: 'POST',
+			data: {
+				groupId : gid,
+				keyword : keyword,
+			}
+		}).done(function(viewHTML) {
+			$('#list-content').html(viewHTML);
+		});
+	}
+	
+	// 画像ファイルが選択されたときの動作
+	document.addEventListener('change', function () {
+		displayBtnUploadImage();
+	});
+
+	// 画像ファイルがドラッグ＆ドロップされたときの動作
+	document.addEventListener('drop', function () {
+		displayBtnUploadImage();
+	});
+
+	// ファイルアップロードボタンを表示
+	function displayBtnUploadImage() {
+		$("#btnUploadImage").css("display", "block");
+	}
+</script>

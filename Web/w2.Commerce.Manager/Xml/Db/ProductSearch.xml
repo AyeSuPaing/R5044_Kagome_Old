@@ -1,0 +1,155 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品検索SQLステートメントXML(ProductSearch.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductSearch>
+  
+  <!-- 商品検索用一覧取得 -->
+  <GetProductList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(DISTINCT product_id), 0)
+          FROM  w2_Product
+                [[ PRODUCT_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_Product.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_Product.shop_id,
+                          w2_Product.product_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCT_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Product
+                          [[ PRODUCT_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Product ON
+                (
+                  RowIndex.shop_id = w2_Product.shop_id
+                  AND
+                  RowIndex.product_id = w2_Product.product_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+  </GetProductList>
+
+  <!-- 商品バリエーション検索用一覧取得 -->
+  <GetVariationList>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime
+        SET @current_date = GETDATE()
+
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_ProductView.variation_id), 0)
+          FROM  w2_ProductView
+                [[ PRODUCT_VARIATION_SEARCH_WHERE ]]
+                
+        -- 該当情報取得
+        SELECT  w2_ProductView.*,
+                RIGHT(w2_ProductView.variation_id, LEN(w2_ProductView.variation_id) - LEN(w2_ProductView.product_id)) AS v_id,
+                [[ MEMBER_RANK_PRICE_PRODUCTVARIATION ]],
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ProductView.shop_id,
+                          w2_ProductView.product_id,
+                          w2_ProductView.variation_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCT_VARIATION_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductView
+                          [[ PRODUCT_VARIATION_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductView ON
+                (
+                  RowIndex.shop_id = w2_ProductView.shop_id
+                  AND
+                  RowIndex.product_id = w2_ProductView.product_id
+                  AND
+                  RowIndex.variation_id = w2_ProductView.variation_id
+                )
+                WHERE  @bgn_row_num <= RowIndex.row_num
+                  AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+  </GetVariationList>
+
+  <!-- 頒布会商品バリエーション検索用一覧取得 -->
+  <GetSubscriptionBoxItemVariationList>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime
+        SET @current_date = GETDATE()
+
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_SubscriptionBoxItem.variation_id), 0)
+          FROM  w2_SubscriptionBoxItem
+         WHERE  w2_SubscriptionBoxItem.subscription_box_course_id = @subscription_box_course_id
+
+        -- 該当情報取得
+        SELECT  *
+          FROM  (
+        SELECT  w2_ProductView.*,
+                ROW_NUMBER() OVER (ORDER BY w2_ProductView.shop_id ASC, w2_ProductView.product_id ASC, w2_ProductView.variation_id ASC) AS subscription_box_row_number,
+                RIGHT(w2_ProductView.variation_id, LEN(w2_ProductView.variation_id) - LEN(w2_ProductView.product_id)) AS v_id,
+                [[ MEMBER_RANK_PRICE_PRODUCTVARIATION ]],
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ProductView.shop_id,
+                          w2_ProductView.product_id,
+                          w2_ProductView.variation_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCT_VARIATION_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductView
+                          [[ PRODUCT_VARIATION_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductView ON
+                (
+                  RowIndex.shop_id = w2_ProductView.shop_id
+                  AND
+                  RowIndex.product_id = w2_ProductView.product_id
+                  AND
+                  RowIndex.variation_id = w2_ProductView.variation_id
+                )
+                INNER JOIN w2_SubscriptionBoxItem ON
+                (
+                  w2_ProductView.shop_id = w2_SubscriptionBoxItem.shop_id
+                  AND
+                  w2_ProductView.product_id = w2_SubscriptionBoxItem.product_id
+                  AND
+                  w2_ProductView.variation_id = w2_SubscriptionBoxItem.variation_id
+                  AND
+                  w2_SubscriptionBoxItem.subscription_box_course_id = @subscription_box_course_id
+                )
+                )as result
+              WHERE  @bgn_row_num <= subscription_box_row_number
+                AND  subscription_box_row_number <= @end_row_num
+        ORDER BY subscription_box_row_number
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetSubscriptionBoxItemVariationList>
+  
+</ProductSearch>

@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : CSオペレータ所属グループ系SQLステートメントXML(CsOperatorGroup.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsOperatorGroup>
+
+  <!-- 全て取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsGroup.dept_id,
+                w2_CsGroup.cs_group_id,
+                w2_CsOperatorGroup.operator_id
+          FROM  w2_CsGroup
+                LEFT JOIN w2_CsOperatorGroup ON
+                (
+                  w2_CsGroup.dept_id = w2_CsOperatorGroup.dept_id
+                  AND
+                  w2_CsGroup.cs_group_id = w2_CsOperatorGroup.cs_group_id
+                )
+         WHERE  w2_CsGroup.dept_id = @dept_id
+      ORDER BY  w2_CsGroup.display_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAll>
+
+  <!-- グループ取得（オペレータ指定） -->
+  <GetGroups>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsGroup.*
+          FROM  w2_CsOperatorGroup
+                INNER JOIN w2_CsGroup ON
+                (
+                  w2_CsOperatorGroup.dept_id = w2_CsGroup.dept_id
+                  AND
+                  w2_CsOperatorGroup.cs_group_id = w2_CsGroup.cs_group_id
+                )
+         WHERE  w2_CsOperatorGroup.dept_id = @dept_id
+           AND  w2_CsOperatorGroup.operator_id = @operator_id
+        ORDER BY w2_CsGroup.display_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetGroups>
+
+  <!-- オペレータ取得（グループ指定） -->
+  <GetOperators>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsOperator.*,
+                w2_ShopOperator.name,
+                w2_ShopOperator.valid_flg
+          FROM  w2_CsOperator
+                INNER JOIN w2_ShopOperator ON
+                (
+                  w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                )
+         WHERE  w2_CsOperator.dept_id = @dept_id
+           AND  (
+                  @cs_group_id = ''
+                  OR
+                  EXISTS
+                  (
+                    SELECT  1
+                      FROM  w2_CsOperatorGroup
+                     WHERE  w2_CsOperatorGroup.dept_id = w2_CsOperator.dept_id
+                       AND  w2_CsOperatorGroup.operator_id = w2_CsOperator.operator_id
+                       AND  w2_CsOperatorGroup.cs_group_id = @cs_group_id
+                  )
+                )
+        ORDER BY w2_CsOperator.display_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="cs_group_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetOperators>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CsOperatorGroup
+             (  
+                dept_id,
+                cs_group_id,
+                operator_id,
+                last_changed
+              )
+              VALUES
+              (
+                @dept_id,
+                @cs_group_id,
+                @operator_id,
+                @last_changed
+              )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="cs_group_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE
+          FROM  w2_CsOperatorGroup
+         WHERE  w2_CsOperatorGroup.dept_id = @dept_id
+           AND  w2_CsOperatorGroup.cs_group_id = @cs_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="cs_group_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+  
+ </CsOperatorGroup>

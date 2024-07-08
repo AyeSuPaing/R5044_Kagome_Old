@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文キャンセルバッチ固有ステートメントXML(OrderCancel.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderCancel>
+
+  <!-- キャンセル対象注文ID取得 -->
+  <GetCancelTargetOrderIds>
+    <Statement>
+      <![CDATA[
+        SELECT  order_id
+          FROM  w2_Order
+         WHERE  order_date < DATEADD(minute, -1 * @order_calcel_interval_minutes, GETDATE())
+           AND  order_status = 'TMP'
+           AND  mall_id = 'OWN_SITE'  -- 自社サイト注文のみ対象
+           AND  order_payment_kbn NOT IN (@@ params @@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_calcel_interval_minutes" Type="int" />
+    </Parameter>
+  </GetCancelTargetOrderIds>
+
+</OrderCancel>

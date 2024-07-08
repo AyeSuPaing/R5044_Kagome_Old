@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : シリアルキー系SQLサブステートメントXML(SerialKey_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<SerialKey_Sub>
+  <!-- シリアルキー情報一覧取得用WHERE文 -->
+  <SERIALKEY_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (@serial_key_like_escaped = '' OR w2_SerialKey.serial_key like @serial_key_like_escaped + '%' ESCAPE '#')   -- シリアルキー
+                AND
+                (@product_id_like_escaped = '' OR w2_SerialKey.product_id like @product_id_like_escaped + '%' ESCAPE '#')   -- 商品ID
+                AND
+                (@user_id_like_escaped = '' OR w2_SerialKey.user_id like @user_id_like_escaped + '%' ESCAPE '#')    -- ユーザID
+                AND
+                (@order_id_like_escaped = '' OR w2_SerialKey.order_id like @order_id_like_escaped + '%' ESCAPE '#')   -- 注文ID
+                AND
+                (@status = '' OR w2_SerialKey.status = @status)   -- 状態
+                AND
+                (@valid_flg = '' OR w2_SerialKey.valid_flg = @valid_flg)    -- 有効フラグ
+      ]]>
+    </Statement>
+  </SERIALKEY_SEARCH_WHERE>
+
+  <!-- シリアルキー情報一覧取得用ORDER_BY -->
+  <SERIALKEY_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_SerialKey.serial_key
+            WHEN  2 THEN w2_SerialKey.product_id
+            WHEN  4 THEN w2_SerialKey.user_id
+            WHEN  6 THEN w2_SerialKey.order_id
+            ELSE '1'
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN  8 THEN w2_SerialKey.date_created
+            WHEN 10 THEN w2_SerialKey.date_changed
+            ELSE NULL
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN  1 THEN w2_SerialKey.serial_key
+            WHEN  3 THEN w2_SerialKey.product_id
+            WHEN  5 THEN w2_SerialKey.user_id
+            WHEN  7 THEN w2_SerialKey.order_id
+            ELSE '1'
+          END 
+          DESC, 
+          CASE @sort_kbn
+            WHEN  9 THEN w2_SerialKey.date_created
+            WHEN 11 THEN w2_SerialKey.date_changed
+            ELSE NULL
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_SerialKey.serial_key ASC
+      ]]>
+    </Statement>
+  </SERIALKEY_SEARCH_ORDER_BY>
+</SerialKey_Sub>

@@ -1,0 +1,319 @@
+﻿@*
+=========================================================================================================
+  Module      : サイトマップ設定 メイン画面(Main.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using w2.Cms.Manager.Codes
+@{
+	ViewBag.Title = "サイトマップ設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+@model w2.Cms.Manager.ViewModels.Sitemap.MainViewModel
+
+@section Style{
+	<style>
+		.alert {
+			background-color: #ECECEC;
+			text-align: center;
+			display: table;
+			width: 100%;
+			height: 100px;
+			margin: 20px 0;
+		}
+
+		.alert-message {
+			display: table-cell;
+			font-size: 1.5em;
+			vertical-align: middle;
+		}
+
+		.page-list-wrap {
+			margin: 0;
+			padding: 0;
+		}
+
+		.page-list-item {
+			border: solid 1px;
+			padding: 20px 10px 20px;
+			margin: 0 0 10px;
+			border-radius: 7px;
+			transition: 0.3s;
+		}
+		.page-list-item:hover {
+			background-color: #CAF1CA;
+		}
+	</style>
+}
+
+<h1 class="page-title">サイトマップ設定</h1>
+
+<form
+	id="search-form"
+	method="get"
+	action="@Url.Action("Main", Constants.CONTROLLER_W2CMS_MANAGER_SITEMAP)"
+	data-ajax-failure="handleError">
+
+	<table class="search_table w100">
+		<tr>
+			<td class="search_title_bg w20">
+				検索ワード
+			</td>
+			<td class="search_item_bg w30">
+				@Html.TextBoxFor(
+					m => m.ParamModel.Keyword,
+					new
+					{
+						@class = "w100",
+						placeholder = "（ページタイトル、ファイル名）"
+					})
+			</td>
+			<td class="search_title_bg w10">
+				サイト
+			</td>
+			<td class="search_item_bg w30">
+				@Html.CheckBoxFor(
+					m => m.ParamModel.ForPcPage,
+					(Constants.SMARTPHONE_OPTION_ENABLED == false)
+						? (object)new { @class="btn-checkbox", Id="ParamModel_ForPcPage"}
+						: new { @class="btn-checkbox", Id="ParamModel_ForPcPage"})
+				<label for="ParamModel_ForPcPage" class="btn btn-size-m">PC</label>
+				@if (Constants.SMARTPHONE_OPTION_ENABLED)
+				{
+					@Html.CheckBoxFor(m => m.ParamModel.ForSpPage,new { @class="btn-checkbox", Id="ParamModel_ForSpPage"})
+					<label for="ParamModel_ForSpPage" class="btn btn-size-m">SP</label>
+				}
+			</td>
+			<td rowspan="2" class="search_btn_bg w10 ta-center">
+				<div class="search_btn_main">
+					<input type="submit" name="Search" value="検索" class="btn btn-main">
+				</div>
+				<div class="search_btn_sub">
+					<a href="javascript:initializeSearchCondition()">リセット</a>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<td class="search_title_bg w20">
+				ページ
+			</td>
+			<td class="search_item_bg w70" colspan="3">
+				@Html.RadioButtonFor(
+					m => m.ParamModel.PageType,
+					Constants.SITEMAP_PAGE_TYPE_STANDARD,
+					new
+					{
+						id = "page-selector-standard-page",
+						@class = "btn-radio can-removed-radio"
+					})
+				<label for="page-selector-standard-page" class="btn btn-size-m">標準ページ</label>
+				@Html.RadioButtonFor(
+					m => m.ParamModel.PageType,
+					Constants.SITEMAP_PAGE_TYPE_CUSTOM,
+					new
+					{
+						id = "page-selector-custom-page",
+						@class = "btn-radio can-removed-radio"
+					})
+				<label for="page-selector-custom-page" class="btn btn-size-m">カスタムページ</label>
+				@Html.RadioButtonFor(
+					m => m.ParamModel.PageType,
+					Constants.SITEMAP_PAGE_TYPE_FEATURE,
+					new
+					{
+						id = "page-selector-feature-page",
+						@class = "btn-radio can-removed-radio"
+					})
+				<label for="page-selector-feature-page" class="btn btn-size-m">特集ページ</label>
+				@Html.RadioButtonFor(
+					m => m.ParamModel.PageType,
+					Constants.SITEMAP_PAGE_TYPE_LANDING,
+					new
+					{
+						id = "page-selector-landing-page",
+						@class = "btn-radio can-removed-radio"
+					})
+				<label for="page-selector-landing-page" class="btn btn-size-m">ランディングページ</label>
+				@Html.RadioButtonFor(
+					m => m.ParamModel.PageType,
+					Constants.SITEMAP_PAGE_TYPE_COORDINATE,
+					new
+					{
+						id = "page-selector-coordinate-page",
+						@class = "btn-radio can-removed-radio"
+					})
+				<label for="page-selector-coordinate-page" class="btn btn-size-m">コーディネート</label>
+			</td>
+		</tr>
+	</table>
+</form>
+
+<form id="main-form" method="post" data-ajax-failure="handleError">
+	@if (string.IsNullOrEmpty(Model.Message))
+	{
+		@* ページャ *@
+		<table class="list_pager" style="height: 50px;">
+			<tr>
+				<td class="ta-left">
+					@Html.Raw(Model.PagerHtml)
+				</td>
+			</tr>
+		</table>
+	}
+	else
+	{
+		<div class="alert" id="alert">
+			<span class="alert-message">@Model.Message</span>
+		</div>
+	}
+
+	<div class="page-list-wrap" data-bind="foreach: items">
+		<div class="page-list-item">
+			<table>
+				<tr>
+					<td class="w50">
+						<table>
+							<tr>
+								<td rowspan="2" style="width:120px" >
+									<div class="slide-checkbox-wrap">
+										<input type="checkbox" onchange="update_onclick();" data-bind="checked: IsIncluded, attr: { 'id': SequentialId }" data-on-label="含める" data-off-label="含める"/>
+										<label data-bind="attr: { 'for': SequentialId }" class="slide-checkbox">
+											<span class="slide-checkbox-label"></span>
+											<span class="slide-checkbox-btn"></span>
+										</label>
+									</div>
+								</td>
+								<td>
+									<div style="font-size: 1.7em;">
+										<span data-bind="if: IsProductPage || IsCoordinatePage" class="notice">*</span>
+										<span data-bind="text: Title"></span>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>
+									<!-- ko if:IsProductPage -->
+									URLはカテゴリー及び商品別に展開されます。
+									<!-- /ko -->
+									<!-- ko if:IsCoordinatePage -->
+									URLはカテゴリー及びコーディネート別に展開されます。
+									<!-- /ko -->
+									<!-- ko ifnot:IsProductPage || IsCoordinatePage -->
+									<span data-bind="text: DisplayUrl"></span>
+									<!-- /ko -->
+								</td>
+							</tr>
+						</table>
+					</td>
+					<td class="w50">
+						<table>
+							<tr>
+								<td class="ta-center">更新頻度</td>
+								<td>
+									<select data-bind="value: ChangeFrequency" class="w80" onchange="update_onclick();">
+										<option value=""></option>
+										<option value="@Constants.SITEMAP_CHANGE_FREQ_ALWAYS">表示毎</option>
+										<option value="@Constants.SITEMAP_CHANGE_FREQ_HOURLY">１時間毎</option>
+										<option value="@Constants.SITEMAP_CHANGE_FREQ_DAILY">毎日</option>
+										<option value="@Constants.SITEMAP_CHANGE_FREQ_WEEKLY">１週間毎</option>
+										<option value="@Constants.SITEMAP_CHANGE_FREQ_MONTHLY">１ヶ月毎</option>
+										<option value="@Constants.SITEMAP_CHANGE_FREQ_YEARLY">１年毎</option>
+										<option value="@Constants.SITEMAP_CHANGE_FREQ_NEVER">更新しない</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td class="ta-center">優先度</td>
+								<td>
+									<select data-bind="value: Priority" class="w80" onchange="update_onclick();">
+										<option value=""></option>
+										<option value="0.0">0.0</option>
+										<option value="0.1">0.1</option>
+										<option value="0.2">0.2</option>
+										<option value="0.3">0.3</option>
+										<option value="0.4">0.4</option>
+										<option value="0.5">0.5</option>
+										<option value="0.6">0.6</option>
+										<option value="0.7">0.7</option>
+										<option value="0.8">0.8</option>
+										<option value="0.9">0.9</option>
+										<option value="1.0">1.0</option>
+									</select>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+</form>
+
+<table class="info_table" cellspacing="1" cellpadding="3" width="758" border="0">
+	<tr class="info_item_bg">
+		<td align="left">備考<br />
+			・更新頻度(changefreq)<br/>
+			検索エンジンのクローラはこの情報を使用してクロール頻度を調整します。<br/>
+			※基本未設定でも問題ありません。<br/><br/>
+			・優先度（priority）<br/>
+			サイト内の他の URLと比較したURLの優先度です。<br/>
+			0.0 から 1.0 までの値を指定できます。<br/>
+			優先度は相対的なものであるため、サイト内のすべての URL に高い優先度を設定してはいけません。<br/>
+			※基本未設定でも問題ありません。<br/><br/>
+		</td>
+	</tr>
+</table>
+
+@section JavaScript
+{
+	<script>
+		var searchConditionVm = null;
+		var pageItemListVm = null;
+		var isItemListBinded = false;
+
+		$(document).ready(function() {
+			first_view();
+		});
+
+		/**
+		* 初期表示処理 
+		*/
+		function first_view() {
+			pageItemListVm = {
+				items: ko.observableArray(@Html.Raw(Json.Encode(Model.PageItems)))
+			};
+			ko.applyBindings(pageItemListVm, document.getElementById('main-form'));
+		}
+
+		/**
+		 * 検索条件初期化
+		 */
+		function initializeSearchCondition() {
+			$('input[name="ParamModel.Keyword"]').val('');
+			$('input[name="ParamModel.ForPcPage"]').prop('checked', true);
+			$('input[name="ParamModel.ForSpPage"]').prop('checked', @(Constants.SMARTPHONE_OPTION_ENABLED.ToString().ToLower()));
+			$('input[name="ParamModel.PageType"]').prop('checked', false);
+		}
+
+		/**
+		* 更新処理実行
+		*/
+		function update_onclick() {
+			setTimeout(function() { 
+				$.ajax({
+					type: "POST",
+					url: "@Url.Action("Update", Constants.CONTROLLER_W2CMS_MANAGER_SITEMAP)",
+					dataType: 'json',
+					contentType: 'application/json',
+					data: JSON.stringify(pageItemListVm.items())
+				})
+				.done(function() {
+					setTimeout(function() { loading_animation.end() }, 500);
+					notification.show('サイトマップ設定を更新しました。', 'info', 'fadeout');
+				}); }, 500);
+		}
+
+	</script>
+}

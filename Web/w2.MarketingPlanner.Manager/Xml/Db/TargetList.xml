@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ターゲットリスト系SQLステートメントXML(ShopPoint.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<TargetList>
+
+  <!-- ターゲットリスト一覧取得 -->
+  <GetTargetLists>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_TargetList.target_id), 0)
+          FROM  w2_TargetList
+                [[ TARGETLIST_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_TargetList.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_TargetList.dept_id,
+                          w2_TargetList.target_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ TARGETLIST_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_TargetList
+                          [[ TARGETLIST_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_TargetList ON
+                (
+                  RowIndex.dept_id = w2_TargetList.dept_id
+                  AND
+                  RowIndex.target_id = w2_TargetList.target_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id_like_escaped" Type="nvarchar" Size="20" />
+      <Input Name="target_name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetTargetLists>
+
+  <!-- ターゲット リストのデータ カウントを更新します。 -->
+  <UpdateTargetListDataCountByTargetListData>
+    <Statement>
+      <![CDATA[
+      DECLARE @data_count INT
+      SET @data_count = (SELECT COUNT(user_id) FROM w2_TargetListData WHERE dept_id = @dept_id  AND target_kbn = 'TargetList' AND master_id = @master_id)
+      
+      UPDATE w2_TargetList
+          SET  data_count = @data_count,
+              data_count_date = GETDATE()
+          WHERE  dept_id = @dept_id
+          AND  target_id = @target_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="master_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateTargetListDataCountByTargetListData>
+
+  <!-- ターゲット リストのデータ カウントを更新します。 -->
+  <UpdateTargetListDataCount>
+    <Statement>
+      <![CDATA[
+      UPDATE w2_TargetList
+          SET  data_count = @data_count,
+              data_count_date = GETDATE()
+          WHERE  dept_id = @dept_id
+          AND  target_id = @target_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="data_count" Type="int" />
+    </Parameter>
+  </UpdateTargetListDataCount>
+
+  <!-- ターゲットリスト全取得 -->
+  <GetTargetListAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_TargetList
+         WHERE  dept_id = @dept_id
+           AND  del_flg = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetTargetListAll>
+  
+  <!-- ターゲットリスト取得 -->
+  <GetTargetList>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_TargetList
+         WHERE  dept_id = @dept_id
+           AND  target_id = @target_id
+           AND  del_flg = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetTargetList>
+  
+  <!-- ターゲットリストインサート -->
+  <InsertTargetList>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_TargetList
+                (
+                dept_id,
+                target_id,
+                target_name,
+                target_type,
+                target_condition,
+                --data_count,
+                --data_count_date,
+                exec_timing,
+                schedule_kbn,
+                schedule_day_of_week,
+                schedule_year,
+                schedule_month,
+                schedule_day,
+                schedule_hour,
+                schedule_minute,
+                schedule_second,
+                last_changed,
+                del_flg
+                )
+         VALUES (
+                @dept_id,
+                @target_id,
+                @target_name,
+                @target_type,
+                @target_condition,
+                --@data_count,
+                --@data_count_date,
+                @exec_timing,
+                @schedule_kbn,
+                @schedule_day_of_week,
+                @schedule_year,
+                @schedule_month,
+                @schedule_day,
+                @schedule_hour,
+                @schedule_minute,
+                @schedule_second,
+                @last_changed,
+                @del_flg
+                )
+        
+        -- ターゲットIDをかえす
+        SELECT  @target_id AS target_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="target_name" Type="nvarchar" Size="30" />
+      <Input Name="target_type" Type="nvarchar" Size="20" />
+      <Input Name="target_condition" Type="ntext" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="schedule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="schedule_day_of_week" Type="nvarchar" Size="10" />
+      <Input Name="schedule_year" Type="int" />
+      <Input Name="schedule_month" Type="int" />
+      <Input Name="schedule_day" Type="int" />
+      <Input Name="schedule_hour" Type="int" />
+      <Input Name="schedule_minute" Type="int" />
+      <Input Name="schedule_second" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </InsertTargetList>
+
+  <!-- ターゲットリストアップデート -->
+  <UpdateTargetList>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_TargetList
+           SET  target_name = @target_name,
+                target_type = @target_type,
+                target_condition = @target_condition,
+                exec_timing = @exec_timing,
+                schedule_kbn = @schedule_kbn,
+                schedule_day_of_week = @schedule_day_of_week,
+                schedule_year = @schedule_year,
+                schedule_month = @schedule_month,
+                schedule_day = @schedule_day,
+                schedule_hour = @schedule_hour,
+                schedule_minute = @schedule_minute,
+                schedule_second = @schedule_second,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  target_id = @target_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="target_name" Type="nvarchar" Size="30" />
+      <Input Name="target_type" Type="nvarchar" Size="20" />
+      <Input Name="target_condition" Type="ntext" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="schedule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="schedule_day_of_week" Type="nvarchar" Size="10" />
+      <Input Name="schedule_year" Type="int" />
+      <Input Name="schedule_month" Type="int" />
+      <Input Name="schedule_day" Type="int" />
+      <Input Name="schedule_hour" Type="int" />
+      <Input Name="schedule_minute" Type="int" />
+      <Input Name="schedule_second" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateTargetList>
+
+  <!-- ターゲットリスト削除フラグ更新 -->
+  <UpdateTargetListDelFlg>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_TargetList
+           SET  del_flg = '1'
+         WHERE  dept_id = @dept_id
+           AND  target_id = @target_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateTargetListDelFlg>
+
+  <!-- ターゲットリスト削除フラグ更新(表示状態へ変更) -->
+  <UpdateTargetListDelFlgToVisible>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_TargetList
+           SET  del_flg = '0'
+         WHERE  dept_id = @dept_id
+           AND  target_id = @target_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateTargetListDelFlgToVisible>
+
+  <!-- モールID一覧取得（ターゲットリストのドロップダウンリスト作成用） -->
+  <GetMallIdList>
+    <Statement>
+      <![CDATA[
+        DECLARE @return_table TABLE(
+          row_num int IDENTITY(1, 1),
+          text nvarchar(162),
+          value nvarchar(60)
+        )
+  
+        INSERT INTO @return_table(
+                text,
+                value
+                )
+        VALUES  (
+                '自社サイト',
+                'OWN_SITE'
+                ),
+                (
+                'つくーる',
+                'URERU_AD'
+                )
+
+        INSERT INTO @return_table(
+                text,
+                value
+                )
+        SELECT  (w2_MallCooperationSetting.mall_name + '(' + w2_MallCooperationSetting.mall_id + ')') AS text,
+                w2_MallCooperationSetting.mall_id AS value
+          FROM  w2_MallCooperationSetting
+         WHERE  w2_MallCooperationSetting.shop_id = @shop_id
+           AND  w2_MallCooperationSetting.valid_flg = '1'  --有効
+
+        SELECT  text,
+                value
+          FROM  @return_table
+         ORDER BY  row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMallIdList>
+  
+  <!-- 会員ランクID一覧取得（ターゲットリストのドロップダウンリスト作成用） -->
+  <GetMemberRankIdList>
+    <Statement>
+      <![CDATA[
+        DECLARE @return_table TABLE(
+          row_num int IDENTITY(1, 1),
+          text nvarchar(162),
+          value nvarchar(60)
+        )
+        
+        INSERT INTO @return_table(
+                text,
+                value
+                )
+        SELECT  (w2_MemberRank.member_rank_name + '(' + w2_MemberRank.member_rank_id + ')') AS text,
+                w2_MemberRank.member_rank_id AS value
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.valid_flg = 'ON'  --有効
+
+        INSERT INTO @return_table(
+                text,
+                value
+                )
+        VALUES  (
+                '不明',
+                ''
+                )
+
+        SELECT  text,
+                value
+          FROM  @return_table
+         ORDER BY  row_num ASC
+      ]]>
+    </Statement>
+  </GetMemberRankIdList>
+
+  <!-- ユーザー管理レベルID一覧取得（ターゲットリストのドロップダウンリスト作成用） -->
+  <GetUserManagementLevelIdList>
+    <Statement>
+      <![CDATA[
+        DECLARE @return_table TABLE (
+          row_num int IDENTITY(1, 1),
+          text nvarchar(162),
+          value nvarchar(60)
+        )
+      
+        INSERT  @return_table
+                (
+                  text,
+                  value
+                )
+        SELECT  user_management_level_name + '(' + user_management_level_id + ')' text,
+                user_management_level_id value
+          FROM  w2_UserManagementLevel
+        ORDER BY display_order
+
+        SELECT  text,
+                value
+          FROM  @return_table
+        ORDER BY row_num ASC
+      ]]>
+    </Statement>
+  </GetUserManagementLevelIdList>
+
+  <!-- メール文書一覧を取得（ターゲットリストのドロップダウンリスト作成用） -->
+  <GetMailDistTextList>
+    <Statement>
+      <![CDATA[
+        SELECT  mailtext_id AS value,
+                mailtext_id + ':' + mailtext_name AS text
+          FROM  w2_MailDistText
+      ]]>
+    </Statement>
+  </GetMailDistTextList>
+
+  <!-- メール配信設定一覧を取得（ターゲットリストのドロップダウンリスト作成用） -->
+  <GetMailDistSettingList>
+    <Statement>
+      <![CDATA[
+        SELECT  maildist_id AS value,
+                maildist_id + ':' + maildist_name AS text
+          FROM  w2_MailDistSetting
+      ]]>
+    </Statement>
+  </GetMailDistSettingList>
+
+</TargetList>

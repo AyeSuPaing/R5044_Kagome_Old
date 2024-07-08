@@ -1,0 +1,122 @@
+﻿@*
+=========================================================================================================
+  Module      : Scoring sale main (Main.cshtml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Web.Page
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.ScoringSale.ScoringSaleListViewModel
+@{
+	ViewBag.Title = CommonPage.ReplaceTag("@@ScoringSale.scoring_sales_information_title.name@@");
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+@Html.Hidden("controller", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_SCORING_SALE)
+
+<h1 class="page-title">@CommonPage.ReplaceTag("@@ScoringSale.scoring_sales_information_title.name@@")</h1>
+<div class="main-content-frame" id="list-content">
+</div>
+@* Modal window: Enlarged image *@
+@Html.Partial("_EnlargedImageModal")
+
+@section Style{
+	<style>
+		@@media screen and (max-width: 1510px) {
+			.is-open-detail a.list-menu-btn {
+				display: block;
+			}
+
+			.is-open-detail .main-content-list {
+				display: block;
+				position: absolute;
+				top: 0;
+				left: 0;
+				bottom: 0;
+				width: 0;
+				transition: 0s;
+				overflow: hidden;
+			}
+
+			.is-open-detail .main-content-detail {
+				width: 100%;
+				margin-left: -1px;
+			}
+
+			.is-show-float-list .main-content-list {
+				width: 460px;
+				box-shadow: 0px 0px 3px 0px rgba(0, 0, 0, 0.2);
+				z-index: 1;
+			}
+
+			.is-show-float-list a.list-menu-btn {
+				background-color: transparent;
+				color: #333;
+			}
+
+			.is-show-float-list .list-tools-row {
+				padding-left: 40px;
+			}
+
+			.is-show-float-list::before {
+				content: "";
+				display: block;
+				background: rgba(0, 0, 0, 0.2);
+				position: absolute;
+				top: 0;
+				right: 0;
+				left: 0;
+				bottom: 0;
+				z-index: 1;
+			}
+
+			.main-content-detail-inner {
+				padding-top: 50px;
+			}
+
+			.main-content-detail-btn-close {
+				left: 50px;
+			}
+
+			.main-content-detail-btn-close-Abtest {
+				margin-left: -30px;
+			}
+		}
+	</style>
+}
+
+@section JavaScript
+{
+	<script type="text/javascript" src="~/Js/ScoringSaleCharts.js?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED"></script>
+	<script type="text/javascript">
+		list_redraw();
+
+		// Get list
+		function list_redraw() {
+			loading_animation.start();
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("List", Constants.CONTROLLER_W2CMS_MANAGER_SCORING_SALE)",
+				traditional: true
+			}).done(function (viewHtml) {
+				$("#list-content").html(viewHtml);
+				loading_animation.end();
+			}).fail(function () {});
+		}
+
+		// Image search
+		function image_search() {
+			var searchWord = $('#image_keyword').val();
+
+			$.ajax({
+				url: "@Url.Action("ImageSearch", Constants.CONTROLLER_W2CMS_MANAGER_SCORING_SALE)",
+				type: 'POST',
+				data: {
+					searchWord: searchWord,
+				}
+			}).done(function (viewHTML) {
+				$('#image-list-content').html(viewHTML);
+			});
+		}
+	</script>
+}

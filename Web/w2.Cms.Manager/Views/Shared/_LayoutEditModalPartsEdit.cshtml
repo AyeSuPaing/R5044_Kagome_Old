@@ -1,0 +1,46 @@
+﻿@*
+=========================================================================================================
+  Module      : レイアウト編集 パーツ編集モーダルウィンドウ(パーシャルビュー)(_LayoutEditModalPartsEdit.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@model w2.Cms.Manager.ViewModels.PartsDesign.PartsDetailViewModel
+
+<div class="modal-content-hide">
+	<div id="modal-parts-edit">
+		<p class="modal-inner-ttl">パーツ編集</p>
+		<div class="main-content-detail">
+			<div class="main-content-detail-inner">
+
+				@Html.Partial("_PartsDesignContentDetail", Model)
+
+			</div>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	/**
+	* パーツ詳細更新
+	*/
+	function parts_main_content_detail_update() {
+		loading_animation.start();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("UpdateDetailParts", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)",
+			data: $('#parts_detail_form').serializeArray()
+		}).done(function(errorMessage) {
+			setTimeout(function() { loading_animation.end(); }, 200);
+			// 警告表示を削除
+			$('.notification-message-warning').remove();
+			if (errorMessage === "") {
+				modal.close();
+				notification.show('パーツを更新しました。', 'info', 'fadeout');
+			} else {
+				notification.show(errorMessage, 'warning', 'fixed');
+			}
+		}).fail(function() {
+		});
+	}
+</script>

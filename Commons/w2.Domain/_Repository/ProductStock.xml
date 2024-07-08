@@ -1,0 +1,285 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品在庫マスタ系SQLステートメントXML (ProductStock.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductStock>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductStock
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </Get>
+
+  <!-- 商品在庫マスタ情報取得(CSV出力用) -->
+  <GetProductStockMaster>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  @@ fields @@
+          FROM  (
+                  SELECT  w2_ProductView.shop_id,
+                          w2_ProductView.product_id,
+                          w2_ProductView.variation_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCTSTOCK_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductView
+                          [[ PRODUCTSTOCK_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductStock ON
+                (
+                  RowIndex.shop_id = w2_ProductStock.shop_id
+                  AND
+                  RowIndex.product_id = w2_ProductStock.product_id
+                  AND
+                  RowIndex.variation_id = w2_ProductStock.variation_id
+                )
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="srch_stock_key" Type="nvarchar" Size="15" />
+      <Input Name="srch_stock_count" Type="int" />
+      <Input Name="srch_stock_count_type" Type="nvarchar" Size="10" />
+      <Input Name="sort_kbn" Type="int"></Input>
+      <Input Name="stock_alert_kbn" Type="int" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductStockMaster>
+
+  <!-- 商品在庫マスタフィールドチェック -->
+  <CheckProductStockFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ProductStock
+           WHERE  w2_ProductStock.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductStockFields>
+
+  <!-- バリエーション含む在庫数取得 -->
+  <GetSum>
+    <Statement>
+      <![CDATA[
+        SELECT  SUM(stock)
+          FROM  w2_ProductStock
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetSum>
+
+  <!-- Is exist -->
+  <IsExist>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(variation_id)
+          FROM  w2_ProductStock
+         WHERE  w2_ProductStock.shop_id = @shop_id
+           AND  w2_ProductStock.product_id = @product_id
+           AND  w2_ProductStock.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </IsExist>
+
+  <!-- 挿入 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductStock
+                (
+                  shop_id,
+                  product_id,
+                  variation_id,
+                  stock,
+                  stock_alert,
+                  realstock,
+                  realstock_b,
+                  realstock_c,
+                  realstock_reserved,
+                  last_changed
+                )
+        VALUES  (
+                  @shop_id,
+                  @product_id,
+                  @variation_id,
+                  @stock,
+                  @stock_alert,
+                  @realstock,
+                  @realstock_b,
+                  @realstock_c,
+                  @realstock_reserved,
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="stock" Type="int" />
+      <Input Name="stock_alert" Type="int" />
+      <Input Name="realstock" Type="int" />
+      <Input Name="realstock_b" Type="int" />
+      <Input Name="realstock_c" Type="int" />
+      <Input Name="realstock_reserved" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductStock
+           SET  stock = @stock
+                ,stock_alert = @stock_alert
+                ,realstock = @realstock
+                ,realstock_b = @realstock_b
+                ,realstock_c = @realstock_c
+                ,realstock_reserved = @realstock_reserved
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="stock" Type="int" />
+      <Input Name="stock_alert" Type="int" />
+      <Input Name="realstock" Type="int" />
+      <Input Name="realstock_b" Type="int" />
+      <Input Name="realstock_c" Type="int" />
+      <Input Name="realstock_reserved" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+  
+  <UpdateProductStock>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductStock
+           SET  stock = stock - @order_quantity
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  w2_ProductStock.shop_id = @shop_id
+           AND  w2_ProductStock.product_id = @product_id
+           AND  w2_ProductStock.variation_id = @variation_id
+           
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="order_quantity" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateProductStock>
+
+  <!-- 商品在庫情報の論理在庫・実在庫・引当済実在庫数更新 -->
+  <AddProductStock>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductStock 
+           SET  w2_ProductStock.stock = w2_ProductStock.stock + @stock,
+                w2_ProductStock.realstock = w2_ProductStock.realstock + @realstock,
+                w2_ProductStock.realstock_b = w2_ProductStock.realstock_b + @realstock_b,
+                w2_ProductStock.realstock_c = w2_ProductStock.realstock_c + @realstock_c,
+                w2_ProductStock.realstock_reserved = w2_ProductStock.realstock_reserved + @realstock_reserved,
+                w2_ProductStock.date_changed = getdate(),
+                w2_ProductStock.last_changed = @last_changed
+         WHERE  w2_ProductStock.shop_id = @shop_id 
+           AND  w2_ProductStock.product_id = @product_id
+           AND  w2_ProductStock.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="stock" Type="int" />
+      <Input Name="realstock" Type="int" />
+      <Input Name="realstock_b" Type="int" />
+      <Input Name="realstock_c" Type="int" />
+      <Input Name="realstock_reserved" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </AddProductStock>
+
+  <!--
+    商品在庫情報削除
+    ※在庫管理方法（stock_management_kbn）が『0.在庫管理をしない 』の場合は、商品在庫情報を削除
+  -->
+  <DeleteProductStockAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductStock
+         WHERE  w2_ProductStock.shop_id = @shop_id
+           AND  w2_ProductStock.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductStockAll>
+
+  <!--
+    商品在庫情報削除
+    ※在庫管理方法（stock_management_kbn）が『0.在庫管理をしない 』の場合は、商品在庫情報を削除
+  -->
+  <DeleteProductStock>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductStock
+         WHERE  w2_ProductStock.shop_id = @shop_id
+           AND  w2_ProductStock.product_id = @product_id
+           AND  w2_ProductStock.variation_id NOT IN (@@ ignored_variation_ids @@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductStock>
+
+</ProductStock>

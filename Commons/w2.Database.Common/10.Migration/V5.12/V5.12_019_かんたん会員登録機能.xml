@@ -1,0 +1,160 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+-- かんたん会員会員フラグの追加
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_User' AND column_name = 'easy_register_flg')
+	ALTER TABLE [w2_User] ADD [easy_register_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+GO
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_WorkUser' AND column_name = 'easy_register_flg')
+	ALTER TABLE [w2_WorkUser] ADD [easy_register_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+GO
+
+-- かんたん会員登録用メールテンプレートの追加
+IF NOT EXISTS ( SELECT * FROM w2_MailTemplate WHERE mail_id = '00000011' )
+BEGIN
+	INSERT INTO w2_MailTemplate
+	(
+		shop_id,
+		mail_id,
+		mail_name,
+		mail_from,
+		mail_to,
+		mail_cc,
+		mail_bcc,
+		mail_subject,
+		mail_body,
+		mail_subject_mobile,
+		mail_body_mobile,
+		mail_attachmentfile_path,
+		del_flg,
+		date_created,
+		date_changed,
+		last_changed,
+		mail_from_name
+	)
+	VALUES
+	(
+		'0',
+		'00000011',
+		'かんたん会員登録メール',
+		'bh@w2s.xyz',
+		'',
+		'',
+		'',
+		'かんたん会員登録完了のご連絡!<@@UserExtendId:usrex_blandmai@@>@@ userextend_name @@</@@UserExtendId:usrex_blandmai@@>',
+		'==========================================================' + CHAR(13) + CHAR(10) +
+        '■■●●●●への会員登録ありがとうございます■■' + CHAR(13) + CHAR(10) +
+        '　　（このメールは、配信専用のアドレスで配信されています）' + CHAR(13) + CHAR(10) +
+        '==========================================================' + CHAR(13) + CHAR(10) +
+        '@@ name1 @@@@ name2 @@ 様' + CHAR(13) + CHAR(10) +
+        '' + CHAR(13) + CHAR(10) +
+        '@@ nick_name @@' + CHAR(13) + CHAR(10) +
+        '' + CHAR(13) + CHAR(10) +
+        '●●●●に会員登録をして頂き、ありがとうございます。' + CHAR(13) + CHAR(10) +
+        'ご登録されたメールアドレスやパスワードは、' + CHAR(13) + CHAR(10) +
+        'ご注文される時や注文状況のご確認時に必要となります。' + CHAR(13) + CHAR(10) +
+        '' + CHAR(13) + CHAR(10) +
+        '■ご登録のログインID' + CHAR(13) + CHAR(10) +
+        '---------------------------------------------------------------' + CHAR(13) + CHAR(10) +
+        '・ログインID：@@ login_id @@' + CHAR(13) + CHAR(10) +
+        '---------------------------------------------------------------' + CHAR(13) + CHAR(10) +
+        '・パスワード：@@ password @@' + CHAR(13) + CHAR(10) +
+        '---------------------------------------------------------------' + CHAR(13) + CHAR(10) +
+        '' + CHAR(13) + CHAR(10) +
+        '■ご登録のログイン情報' + CHAR(13) + CHAR(10) +
+        '性別：@@ sex @@' + CHAR(13) + CHAR(10) +
+        '配信希望：@@ mail_flg @@' + CHAR(13) + CHAR(10) +
+        '' + CHAR(13) + CHAR(10) +
+        '─ w2MarketingPlanner Point Option ─' + CHAR(13) + CHAR(10) +
+        '<@@PublishPoint@@>' + CHAR(13) + CHAR(10) +
+        '■発行ポイント' + CHAR(13) + CHAR(10) +
+        '取得ポイント：@@ point @@ポイント' + CHAR(13) + CHAR(10) +
+        '</@@PublishPoint@@>' + CHAR(13) + CHAR(10) +
+        '' + CHAR(13) + CHAR(10) +
+        '─ w2MarketingPlanner Coupon Option ─' + CHAR(13) + CHAR(10) +
+        '<@@PublishCoupon@@>' + CHAR(13) + CHAR(10) +
+        '■発行クーポン' + CHAR(13) + CHAR(10) +
+        '以下のクーポンを発行致しました。' + CHAR(13) + CHAR(10) +
+        'ご注文の際にご利用下さい。' + CHAR(13) + CHAR(10) +
+        '@@ publish_coupons @@' + CHAR(13) + CHAR(10) +
+        '</@@PublishCoupon@@>' + CHAR(13) + CHAR(10) +
+        '' + CHAR(13) + CHAR(10) +
+        'ご登録情報は、以下URLよりログイン後確認できます。' + CHAR(13) + CHAR(10) +
+        'http://www.xxxxxx.jp/' + CHAR(13) + CHAR(10) +
+        '' + CHAR(13) + CHAR(10) +
+        '新製品や話題の商品など、豊富な品揃えでお客様のご利用をお待ちしております。' + CHAR(13) + CHAR(10) +
+        '●●●●でのお買い物をどうぞお楽しみください。' + CHAR(13) + CHAR(10) +
+        '' + CHAR(13) + CHAR(10) +
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━' + CHAR(13) + CHAR(10) +
+        'このメールは、配信専用のアドレスで配信されています。' + CHAR(13) + CHAR(10) +
+        'このメールに返信されても、返信内容の確認およびご返答ができません。' + CHAR(13) + CHAR(10) +
+        'あらかじめご了承下さい。' + CHAR(13) + CHAR(10) +
+        'このメールの内容についてのお問い合わせ、及び' + CHAR(13) + CHAR(10) +
+        'このメール内容に心あたりのない場合は、お手数ですが、' + CHAR(13) + CHAR(10) +
+        '下記の連絡先までメール、または電話でお願いします。' + CHAR(13) + CHAR(10) +
+        '' + CHAR(13) + CHAR(10) +
+        '●●●● 問い合わせ窓口' + CHAR(13) + CHAR(10) +
+        'Email: info@xxxxxx.xxx' + CHAR(13) + CHAR(10) +
+        '電 話: 03-3333-3333 ( 平日 10:00～20:00 )' + CHAR(13) + CHAR(10) +
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+		'',
+		'',
+		'',
+		'0',
+		GETDATE(),
+		GETDATE(),
+		'',
+		''
+	)
+END
+
+-- かんたん会員登録設定マスタの追加
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_UserEasyRegisterSetting]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_UserEasyRegisterSetting]
+GO
+/*
+=========================================================================================================
+  Module      : かんたん会員登録設定マスタ (w2_UserEasyRegisterSetting.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_UserEasyRegisterSetting] (
+	[item_id] [nvarchar] (30) NOT NULL,
+	[display_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_UserEasyRegisterSetting] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_UserEasyRegisterSetting] PRIMARY KEY  CLUSTERED
+	(
+		[item_id]
+	) ON [PRIMARY]
+GO
+
+-- かんたん会員登録設定マスタのデータ追加
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserAddr1');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserAddr2');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserAddr3');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserAddr4');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserBirth');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserCompanyName');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserCompanyPostName');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserMailAddr2');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserMailFlg');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserName');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserNameKana');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserNickName');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserSex');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserTel1');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserTel2');
+INSERT INTO w2_UserEasyRegisterSetting(item_id) VALUES ('UserZip');
+			]]>
+    </Statement>
+  </Up>
+</Migration>

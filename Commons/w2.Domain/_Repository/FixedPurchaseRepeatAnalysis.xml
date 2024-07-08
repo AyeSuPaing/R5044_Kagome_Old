@@ -1,0 +1,159 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期継続分析系SQLステートメントXML (FixedPurchaseRepeatAnalysis.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchaseRepeatAnalysis>
+
+  <!-- 定期継続分析取得(注文ID) -->
+  <GetRepeatAnalysisByOrderId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchaseRepeatAnalysis.*
+          FROM  w2_FixedPurchaseRepeatAnalysis
+         WHERE  order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetRepeatAnalysisByOrderId>
+
+  <!-- 定期継続分析取得(ユーザーID) -->
+  <GetRepeatAnalysisByUser>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchaseRepeatAnalysis.*
+          FROM  w2_FixedPurchaseRepeatAnalysis
+         WHERE  w2_FixedPurchaseRepeatAnalysis.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetRepeatAnalysisByUser>
+
+  <!-- 定期継続分析取得(ユーザーID、商品ID、バリエーションID) -->
+  <GetRepeatAnalysisByUserProduct>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchaseRepeatAnalysis.*
+          FROM  w2_FixedPurchaseRepeatAnalysis
+         WHERE  w2_FixedPurchaseRepeatAnalysis.user_id = @user_id
+           AND  w2_FixedPurchaseRepeatAnalysis.product_id = @product_id
+           AND  w2_FixedPurchaseRepeatAnalysis.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetRepeatAnalysisByUserProduct>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FixedPurchaseRepeatAnalysis
+                (
+                  user_id
+                  ,product_id
+                  ,variation_id
+                  ,count
+                  ,order_id
+                  ,fixed_purchase_id
+                  ,status
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @user_id
+                  ,@product_id
+                  ,@variation_id
+                  ,@count
+                  ,@order_id
+                  ,@fixed_purchase_id
+                  ,@status
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="count" Type="int" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FixedPurchaseRepeatAnalysis
+         WHERE  data_no = @data_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_no" Type="bigint" />
+    </Parameter>
+  </Delete>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FixedPurchaseRepeatAnalysis
+           SET  user_id = @user_id
+                ,product_id = @product_id
+                ,variation_id = @variation_id
+                ,count = @count
+                ,order_id = @order_id
+                ,fixed_purchase_id = @fixed_purchase_id
+                ,status = @status
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  data_no = @data_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_no" Type="bigint" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="count" Type="int" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 定期台帳IDを元に削除 -->
+  <DeleteByFixedPurchaseId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FixedPurchaseRepeatAnalysis
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteByFixedPurchaseId>
+</FixedPurchaseRepeatAnalysis>

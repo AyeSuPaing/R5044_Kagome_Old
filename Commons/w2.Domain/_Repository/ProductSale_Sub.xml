@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品セールマスタ系SQLサブステートメントXML (ProductSale_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductSale_Sub>
+
+  <!-- 検索用WHERE文 -->
+  <PRODUCTSALE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE  w2_ProductSale.shop_id = @shop_id
+          <@@hasval:productsale_kbn@@>
+          AND  (
+                 w2_ProductSale.productsale_kbn = @productsale_kbn
+               )
+          </@@hasval:productsale_kbn@@>
+          <@@hasval:sale_info_like_escaped@@>
+          AND  (
+                 w2_ProductSale.productsale_id LIKE @sale_info_like_escaped + '%' ESCAPE '#'
+                 OR
+                 w2_ProductSale.productsale_name LIKE '%' + @sale_info_like_escaped + '%' ESCAPE '#'
+               )
+          </@@hasval:sale_info_like_escaped@@>
+          <@@hasval:sale_opened@@>
+          AND  (
+                 (
+                   @sale_opened = '0' -- 準備中
+                   AND
+                   w2_ProductSale.date_bgn > GETDATE()
+                 )
+                 OR
+                 (
+                   @sale_opened = '1' -- 開催中
+                   AND
+                   w2_ProductSale.date_bgn <= GETDATE()
+                   AND
+                   w2_ProductSale.date_end >= GETDATE()
+                   AND
+                   w2_ProductSale.valid_flg = '1'
+                 )
+                 OR
+                 (
+                   @sale_opened = '2' -- 終了済み
+                   AND
+                   w2_ProductSale.date_end < GETDATE()
+                 )
+                 OR
+                 (
+                   @sale_opened = '3' -- 一時停止
+                   AND
+                   w2_ProductSale.date_bgn <= GETDATE()
+                   AND
+                   w2_ProductSale.date_end >= GETDATE()
+                   AND
+                   w2_ProductSale.valid_flg = '0'
+                 )
+               )
+          </@@hasval:sale_opened@@>
+      ]]>
+    </Statement>
+  </PRODUCTSALE_SEARCH_WHERE>
+
+  <!-- 商品セール情報一覧取得用ORDER_BY -->
+  <PRODUCTSALE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_ProductSale.date_bgn
+            ELSE NULL
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN  2 THEN w2_ProductSale.productsale_id
+            ELSE '1'
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN  1 THEN w2_ProductSale.date_bgn
+            ELSE NULL
+          END 
+          DESC,
+          CASE @sort_kbn
+            WHEN  3 THEN w2_ProductSale.productsale_id
+            ELSE '1'
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_ProductSale.shop_id ASC, w2_ProductSale.productsale_id ASC
+      ]]>
+    </Statement>
+  </PRODUCTSALE_SEARCH_ORDER_BY>
+
+</ProductSale_Sub>

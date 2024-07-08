@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : クーポン系SQLステートメントXML(Coupon.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<Coupon>
+
+  <!-- 重複チェック（クーポン情報登録時） -->
+  <CheckDuplicationInsertCouponCode>
+    <Statement>
+      <![CDATA[
+      SELECT 
+          COUNT(coupon_id) AS coupon_count 
+      FROM 
+          w2_Coupon 
+      WHERE 
+          w2_Coupon.dept_id = @dept_id 
+      AND           
+          w2_Coupon.coupon_code = @coupon_code
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationInsertCouponCode>
+
+  <!-- 重複チェック（クーポン情報更新時） -->
+  <CheckDuplicationUpdateCouponCode>
+    <Statement>
+      <![CDATA[
+      SELECT 
+          COUNT(coupon_id) AS coupon_count 
+      FROM 
+          w2_Coupon 
+      WHERE 
+          w2_Coupon.dept_id = @dept_id 
+      AND 
+          w2_Coupon.coupon_code = @coupon_code
+      AND    
+          w2_Coupon.coupon_code != @coupon_code_old
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code_old" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationUpdateCouponCode>
+
+  <!-- クーポン情報一覧取得（マスタ出力用）-->
+  <GetCouponMaster>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 該当情報取得
+        SELECT  @@ fields @@
+          FROM  (
+                  SELECT  w2_Coupon.dept_id,
+                          w2_Coupon.coupon_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ COUPON_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Coupon
+                          [[ COUPON_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Coupon ON
+                (
+                  RowIndex.dept_id = w2_Coupon.dept_id
+                  AND
+                  RowIndex.coupon_id = w2_Coupon.coupon_id
+                )
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_code_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="coupon_name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="coupon_type" Type="nvarchar" Size="10" />
+      <Input Name="publish_date" Type="nvarchar" Size="1" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetCouponMaster>
+
+  <!-- ユーザ情報一覧取得（マスタ出力用）-->
+  <GetUserCouponMaster>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  @@ fields @@
+          FROM  (
+                  SELECT  w2_User.user_id,
+                          ISNULL(Unused_Coupon.unused_coupon, 0) AS unused_coupon,
+                          ISNULL(Used_Coupon.used_coupon, 0) AS used_coupon,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ USER_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_User WITH (NOLOCK)
+                          LEFT JOIN
+                          (
+                            SELECT  w2_UserCoupon.user_id,
+                                    COUNT(w2_UserCoupon.user_id) AS unused_coupon
+                              FROM  w2_UserCoupon
+                                    INNER JOIN w2_Coupon ON
+                                    (
+                                      w2_UserCoupon.dept_id = w2_Coupon.dept_id
+                                      AND
+                                      w2_UserCoupon.coupon_id = w2_Coupon.coupon_id
+                                    )
+                             WHERE  w2_UserCoupon.dept_id = @dept_id
+                               AND  w2_UserCoupon.use_flg = '0'
+                          GROUP BY  w2_UserCoupon.user_id
+                          ) AS Unused_Coupon  -- 未利用クーポン数
+                          ON
+                          (
+                            w2_User.user_id = Unused_Coupon.user_id
+                          )
+                          LEFT JOIN
+                          (
+                            SELECT w2_UserCoupon.user_id,
+                                   COUNT(w2_UserCoupon.user_id) AS used_coupon
+                              FROM w2_UserCoupon
+                                   INNER JOIN w2_Coupon ON
+                                   (
+                                     w2_UserCoupon.dept_id = w2_Coupon.dept_id
+                                     AND
+                                     w2_UserCoupon.coupon_id = w2_Coupon.coupon_id
+                                   )
+                             WHERE w2_UserCoupon.dept_id = @dept_id
+                               AND w2_UserCoupon.use_flg = '1'
+                          GROUP BY w2_UserCoupon.user_id
+                          ) AS Used_Coupon     -- 利用済みクーポン数
+                          ON
+                          (
+                            w2_User.user_id = Used_Coupon.user_id
+                          )
+                          [[ USER_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_UserCoupon ON
+                (
+                  RowIndex.user_id = w2_UserCoupon.user_id
+                )
+                INNER JOIN w2_Coupon ON
+                (
+                   w2_UserCoupon.coupon_id = w2_Coupon.coupon_id
+                   AND
+                   w2_UserCoupon.dept_id = w2_Coupon.dept_id
+                )
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetUserCouponMaster>
+
+  <!-- クーポン利用ユーザー情報取得(マスタ出力用) -->
+  <GetCouponUseUser>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_CouponUseUser
+                INNER JOIN w2_Coupon WITH (NOLOCK) ON
+                (
+                  w2_CouponUseUser.coupon_id = w2_coupon.coupon_id
+                )
+                LEFT JOIN w2_Order WITH (NOLOCK) ON
+                (
+                  w2_CouponUseUser.order_id = w2_Order.order_id
+                )
+                LEFT JOIN w2_User WITH (NOLOCK) ON
+                (
+                  w2_User.user_id = 
+                    CASE @used_user_judge_type
+                      WHEN 'MailAddress' THEN w2_Order.user_id
+                      WHEN 'UserId' THEN w2_CouponUseUser.coupon_use_user
+                    END
+                )
+         WHERE  (
+                  (
+                     @coupon_id = '' 
+                     OR
+                     w2_CouponUseUser.coupon_id = @coupon_id
+                  )
+                  AND
+                  (
+                     @user_id_like_escaped = '' 
+                     OR
+                     w2_User.user_id LIKE @user_id_like_escaped + '%' ESCAPE '#'
+                  )
+                  AND
+                  (
+                     @mail_addr_like_escaped = '' 
+                     OR
+                     w2_CouponUseUser.coupon_use_user LIKE @mail_addr_like_escaped + '%' ESCAPE '#'
+                  )
+                  AND
+                  (
+                     @name_like_escaped = '' 
+                     OR
+                     w2_User.name LIKE @name_like_escaped + '%' ESCAPE '#'
+                  )
+                  AND
+                  (
+                    (@date_created_from IS NULL OR w2_CouponUseUser.date_created >= @date_created_from)
+                    AND
+                    (@date_created_to IS NULL OR w2_CouponUseUser.date_created < DATEADD(day, 1, @date_created_to))
+                  )
+                  AND
+                  (
+                    @del_flg = '1' 
+                    OR 
+                    w2_User.del_flg = @del_flg
+                    OR
+                    w2_User.del_flg IS NULL  --利用ユーザー手動追加でユーザー情報と紐づかない場合対策
+                  )
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="mail_addr_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="80" />
+      <Input Name="date_created_from" Type="datetime"/>
+      <Input Name="date_created_to" Type="datetime"/>
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="used_user_judge_type" Type="nvarchar" Size="15" />
+    </Parameter>
+  </GetCouponUseUser>
+
+</Coupon>

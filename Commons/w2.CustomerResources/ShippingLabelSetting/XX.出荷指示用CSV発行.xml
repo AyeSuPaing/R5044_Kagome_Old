@@ -1,0 +1,569 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<OrderDataExportSetting>
+
+  <!-- 出力ファイルの設定 -->
+  <ExportSetting>
+    <!-- 受注一覧・ワークフロー一覧画面に表示する送り状ダウンロードリンクの文言 -->
+    <DisplayName><![CDATA[帳票出力]]></DisplayName>
+    <!-- 出力ファイルの種類（設定可能値：csv） -->
+    <FormatType>csv</FormatType>
+    <!-- 出力単位（設定可能値：Order,SQL） -->
+    <UnitType>SQL</UnitType>
+    <!-- 出力ファイル名 -->
+    <FileName>
+      <Value Type="string"><![CDATA[ExportReportInfo_]]></Value>
+      <Value Type="dateString" Format="yyyyMMddHHmmss">Now</Value>
+      <Value Type="string">.csv</Value>
+    </FileName>
+    <!-- ヘッダ行出力有無（設定可能値：true, false） -->
+    <ExportHeader>true</ExportHeader>
+    <!-- 引用符常時出力有無（設定可能値：true, false） -->
+    <!--
+         例：引用符が「"」、1列目の値は「123」、2列目の値は「abc」、3列目の値は「1,2」の場合、
+             ・true の場合、"123","abc","1,2"を出力しますが、
+             ・false の場合、123,abc,"1,2"を出力します。（値にカンマ(,)があるときは強制エスケープ）
+    -->
+    <AlwaysExportQuotation>true</AlwaysExportQuotation>
+    <!-- 列の引用符 -->
+    <StringQuotationMark><![CDATA["]]></StringQuotationMark>
+    <!-- 区切り文字（設定可能値：COMMA, TAB） -->
+    <Separator>COMMA</Separator>
+    <!-- 文字コード（設定可能値：Shift_JIS, UTF-8） -->
+    <Encoding>Shift_JIS</Encoding>
+  </ExportSetting>
+
+  <!-- 抽出設定 -->
+  <SqlSetting>
+    <SqlExport>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  w2_Order.order_id
+          INTO  #TempTable
+          FROM  w2_Order
+                INNER JOIN w2_OrderOwner ON
+                (
+                  w2_Order.order_id = w2_OrderOwner.order_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_Order.user_id = w2_User.user_id
+                )
+                [[ ORDER_SEARCH_WHERE ]]
+        SELECT  @@ fields @@
+          FROM  #TempTable
+                INNER JOIN w2_Order ON
+                (
+                  w2_Order.order_id = #TempTable.order_id
+                )
+                INNER JOIN w2_OrderOwner ON
+                (
+                  w2_Order.order_id = w2_OrderOwner.order_id
+                )
+                INNER JOIN w2_OrderShipping ON
+                (
+                  w2_Order.order_id = w2_OrderShipping.order_id
+                )
+                INNER JOIN w2_OrderItem ON
+                (
+                  w2_Order.order_id = w2_OrderItem.order_id
+                )
+                LEFT JOIN w2_OrderCoupon ON
+                (
+                  w2_Order.order_id = w2_OrderCoupon.order_id
+                )
+                INNER JOIN w2_Payment ON
+                (
+                  w2_Order.shop_id = w2_Payment.shop_id
+                  AND
+                  w2_Order.order_payment_kbn = w2_Payment.payment_id
+                )
+                INNER JOIN w2_ShopShipping ON
+                (
+                  w2_Order.shop_id = w2_ShopShipping.shop_id
+                  AND
+                  w2_Order.shipping_id = w2_ShopShipping.shipping_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_Order.user_id = w2_User.user_id
+                )
+                LEFT JOIN w2_FixedPurchase ON
+                (
+                  w2_Order.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN
+                (
+                  SELECT  *
+                    FROM
+                        (
+                        SELECT  order_id,
+                                price_total_by_rate,
+                                key_tax_rate 
+                          FROM  w2_OrderPriceByTaxRate
+                        ) AS o
+                   PIVOT (SUM(price_total_by_rate) FOR key_tax_rate IN ([8.00], [10.00])) AS pvsub
+                ) AS PriceTotalByTax
+                ON
+                (
+                  w2_Order.order_id = PriceTotalByTax.order_id
+                )
+                INNER JOIN
+                (
+                  SELECT  *
+                    FROM
+                        (
+                        SELECT  order_id,
+                                tax_price_by_rate,
+                                key_tax_rate 
+                          FROM  w2_OrderPriceByTaxRate
+                        ) AS o
+                   PIVOT (SUM(tax_price_by_rate) FOR key_tax_rate IN ([8.00], [10.00])) AS pvsub
+                ) AS TaxPriceByRate
+                ON
+                (
+                  w2_Order.order_id = TaxPriceByRate.order_id
+                )
+                @@ orderby @@
+        ]]>
+    </SqlExport>
+  </SqlSetting>
+
+  <!-- 出力項目・内容の設定 -->
+  <FieldsSetting>
+    <!-- 1.顧客ID -->
+    <Field Name="顧客ID">
+      <Value Type="field">w2_Order.user_id</Value>
+    </Field>
+
+    <!-- 2.注文コード -->
+    <Field Name="注文コード">
+      <Value Type="field">w2_Order.order_id</Value>
+    </Field>
+
+    <!-- 3.商品コード-->
+    <Field Name="商品コード">
+      <Value Type="field">w2_OrderItem.product_id</Value>
+    </Field>
+
+    <!-- 4.商品名 -->
+    <Field Name="商品名">
+      <Value Type="field">w2_OrderItem.product_name</Value>
+    </Field>
+
+    <!-- 5.商品単価 -->
+    <Field Name="商品単価">
+      <Value Type="field">w2_OrderItem.product_price</Value>
+    </Field>
+
+    <!-- 6.数量 -->
+    <Field Name="数量">
+      <Value Type="field">w2_OrderItem.item_quantity</Value>
+    </Field>
+
+    <!-- 7.手数料 -->
+    <Field Name="手数料">
+      <Value Type="field">
+        <![CDATA[CAST(w2_Order.order_price_exchange AS int)]]>
+      </Value>
+    </Field>
+
+    <!-- 8.値引き額 -->
+    <Field Name="値引き額">
+      <Value Type="field">
+        <![CDATA[CAST(w2_Order.order_price_regulation
+          - w2_Order.member_rank_discount_price
+          - w2_Order.order_coupon_use
+          - w2_Order.order_point_use_yen
+          - w2_Order.setpromotion_product_discount_amount
+          - w2_Order.setpromotion_shipping_charge_discount_amount
+          - w2_Order.setpromotion_payment_charge_discount_amount
+          - w2_Order.fixed_purchase_member_discount_amount
+          - w2_Order.order_discount_set_price AS int)]]>
+      </Value>
+    </Field>
+
+    <!-- 9.送料 -->
+    <Field Name="送料">
+      <Value Type="field">
+        <![CDATA[CAST(w2_Order.order_price_shipping AS int)]]>
+      </Value>
+    </Field>
+
+    <!-- 10.合計金額 -->
+    <Field Name="合計金額">
+      <Value Type="field">
+        <![CDATA[CAST(w2_Order.order_price_total AS int)]]>
+      </Value>
+    </Field>
+
+    <!-- 11.8%合計金額 -->
+    <Field Name="8%合計金額">
+      <Value Type="field">PriceTotalByTax.[8.00]</Value>
+    </Field>
+
+    <!-- 12.10%合計金額 -->
+    <Field Name="10%合計金額">
+      <Value Type="field">PriceTotalByTax.[10.00]</Value>
+    </Field>
+
+    <!-- 13.消費税金額合計 -->
+    <Field Name="消費税金額合計">
+      <Value Type="field">
+        <![CDATA[CAST(w2_Order.order_price_tax AS int)]]>
+      </Value>
+    </Field>
+
+    <!-- 14.8%消費税合計金額 -->
+    <Field Name="8%消費税合計金額">
+      <Value Type="field">TaxPriceByRate.[8.00]</Value>
+    </Field>
+
+    <!-- 15.10%消費税合計金額 -->
+    <Field Name="10%消費税合計金額">
+      <Value Type="field">TaxPriceByRate.[10.00]</Value>
+    </Field>
+
+    <!-- 16.配送方法 -->
+    <Field Name="配送方法">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_OrderShipping.shipping_method = 'EXPRESS']]></Condition>
+          <Value Type="field">
+            <![CDATA[ISNULL((SELECT TOP 1 w2_DeliveryCompany.delivery_company_name + '宅配便' FROM w2_DeliveryCompany WHERE w2_DeliveryCompany.delivery_company_id = w2_OrderShipping.delivery_company_id), '')]]>
+          </Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[w2_OrderShipping.shipping_method = 'MAIL']]></Condition>
+          <Value Type="field">
+            <![CDATA[ISNULL((SELECT TOP 1 w2_DeliveryCompany.delivery_company_name + 'メール便' FROM w2_DeliveryCompany WHERE w2_DeliveryCompany.delivery_company_id = w2_OrderShipping.delivery_company_id), '')]]>
+          </Value>
+        </Case>
+        <Else>
+          <Value Type="field">
+            <![CDATA[ISNULL((SELECT TOP 1 w2_DeliveryCompany.delivery_company_name FROM w2_DeliveryCompany WHERE w2_DeliveryCompany.delivery_company_id = w2_OrderShipping.delivery_company_id), '')]]>
+          </Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 17.お支払い方法(クレジット連携) -->
+    <Field Name="お支払い方法(クレジット連携)">
+        <Value Type="field"><![CDATA[ISNULL((SELECT TOP 1 w2_Payment.payment_name FROM w2_Payment WHERE w2_Payment.payment_id = w2_Order.order_payment_kbn), '')]]></Value>
+    </Field>
+
+    <!-- 18.会員ランク名 -->
+    <Field Name="会員ランク名">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_Order.member_rank_id = '00']]></Condition>
+          <Value Type="string">ビギナー</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[w2_Order.member_rank_id = '01']]></Condition>
+          <Value Type="string">ブロンズ</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[w2_Order.member_rank_id = '02']]></Condition>
+          <Value Type="string">シルバー</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[w2_Order.member_rank_id = '03']]></Condition>
+          <Value Type="string">ゴールド</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[w2_Order.member_rank_id = '04']]></Condition>
+          <Value Type="string">プラチナ</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 19.利用ポイント -->
+    <Field Name="利用ポイント">
+      <Value Type="string">0</Value>
+    </Field>
+
+    <!-- 20.付与ポイント -->
+    <Field Name="付与ポイント">
+      <Value Type="string">0</Value>
+    </Field>
+
+    <!-- 21.残ポイント -->
+    <Field Name="残ポイント">
+      <Value Type="string">0</Value>
+    </Field>
+
+    <!-- 22.DM購読 -->
+    <Field Name="DM購読">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 23.氏名(姓) -->
+    <Field Name="氏名(姓)">
+      <Value Type="field">w2_OrderOwner.owner_name1</Value>
+    </Field>
+
+    <!-- 24.フリガナ(姓) -->
+    <Field Name="フリガナ(姓)">
+      <Value Type="field">w2_OrderOwner.owner_name_kana1</Value>
+    </Field>
+
+    <!-- 25.氏名(名) -->
+    <Field Name="氏名(名)">
+      <Value Type="field">w2_OrderOwner.owner_name2</Value>
+    </Field>
+
+    <!-- 26.フリガナ(名) -->
+    <Field Name="フリガナ(名)">
+      <Value Type="field">w2_OrderOwner.owner_name_kana2</Value>
+    </Field>
+
+    <!-- 27.郵便番号 -->
+    <Field Name="郵便番号">
+      <Value Type="field">w2_OrderOwner.owner_zip</Value>
+    </Field>
+
+    <!-- 28.都道府県 -->
+    <Field Name="都道府県">
+      <Value Type="field">w2_OrderOwner.owner_addr1</Value>
+    </Field>
+
+    <!-- 29.市町村 -->
+    <Field Name="市町村">
+      <Value Type="field">w2_OrderOwner.owner_addr2</Value>
+    </Field>
+
+    <!-- 30.住所 -->
+    <Field Name="住所">
+      <Value Type="field">w2_OrderOwner.owner_addr3</Value>
+    </Field>
+
+    <!-- 31.建物等 -->
+    <Field Name="建物等">
+      <Value Type="field">w2_OrderOwner.owner_addr4</Value>
+    </Field>
+
+    <!-- 32.電話番号 -->
+    <Field Name="電話番号">
+      <Value Type="field">w2_OrderOwner.owner_tel1</Value>
+    </Field>
+
+    <!-- 33.メールアドレス -->
+    <Field Name="メールアドレス">
+      <Value Type="field">w2_OrderOwner.owner_mail_addr</Value>
+    </Field>
+
+    <!-- 34.お届け先 氏名(姓) -->
+    <Field Name="お届け先 氏名(姓)">
+      <Value Type="field">w2_OrderShipping.shipping_name1</Value>
+    </Field>
+
+    <!-- 35.お届け先 フリガナ(姓) -->
+    <Field Name="お届け先 フリガナ(姓)">
+      <Value Type="field">w2_OrderShipping.shipping_name_kana1</Value>
+    </Field>
+
+    <!-- 36.お届け先 氏名(名) -->
+    <Field Name="お届け先 氏名(名)">
+      <Value Type="field">w2_OrderShipping.shipping_name2</Value>
+    </Field>
+
+    <!-- 37.お届け先 フリガナ(名) -->
+    <Field Name="お届け先 フリガナ(名)">
+      <Value Type="field">w2_OrderShipping.shipping_name_kana2</Value>
+    </Field>
+
+    <!-- 38.お届け先 郵便番号 -->
+    <Field Name="お届け先 郵便番号">
+      <Value Type="field">w2_OrderShipping.shipping_zip</Value>
+    </Field>
+
+    <!-- 39.お届け先 都道府県 -->
+    <Field Name="お届け先 都道府県">
+      <Value Type="field">w2_OrderShipping.shipping_addr1</Value>
+    </Field>
+
+    <!-- 40.お届け先 市町村 -->
+    <Field Name="お届け先 市町村">
+      <Value Type="field">w2_OrderShipping.shipping_addr2</Value>
+    </Field>
+
+    <!-- 41.お届け先 住所 -->
+    <Field Name="お届け先 住所">
+      <Value Type="field">w2_OrderShipping.shipping_addr3</Value>
+    </Field>
+
+    <!-- 42.お届け先 建物等 -->
+    <Field Name="お届け先 建物等">
+      <Value Type="field">w2_OrderShipping.shipping_addr4</Value>
+    </Field>
+
+    <!-- 43.お届け先 電話番号 -->
+    <Field Name="お届け先 電話番号">
+      <Value Type="field">w2_OrderShipping.shipping_tel1</Value>
+    </Field>
+
+    <!-- 44.定期ステータス -->
+    <Field Name="定期ステータス">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[(SELECT TOP 1 w2_FixedPurchase.fixed_purchase_status FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id) = '10']]></Condition>
+          <Value Type="string">通常</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[(SELECT TOP 1 w2_FixedPurchase.fixed_purchase_status FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id) = '11']]></Condition>
+          <Value Type="string">決済エラー停止</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[(SELECT TOP 1 w2_FixedPurchase.fixed_purchase_status FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id) = '12']]></Condition>
+          <Value Type="string">在庫切れ停止</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[(SELECT TOP 1 w2_FixedPurchase.fixed_purchase_status FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id) = '13']]></Condition>
+          <Value Type="string">出荷済み保留停止</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[(SELECT TOP 1 w2_FixedPurchase.fixed_purchase_status FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id) = '19']]></Condition>
+          <Value Type="string">その他エラー停止</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[(SELECT TOP 1 w2_FixedPurchase.fixed_purchase_status FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id) = '20']]></Condition>
+          <Value Type="string">休止</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[(SELECT TOP 1 w2_FixedPurchase.fixed_purchase_status FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id) = '30']]></Condition>
+          <Value Type="string">キャンセル</Value>
+        </Case>
+        <Else>
+          <Value Type="field"><![CDATA[ISNULL((SELECT TOP 1 w2_FixedPurchase.fixed_purchase_status FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id), '')]]></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 45.お客様の全注文回数 -->
+    <Field Name="お客様の全注文回数">
+      <Value Type="field"><![CDATA[ISNULL((SELECT TOP 1 w2_User.order_count_old FROM w2_User WHERE w2_User.user_id = w2_Order.user_id), '')]]></Value>
+    </Field>
+
+    <!-- 46.定期回数 -->
+    <Field Name="定期回数">
+      <Value Type="field">w2_Order.fixed_purchase_order_count</Value>
+    </Field>
+
+    <!-- 47.次回発送予定日 -->
+    <Field Name="次回発送予定日">
+      <Value Type="dateString" Format="yyyy/mm/dd"><![CDATA[ISNULL((SELECT TOP 1 w2_FixedPurchase.next_shipping_date FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id), '')]]></Value>
+    </Field>
+
+    <!-- 48.定期次回支払い方法 -->
+    <Field Name="定期次回支払い方法">
+      <Value Type="field"><![CDATA[ISNULL((SELECT TOP 1 w2_Payment.payment_name FROM w2_Payment,w2_FixedPurchase WHERE w2_Payment.payment_id = w2_FixedPurchase.order_payment_kbn AND w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id), '')]]></Value>
+    </Field>
+
+    <!-- 49.受注日 -->
+    <Field Name="受注日">
+      <Value Type="field">w2_Order.order_date</Value>
+    </Field>
+
+    <!-- 50.お届け希望日 -->
+    <Field Name="お届け希望日">
+      <Value Type="field">w2_OrderShipping.shipping_date</Value>
+    </Field>
+
+    <!-- 51.お届け希望時間帯 -->
+    <Field Name="お届け希望時間帯">
+      <Value Type="field">w2_OrderShipping.shipping_time</Value>
+    </Field>
+
+    <!-- 52.定期お届け間隔 -->
+    <Field Name="定期お届け間隔">
+      <Switch>
+        <Case>
+          <!-- 非対応 -->
+          <Condition><![CDATA[(SELECT TOP 1 w2_FixedPurchase.fixed_purchase_kbn FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id) = '01']]></Condition>
+          <Value Type="field">
+            <![CDATA[ISNULL((SELECT TOP 1 w2_FixedPurchase.fixed_purchase_setting1 FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id), '')]]>
+          </Value>
+        </Case>
+        <Case>
+          <!-- 非対応 -->
+          <Condition><![CDATA[(SELECT TOP 1 w2_FixedPurchase.fixed_purchase_kbn FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id) = '02']]></Condition>
+          <Value Type="field">
+            <![CDATA[ISNULL((SELECT TOP 1 w2_FixedPurchase.fixed_purchase_setting1 FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id), '')]]>
+          </Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[(SELECT TOP 1 w2_FixedPurchase.fixed_purchase_kbn FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id) = '03']]></Condition>
+          <Value Type="field">
+            <![CDATA[ISNULL((SELECT TOP 1 w2_FixedPurchase.fixed_purchase_setting1 + '日 間隔' FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id), '')]]>
+          </Value>
+        </Case>
+        <Else>
+          <Value Type="field">
+            <![CDATA[ISNULL((SELECT TOP 1 w2_FixedPurchase.fixed_purchase_setting1 FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id), '')]]>
+          </Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 53.発送予定日 -->
+    <Field Name="発送予定日">
+      <Value Type="field" Format="yyyy/mm/dd">w2_OrderShipping.scheduled_shipping_date</Value>
+    </Field>
+
+    <!-- 54.定期次回到着日 -->
+    <Field Name="定期次回到着日">
+      <Value Type="dateString" Format="yyyy/mm/dd"><![CDATA[ISNULL((SELECT TOP 1 w2_FixedPurchase.next_shipping_date FROM w2_FixedPurchase WHERE w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id), '')]]></Value>
+    </Field>
+
+    <!-- 55.定期次回到着時間帯 -->
+    <Field Name="定期次回到着時間帯">
+      <Value Type="dateString" Format="yyyy/mm/dd"><![CDATA[ISNULL((SELECT TOP 1 w2_FixedPurchaseShipping.shipping_time FROM w2_FixedPurchaseShipping WHERE w2_FixedPurchaseShipping.fixed_purchase_id = w2_Order.fixed_purchase_id), '')]]></Value>
+    </Field>
+
+    <!-- 56.お客様からの通信欄 -->
+    <Field Name="お客様からの通信欄">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 57.店舗内通信欄 -->
+    <Field Name="店舗内通信欄">
+      <Value Type="field">w2_Order.management_memo</Value>
+    </Field>
+
+    <!-- 58.お客様への通信欄 -->
+    <Field Name="お客様への通信欄">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 59.NP加盟店ID -->
+    <Field Name="NP加盟店ID">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 60.NP取引ID -->
+    <Field Name="NP取引ID">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 61.管理者メモ -->
+    <Field Name="管理者メモ">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 62.GMO取込ID -->
+    <Field Name="GMO取込ID">
+      <Value Type="field">w2_Order.card_tran_id</Value>
+    </Field>
+
+    <!-- 63.GMO加盟店取引ID -->
+    <Field Name="GMO加盟店取引ID">
+      <Value Type="field">w2_Order.payment_order_id</Value>
+    </Field>
+  </FieldsSetting>
+
+</OrderDataExportSetting>

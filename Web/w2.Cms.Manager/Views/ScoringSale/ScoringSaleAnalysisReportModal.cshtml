@@ -1,0 +1,158 @@
+﻿@*
+=========================================================================================================
+  Module      : ScoringSaleAnalysisReportModal (ScoringSaleAnalysisReportModal.cshtml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Web.Page
+@model string
+@Html.Hidden("controller", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_SCORING_SALE)
+<p class="modal-inner-ttl under-text">スコアリング分析レポート</p>
+<div id="scoringSaleAnalysisModal">
+	<table>
+		<tr class="list-head">
+			<td class="list-head-col" style="border: lightgray solid 1px;">
+				対象スコアリング
+			</td>
+			<td class="list-head-col" style="background-color: white; border: lightgray solid 1px;">
+				<span data-bind="text: $data2.DispPageName"></span>
+			</td>
+		</tr>
+		<tr>
+			<td style="padding: 5px; background-color: white; border: lightgray solid 1px; width: 200px;">
+				<!-- ▽カレンダ▽ -->
+				<div >表示期間</div>
+				<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature" >
+					<input type="radio" name="ReportType" value="3" id="reportType3" checked="checked" ><span>3ヶ月</span>
+					<input type="radio" name="ReportType" value="12" id="reportType12" ><span>1年</span>
+				</div>
+				<!-- △カレンダ△ -->
+				<!-- ▽表示ボタン▽ -->
+				<div style="width: 100%; text-align: center; margin: 10px 0;">
+					<input type="button" id="Display" class="btn btn-main btn-size-m" value="表示" style="position: relative;" />
+				</div>
+				<!-- △表示ボタン△ -->
+			</td>
+			<!-- ▽チャートグラフ▽ -->
+				<div class="list-col w40 hide-list-detail hide-style-list">
+					<td style="width: 80%;">
+						<table width="" border="0">
+							<tr>
+								<td>
+									<table class="box_border" cellspacing="1" cellpadding="0" border="0">
+										<tr>
+											<td class="search_box_bg">
+												<table cellspacing="0" cellpadding="0" width="100%" border="0">
+													<tr>
+														<td align="center">
+															<table cellspacing="0" cellpadding="0" border="0">
+																<tr>
+																	<td class="search_box">
+																		<table id="search_table1" class="search_table" width="300px" cellspacing="1" cellpadding="2" border="0" style="height: 200px;">
+																			<tr class="search_item_bg" valign="top">
+																				<td style="width: 600px; height: 150px; border: none;">
+																					<div style="position: relative; height: 40vh; width: 40vw">
+																						<canvas id="chartModal" style="height: 300px;" align="middle"></canvas>
+																					</div>
+																				</td>
+																			</tr>
+																		</table>
+																	</td>
+																</tr>
+																<tr>
+																	<td>
+																		<img height="10" alt="" src="../Images/Common/sp.gif" width="100%" border="0" />
+																	</td>
+																</tr>
+															</table>
+														</td>
+													</tr>
+												</table>
+											</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+							<tr>
+								<td>
+									<img height="10" alt="" src="../Images/Common/sp.gif" width="100%" border="0" />
+								</td>
+							</tr>
+						</table>
+					</td>
+				</div>
+			<!-- △チャートグラフ△ -->
+		</tr>
+	</table>
+	<!-- 備考 -->
+	<table class="info_table" width="758" border="0" cellspacing="1" cellpadding="3" style="margin-top: 20px;">
+		<tr class="info_item_bg">
+			<td align="left">
+				<table>
+					<tr>
+						<td>■対象</td>
+					</tr>
+					<tr>
+						<td>すべての項目はPCサイトおよびスマフォサイトが対象となります。</td>
+					</tr>
+				</table>
+				<br/>
+				<table>
+					<tr>
+						<td colspan="2">■項目説明</td>
+					</tr>
+					<tr>
+						<td class="w27">ページ離脱率</td>
+						<td>
+							ユーザーがページを離脱した割合
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+</div>
+
+<script type="text/javascript">
+	$(function() {
+		create_list_view_model();
+
+		// イベント設定
+		$("#Display").click(function () { create_list_view_model(); });
+		$('[name="ReportType"]:radio').change(function () { create_list_view_model(); });
+	});
+
+	function create_list_view_model() {
+		var url = '@Url.Action("GetScoringSaleReport")';
+		var postData = {
+			"scoringSaleId": "@Model",
+			"targetPeriod": $("input[name='ReportType']:checked").val()
+		};
+		$.ajax({
+			url: url,
+			type: 'POST',
+			data: JSON.stringify(postData),
+			dataType: 'json',
+			contentType: 'application/json'
+		}).then(
+			function (data) { change_list_view_model(data); },
+			function () { to_error(); }
+		).then(
+			function () {
+				setTimeout(function () { loading_animation.end(); }, 200);
+			});
+	}
+
+	function change_list_view_model(data) {
+		ScoringSaleCharts(
+			'chartModal',
+			data.ScoringSaleChartViewModel,
+			'line',
+			'False',
+			'',
+			'@CommonPage.ReplaceTag("@@ScoringSale.chart.page_exit_rate_title.name@@")',
+			'@CommonPage.ReplaceTag("@@ScoringSale.chart.number_of_products.name@@")'
+			);
+		}
+</script>

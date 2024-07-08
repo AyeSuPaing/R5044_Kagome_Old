@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+------------------------------------------------------------------------------------------------------------
+-- �^�X�N�X�P�W���[���쐬�v���V�[�W��
+------------------------------------------------------------------------------------------------------------
+  if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_CreateTaskScheduleSp]') and OBJECTPROPERTY(id, N'IsProcedure') = 1)
+drop procedure [dbo].[w2_CreateTaskScheduleSp]
+GO
+/*
+=========================================================================================================
+  Module      : �^�X�N�X�P�W���[���쐬�v���V�[�W��(w2_CreateTaskScheduleSp.sql)
+ �������������������������������������������������������������������������������������������������������
+  Application : w2.Database.Scripts
+  BaseVersion : V5.0
+  Author      : M.Ochiai
+  email       : product@w2solution.co.jp
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+  URL         : http://www.w2solution.co.jp/
+=========================================================================================================
+*/
+CREATE PROCEDURE [dbo].[w2_CreateTaskScheduleSp] (
+					@CREATE_DAYS int,
+					@CREATE_COUNT int output) AS
+
+	---------------------------------------
+	-- �ϐ���`
+	---------------------------------------
+	DECLARE @DAY_LOOP int
+	DECLARE @SCHEDULE_DATE datetime
+	DECLARE @SCHEDULE_DATETIME datetime
+	DECLARE @DEPT_ID nvarchar(30)
+	DECLARE @MASTER_ID nvarchar(10)
+	DECLARE @SCHEDULE_KBN nvarchar(10)
+	DECLARE @SCHEDULE_DAY_OF_WEEK nvarchar(10)
+	DECLARE @SCHEDULE_YEAR int
+	DECLARE @SCHEDULE_MONTH int
+	DECLARE @SCHEDULE_DAY int
+	DECLARE @SCHEDULE_HOUR int
+	DECLARE @SCHEDULE_MINUTE int
+	DECLARE @SCHEDULE_SECOND int
+	DECLARE @ACTION_KBN nvarchar(30)
+
+	DECLARE @COUNT int
+	DECLARE @ACTION_NO int
+
+	---------------------------------------
+	-- �ϐ�������
+	---------------------------------------
+	SET @CREATE_COUNT = 0
+
+	---------------------------------------
+	-- �X�P�W���[����`
+	---------------------------------------
+	DECLARE CUR_TLIST CURSOR FOR
+	(
+	-- �^�[�Q�b�g���X�g
+	SELECT	dept_id,
+			target_id,
+			schedule_kbn,
+			schedule_day_of_week,
+			schedule_year,
+			schedule_month,
+			schedule_day,
+			schedule_hour,
+			schedule_minute,
+			schedule_second,
+			'CreateTargetList'
+	  FROM	w2_TargetList
+	 WHERE	exec_timing = '02'	-- �X�P�W���[�����s
+	   AND	schedule_kbn IN ('01', '02', '03', '05')	-- ���P�ʁA�T�P�ʁA���P�ʁA���̂�
+	   AND	valid_flg = '1'
+	UNION ALL
+	-- ���[���z�M
+	SELECT	dept_id,
+			maildist_id,
+			schedule_kbn,
+			schedule_day_of_week,
+			schedule_year,
+			schedule_month,
+			schedule_day,
+			schedule_hour,
+			schedule_minute,
+			schedule_second,
+			'MailDist'
+	  FROM	w2_MailDistSetting
+	 WHERE	exec_timing = '02'	-- �X�P�W���[�����s
+	   AND	schedule_kbn IN ('01', '02', '03', '05')	-- ���P�ʁA�T�P�ʁA���P�ʁA���̂�
+	   AND	valid_flg = '1'
+    UNION ALL
+	-- ��������N�t�^
+	SELECT	'0',
+			member_rank_rule_id,
+			schedule_kbn,
+			schedule_day_of_week,
+			schedule_year,
+			schedule_month,
+			schedule_day,
+			schedule_hour,
+			schedule_minute,
+			schedule_second,
+			'ChangeMemberRank'
+	  FROM	w2_MemberRankRule
+	 WHERE	exec_timing = '02'	-- �X�P�W���[�����s
+	   AND	schedule_kbn IN ('01', '02', '03', '05')	-- ���P�ʁA�T�P�ʁA���P�ʁA���̂�
+	   AND	valid_flg = 'ON'
+	)
+	
+	---------------------------------------
+	--  �^�[�Q�b�g���X�g�J�[�\���J���E�ŏI�s�܂Ń��[�v
+	---------------------------------------
+	OPEN CUR_TLIST
+
+	WHILE (1=1)
+	BEGIN
+		---------------------------------------
+		-- �X�P�W���[�����擾
+		---------------------------------------
+		FETCH NEXT FROM	CUR_TLIST
+		  INTO	@DEPT_ID,
+				@MASTER_ID,
+				@SCHEDULE_KBN,
+				@SCHEDULE_DAY_OF_WEEK,
+				@SCHEDULE_YEAR,
+				@SCHEDULE_MONTH,
+				@SCHEDULE_DAY,
+				@SCHEDULE_HOUR,
+				@SCHEDULE_MINUTE,
+				@SCHEDULE_SECOND,
+				@ACTION_KBN
+
+		-- �I�[�Ȃ甲����
+		IF @@FETCH_STATUS != 0
+		BEGIN
+			BREAK
+		END
+		
+		---------------------------------------
+		-- �^�[�Q�b�g���X�g�X�P�W���[���擾
+		---------------------------------------
+		SET @DAY_LOOP = 0
+		WHILE (@DAY_LOOP < @CREATE_DAYS)
+		BEGIN
+			SET @SCHEDULE_DATE = DATEADD(dd,  @DAY_LOOP, GETDATE())
+		
+			IF	(
+					-- ���P�ʂł���Ίm��
+					(@SCHEDULE_KBN = '01')
+					OR
+					(
+						-- �T�P�ʂł���Ηj���������Ă���Ίm��
+						(@SCHEDULE_KBN = '02')
+						AND
+						(
+							(@SCHEDULE_DAY_OF_WEEK = 'Sunday' AND DATENAME(weekday, @SCHEDULE_DATE) = '���j')
+							OR
+							(@SCHEDULE_DAY_OF_WEEK = 'Monday' AND DATENAME(weekday, @SCHEDULE_DATE) = '���j')
+							OR
+							(@SCHEDULE_DAY_OF_WEEK = 'Tuesday' AND DATENAME(weekday, @SCHEDULE_DATE) = '�Ηj')
+							OR
+							(@SCHEDULE_DAY_OF_WEEK = 'Wednesday' AND DATENAME(weekday, @SCHEDULE_DATE) = '���j')
+							OR
+							(@SCHEDULE_DAY_OF_WEEK = 'Thursday' AND DATENAME(weekday, @SCHEDULE_DATE) = '�ؗj')
+							OR
+							(@SCHEDULE_DAY_OF_WEEK = 'Friday' AND DATENAME(weekday, @SCHEDULE_DATE) = '��j')
+							OR
+							(@SCHEDULE_DAY_OF_WEEK = 'Saturday' AND DATENAME(weekday, @SCHEDULE_DATE) = '�y�j')
+						)
+					)
+					OR
+					(
+						-- ���P�ʂł���Γ��������Ă���Ίm��
+						(@SCHEDULE_KBN = '03')
+						AND
+						(@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+					)
+					OR
+					(
+						-- ���݂̂ł���΁A�N�����������Ă���Ίm��
+						(@SCHEDULE_KBN = '05')
+						AND
+						(@SCHEDULE_YEAR = DATEPART(yy, @SCHEDULE_DATE))
+						AND
+						(@SCHEDULE_MONTH = DATEPART(mm, @SCHEDULE_DATE))
+						AND
+						(@SCHEDULE_DAY = DATEPART(dd, @SCHEDULE_DATE))
+					)
+				)
+			BEGIN
+				-- �X�P�W���[�����t�m��
+				SET @SCHEDULE_DATETIME = DATENAME(yyyy,@SCHEDULE_DATE) + '/' + DATENAME(mm,@SCHEDULE_DATE) + '/' + DATENAME(dd,@SCHEDULE_DATE) + ' ' + CONVERT(nvarchar, @SCHEDULE_HOUR) + ':' + CONVERT(nvarchar, @SCHEDULE_MINUTE) + ':' + CONVERT(nvarchar, @SCHEDULE_SECOND)
+				
+				SELECT	@COUNT = COUNT(*)
+				  FROM	w2_TaskSchedule
+				 WHERE	schedule_date = @SCHEDULE_DATETIME
+				   AND	dept_id = @DEPT_ID
+				   AND	action_kbn = @ACTION_KBN
+				   AND	action_master_id = @MASTER_ID
+
+				IF (@COUNT = 0)
+				BEGIN
+					-- �}�X�^NO���s
+					SELECT	@ACTION_NO = ISNULL(MAX(action_no), 0) + 1
+					  FROM	w2_TaskSchedule
+					 WHERE	dept_id = @DEPT_ID
+					   AND	action_kbn = @ACTION_KBN
+					   AND	action_master_id = @MASTER_ID
+					
+					-- ���o�^�ł���Γo�^
+					INSERT	w2_TaskSchedule
+							(
+							schedule_date,
+							dept_id,
+							action_kbn,
+							action_master_id,
+							action_no,
+							execute_status
+							)
+					VALUES	(
+							@SCHEDULE_DATETIME,
+							@DEPT_ID,
+							@ACTION_KBN,
+							@MASTER_ID,
+							@ACTION_NO,
+							'00'
+							)
+							
+					SET @CREATE_COUNT = @CREATE_COUNT + 1
+					END
+			END
+		
+			SET @DAY_LOOP = @DAY_LOOP + 1
+		END
+	END
+		
+	---------------------------------------
+	-- �J�[�\������
+	---------------------------------------
+	CLOSE CUR_TLIST
+	DEALLOCATE CUR_TLIST
+GO
+
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

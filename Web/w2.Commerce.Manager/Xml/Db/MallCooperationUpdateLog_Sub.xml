@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : MallCooperationUpdateLog Sub XML(MallCooperationUpdateLog_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<MallCooperationUpdateLog_Sub>
+
+  <!-- Add WHERE for date changed  -->
+  <DATE_CHANGED_WHERE>
+    <Statement>
+      <![CDATA[
+        --Product
+        (
+          w2_Product.date_created <> w2_Product.date_changed  -- 作成日＝更新日ははじく
+          AND
+          (
+            @date_update_from IS NULL
+            OR
+            @date_update_from <= w2_Product.date_changed
+          )
+          AND
+          (
+            @date_update_to IS NULL
+            OR
+            @date_update_to > w2_Product.date_changed
+          )
+        )
+        --Product variation
+        OR
+        (
+          w2_ProductVariationView.date_created <> w2_ProductVariationView.date_changed  -- 作成日＝更新日ははじく
+          AND
+          (
+            @date_update_from IS NULL
+            OR
+            @date_update_from <= w2_ProductVariationView.date_changed
+          )
+          AND
+          (
+            @date_update_to IS NULL
+            OR
+            @date_update_to > w2_ProductVariationView.date_changed
+          )
+        )
+        --Product extend
+        OR
+        (
+          w2_ProductExtend.date_created <> w2_ProductExtend.date_changed  -- 作成日＝更新日ははじく
+          AND
+          (
+            @date_update_from IS NULL
+            OR
+            @date_update_from <= w2_ProductExtend.date_changed
+          )
+          AND
+          (
+            @date_update_to IS NULL
+            OR
+            @date_update_to > w2_ProductExtend.date_changed
+          )
+        )
+        --Product tag
+        OR
+        (
+          w2_ProductTag.date_created <> w2_ProductTag.date_changed
+          AND
+          (
+            @date_update_from IS NULL
+            OR
+            @date_update_from <= w2_ProductTag.date_changed
+          )
+          AND
+          (
+            @date_update_to IS NULL
+            OR
+            @date_update_to > w2_ProductTag.date_changed
+          )
+        )
+        --Product category
+        OR
+        (
+          w2_ProductCategory.date_created <> w2_ProductCategory.date_changed
+          AND
+          (
+            @date_update_from IS NULL
+            OR
+            @date_update_from <= w2_ProductCategory.date_changed
+          )
+          AND
+          (
+            @date_update_to IS NULL
+            OR
+            @date_update_to > w2_ProductCategory.date_changed
+          )
+        )
+      ]]>
+    </Statement>
+  </DATE_CHANGED_WHERE>
+
+  <!-- Mall Id Exists -->
+  <MALL_ID_EXISTS>
+    <Statement>
+      <![CDATA[
+        EXISTS
+        (
+          SELECT  w2_MallCooperationSetting.mall_id
+            FROM  w2_MallCooperationSetting
+           WHERE  w2_MallCooperationSetting.shop_id = @shop_id
+             AND  w2_MallCooperationSetting.mall_id = w2_MallCooperationUpdateLog.mall_id
+             AND  w2_MallCooperationSetting.valid_flg = '1'
+        )
+      ]]>
+    </Statement>
+  </MALL_ID_EXISTS>
+
+</MallCooperationUpdateLog_Sub>

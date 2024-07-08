@@ -1,0 +1,161 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品定期購入割引設定系SQLステートメントXML (ProductFixedPurchaseDiscountSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductFixedPurchaseDiscountSetting>
+
+  <!-- 取得 -->
+  <GetByShopIdAndProductid>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductFixedPurchaseDiscountSetting
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetByShopIdAndProductid>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductFixedPurchaseDiscountSetting
+                (
+                  shop_id
+                  ,product_id
+                  ,order_count
+                  ,order_count_more_than_flg
+                  ,product_count
+                  ,discount_value
+                  ,discount_type
+                  ,point_value
+                  ,point_type
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @shop_id
+                  ,@product_id
+                  ,@order_count
+                  ,@order_count_more_than_flg
+                  ,@product_count
+                  ,@discount_value
+                  ,@discount_type
+                  ,@point_value
+                  ,@point_type
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="order_count" Type="int" />
+      <Input Name="order_count_more_than_flg" Type="nvarchar" Size="1" />
+      <Input Name="product_count" Type="int" />
+      <Input Name="discount_value" Type="decimal" Size="18,3" />
+      <Input Name="discount_type" Type="nvarchar" Size="10" />
+      <Input Name="point_value" Type="decimal" />
+      <Input Name="point_type" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 削除 -->
+  <DeleteByShopIdAndProductId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductFixedPurchaseDiscountSetting
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteByShopIdAndProductId>
+
+  <!-- 適用する定期購入割引設定取得 -->
+  <GetApplyFixedPurchaseDiscountSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1 * 
+          FROM  w2_ProductFixedPurchaseDiscountSetting
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  discount_value IS NOT NULL
+           AND  (
+                  (
+                    order_count = @order_count
+                    AND
+                    product_count <= @product_count
+                  )
+                  OR
+                  (
+                    order_count_more_than_flg = '1'
+                    AND
+                    order_count <= @order_count
+                    AND
+                    product_count <= @product_count
+                  )
+                )
+          ORDER BY order_count desc, product_count desc
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="order_count" Type="int" />
+      <Input Name="product_count" Type="int" />
+    </Parameter>
+  </GetApplyFixedPurchaseDiscountSetting>
+
+  <!-- 適用する定期購入ポイント設定取得 -->
+  <GetApplyFixedPurchasePointSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1 * 
+          FROM  w2_ProductFixedPurchaseDiscountSetting
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  point_value IS NOT NULL
+           AND  (
+                  (
+                    order_count = @order_count
+                    AND
+                    product_count <= @product_count
+                  )
+                  OR
+                  (
+                    order_count_more_than_flg = '1'
+                    AND
+                    order_count <= @order_count
+                    AND
+                    product_count <= @product_count
+                  )
+                )
+          ORDER BY order_count desc, product_count desc
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="order_count" Type="int" />
+      <Input Name="product_count" Type="int" />
+    </Parameter>
+  </GetApplyFixedPurchasePointSetting>
+
+</ProductFixedPurchaseDiscountSetting>

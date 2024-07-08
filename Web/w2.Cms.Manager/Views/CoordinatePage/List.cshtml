@@ -1,0 +1,151 @@
+﻿@*
+=========================================================================================================
+Module      : コーディネートページ コーディネート詳細(パーシャルビュー)(CoordinateDetail.cshtml)
+･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@model w2.Cms.Manager.ViewModels.Coordinate.ListViewModel
+@using w2.App.Common.Extensions.Currency
+@using w2.App.Common.Util
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.WorkerServices
+@using w2.Common.Util
+
+<div class="list-content custom-scroll-area">
+@foreach (var coordinate in this.Model.List)
+{
+<div class="list-row" id="@coordinate.CoordinateId">
+<div class="list-col list-col-thumb w10 hide-style-list">
+	<div class="list-col-inner">
+		@{
+			var src = CoordinateWorkerService.GetImage(
+				Constants.COORDINATEIMAGE_PREFIX + @coordinate.CoordinateId + Constants.CONTENTS_IMAGE_FIRST,
+				Path.Combine(Constants.PATH_COORDINATE, @coordinate.CoordinateId)) + "?" + DateTime.Now;
+			<figure>
+				<img style="cursor: hand; cursor:pointer;" onclick="imageModal('@src')" src="@src" alt="">
+			</figure>
+		}
+	</div>
+</div>
+
+<div class="list-col">
+<div class="list-col-inner-row">
+	<div class="list-col-title" style="padding-top: 8px;">
+		<div class="list-col-inner">
+			<p class="list-col-title-label line-clamp ta-left">
+				<a href="javascript:open_page('@coordinate.CoordinateId')" class="list-col-title-a">@LayoutHelper.ManagerTitleCheck(coordinate.CoordinateTitle, "フロント/管理用ページ名")</a>
+			</p>
+		</div>
+	</div>
+</div>
+<div class="list-col-inner-row hide-list-detail hide-style-list">
+	<div class="list-col-url"><a href="@coordinate.CoordinateUrl"  target = "_blank">@coordinate.CoordinateId</a></div>
+	<div class="list-col-coordinate">@coordinate.StaffName</div>
+</div>
+<div class="list-col-inner-row hide-list-detail hide-style-list">
+	<div class="list-col-category">
+		<div class="list-col-category-title">カテゴリ</div>
+		<div class="list-col-category-list">
+			@foreach (var category in coordinate.CategoryList)
+			{
+				<span class="list-col-category-list-item">@category.CoordinateCategoryName</span>
+			}
+		</div>
+	</div>
+	<div class="list-col-tag">
+		<div class="list-col-tag-title">タグ</div>
+		<div class="list-col-tag-list">
+			@foreach (var tag in coordinate.TagList)
+			{
+				<span class="list-col-category-list-item">@tag.ContentsTagName</span>
+			}
+		</div>
+	</div>
+</div>
+<div class="list-col-inner-row hide-list-detail hide-style-list">
+	<div class="list-col-set-items">
+		<div class="list-col-set-items-title">商品設定数</div>
+		<div class="list-col-set-items-count">@coordinate.ProductList.Count</div>
+		<div class="list-col-set-items-thums">
+			@foreach (var product in @coordinate.ProductList)
+			{
+				<figure><img loading=”lazy” src="@CoordinateWorkerService.CreateProductImageUrl(product.ProductId, (product.VariationId == product.ProductId) ? null : product.VariationId)" alt=""></figure>
+			}
+		</div>
+	</div>
+</div>
+</div>
+
+<div class="list-col w10 hide-list-detail">
+<p>
+	@{
+		var dateChanged = DateTimeUtility.ToStringForManager(
+			coordinate.DateChanged,
+			DateTimeUtility.FormatType.ShortDateHourMinuteSecond2Letter)
+			.Split(new[] { " " }, StringSplitOptions.None); 
+		<p>@dateChanged[0]</p>
+		<p>@dateChanged[1]</p>
+	}
+</p>
+</div>
+<div class="list-col w15 hide-list-detail">
+<p>
+	@if (coordinate.DisplayKbn == Constants.FLG_COORDINATE_DISPLAY_KBN_PUBLIC)
+	{
+		<span class="icon-status icon-status-open">
+			@ValueText.GetValueText(Constants.TABLE_COORDINATE, Constants.FIELD_COORDINATE_DISPLAY_KBN, coordinate.DisplayKbn)
+		</span>
+	}
+	@if (coordinate.DisplayKbn == Constants.FLG_COORDINATE_DISPLAY_KBN_DRAFT)
+	{
+		<span class="icon-status icon-status-close">
+			@ValueText.GetValueText(Constants.TABLE_COORDINATE, Constants.FIELD_COORDINATE_DISPLAY_KBN, coordinate.DisplayKbn)
+		</span>
+	}
+	@if (coordinate.DisplayKbn == Constants.FLG_COORDINATE_DISPLAY_KBN_PRIVATE)
+	{
+		<span class="icon-status icon-status-close">
+			@ValueText.GetValueText(Constants.TABLE_COORDINATE, Constants.FIELD_COORDINATE_DISPLAY_KBN, coordinate.DisplayKbn)
+		</span>
+	}
+</p>
+</div>
+<div class="list-col w15 hide-list-detail ta-left">
+	<div class="list-col-recent-status">
+		<dl class="list-col-recent-status-item">
+			<dt>Like</dt>
+			<dd>
+				<span class="list-col-recent-status-value">@coordinate.LikeCount</span>件
+			</dd>
+		</dl>
+		<dl class="list-col-recent-status-item">
+			<dt>View</dt>
+			<dd><span class="list-col-recent-status-value">@coordinate.ContentsSummaryData.PvCount</span>件</dd>
+		</dl>
+		<dl class="list-col-recent-status-item">
+			<dt>CV</dt>
+			<dd>
+				<span class="list-col-recent-status-row">
+					<span class="list-col-recent-status-value">@coordinate.ContentsSummaryData.CvCount</span>件
+				</span>
+				<span class="list-col-recent-status-row">
+					<span class="list-col-recent-status-note">@coordinate.ContentsSummaryData.Price.ToPriceString() 円</span>
+				</span>
+			</dd>
+		</dl>
+	</div>
+</div>
+</div>
+}
+<br/>
+</div>
+
+<script type="text/javascript">
+	$(function() {
+		list.ini();
+		list_group_toggle.ini();
+		dropdown_toggle.ini();
+		custom_scroll.ini();
+	});
+</script>

@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 特集画像管理系SQLステートメントXML (FeatureImage.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<FeatureImage>
+
+  <!-- 取得 -->
+  <GetAllGroup>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeatureImageGroup
+         ORDER BY group_sort_number ASC
+      ]]>
+    </Statement>
+  </GetAllGroup>
+
+  <!-- 取得 -->
+  <GetGroup>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeatureImageGroup
+         WHERE  feature_image_group_id = @feature_image_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="feature_image_group_id" Type="bigint" />
+    </Parameter>
+  </GetGroup>
+
+
+  <!-- 取得 -->
+  <GetImageByPath>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeatureImage
+         WHERE  file_name = @file_name
+           AND  file_dir_path = @file_dir_path
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="file_name" Type="nvarchar" Size="60" />
+      <Input Name="file_dir_path" Type="nvarchar" Size="300" />
+    </Parameter>
+  </GetImageByPath>
+
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeatureImage
+         WHERE  image_id = @image_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="image_id" Type="bigint" />
+    </Parameter>
+  </Get>
+
+  <!-- 取得 -->
+  <GetAllImage>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeatureImage
+      ]]>
+    </Statement>
+  </GetAllImage>
+
+
+  <!-- 取得 -->
+  <GetImagesByGroupId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeatureImage
+         WHERE  feature_image_group_id = @feature_image_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="feature_image_group_id" Type="bigint" />
+    </Parameter>
+  </GetImagesByGroupId>
+
+  <!-- 取得 -->
+  <GetImageCountByFileName>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_FeatureImage
+         WHERE  file_name = @file_name
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="file_name" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetImageCountByFileName>
+
+  <!-- 登録 -->
+  <InsertGroup>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FeatureImageGroup
+                (
+                  group_name
+                  ,group_sort_number
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @group_name
+                  ,@group_sort_number
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="group_name" Type="nvarchar" Size="60" />
+      <Input Name="group_sort_number" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertGroup>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FeatureImage
+                (
+                  file_name
+                  ,file_dir_path
+                  ,feature_image_group_id
+                  ,image_sort_number
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @file_name
+                  ,@file_dir_path
+                  ,@feature_image_group_id
+                  ,@image_sort_number
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+        SELECT  SCOPE_IDENTITY()
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="file_name" Type="nvarchar" Size="60" />
+      <Input Name="file_dir_path" Type="nvarchar" Size="300" />
+      <Input Name="feature_image_group_id" Type="bigint" />
+      <Input Name="image_sort_number" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <UpdateGroup>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FeatureImageGroup
+           SET  group_name = @group_name
+                ,group_sort_number = @group_sort_number
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  feature_image_group_id = @feature_image_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="feature_image_group_id" Type="bigint" />
+      <Input Name="group_name" Type="nvarchar" Size="60" />
+      <Input Name="group_sort_number" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateGroup>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FeatureImage
+           SET  file_name = @file_name
+                ,file_dir_path = @file_dir_path
+                ,feature_image_group_id = @feature_image_group_id
+                ,image_sort_number = @image_sort_number
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  image_id = @image_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="image_id" Type="bigint" />
+      <Input Name="file_name" Type="nvarchar" Size="60" />
+      <Input Name="file_dir_path" Type="nvarchar" Size="300" />
+      <Input Name="feature_image_group_id" Type="bigint" />
+      <Input Name="image_sort_number" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <DeleteGroup>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FeatureImageGroup
+         WHERE  feature_image_group_id = @feature_image_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="feature_image_group_id" Type="bigint" />
+    </Parameter>
+  </DeleteGroup>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FeatureImage
+         WHERE  image_id = @image_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="image_id" Type="bigint" />
+    </Parameter>
+  </Delete>
+</FeatureImage>

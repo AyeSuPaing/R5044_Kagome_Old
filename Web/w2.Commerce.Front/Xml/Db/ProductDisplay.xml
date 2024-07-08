@@ -1,0 +1,639 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 特定商品表示系SQLステートメントXML(ProductDisplay.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductDisplay>
+
+  <!-- 人気商品ランキング表示 -->
+  <GetProductRanking>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        DECLARE @current_date datetime = GETDATE()
+        
+        [[ NOW_DATETIME ]]
+        
+        [[ USER_MEMBER_RANK_ORDER ]]
+        
+        SELECT TOP 50 * FROM
+        (
+          SELECT  w2_Product.shop_id,
+                  w2_Product.product_id,
+                  w2_Product.cooperation_id1,
+                  w2_Product.cooperation_id2,
+                  w2_Product.cooperation_id3,
+                  w2_Product.cooperation_id4,
+                  w2_Product.cooperation_id5,
+                  w2_Product.cooperation_id6,
+                  w2_Product.cooperation_id7,
+                  w2_Product.cooperation_id8,
+                  w2_Product.cooperation_id9,
+                  w2_Product.cooperation_id10,
+                  w2_Product.catchcopy,
+                  w2_Product.name,
+                  w2_Product.display_price,
+                  w2_Product.display_special_price,
+                  w2_Product.category_id1,
+                  w2_Product.image_head,
+                  w2_Product.display_member_rank,
+                  w2_Product.brand_id1,
+                  productSale.sale_price,
+                  w2_Product.tax_included_flg,
+                  w2_Product.use_variation_flg,
+                  w2_Product.icon_flg1,
+                  w2_Product.icon_term_end1,
+                  w2_Product.icon_flg2,
+                  w2_Product.icon_term_end2,
+                  w2_Product.icon_flg3,
+                  w2_Product.icon_term_end3,
+                  w2_Product.icon_flg4,
+                  w2_Product.icon_term_end4,
+                  w2_Product.icon_flg5,
+                  w2_Product.icon_term_end5,
+                  w2_Product.icon_flg6,
+                  w2_Product.icon_term_end6,
+                  w2_Product.icon_flg7,
+                  w2_Product.icon_term_end7,
+                  w2_Product.icon_flg8,
+                  w2_Product.icon_term_end8,
+                  w2_Product.icon_flg9,
+                  w2_Product.icon_term_end9,
+                  w2_Product.icon_flg10,
+                  w2_Product.icon_term_end10,
+                  [[ PRODUCT_SOLD_OUT_SELECT ]] AS productsoldout,
+                  [[ MEMBER_RANK_PRICE_PRODUCT ]],
+                  w2_Product.fixed_purchase_firsttime_price,
+                  w2_Product.fixed_purchase_price,
+                  w2_DispProductInfo.display_order,
+                  w2_Product.fixed_purchase_flg
+            FROM  w2_DispProductInfo
+                  INNER JOIN w2_Product ON
+                  (
+                    w2_DispProductInfo.shop_id = w2_Product.shop_id
+                    AND
+                    w2_DispProductInfo.product_id = w2_Product.product_id
+                  )
+                  [[ JOIN_PRODUCT_SALE_PRICE ]]
+                  [[ JOIN_PRODUCT_CATEGORY ]]
+           WHERE  w2_DispProductInfo.shop_id = @shop_id
+             AND  w2_DispProductInfo.data_kbn = @data_kbn   -- 売れ筋ランキング(SRK)または商品ランキングID
+             AND  w2_Product.display_from <= @now_datetime      -- 表示期間内
+             AND ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @now_datetime))
+             AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+             AND  w2_Product.mobile_disp_flg IN ('0','1')   -- PC&モバイル OR PCのみ
+             AND  w2_Product.valid_flg = '1'                -- 有効
+             <@@hasval:brand_id@@>
+             AND  (
+                    w2_Product.brand_id1 = @brand_id
+                    OR
+                    w2_Product.brand_id2 = @brand_id
+                    OR
+                    w2_Product.brand_id3 = @brand_id
+                    OR
+                    w2_Product.brand_id4 = @brand_id
+                    OR
+                    w2_Product.brand_id5 = @brand_id
+                  )
+             </@@hasval:brand_id@@>
+             <@@hasval:category_id@@>
+             AND  (
+                    (w2_Product.category_id1 LIKE @category_id + '%' ESCAPE '#')
+                    OR
+                    (w2_Product.category_id2 LIKE @category_id + '%' ESCAPE '#')
+                    OR
+                    (w2_Product.category_id3 LIKE @category_id + '%' ESCAPE '#')
+                    OR
+                    (w2_Product.category_id4 LIKE @category_id + '%' ESCAPE '#')
+                    OR
+                    (w2_Product.category_id5 LIKE @category_id + '%' ESCAPE '#')
+                  )
+             </@@hasval:category_id@@>
+             AND
+             <@@notval:fixed_purchase_member_flg:1@@>
+             w2_Product.display_only_fixed_purchase_member_flg = '0'
+             </@@notval:fixed_purchase_member_flg:1@@>
+             <@@val:fixed_purchase_member_flg:1@@>
+             w2_Product.display_only_fixed_purchase_member_flg IN ('0', '1')
+             </@@val:fixed_purchase_member_flg:1@@>
+             [[ PRODUCT_CATEGORY_SEARCH_WHERE ]]
+        ) AS ProductRanking
+        <@@notval:show_out_of_stock:1@@>
+        WHERE  ProductRanking.productsoldout = 1
+        </@@notval:show_out_of_stock:1@@>
+        ORDER BY ProductRanking.display_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="data_kbn" Type="nvarchar" Size="10" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="show_out_of_stock" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetProductRanking>
+
+  <!-- おすすめ商品表示（ランダム表示）-->
+  <GetProductParticular>
+    <Statement>
+      <![CDATA[
+       DECLARE @current_date datetime = GETDATE()
+      
+        -- 表示可能総数取得
+        DECLARE @data_count int
+        SELECT  @data_count = COUNT(w2_DispProductInfo.product_id)
+          FROM  w2_DispProductInfo
+                INNER JOIN w2_Product ON
+                (
+                  w2_Product.shop_id = w2_DispProductInfo.shop_id
+                  AND
+                  w2_Product.product_id = w2_DispProductInfo.product_id
+                )
+         WHERE  w2_DispProductInfo.shop_id = @shop_id
+           AND  w2_DispProductInfo.data_kbn = @data_kbn
+        
+        [[ USER_MEMBER_RANK_ORDER ]]
+        
+        [[ NOW_DATETIME ]]
+        
+        -- キャッシュに蓄える分のデータ取得
+        SELECT  TOP 50
+                w2_DispProductInfo.display_order display_order_rand,  -- 表示毎にアプリケーション側のDataVIewで更新される
+                w2_DispProductInfo.display_order,                     -- オリジナルの値を保持
+                w2_Product.shop_id,
+                w2_Product.product_id,
+                w2_Product.cooperation_id1,
+                w2_Product.cooperation_id2,
+                w2_Product.cooperation_id3,
+                w2_Product.cooperation_id4,
+                w2_Product.cooperation_id5,
+                w2_Product.cooperation_id6,
+                w2_Product.cooperation_id7,
+                w2_Product.cooperation_id8,
+                w2_Product.cooperation_id9,
+                w2_Product.cooperation_id10,
+                w2_Product.catchcopy,
+                w2_Product.name,
+                w2_Product.display_price,
+                w2_Product.display_special_price,
+                w2_Product.category_id1,
+                w2_Product.image_head,
+                w2_Product.display_member_rank,
+                w2_Product.brand_id1,
+                productSale.sale_price,
+                w2_Product.tax_included_flg,
+                w2_Product.use_variation_flg,
+                w2_Product.icon_flg1,
+                w2_Product.icon_term_end1,
+                w2_Product.icon_flg2,
+                w2_Product.icon_term_end2,
+                w2_Product.icon_flg3,
+                w2_Product.icon_term_end3,
+                w2_Product.icon_flg4,
+                w2_Product.icon_term_end4,
+                w2_Product.icon_flg5,
+                w2_Product.icon_term_end5,
+                w2_Product.icon_flg6,
+                w2_Product.icon_term_end6,
+                w2_Product.icon_flg7,
+                w2_Product.icon_term_end7,
+                w2_Product.icon_flg8,
+                w2_Product.icon_term_end8,
+                w2_Product.icon_flg9,
+                w2_Product.icon_term_end9,
+                w2_Product.icon_flg10,
+                w2_Product.icon_term_end10,
+                [[ PRODUCT_SOLD_OUT_SELECT ]] AS productsoldout,
+                [[ MEMBER_RANK_PRICE_PRODUCT ]],
+                fixed_purchase_firsttime_price,
+                fixed_purchase_price,
+                w2_Product.fixed_purchase_flg
+          FROM  w2_DispProductInfo
+                INNER JOIN w2_Product ON
+                (
+                  w2_DispProductInfo.shop_id = w2_Product.shop_id
+                  AND
+                  w2_DispProductInfo.product_id = w2_Product.product_id
+                )
+                [[ JOIN_PRODUCT_SALE_PRICE ]]
+                [[ JOIN_PRODUCT_CATEGORY ]]
+         WHERE  w2_DispProductInfo.shop_id = @shop_id
+           AND  w2_DispProductInfo.data_kbn = @data_kbn
+           AND  w2_Product.display_from <= @now_datetime      -- 表示期間内
+           AND ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @now_datetime))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.mobile_disp_flg IN ('0','1')   -- PC&モバイル OR PCのみ
+           AND  w2_Product.valid_flg = '1'                -- 有効
+           <@@hasval:brand_id@@>
+           AND  (
+                  w2_Product.brand_id1 = @brand_id
+                  OR
+                  w2_Product.brand_id2 = @brand_id
+                  OR
+                  w2_Product.brand_id3 = @brand_id
+                  OR
+                  w2_Product.brand_id4 = @brand_id
+                  OR
+                  w2_Product.brand_id5 = @brand_id
+                )
+           </@@hasval:brand_id@@>
+           <@@hasval:category_id@@>
+           AND  (
+                  (w2_Product.category_id1 LIKE @category_id + '%' ESCAPE '#')
+                  OR
+                  (w2_Product.category_id2 LIKE @category_id + '%' ESCAPE '#')
+                  OR
+                  (w2_Product.category_id3 LIKE @category_id + '%' ESCAPE '#')
+                  OR
+                  (w2_Product.category_id4 LIKE @category_id + '%' ESCAPE '#')
+                  OR
+                  (w2_Product.category_id5 LIKE @category_id + '%' ESCAPE '#')
+                )
+           </@@hasval:category_id@@>
+           AND  (
+                  w2_Product.display_only_fixed_purchase_member_flg = '0'
+                  OR
+                  (
+                    w2_Product.display_only_fixed_purchase_member_flg = '1'
+                    AND
+                    @fixed_purchase_member_flg = '1'
+                  )
+                )
+           [[ PRODUCT_CATEGORY_SEARCH_WHERE ]]
+           AND [[ SHOW_OUT_OF_STOCK_PRODUCT_WHERE ]]                
+        -- ([0～総数-1]までのランダム値を[display_order]カラムとかけて、総数で割ったあまりでソート)
+        ORDER BY CONVERT(int, w2_DispProductInfo.display_order * (@data_count * RAND())) % @data_count
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="data_kbn" Type="nvarchar" Size="10" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="show_out_of_stock" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetProductParticular>
+
+  <!-- ユーザリコメンド商品（ランダム表示） -->
+  <!-- (顧客が購入した商品履歴から直近10注文を取得し、その内の50商品のクロスセルをランダム表示) -->
+  <GetUserProductRecommend>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime = GETDATE()
+      
+        -- 対象注文ID格納テーブル
+        CREATE TABLE #temp_order_table(
+          order_id nvarchar (30)
+        )
+  
+        -- 対象商品ID格納テーブル
+        CREATE TABLE #temp_product_table (
+          row_num int IDENTITY(1, 1),
+          shop_id nvarchar (10),
+          product_id nvarchar (30)
+        )
+        
+        [[ NOW_DATETIME ]]
+        
+        [[ USER_MEMBER_RANK_ORDER ]]
+        
+        -- 対象注文ID取得
+        INSERT #temp_order_table
+        SELECT  TOP 10
+                w2_Order.order_id
+          FROM  w2_Order
+         WHERE  user_id = @user_id
+           AND  order_status NOT IN ('TMP','ODR_CNSL','TMP_CNSL','')  -- 仮注文、キャンセル、仮注文キャンセル、返品済 は対象外
+        ORDER BY date_created DESC
+  
+        -- 対象商品ID(クロスセル)取得
+        INSERT  #temp_product_table
+        SELECT  related_shop_id,
+                related_product_id
+          FROM  (
+                  SELECT  w2_Product.shop_id AS related_shop_id,
+                          related_product_id_cs1 AS related_product_id
+                    FROM  #temp_order_table
+                          LEFT JOIN w2_OrderItem ON
+                          (
+                            #temp_order_table.order_id = w2_OrderItem.order_id
+                          )
+                          INNER JOIN w2_Product ON
+                          (
+                            w2_OrderItem.product_id = w2_Product.product_id
+                          )
+                  UNION
+                  SELECT  w2_Product.shop_id,
+                          related_product_id_cs2
+                    FROM  #temp_order_table
+                          LEFT JOIN w2_OrderItem ON
+                          (
+                            #temp_order_table.order_id = w2_OrderItem.order_id
+                          )
+                          INNER JOIN w2_Product ON
+                          (
+                            w2_OrderItem.product_id = w2_Product.product_id
+                          )
+                  UNION
+                  SELECT  w2_Product.shop_id,
+                          related_product_id_cs3
+                    FROM  #temp_order_table
+                          LEFT JOIN w2_OrderItem ON
+                          (
+                            #temp_order_table.order_id = w2_OrderItem.order_id
+                          )
+                          INNER JOIN w2_Product ON
+                          (
+                            w2_OrderItem.product_id = w2_Product.product_id
+                          )
+                  UNION
+                  SELECT  w2_Product.shop_id,
+                          related_product_id_cs4
+                    FROM  #temp_order_table
+                          LEFT JOIN w2_OrderItem ON
+                          (
+                            #temp_order_table.order_id = w2_OrderItem.order_id
+                          )
+                          INNER JOIN w2_Product ON
+                          (
+                            w2_OrderItem.product_id = w2_Product.product_id
+                          )
+                  UNION
+                  SELECT  w2_Product.shop_id,
+                          related_product_id_cs5
+                    FROM  #temp_order_table
+                          LEFT JOIN w2_OrderItem ON
+                          (
+                            #temp_order_table.order_id = w2_OrderItem.order_id
+                          )
+                          INNER JOIN w2_Product ON
+                          (
+                            w2_OrderItem.product_id = w2_Product.product_id
+                          )
+                ) related_product_id_css
+  
+        -- 対象商品数取得
+        DECLARE @data_count int
+        SELECT  @data_count = COUNT(product_id)
+          FROM  #temp_product_table
+  
+        -- 対象データ取得(50商品)
+        SELECT  TOP 50
+                w2_Product.*,
+                productSale.sale_price,
+                [[ PRODUCT_SOLD_OUT_SELECT ]] AS productsoldout,
+                [[ MEMBER_RANK_PRICE_PRODUCT ]]
+          FROM  #temp_product_table
+                INNER JOIN w2_Product ON
+                (
+                  #temp_product_table.shop_id = w2_Product.shop_id
+                  AND
+                  #temp_product_table.product_id = w2_Product.product_id
+                )
+                [[ JOIN_PRODUCT_SALE_PRICE ]]
+                LEFT JOIN w2_MemberRank ON 
+                (
+                  w2_MemberRank.member_rank_id = w2_Product.display_member_rank
+                )
+                [[ JOIN_PRODUCT_CATEGORY ]]
+         WHERE  w2_Product.display_from <= @now_datetime      -- 表示期間内
+           AND ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @now_datetime))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.mobile_disp_flg IN ('0','1')   -- PC&モバイル OR PCのみ
+           AND  w2_Product.valid_flg = '1'                -- 有効
+           AND  (
+                  @member_rank_id = 'nothing' -- 会員ランクオプション設定なし
+                  OR
+                  w2_Product.display_member_rank = ''
+                  OR
+                  (
+                    w2_Product.display_member_rank <> ''
+                    AND
+                    @member_rank_id <> ''
+                    AND
+                    (
+                      w2_MemberRank.member_rank_order IS NULL 
+                      OR
+                      w2_MemberRank.member_rank_order >= @member_rank_order --会員ランク順位 = 1 > 会員ランク順位 = 2 (3,4,5...)
+                    )
+                  )
+                )
+           [[ PRODUCT_CATEGORY_SEARCH_WHERE ]]
+           AND [[ SHOW_OUT_OF_STOCK_PRODUCT_WHERE ]]
+        ORDER BY CONVERT(int, #temp_product_table.row_num * (@data_count * RAND())) % @data_count
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="show_out_of_stock" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetUserProductRecommend>
+
+  <!-- おすすめ商品（詳細設定可）-->
+  <GetProductRecommendAdvanced>
+    <Statement>
+      <![CDATA[
+         DECLARE @current_date datetime = GETDATE()
+      
+        [[ NOW_DATETIME ]]
+      
+        [[ USER_MEMBER_RANK_ORDER ]]
+                
+        SELECT  TOP 50 -- キャッシュに蓄える分のデータ取得
+                w2_Product.shop_id,
+                w2_Product.product_id,
+                w2_Product.cooperation_id1,
+                w2_Product.cooperation_id2,
+                w2_Product.cooperation_id3,
+                w2_Product.cooperation_id4,
+                w2_Product.cooperation_id5,
+                w2_Product.cooperation_id6,
+                w2_Product.cooperation_id7,
+                w2_Product.cooperation_id8,
+                w2_Product.cooperation_id9,
+                w2_Product.cooperation_id10,
+                w2_Product.catchcopy,
+                w2_Product.name,
+                w2_Product.display_price,
+                w2_Product.display_special_price,
+                w2_Product.category_id1 AS category_id,
+                w2_Product.category_id1,
+                w2_Product.category_id2,
+                w2_Product.category_id3,
+                w2_Product.category_id4,
+                w2_Product.category_id5,
+                w2_Product.image_head,
+                w2_Product.display_member_rank,
+                w2_Product.brand_id1,
+                productSale.sale_price,
+                w2_Product.tax_included_flg,
+                w2_Product.use_variation_flg,
+                w2_Product.icon_flg1,
+                w2_Product.icon_term_end1,
+                w2_Product.icon_flg2,
+                w2_Product.icon_term_end2,
+                w2_Product.icon_flg3,
+                w2_Product.icon_term_end3,
+                w2_Product.icon_flg4,
+                w2_Product.icon_term_end4,
+                w2_Product.icon_flg5,
+                w2_Product.icon_term_end5,
+                w2_Product.icon_flg6,
+                w2_Product.icon_term_end6,
+                w2_Product.icon_flg7,
+                w2_Product.icon_term_end7,
+                w2_Product.icon_flg8,
+                w2_Product.icon_term_end8,
+                w2_Product.icon_flg9,
+                w2_Product.icon_term_end9,
+                w2_Product.icon_flg10,
+                w2_Product.icon_term_end10,
+                w2_Product.name_kana,
+                w2_Product.sell_from,
+                [[ PRODUCT_SOLD_OUT_SELECT ]] AS productsoldout,
+                [[ MEMBER_RANK_PRICE_PRODUCT ]],
+                w2_MemberRank.member_rank_order,
+                w2_ProductCategory.name AS w2_ProductCategory_name,
+                w2_ProductCategory.name_kana AS w2_ProductCategory_name_kana,
+                fixed_purchase_firsttime_price,
+                fixed_purchase_price,
+                w2_Product.fixed_purchase_flg
+          FROM  w2_Product
+                LEFT JOIN w2_MemberRank ON 
+                (
+                  w2_MemberRank.member_rank_id = w2_Product.display_member_rank
+                )
+                [[ JOIN_PRODUCT_SALE_PRICE ]]
+                LEFT JOIN w2_ProductTag ON
+                (
+                  w2_ProductTag.product_id = w2_Product.product_id
+                )
+                LEFT JOIN w2_ProductCategory ON
+                (
+                  w2_Product.category_id1 = w2_ProductCategory.category_id -- カテゴリー 1 〜 5。カテゴリ 1 でのみ並べ替える
+                )
+                [[ JOIN_PRODUCT_CATEGORY ]]
+          WHERE  w2_Product.shop_id = @shop_id
+            AND  w2_Product.display_from <= @now_datetime      -- 表示期間内
+            AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @now_datetime))
+            AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+            AND  w2_Product.mobile_disp_flg IN ('0','1')   -- PC&モバイル OR PCのみ
+            AND  w2_Product.valid_flg = '1'                -- 有効
+            AND  (
+                  w2_MemberRank.member_rank_order IS NULL 
+                  OR
+                  w2_MemberRank.member_rank_order >= @member_rank_order --会員ランク順位 = 1 > 会員ランク順位 = 2 (3,4,5...)
+                  )
+            <@@hasval:brand_id@@>
+            AND  (
+                    w2_Product.brand_id1 = @brand_id
+                    OR
+                    w2_Product.brand_id2 = @brand_id
+                    OR
+                    w2_Product.brand_id3 = @brand_id
+                    OR
+                    w2_Product.brand_id4 = @brand_id
+                    OR
+                    w2_Product.brand_id5 = @brand_id
+                  )
+            </@@hasval:brand_id@@>
+            <@@hasval:category_id@@>
+            AND  (
+                  (w2_Product.category_id1 LIKE @category_id + '%' ESCAPE '#')
+                  OR
+                  (w2_Product.category_id2 LIKE @category_id + '%' ESCAPE '#')
+                  OR
+                  (w2_Product.category_id3 LIKE @category_id + '%' ESCAPE '#')
+                  OR
+                  (w2_Product.category_id4 LIKE @category_id + '%' ESCAPE '#')
+                  OR
+                  (w2_Product.category_id5 LIKE @category_id + '%' ESCAPE '#')
+                )
+            </@@hasval:category_id@@>
+            [[ PRODUCT_CATEGORY_SEARCH_WHERE ]]
+            AND [[ SHOW_OUT_OF_STOCK_PRODUCT_WHERE ]] 
+            AND  --販売時期 
+            (@sell_from_f IS NULL OR w2_Product.sell_from >= @sell_from_f)
+            AND
+            (@sell_from_t IS NULL OR w2_Product.sell_from <= @sell_from_t)
+            AND
+            (@sell_to_f IS NULL OR w2_Product.sell_to IS NULL OR w2_Product.sell_to >= @sell_to_f)
+            AND
+            (@sell_to_t IS NULL OR w2_Product.sell_to <= @sell_to_t)
+            AND  --表示区分
+            (
+              (@icon_flg1 ='' AND @icon_flg2 ='' AND @icon_flg3 ='' AND @icon_flg4 ='' AND @icon_flg5 ='' AND @icon_flg6 ='' AND @icon_flg7 ='' AND @icon_flg8 ='' AND @icon_flg9 ='' AND @icon_flg10 ='')
+              OR
+              (
+                  (@icon_flg1 <> '' AND w2_Product.icon_flg1 = @icon_flg1 AND @now_datetime <= w2_Product.icon_term_end1)
+                  OR
+                  (@icon_flg2 <> '' AND w2_Product.icon_flg2 = @icon_flg2 AND @now_datetime <= w2_Product.icon_term_end2)
+                  OR
+                  (@icon_flg3 <> '' AND w2_Product.icon_flg3 = @icon_flg3 AND @now_datetime <= w2_Product.icon_term_end3)
+                  OR
+                  (@icon_flg4 <> '' AND w2_Product.icon_flg4 = @icon_flg4 AND @now_datetime <= w2_Product.icon_term_end4)
+                  OR
+                  (@icon_flg5 <> '' AND w2_Product.icon_flg5 = @icon_flg5 AND @now_datetime <= w2_Product.icon_term_end5)
+                  OR
+                  (@icon_flg6 <> '' AND w2_Product.icon_flg6 = @icon_flg6 AND @now_datetime <= w2_Product.icon_term_end6)
+                  OR
+                  (@icon_flg7 <> '' AND w2_Product.icon_flg7 = @icon_flg7 AND @now_datetime <= w2_Product.icon_term_end7)
+                  OR
+                  (@icon_flg8 <> '' AND w2_Product.icon_flg8 = @icon_flg8 AND @now_datetime <= w2_Product.icon_term_end8)
+                  OR
+                  (@icon_flg9 <> '' AND w2_Product.icon_flg9 = @icon_flg9 AND @now_datetime <= w2_Product.icon_term_end9)
+                  OR
+                  (@icon_flg10 <> '' AND w2_Product.icon_flg10 = @icon_flg10 AND @now_datetime <= w2_Product.icon_term_end10)
+              )
+            )
+           AND  (
+                  w2_Product.display_only_fixed_purchase_member_flg = '0'
+                  OR
+                  (
+                    w2_Product.display_only_fixed_purchase_member_flg = '1'
+                    AND
+                    @fixed_purchase_member_flg = '1'
+                  )
+                )
+            --商品タグ 1～ 5
+            @@DYNAMIC_PRODUCT_TAG_WHERE@@
+        ORDER BY @@orderby@@
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="show_out_of_stock" Type="nvarchar" Size="1" />
+      <Input Name="sell_from_f" Type="DateTime" />
+      <Input Name="sell_from_t" Type="DateTime" />
+      <Input Name="sell_to_f" Type="DateTime" />
+      <Input Name="sell_to_t" Type="DateTime" />
+      <Input Name="icon_flg1" Type="nvarchar" Size="1" />
+      <Input Name="icon_flg2" Type="nvarchar" Size="1" />
+      <Input Name="icon_flg3" Type="nvarchar" Size="1" />
+      <Input Name="icon_flg4" Type="nvarchar" Size="1" />
+      <Input Name="icon_flg5" Type="nvarchar" Size="1" />
+      <Input Name="icon_flg6" Type="nvarchar" Size="1" />
+      <Input Name="icon_flg7" Type="nvarchar" Size="1" />
+      <Input Name="icon_flg8" Type="nvarchar" Size="1" />
+      <Input Name="icon_flg9" Type="nvarchar" Size="1" />
+      <Input Name="icon_flg10" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetProductRecommendAdvanced>
+
+</ProductDisplay>

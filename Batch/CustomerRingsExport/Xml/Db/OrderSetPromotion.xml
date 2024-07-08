@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 受注セットプロモーション出力SQLステートメントXML(OrderSetPromotion.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderSetPromotion>
+  <!-- 差分出力 -->
+  <ExportDifferential>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        WITH
+          targetOrder AS
+          (
+            SELECT  order_id
+              FROM  w2_Order
+             WHERE  w2_Order.date_changed >= @date_changed
+          ),
+          targetOwner AS
+          (
+            SELECT  order_id
+              FROM  w2_OrderOwner
+             WHERE  w2_OrderOwner.date_changed >= @date_changed
+          ),
+          targetItem AS
+          (
+            SELECT  DISTINCT order_id
+              FROM  w2_OrderItem
+             WHERE  w2_OrderItem.date_changed >= @date_changed
+          ),
+          targetShipping AS
+          (
+            SELECT  DISTINCT order_id
+              FROM  w2_OrderShipping
+             WHERE  w2_OrderShipping.date_changed >= @date_changed
+          ),
+          targetCoupon AS
+          (
+            SELECT  order_id
+              FROM  w2_OrderCoupon
+             WHERE  w2_OrderCoupon.date_changed >= @date_changed
+          ),
+          targetOrderIds AS
+          (
+            SELECT DISTINCT order_id
+              FROM
+              (
+                  SELECT * FROM targetOrder
+                  UNION ALL
+                  SELECT * FROM targetOwner
+                  UNION ALL
+                  SELECT * FROM targetItem
+                  UNION ALL
+                  SELECT * FROM targetShipping
+                  UNION ALL
+                  SELECT * FROM targetCoupon
+              ) AS tt
+          )
+        
+        SELECT  @@ EXPORT_FIELDS @@
+          FROM  w2_OrderSetPromotion
+                INNER JOIN targetOrderIds ON
+                (
+                  w2_OrderSetPromotion.order_id = targetOrderIds.order_id
+                )
+      ORDER BY  w2_OrderSetPromotion.order_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date_changed" Type="datetime" />
+    </Parameter>
+  </ExportDifferential>
+
+  <!-- 全件出力 -->
+  <ExportAll>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  @@ EXPORT_FIELDS @@
+          FROM  w2_OrderSetPromotion
+      ORDER BY  w2_OrderSetPromotion.order_id ASC
+      ]]>
+    </Statement>
+  </ExportAll>
+</OrderSetPromotion>

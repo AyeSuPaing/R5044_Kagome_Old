@@ -1,0 +1,225 @@
+﻿@*
+=========================================================================================================
+  Module      : スタッフ情報ページ(List.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.Staff.ListViewModel
+@using w2.Common.Util
+@{
+	ViewBag.Title = "スタッフ情報";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+
+@helper TopButtomControls()
+{
+	using (Html.BeginForm("Register", Constants.CONTROLLER_W2CMS_MANAGER_STAFF, FormMethod.Get))
+	{
+		<input type="hidden" name="actionStatus" value="@ActionStatus.Insert"/>
+		<input type="submit" value="  新規登録  " class="btn btn-main"/>
+	}
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr><td><h1 class="page-title">スタッフ情報</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	<tr><td><h2 class="cmn-hed-h2">スタッフ情報一覧</h2></td></tr>
+	<!--▽ 検索 ▽-->
+	<tr>
+	<td>
+	<table class="box_border cmn-section" cellspacing="1" cellpadding="3" width="784" border="0">
+	<tr>
+	<td class="search_box_bg">
+	<table cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+		@using (Html.BeginForm("List", Constants.CONTROLLER_W2CMS_MANAGER_STAFF, FormMethod.Get, new
+		{
+			name = "searchForm",
+			Id = "input_form"
+		}))
+		{
+			<table cellspacing="0" cellpadding="0" border="0" class="wide-content">
+				@LayoutHelper.PaddingTr(10)
+				<tr>
+					<td class="search_box_bg">
+						<table class="search_table cmn-form" cellspacing="1" cellpadding="2" width="758" border="0">
+							<tr>
+								<td class="search_title_bg" width="95">
+									<img alt="" class="search_title_arrow" src="~/Images/Common/arrow_01.gif"/>
+									スタッフID
+								</td>
+								<td class="search_item_bg" width="130">
+									<input type="text" name="staffId" value="@this.Model.ParamModel.StaffId" width="125"/>
+								</td>
+								<td class="search_title_bg" width="95">
+									<img alt="" class="search_title_arrow" src="~/Images/Common/arrow_01.gif"/>
+									スタッフ名
+								</td>
+								<td class="search_item_bg" width="130">
+									<input type="text" name="staffName" value="@this.Model.ParamModel.StaffName" width="125"/>
+								</td>
+								<td class="search_title_bg" width="95">
+									<img alt="" class="search_title_arrow" src="~/Images/Common/arrow_01.gif"/>
+									身長(cm)
+								</td>
+								<td class="search_item_bg" width="130">
+									<input type="text" name="heightLowerLimit" value="@this.Model.ParamModel.HeightLowerLimit" size="10" maxlength="3"/>
+									-
+									<input type="text" name="heightUpperLimit" value="@this.Model.ParamModel.HeightUpperLimit" size="10" maxlength="3"/>
+								</td>
+								<td class="search_btn_bg" width="83">
+									<div class="search_btn_main">
+										<input type="submit" name="search" value="  検索  " class="btn btn-main"/>
+									</div>
+									<div class="search_btn_sub">
+										@Html.ActionLink("クリア", "List", Constants.CONTROLLER_W2CMS_MANAGER_STAFF)&nbsp;
+										<a href="javascript:document.searchForm.reset();">リセット</a>
+									</div>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<tr>
+					@LayoutHelper.PaddingTr(10)
+					<td class="search_table">
+						<table cellspacing="1" cellpadding="2" width="758" border="0">
+							<tr>
+								<td class="search_title_bg" width="115">データ出力</td>
+								<td class="search_item_bg">
+									@Html.DropDownListFor(model => model.ParamModel.DataExportType, new SelectList(Model.ExportFiles, "Value", "Text"), "", new
+									{
+										Name = "DataExportType",
+										style = "width: 600px;"
+									})
+									<input type="button" value="  出力  " class="btn btn-main" onclick="return validate_staff('export');">
+									<input type="submit" name="Export" id="export" style="display: none;" formmethod="post">
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				@LayoutHelper.PaddingTr(5)
+			</table>
+		}
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 検索 △-->
+	<!--▽ 一覧 ▽-->
+	<tr>
+	<td>
+		<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+		<tr>
+		<td>
+		<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+		<tr>
+		<td align="center">
+			<table cellspacing="0" cellpadding="0" border="0">
+				@LayoutHelper.PaddingTr(6)
+				<tr>
+					<td>
+						<div class="action_part_top">
+						<table class="list_pager" cellspacing="1" cellpadding="0" width="758" border="0">
+							<tr>
+								<!-- ページング -->
+								<td width="675">
+									@Html.Raw(this.Model.PagerHtml)
+								</td>
+								<td width="83" class="action_list_sp" style="text-align: right">
+									@TopButtomControls()
+								</td>
+							</tr>
+						</table>
+						</div>
+					</td>
+				</tr>
+				<tr>
+				<td>
+					<table cellspacing="1" cellpadding="3" width="758" class="list_table" border="0">
+						<tr class="list_title_bg">
+							<td align="center" width="15%">スタッフID</td>
+							<td align="left" width="50%">スタッフ名</td>
+							<td align="left">身長</td>
+							<td align="center">有効フラグ</td>
+						</tr>
+						@{ var lineNo = 1; }
+						@foreach (var s in this.Model.List)
+						{
+							lineNo = ((lineNo + 1) % 2);
+							var listItemBgClass = "list_item_bg" + (lineNo + 1);
+							var listSelectMoutClass = string.Format("listselect_mout{0}(this)", +lineNo + 1);
+
+							<tr class="@listItemBgClass" onmouseover="listselect_mover(this)" onmouseout="@listSelectMoutClass" onmousedown="listselect_mdown(this)" onclick="listselect_mclick(this, '@Url.Action("Confirm", new { ActionStatus = ActionStatus.Detail, staffId = s.StaffId })')">
+								<td align="center">@s.StaffId</td>
+								<td align="left">&nbsp;@s.StaffName</td>
+								<td align="left">&nbsp;@s.StaffHeight</td>
+								<td align="center">@ValueText.GetValueText(Constants.TABLE_STAFF, Constants.FIELD_STAFF_VALID_FLG, s.ValidFlg)</td>
+							</tr>
+						}
+						@if (string.IsNullOrEmpty(this.Model.ErrorMessage) == false)
+						{
+							<tr class="list_alert"><td colspan="4">@this.Model.ErrorMessage</td></tr>
+						}
+					</table>
+				</td>
+				</tr>
+				<tr>
+					<td>
+						<div class="action_part_bottom">
+							@TopButtomControls()
+						</div>
+					</td>
+				</tr>
+				@LayoutHelper.PaddingTr(10)
+			</table>
+		</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+	</td>
+	</tr>
+	<!--△ 一覧 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		// 入力確認
+		function validate_staff(name) {
+			loading_animation.start();
+			var formData = get_input_date();
+			var url = '@Url.Action("ValidateExport", new
+					{
+						this.Model.ParamModel
+					})';
+
+			$.ajax({
+				type: "POST",
+				url: url,
+				data: formData
+			}).done(function(errorMessage) {
+				setTimeout(function() { loading_animation.end(); }, 200);
+				// 警告表示を削除
+				$('.notification-message-warning').remove();
+				if (errorMessage !== "") {
+					notification.show(errorMessage, 'warning', 'fixed');
+				} else {
+					$('#' + name).click();
+				}
+				return false;
+			});
+		}
+</script>
+}

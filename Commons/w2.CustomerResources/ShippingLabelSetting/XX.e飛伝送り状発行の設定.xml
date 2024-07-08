@@ -1,0 +1,367 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<OrderDataExportSetting>
+
+  <!-- 出力ファイルの設定 -->
+  <ExportSetting>
+    <!-- 受注一覧・ワークフロー一覧画面に表示する送り状ダウンロードリンクの文言 -->
+    <DisplayName><![CDATA[e飛伝送り状発行]]></DisplayName>
+    <!-- 出力ファイルの種類（設定可能値：csv） -->
+    <FormatType>csv</FormatType>
+    <!-- 出力単位（設定可能値：Order） -->
+    <UnitType>Order</UnitType>
+    <!-- 出力ファイル名 -->
+    <FileName>
+      <Value Type="string"><![CDATA[EHidenOkurijyo_]]></Value>
+      <Value Type="dateString" Format="yyyyMMddHHmmss">Now</Value>
+      <Value Type="string">.csv</Value>
+    </FileName>
+    <!-- ヘッダ行出力有無（設定可能値：true, false） -->
+    <ExportHeader>false</ExportHeader>
+    <!-- 引用符常時出力有無（設定可能値：true, false） -->
+    <!--
+         例：引用符が「"」、1列目の値は「123」、2列目の値は「abc」、3列目の値は「1,2」の場合、
+             ・true の場合、"123","abc","1,2"を出力しますが、
+             ・false の場合、123,abc,"1,2"を出力します。（値にカンマ(,)があるときは強制エスケープ）
+    -->
+    <AlwaysExportQuotation>true</AlwaysExportQuotation>
+    <!-- 列の引用符 -->
+    <StringQuotationMark><![CDATA["]]></StringQuotationMark>
+    <!-- 区切り文字（設定可能値：COMMA, TAB） -->
+    <Separator>COMMA</Separator>
+    <!-- 文字コード（設定可能値：Shift_JIS, UTF-8） -->
+    <Encoding>Shift_JIS</Encoding>
+  </ExportSetting>
+
+  <!-- 出力項目・内容の設定 -->
+  <FieldsSetting>
+    <!-- 1.ご依頼主コード -->
+    <Field Name="1.住所録コード" EscapeCsvColumn="true">
+      <Value Type="field">w2_Order.order_id</Value>
+    </Field>
+
+    <!-- 2.部署ご担当者コード -->
+    <Field Name="2.部署ご担当者コード">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 3.部署ご担当者名 -->
+    <Field Name="3.部署ご担当者名">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 4.ご依頼主電話 -->
+    <Field Name="4.ご依頼主電話" EscapeCsvColumn="true">
+      <Value Type="field">w2_OrderOwner.owner_tel1</Value>
+    </Field>
+
+    <!-- 5.お届け先コード -->
+    <Field Name="5.お届け先コード" EscapeCsvColumn="true">
+      <Value Type="field">w2_Order.order_id</Value>
+    </Field>
+
+    <!-- 6.お届け先郵便番号 -->
+    <Field Name="6.お届け先郵便番号" EscapeCsvColumn="true">
+      <Value Type="field">w2_OrderShipping.shipping_zip</Value>
+    </Field>
+
+    <!-- 7.お届け先名 -->
+    <Field Name="7.お届け先名" EscapeCsvColumn="true">
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_name)</Value>
+    </Field>
+
+    <!-- 8.お届け先住所 -->
+    <Field Name="8.お届け先住所" EscapeCsvColumn="true">
+      <Value Type="field">w2_OrderShipping.shipping_addr1</Value>
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_addr2)</Value>
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_addr3)</Value>
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_addr4)</Value>
+    </Field>
+
+    <!-- 9.お届け先電話 -->
+    <Field Name="9.お届け先電話" EscapeCsvColumn="true">
+      <Value Type="field">w2_OrderShipping.shipping_tel1</Value>
+    </Field>
+
+    <!-- 10.ご不在連絡先 -->
+    <Field Name="10.ご不在連絡先">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 11.メールアドレス -->
+    <Field Name="11.メールアドレス" EscapeCsvColumn="true">
+      <Value Type="field">w2_OrderOwner.owner_mail_addr</Value>
+    </Field>
+
+    <!-- 12.代行ご依頼主コード -->
+    <Field Name="12.代行ご依頼主コード">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 13.代行ご依頼主郵便番号 -->
+    <Field Name="13.代行ご依頼主郵便番号">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 14.代行ご依頼主名 -->
+    <Field Name="14.代行ご依頼主名">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 15.代行ご依頼主住所 -->
+    <Field Name="15.代行ご依頼主住所">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 16.代行ご依頼主電話 -->
+    <Field Name="16.代行ご依頼主電話">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 17.出荷日 -->
+    <Field Name="17.出荷日">
+      <Value Type="dateString" Format="yyyy/mm/dd">Now</Value>
+    </Field>
+
+    <!-- 18.配達指定日 -->
+    <Field Name="18.配達指定日">
+      <Switch>
+       <Case>
+          <Condition><![CDATA[(w2_OrderShipping.shipping_date IS NOT NULL) AND (CONVERT(varchar(8), w2_OrderShipping.shipping_date, 112) != '19000101')]]></Condition>
+          <Value Type="dateString" Format="yyyy/mm/dd">w2_OrderShipping.shipping_date</Value>
+        </Case>
+        <Else><Value Type="string"></Value></Else>
+      </Switch>
+    </Field>
+
+    <!-- 19.個数 -->
+    <Field Name="19.個数">
+      <Value Type="string">1</Value>
+    </Field>
+
+    <!-- 20.元着区分 -->
+    <Field Name="20.元着区分">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_Order.order_payment_kbn = 'K20']]></Condition>
+          <Value Type="field">CAST(CAST( Floor(w2_Order.order_price_total * POWER(10,@@ KEY_CURRENCY_DIGITS @@)) / POWER(10,@@ KEY_CURRENCY_DIGITS @@) AS decimal(18,@@ KEY_CURRENCY_DIGITS @@)) AS nvarchar)</Value>
+        </Case>
+        <Else><Value Type="string">0</Value></Else>
+      </Switch>
+    </Field>
+
+    <!-- 21.保険金額 -->
+    <Field Name="21.保険金額">
+      <Value Type="string">0</Value>
+    </Field>
+
+    <!-- 22.代引金額 -->
+    <Field Name="22.代引金額">
+      <Switch>
+       <Case>
+          <Condition><![CDATA[w2_Order.order_payment_kbn = 'K10']]></Condition>
+          <Value Type="string">0</Value>
+        </Case>
+        <Else>
+          <Value Type="field">CAST(CAST( Floor(w2_Order.order_price_total * POWER(10,@@ KEY_CURRENCY_DIGITS @@)) / POWER(10,@@ KEY_CURRENCY_DIGITS @@) AS decimal(18,@@ KEY_CURRENCY_DIGITS @@)) AS nvarchar)</Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 23.代引税込金額 -->
+    <Field Name="23.代引税込金額">
+      <Value Type="string">0</Value>
+    </Field>
+
+    <!-- 24.消費税区分 -->
+    <Field Name="24.消費税区分">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 25.問い合せNo. -->
+    <Field Name="25.問い合せNo.">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 26.旧問い合せNo. -->
+    <Field Name="26.旧問い合せNo.">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 27.顧客管理番号 -->
+    <Field Name="27.顧客管理番号">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 28.営止め区分 -->
+    <Field Name="28.営止め区分">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 29.営止清算店コード -->
+    <Field Name="29.営止清算店コード">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 30.クール指定 -->
+    <Field Name="30.クール指定">
+      <Value Type="string">0</Value>
+    </Field>
+
+    <!-- 31.便種コード -->
+    <Field Name="31.便種コード">
+      <Value Type="string">001</Value>
+    </Field>
+
+    <!-- 32.時間帯コード -->
+    <Field Name="32.時間帯コード">
+      <Switch>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO"を検索して、ShippingTimeID1値を「@@ ShippingTimeID1 @@」箇所に差し替えください。 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time = '@@ ShippingTimeID1 @@']]></Condition>
+          <Value Type="string">01</Value>
+        </Case>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO"を検索して、ShippingTimeID2値を「@@ ShippingTimeID2 @@」箇所に差し替えください。 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time = '@@ ShippingTimeID2 @@']]></Condition>
+          <Value Type="string">12</Value>
+        </Case>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO"を検索して、ShippingTimeID3値を「@@ ShippingTimeID3 @@」箇所に差し替えください。 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time = '@@ ShippingTimeID3 @@']]></Condition>
+          <Value Type="string">14</Value>
+        </Case>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO"を検索して、ShippingTimeID4値を「@@ ShippingTimeID4 @@」箇所に差し替えください。 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time = '@@ ShippingTimeID4 @@']]></Condition>
+          <Value Type="string">16</Value>
+        </Case>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO"を検索して、ShippingTimeID5値を「@@ ShippingTimeID5 @@」箇所に差し替えください。 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time = '@@ ShippingTimeID5 @@']]></Condition>
+          <Value Type="string">04</Value>
+        </Case>
+        <Else>
+          <Value Type="string">00</Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 33.配達時間指定 -->
+    <Field Name="33.配達時間指定">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 34.シールコード１ -->
+    <Field Name="34.シールコード１">
+      <Value Type="string">11</Value>
+    </Field>
+
+    <!-- 35.シールコード２ -->
+    <Field Name="35.シールコード２">
+      <Switch>
+        <Case>
+          <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"EHIDENOKURIJYO"を検索して、ShippingTimeID1～ShippingTimeID5値を「@@ ShippingTimeID1 @@」～「@@ ShippingTimeID5 @@」箇所に差し替えください。 -->
+          <Condition><![CDATA[w2_OrderShipping.shipping_time IN ('@@ ShippingTimeID1 @@', '@@ ShippingTimeID2 @@', '@@ ShippingTimeID3 @@', '@@ ShippingTimeID4 @@', '@@ ShippingTimeID5 @@')]]></Condition>
+          <Value Type="string">7</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[(w2_OrderShipping.shipping_date IS NOT NULL) AND (CONVERT(varchar(8), w2_OrderShipping.shipping_date, 112) != '19000101')]]></Condition>
+          <Value Type="string">5</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 36.シールコード３ -->
+    <Field Name="36.シールコード３">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 37.シールコード４ -->
+    <Field Name="37.シールコード４">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 38.出荷区分 -->
+    <Field Name="38.出荷区分">
+      <Value Type="string">0</Value>
+    </Field>
+
+    <!-- 39.出荷場印字 -->
+    <Field Name="39.出荷場印字">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 40.保険金額印字フラグ -->
+    <Field Name="40.保険金額印字フラグ">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 41.集約解除指定 -->
+    <Field Name="41.集約解除指定">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 42.編集０１ -->
+    <Field Name="42.編集０１">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[(w2_OrderShipping.shipping_date IS NOT NULL) AND (CONVERT(varchar(8), w2_OrderShipping.shipping_date, 112) != '19000101')]]></Condition>
+          <Value Type="dateString" Format="yyyy/mm/dd">w2_OrderShipping.shipping_date</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 43.編集０２ -->
+    <Field Name="43.編集０２">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 44.編集０３ -->
+    <Field Name="44.編集０３">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 45.編集０４ -->
+    <Field Name="45.編集０４">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 46.編集０５ -->
+    <Field Name="46.編集０５">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 47.編集０６ -->
+    <Field Name="47.編集０６">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 48.編集０７ -->
+    <Field Name="48.編集０７">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 49.編集０８ -->
+    <Field Name="49.編集０８">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 50.編集０９ -->
+    <Field Name="50.編集０９">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 51.編集１０ -->
+    <Field Name="51.編集１０">
+      <Value Type="string"></Value>
+    </Field>
+
+  </FieldsSetting>
+
+</OrderDataExportSetting>

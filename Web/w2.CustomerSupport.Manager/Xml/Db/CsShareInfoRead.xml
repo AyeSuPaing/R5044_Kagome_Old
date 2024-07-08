@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 共有情報既読管理系SQLステートメントXML(CsShareInfoRead.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsShareInfoRead>
+
+  <!-- 検索（共有情報も取得） -->
+  <SearchWithShareInfo>
+    <Statement>
+      <![CDATA[
+        -- 件数取得
+        DECLARE @row_count int;
+        SELECT  @row_count = ISNULL(COUNT(1), 0)
+          FROM  w2_CsShareInfo
+                LEFT JOIN w2_CsShareInfoRead ON
+                (
+                  w2_CsShareInfoRead.dept_id = w2_CsShareInfo.dept_id
+                  AND
+                  w2_CsShareInfoRead.info_no = w2_CsShareInfo.info_no
+                )
+         WHERE  [[ SearchWithShareInfo_Where ]]
+                
+        SELECT  w2_CsShareInfo.*,
+                w2_CsShareInfoRead.operator_id,
+                w2_CsShareInfoRead.read_flg,
+                w2_CsShareInfoRead.pinned_flg,
+                w2_ShopOperator.name,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_CsShareInfo.dept_id,
+                          w2_CsShareInfo.info_no,
+                          w2_CsShareInfoRead.operator_id,
+                          ROW_NUMBER() OVER (ORDER BY [[ SearchWithShareInfo_OrderBy ]]) AS row_num
+                    FROM  w2_CsShareInfo
+                          LEFT JOIN w2_CsShareInfoRead ON
+                          (
+                            w2_CsShareInfoRead.dept_id = w2_CsShareInfo.dept_id
+                            AND
+                            w2_CsShareInfoRead.info_no = w2_CsShareInfo.info_no
+                          )
+                  WHERE  [[ SearchWithShareInfo_Where ]]
+                ) AS RowIndex
+                LEFT JOIN w2_CsShareInfo ON
+                (
+                  w2_CsShareInfo.dept_id = RowIndex.dept_id
+                  AND
+                  w2_CsShareInfo.info_no = RowIndex.info_no
+                )
+                LEFT JOIN w2_CsShareInfoRead ON
+                (
+                  w2_CsShareInfoRead.dept_id = RowIndex.dept_id
+                  AND
+                  w2_CsShareInfoRead.info_no = RowIndex.info_no
+                  AND
+                  w2_CsShareInfoRead.operator_id = RowIndex.operator_id
+                )
+                LEFT JOIN w2_ShopOperator ON
+                (
+                  w2_ShopOperator.shop_id = w2_CsShareInfo.dept_id
+                  AND
+                  w2_ShopOperator.operator_id = w2_CsShareInfo.sender
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchWithShareInfo>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT	w2_CsShareInfoRead.*
+          FROM	w2_CsShareInfoRead
+         WHERE	w2_CsShareInfoRead.dept_id = @dept_id
+           AND	w2_CsShareInfoRead.info_no = @info_no
+           AND	w2_CsShareInfoRead.operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="info_no" Type="bigint" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Get>
+
+  <!-- すべて取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT	w2_CsShareInfoRead.*,
+                w2_ShopOperator.name
+          FROM	w2_CsShareInfoRead
+                INNER JOIN w2_ShopOperator ON
+                (
+                  w2_CsShareInfoRead.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsShareInfoRead.operator_id = w2_ShopOperator.operator_id
+                  AND
+                  w2_ShopOperator.valid_flg = 1
+                )
+         WHERE	w2_CsShareInfoRead.dept_id = @dept_id
+           AND	w2_CsShareInfoRead.info_no = @info_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="info_no" Type="bigint" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetAll>
+  
+  <!-- 既読フラグを指定して検索 -->
+  <SearchByReadFlg>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsShareInfo.*,
+                w2_CsShareInfoRead.*,
+                w2_ShopOperator.name
+          FROM  w2_CsShareInfo
+                INNER JOIN w2_CsShareInfoRead ON
+                (
+                  w2_CsShareInfo.dept_id = w2_CsShareInfoRead.dept_id
+                  AND
+                  w2_CsShareInfo.info_no = w2_CsShareInfoRead.info_no
+                  AND
+                  w2_CsShareInfoRead.operator_id = @operator_id
+                  AND
+                  w2_CsShareInfoRead.read_flg = @read_flg
+                )
+                INNER JOIN w2_ShopOperator ON
+                (
+                  w2_ShopOperator.shop_id = w2_CsShareInfoRead.dept_id
+                  AND
+                  w2_ShopOperator.operator_id = w2_CsShareInfoRead.operator_id
+                )
+         WHERE  w2_CsShareInfo.dept_id = @dept_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="read_flg" Type="nvarchar" Size="1" />
+      <Input Name="pinned_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </SearchByReadFlg>
+
+  <!-- 既読フラグ更新 -->
+  <UpdateReadFlg>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsShareInfoRead 
+           SET  w2_CsShareInfoRead.read_flg = @read_flg, 
+                w2_CsShareInfoRead.date_changed = getdate(), 
+                w2_CsShareInfoRead.last_changed = @last_changed 
+         WHERE  w2_CsShareInfoRead.dept_id = @dept_id 
+           AND  w2_CsShareInfoRead.info_no = @info_no 
+           AND  w2_CsShareInfoRead.operator_id = @operator_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="info_no" Type="bigint" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="read_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateReadFlg>
+
+  <!-- ピン止めフラグ更新 -->
+  <UpdatePinnedFlg>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsShareInfoRead 
+           SET  w2_CsShareInfoRead.pinned_flg = @pinned_flg, 
+                w2_CsShareInfoRead.date_changed = getdate(), 
+                w2_CsShareInfoRead.last_changed = @last_changed 
+         WHERE  w2_CsShareInfoRead.dept_id = @dept_id 
+           AND  w2_CsShareInfoRead.info_no = @info_no 
+           AND  w2_CsShareInfoRead.operator_id = @operator_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="info_no" Type="bigint" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="pinned_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdatePinnedFlg>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT	w2_CsShareInfoRead
+                (
+                  dept_id,
+                  info_no,
+                  operator_id,
+                  read_flg,
+                  date_created, 
+                  date_changed, 
+                  last_changed
+                )
+         VALUES	(
+                  @dept_id, 
+                  @info_no, 
+                  @operator_id,
+                  @read_flg,
+                  getdate(), 
+                  getdate(), 
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="info_no" Type="bigint" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="read_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CsShareInfoRead
+         WHERE  w2_CsShareInfoRead.dept_id = @dept_id
+           AND  w2_CsShareInfoRead.info_no = @info_no
+           AND  w2_CsShareInfoRead.operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="info_no" Type="bigint" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Delete>
+
+  <!-- すべて削除 -->
+  <DeleteAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CsShareInfoRead
+         WHERE	w2_CsShareInfoRead.dept_id = @dept_id
+           AND	w2_CsShareInfoRead.info_no = @info_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="info_no" Type="bigint" />
+    </Parameter>
+  </DeleteAll>
+
+</CsShareInfoRead>

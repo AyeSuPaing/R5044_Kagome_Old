@@ -1,0 +1,1271 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Subscription Box (SubscriptionBox.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+
+<SubscriptionBox>
+
+  <!-- すべて取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+         SELECT  *
+           FROM  w2_SubscriptionBox
+        ]]>
+    </Statement>
+  </GetAll>
+
+  <!-- 有効なものをすべて取得 -->
+  <GetValidAll>
+    <Statement>
+      <![CDATA[
+         SELECT  *
+           FROM  w2_SubscriptionBox
+          WHERE  w2_SubscriptionBox.valid_flg = '1'
+      ]]>
+    </Statement>
+  </GetValidAll>
+
+  <!-- 有効なものをすべて取得（デフォルト注文商品） -->
+  <GetAllValidDefaultItems>
+    <Statement>
+      <![CDATA[
+         SELECT  w2_SubscriptionBoxDefaultItem.*
+           FROM  w2_SubscriptionBoxDefaultItem
+                 INNER JOIN w2_SubscriptionBox ON
+                 (
+                   w2_SubscriptionBoxDefaultItem.subscription_box_course_id = w2_SubscriptionBox.subscription_box_course_id
+                 )
+            AND  w2_SubscriptionBox.valid_flg = '1'
+      ]]>
+    </Statement>
+  </GetAllValidDefaultItems>
+
+  <!-- 有効なものをすべて取得（選択可能商品） -->
+  <GetAllValidItems>
+    <Statement>
+      <![CDATA[
+         SELECT  w2_SubscriptionBoxItem.*
+           FROM  w2_SubscriptionBoxItem
+                 INNER JOIN w2_SubscriptionBox ON
+                 (
+                   w2_SubscriptionBoxItem.subscription_box_course_id = w2_SubscriptionBox.subscription_box_course_id
+                 )
+            AND  w2_SubscriptionBox.valid_flg = '1'
+      ]]>
+    </Statement>
+  </GetAllValidItems>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+          SELECT  *
+            FROM  w2_SubscriptionBox
+           WHERE  subscription_box_course_id = @subscription_box_course_id
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- 商品税率カテゴリと紐づけられた頒布会を取得 -->
+  <GetByTaxCategoryId>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                *
+          FROM  w2_SubscriptionBox
+         WHERE  tax_category_id = @tax_category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tax_category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetByTaxCategoryId>
+
+  <!-- 有効なコースを表示件数分取得 -->
+  <GetCourseList>
+    <Statement>
+      <![CDATA[
+         SELECT  TOP (@display_quantity)
+                 *
+           FROM  w2_SubscriptionBox
+          WHERE  w2_SubscriptionBox.valid_flg = '1'
+         ORDER BY w2_SubscriptionBox.display_priority ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="display_quantity" Type="int" />
+    </Parameter>
+  </GetCourseList>
+
+  <!-- 選択可能商品を取得 -->
+  <GetItems>
+    <Statement>
+      <![CDATA[
+          SELECT  w2_SubscriptionBoxItem.*,
+                  w2_ProductView.name,
+                  w2_ProductView.shop_id,
+                  w2_ProductView.variation_name1,
+                  w2_ProductView.variation_name2,
+                  w2_ProductView.variation_name3,
+                  w2_ProductView.price
+            FROM  w2_SubscriptionBoxItem
+                  LEFT JOIN w2_ProductView ON
+                  (
+                     w2_ProductView.shop_id = w2_SubscriptionBoxItem.shop_id
+                     AND
+                     w2_ProductView.product_id = w2_SubscriptionBoxItem.product_id
+                     AND
+                     w2_ProductView.variation_id = w2_SubscriptionBoxItem.variation_id
+                  )
+           WHERE  subscription_box_course_id = @subscription_box_course_id
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetItems>
+
+  <!-- デフォルト注文商品を取得 -->
+  <GetDefaultItems>
+    <Statement>
+      <![CDATA[
+          SELECT  w2_SubscriptionBoxDefaultItem.*,
+                  w2_SubscriptionBoxItem.selectable_since,
+                  w2_SubscriptionBoxItem.selectable_until
+            FROM  w2_SubscriptionBoxDefaultItem
+                  LEFT JOIN w2_SubscriptionBoxItem ON
+                  (
+                    w2_SubscriptionBoxDefaultItem.subscription_box_course_id = w2_SubscriptionBoxItem.subscription_box_course_id
+                    AND
+                    w2_SubscriptionBoxDefaultItem.shop_id = w2_SubscriptionBoxItem.shop_id
+                    AND
+                    w2_SubscriptionBoxDefaultItem.product_id = w2_SubscriptionBoxItem.product_id
+                    AND
+                    w2_SubscriptionBoxDefaultItem.variation_id = w2_SubscriptionBoxItem.variation_id
+                  )
+           WHERE  w2_SubscriptionBoxDefaultItem.subscription_box_course_id = @subscription_box_course_id
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetDefaultItems>
+
+  <!-- １回目のデフォルト商品を取得 -->
+  <GetFirstDefaultItem>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_SubscriptionBoxDefaultItem
+         WHERE  subscription_box_course_id = @subscription_box_course_id 
+           AND  count = 1
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetFirstDefaultItem>
+
+  <!-- デフォルト商品詳細情報を取得（日別予測レポートバッチ用） -->
+  <GetDefaultItemDetails>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_SubscriptionBoxDefaultItem
+                LEFT JOIN w2_ProductView ON
+                (
+                  w2_SubscriptionBoxDefaultItem.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_SubscriptionBoxDefaultItem.product_id = w2_ProductView.product_id
+                  AND
+                  w2_SubscriptionBoxDefaultItem.variation_id = w2_ProductView.variation_id
+                )
+         WHERE  subscription_box_course_id = @subscription_box_course_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetDefaultItemDetails>
+
+  <!-- 有効な頒布会をバリーションIDで取得 -->
+  <GetValidSubscriptionBoxByVariationId>
+    <Statement>
+      <![CDATA[
+        DECLARE @now DATE = GETDATE()
+
+        SELECT  DISTINCT
+                w2_SubscriptionBox.subscription_box_course_id,
+                w2_SubscriptionBox.display_name
+                
+          FROM  w2_SubscriptionBox
+            INNER JOIN w2_SubscriptionBoxDefaultItem ON
+                (
+                  w2_SubscriptionBox.subscription_box_course_id = w2_SubscriptionBoxDefaultItem.subscription_box_course_id
+                )
+            INNER JOIN w2_SubscriptionBoxItem ON
+                (
+                  w2_SubscriptionBox.subscription_box_course_id = w2_SubscriptionBoxItem.subscription_box_course_id
+                )
+         WHERE  w2_SubscriptionBox.valid_flg = '1'
+           AND  (
+                  (
+                    w2_SubscriptionBox.order_item_determination_type = 'TERM'
+                    AND
+                    (
+                      w2_SubscriptionBoxDefaultItem.variation_id = @variation_id
+                      AND
+                      @now >= w2_SubscriptionBoxDefaultItem.term_since
+                      AND
+                      @now < w2_SubscriptionBoxDefaultItem.term_until
+                    )
+                  )
+                  OR
+                  (
+                    w2_SubscriptionBox.order_item_determination_type = 'COUNT'
+                    AND
+                    w2_SubscriptionBoxDefaultItem.count = 1
+                    AND
+                    w2_SubscriptionBoxDefaultItem.variation_id = @variation_id
+                    AND
+                    (
+                      (
+                        @now >= w2_SubscriptionBoxItem.selectable_since
+                        AND
+                        @now < w2_SubscriptionBoxItem.selectable_until
+                      )
+                      OR
+                      (
+                        w2_SubscriptionBoxItem.selectable_since IS NULL
+                        AND
+                        w2_SubscriptionBoxItem.selectable_until IS NULL
+                      )
+                    )
+                  )
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetValidSubscriptionBoxByVariationId>
+
+  <!--頒布会詳細での表示内容取得-->
+  <GetDisplayItems>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_SubscriptionBoxDefaultItem.*,
+                w2_ProductView.name,
+                w2_ProductView.shop_id,
+                w2_ProductView.variation_name1,
+                w2_ProductView.variation_name2,
+                w2_ProductView.variation_name3,
+                w2_ProductView.price,
+                w2_SubscriptionBoxItem.selectable_since,
+                w2_SubscriptionBoxItem.selectable_until
+          FROM  w2_SubscriptionBoxDefaultItem
+                INNER JOIN w2_SubscriptionBoxItem ON
+                (
+                  w2_SubscriptionBoxDefaultItem.subscription_box_course_id = w2_SubscriptionBoxItem.subscription_box_course_id
+                  AND
+                  w2_SubscriptionBoxDefaultItem.shop_id = w2_SubscriptionBoxItem.shop_id
+                  AND
+                  w2_SubscriptionBoxDefaultItem.product_id = w2_SubscriptionBoxItem.product_id
+                  AND
+                  w2_SubscriptionBoxDefaultItem.variation_id = w2_SubscriptionBoxItem.variation_id
+                )
+                LEFT JOIN w2_ProductView ON
+                (
+                   w2_ProductView.variation_id = w2_SubscriptionBoxDefaultItem.variation_id
+                )
+         WHERE  w2_SubscriptionBoxDefaultItem.subscription_box_course_id = @subscription_box_course_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetDisplayItems>
+
+  <!-- 初回選択商品を取得 -->
+  <GetFirstSelectableItems>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_SubscriptionBoxItem.*,
+                w2_ProductView.name,
+                w2_ProductView.name_kana,
+                w2_ProductView.shop_id,
+                w2_ProductView.category_id1,
+                w2_ProductView.category_id2,
+                w2_ProductView.category_id3,
+                w2_ProductView.category_id4,
+                w2_ProductView.category_id5,
+                w2_ProductView.icon_flg1,
+                w2_ProductView.icon_flg2,
+                w2_ProductView.icon_flg3,
+                w2_ProductView.icon_flg4,
+                w2_ProductView.icon_flg5,
+                w2_ProductView.icon_flg6,
+                w2_ProductView.icon_flg7,
+                w2_ProductView.icon_flg8,
+                w2_ProductView.icon_flg9,
+                w2_ProductView.icon_flg10,
+                w2_ProductView.icon_term_end1,
+                w2_ProductView.icon_term_end2,
+                w2_ProductView.icon_term_end3,
+                w2_ProductView.icon_term_end4,
+                w2_ProductView.icon_term_end5,
+                w2_ProductView.icon_term_end6,
+                w2_ProductView.icon_term_end7,
+                w2_ProductView.icon_term_end8,
+                w2_ProductView.icon_term_end9,
+                w2_ProductView.icon_term_end10,
+                w2_ProductView.price,
+                w2_ProductView.image_head,
+                w2_ProductView.variation_image_head,
+                w2_SubscriptionBoxDefaultItem.item_quantity,
+                w2_SubscriptionBoxDefaultItem.necessary_product_flg,
+                w2_ProductTag.*
+          FROM  w2_SubscriptionBoxDefaultItem
+                INNER JOIN w2_SubscriptionBoxItem ON
+                (
+                   w2_SubscriptionBoxDefaultItem.product_id = w2_SubscriptionBoxItem.product_id
+                   AND
+                   w2_SubscriptionBoxDefaultItem.subscription_box_course_id = w2_SubscriptionBoxItem.subscription_box_course_id
+                   AND
+                   w2_SubscriptionBoxDefaultItem.count = 1
+                   AND
+                   w2_SubscriptionBoxItem.subscription_box_course_id = @subscription_box_course_id
+                )
+                INNER JOIN w2_ProductView ON
+                (
+                   w2_ProductView.shop_id = w2_SubscriptionBoxDefaultItem.shop_id
+                   AND
+                   w2_ProductView.product_id = w2_SubscriptionBoxDefaultItem.product_id
+                   AND
+                   w2_ProductView.variation_id = w2_SubscriptionBoxDefaultItem.variation_id
+                )
+                INNER JOIN w2_ProductTag ON
+                (
+                   w2_ProductTag.product_id = w2_SubscriptionBoxDefaultItem.product_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetFirstSelectableItems>
+
+  <!-- 削除（小テーブル郡含め） -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+          DELETE  w2_SubscriptionBox
+           WHERE  subscription_box_course_id = @subscription_box_course_id
+            
+          DELETE  w2_SubscriptionBoxItem
+           WHERE  subscription_box_course_id = @subscription_box_course_id
+            
+          DELETE  w2_SubscriptionBoxDefaultItem
+           WHERE  subscription_box_course_id = @subscription_box_course_id
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- 選択可能商品を削除 -->
+  <DeleteItems>
+    <Statement>
+      <![CDATA[
+          DELETE  w2_SubscriptionBoxItem
+           WHERE  subscription_box_course_id = @subscription_box_course_id
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteItems>
+
+  <!-- デフォルト注文商品を削除 -->
+  <DeleteDefaultItems>
+    <Statement>
+      <![CDATA[
+          DELETE  w2_SubscriptionBoxDefaultItem
+           WHERE  subscription_box_course_id = @subscription_box_course_id
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteDefaultItems>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_SubscriptionBox
+           SET  management_name = @management_name,
+                display_name = @display_name,
+                auto_renewal = @auto_renewal,
+                items_changeable_by_user = @items_changeable_by_user,
+                order_item_determination_type = @order_item_determination_type,
+                minimum_purchase_quantity = @minimum_purchase_quantity,
+                maximum_purchase_quantity = @maximum_purchase_quantity,
+                minimum_number_of_products = @minimum_number_of_products,
+                maximum_number_of_products = @maximum_number_of_products,
+                valid_flg = @valid_flg,
+                date_changed = GETDATE(),
+                last_changed = @last_changed,
+                fixed_amount_flg = @fixed_amount_flg,
+                fixed_amount = @fixed_amount,
+                tax_category_id = @tax_category_id,
+                display_priority = @display_priority,
+                minimum_amount = @minimum_amount,
+                maximum_amount = @maximum_amount,
+                first_selectable_flg = @first_selectable_flg,
+                indefinite_period_flg = @indefinite_period_flg
+         WHERE  subscription_box_course_id = @subscription_box_course_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+      <Input Name="management_name" Type="nvarchar" Size="50" />
+      <Input Name="display_name" Type="nvarchar" Size="50" />
+      <Input Name="auto_renewal" Type="nvarchar" Size="5" />
+      <Input Name="items_changeable_by_user" Type="nvarchar" Size="5" />
+      <Input Name="order_item_determination_type" Type="nvarchar" Size="10" />
+      <Input Name="minimum_purchase_quantity" Type="int" />
+      <Input Name="maximum_purchase_quantity" Type="int" />
+      <Input Name="minimum_number_of_products" Type="int" />
+      <Input Name="maximum_number_of_products" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="fixed_amount_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_amount" Type="decimal" Size="18,3" />
+      <Input Name="tax_category_id" Type="nvarchar" Size="30" />
+      <Input Name="display_priority" Type="int" />
+      <Input Name="minimum_amount" Type="decimal" Size="18,3" />
+      <Input Name="maximum_amount" Type="decimal" Size="18,3" />
+      <Input Name="first_selectable_flg" Type="nvarchar" Size="1" />
+      <Input Name="indefinite_period_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </Update>
+
+  <!-- 挿入 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_SubscriptionBox
+                (
+                  subscription_box_course_id
+                  ,management_name
+                  ,display_name
+                  ,auto_renewal
+                  ,items_changeable_by_user
+                  ,order_item_determination_type
+                  ,minimum_purchase_quantity
+                  ,maximum_purchase_quantity
+                  ,minimum_number_of_products
+                  ,maximum_number_of_products
+                  ,valid_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,fixed_amount_flg
+                  ,fixed_amount
+                  ,tax_category_id
+                  ,display_priority
+                  ,minimum_amount
+                  ,maximum_amount
+                  ,first_selectable_flg
+				  ,indefinite_period_flg
+                )
+        VALUES  (
+                  @subscription_box_course_id
+                  ,@management_name
+                  ,@display_name
+                  ,@auto_renewal
+                  ,@items_changeable_by_user
+                  ,@order_item_determination_type
+                  ,@minimum_purchase_quantity
+                  ,@maximum_purchase_quantity
+                  ,@minimum_number_of_products
+                  ,@maximum_number_of_products
+                  ,@valid_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@fixed_amount_flg
+                  ,@fixed_amount
+                  ,@tax_category_id
+                  ,@display_priority
+                  ,@minimum_amount
+                  ,@maximum_amount
+                  ,@first_selectable_flg
+				  ,@indefinite_period_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+      <Input Name="management_name" Type="nvarchar" Size="50" />
+      <Input Name="display_name" Type="nvarchar" Size="50" />
+      <Input Name="auto_renewal" Type="nvarchar" Size="5" />
+      <Input Name="items_changeable_by_user" Type="nvarchar" Size="5" />
+      <Input Name="order_item_determination_type" Type="nvarchar" Size="10" />
+      <Input Name="minimum_purchase_quantity" Type="int" />
+      <Input Name="maximum_purchase_quantity" Type="int" />
+      <Input Name="minimum_number_of_products" Type="int" />
+      <Input Name="maximum_number_of_products" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="fixed_amount_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_amount" Type="decimal" Size="18,3" />
+      <Input Name="tax_category_id" Type="nvarchar" Size="30" />
+      <Input Name="display_priority" Type="int" />
+      <Input Name="minimum_amount" Type="decimal" Size="18,3" />
+      <Input Name="maximum_amount" Type="decimal" Size="18,3" />
+      <Input Name="first_selectable_flg" Type="nvarchar" Size="1" />
+      <Input Name="indefinite_period_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </Insert>
+
+  <!-- 選択可能商品挿入 -->
+  <InsertItems>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_SubscriptionBoxItem
+                (
+                  subscription_box_course_id
+                  ,branch_no
+                  ,shop_id
+                  ,product_id
+                  ,variation_id
+                  ,selectable_since
+                  ,selectable_until
+                  ,campaign_since
+                  ,campaign_until
+                  ,campaign_price
+                )
+        VALUES  (
+                  @subscription_box_course_id
+                  ,@branch_no
+                  ,@shop_id
+                  ,@product_id
+                  ,@variation_id
+                  ,@selectable_since
+                  ,@selectable_until
+                  ,@campaign_since
+                  ,@campaign_until
+                  ,@campaign_price
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="selectable_since" Type="datetime" />
+      <Input Name="selectable_until" Type="datetime" />
+      <Input Name="campaign_since" Type="datetime" />
+      <Input Name="campaign_until" Type="datetime" />
+      <Input Name="campaign_price" Type="decimal" Size="18,3" />
+    </Parameter>
+  </InsertItems>
+
+  <!-- デフォルト注文商品インサート -->
+  <InsertDefaultItems>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_SubscriptionBoxDefaultItem
+                (
+                  subscription_box_course_id
+                  ,count
+                  ,term_since
+                  ,term_until
+                  ,shop_id
+                  ,product_id
+                  ,variation_id
+                  ,item_quantity
+                  ,branch_no
+                  ,necessary_product_flg
+                )
+        VALUES  (
+                  @subscription_box_course_id
+                  ,@count
+                  ,@term_since
+                  ,@term_until
+                  ,@shop_id
+                  ,@product_id
+                  ,@variation_id
+                  ,@item_quantity
+                  ,@branch_no
+                  ,@necessary_product_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+      <Input Name="count" Type="int" />
+      <Input Name="term_since" Type="datetime" />
+      <Input Name="term_until" Type="datetime" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="item_quantity" Type="int" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="necessary_product_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </InsertDefaultItems>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSubscriptionBoxCount>
+    <Statement>
+      <![CDATA[
+        DECLARE @TOTAL TABLE(subscription_box_course_id varchar(50))
+        
+        INSERT  INTO @TOTAL
+        SELECT  ISNULL(COUNT(w2_SubscriptionBox.subscription_box_course_id), 0) AS row_count
+          FROM  w2_SubscriptionBox
+                LEFT JOIN  w2_SubscriptionBoxItem ON 
+                (
+                  w2_SubscriptionBox.subscription_box_course_id = w2_SubscriptionBoxItem.subscription_box_course_id
+                )
+         [[ SUBSCRIPTIONBOX_SEARCH_WHERE ]]
+         GROUP  BY w2_SubscriptionBox.subscription_box_course_id
+
+        SELECT COUNT(*) AS row_count FROM @TOTAL
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sbcid_like_escaped" Type="nvarchar" Size="520" />
+      <Input Name="sbcn_like_escaped" Type="nvarchar" Size="520" />
+      <Input Name="valid_flg" Type="varchar" Size="5" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="520" />
+    </Parameter>
+  </GetSubscriptionBoxCount>
+
+  <!-- 検索 -->
+  <GetSubscriptionBoxSearch>
+    <Statement>
+      <![CDATA[
+        SELECT  subscription_box_course_id,
+                management_name,
+                display_name,
+                auto_renewal,
+                items_changeable_by_user,
+                order_item_determination_type,
+                minimum_purchase_quantity,
+                maximum_purchase_quantity,
+                valid_flg,
+                date_created,
+                date_changed,
+                last_changed,
+                fixed_amount_flg,
+                fixed_amount,
+                tax_category_id
+          FROM  (
+                  SELECT w2_SubscriptionBox.subscription_box_course_id
+                        ,management_name
+                        ,display_name
+                        ,auto_renewal
+                        ,items_changeable_by_user
+                        ,order_item_determination_type
+                        ,minimum_purchase_quantity
+                        ,maximum_purchase_quantity
+                        ,valid_flg
+                        ,date_created
+                        ,date_changed
+                        ,last_changed
+                        ,fixed_amount_flg
+                        ,fixed_amount
+                        ,tax_category_id
+                        ,ROW_NUMBER()
+                        OVER
+                        (
+                          ORDER BY
+                            CASE @sort
+                          WHEN 0 THEN w2_SubscriptionBox.subscription_box_course_id
+                            ELSE NULL
+                          END ASC, 
+                            CASE @sort
+                          WHEN  2 THEN w2_SubscriptionBox.management_name
+                            ELSE '1'
+                          END ASC, 
+                            CASE @sort
+                          WHEN  1 THEN w2_SubscriptionBox.subscription_box_course_id
+                            ELSE NULL
+                          END DESC,
+                            CASE @sort
+                          WHEN  3 THEN w2_SubscriptionBox.management_name
+                            ELSE '1'
+                          END DESC,
+                            CASE @sort
+                          WHEN  4 THEN w2_SubscriptionBox.valid_flg
+                            ELSE '1'
+                          END 
+                            DESC
+                        ) AS row_num
+                  FROM  w2_SubscriptionBox
+                        LEFT JOIN w2_SubscriptionBoxItem ON
+                        (
+                          w2_SubscriptionBox.subscription_box_course_id = w2_SubscriptionBoxItem.subscription_box_course_id
+                        )
+                 [[ SUBSCRIPTIONBOX_SEARCH_WHERE ]]
+                 GROUP BY w2_SubscriptionBox.subscription_box_course_id
+                          ,management_name
+                          ,display_name
+                          ,auto_renewal
+                          ,items_changeable_by_user
+                          ,order_item_determination_type
+                          ,minimum_purchase_quantity
+                          ,maximum_purchase_quantity
+                          ,valid_flg
+                          ,date_created
+                          ,date_changed
+                          ,last_changed
+                          ,fixed_amount_flg
+                          ,fixed_amount
+                          ,tax_category_id
+                ) AS RowIndex
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="sort" Type="int" />
+      <Input Name="subscription_box_course_id_like_escaped" Type="nvarchar" Size="520" />
+      <Input Name="sbcn_like_escaped" Type="nvarchar" Size="520" />
+      <Input Name="valid_flg" Type="varchar" Size="5" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="520" />
+    </Parameter>
+  </GetSubscriptionBoxSearch>
+
+  <!-- 有効な頒布会を取得 -->
+  <GetValidSubscriptionBox>
+    <Statement>
+      <![CDATA[
+      SELECT  DISTINCT 
+              w2_SubscriptionBox.subscription_box_course_id,
+              w2_SubscriptionBox.management_name
+        FROM  w2_SubscriptionBox INNER JOIN w2_SubscriptionBoxDefaultItem
+          ON  w2_SubscriptionBox.subscription_box_course_id = w2_SubscriptionBoxDefaultItem.subscription_box_course_id
+       WHERE  w2_SubscriptionBox.valid_flg = '1' 
+      ]]>
+    </Statement>
+  </GetValidSubscriptionBox>
+
+  <!-- 頒布会注文（あるいは頒布会定期）チェック -->
+  <IsSubscriptionBoxOrderOrFixedPurchase>
+    <Statement>
+      <![CDATA[
+        <@@hasval:order_id@@>
+        SELECT  ISNULL(subscription_box_course_id, '')
+          FROM  w2_Order
+         WHERE  w2_Order.order_id = @order_id
+        </@@hasval:order_id@@>
+        <@@hasval:fixed_purchase_id@@>
+        SELECT  ISNULL(subscription_box_course_id, '')
+          FROM  w2_FixedPurchase
+         WHERE  w2_FixedPurchase.fixed_purchase_id = @fixed_purchase_id
+        </@@hasval:fixed_purchase_id@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="520" />
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="520" />
+    </Parameter>
+  </IsSubscriptionBoxOrderOrFixedPurchase>
+
+  <!-- 注文または定期台帳の頒布会コースIDを取得 -->
+  <GetSubscriptionBoxCourseIdOfOrderOrFixedPurchase>
+    <Statement>
+      <![CDATA[
+        IF @type = 'Order'
+        BEGIN
+          SELECT  ISNULL(w2_Order.subscription_box_course_id, '') AS subscription_box_course_id
+            FROM  w2_Order
+           WHERE  w2_Order.order_id = @order_id
+        END
+        ELSE
+        BEGIN
+          SELECT  ISNULL(w2_FixedPurchase.subscription_box_course_id, '') AS subscription_box_course_id
+            FROM  w2_FixedPurchase
+           WHERE  w2_FixedPurchase.fixed_purchase_id = @order_id /* FIXME: Illegal equal value evaluation */
+        END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="520" />
+      <Input Name="type" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetSubscriptionBoxCourseIdOfOrderOrFixedPurchase>
+
+  <!-- 有効な頒布会を商品IDで取得 -->
+  <GetProductBelongToHanpukaiIDs>
+    <Statement>
+      <![CDATA[
+        DECLARE @now DATE = GETDATE()
+
+        SELECT  w2_SubscriptionBox.*
+          FROM  w2_SubscriptionBox INNER JOIN w2_SubscriptionBoxDefaultItem ON
+                (
+                  w2_SubscriptionBox.subscription_box_course_id = w2_SubscriptionBoxDefaultItem.subscription_box_course_id
+                )  
+         WHERE  w2_SubscriptionBox.valid_flg = '1'
+           AND  (
+                  (
+                    w2_SubscriptionBox.order_item_determination_type = 'TERM'
+                    AND
+                    (
+                      w2_SubscriptionBoxDefaultItem.product_id = @product_id
+                      AND
+                      w2_SubscriptionBoxDefaultItem.shop_id = @shop_id
+                      AND
+                      w2_SubscriptionBoxDefaultItem.variation_id = @variation_id
+                      AND
+                      @now >= w2_SubscriptionBoxDefaultItem.term_since
+                      AND
+                      @now <= w2_SubscriptionBoxDefaultItem.term_until
+                    )
+                  )
+                  OR
+                  (
+                    w2_SubscriptionBox.order_item_determination_type = 'COUNT'
+                    AND
+                    w2_SubscriptionBoxDefaultItem.count = 1
+                    AND
+                    w2_SubscriptionBoxDefaultItem.product_id = @product_id
+                    AND
+                    w2_SubscriptionBoxDefaultItem.shop_id = @shop_id
+                    AND
+                    w2_SubscriptionBoxDefaultItem.variation_id = @variation_id
+                  )
+                ) 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductBelongToHanpukaiIDs>
+
+    <!-- 商品IDに紐づく頒布会コースを取得 -->
+  <GetSubscriptionBoxByProductId>
+    <Statement>
+      <![CDATA[
+        SELECT  subscription_box_course_id
+          FROM  w2_SubscriptionBoxItem
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetSubscriptionBoxByProductId>
+
+  <!-- バリエーションIDに紐づく頒布会コースを取得 -->
+  <GetSubscriptionBoxByProductVariationId>
+    <Statement>
+      <![CDATA[
+        SELECT  subscription_box_course_id
+          FROM  w2_SubscriptionBoxItem
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetSubscriptionBoxByProductVariationId>
+
+  <!-- 現在有効なデフォルト注文商品を取得 -->
+  <GetProductsByHanpukaiIDAndNowDate>
+    <Statement>
+      <![CDATA[
+        DECLARE @Now DATE = GETDATE()
+
+         SELECT  SBItem.*
+           FROM  w2_SubscriptionBox SB
+                 INNER JOIN w2_SubscriptionBoxDefaultItem SBItem ON
+                 (
+                   SB.subscription_box_course_id = SBItem.subscription_box_course_id
+                 )
+          WHERE  SB.subscription_box_course_id = @subscription_box_course_id
+            AND  SB.valid_flg = '1'  
+            AND  (
+                   (
+                     SB.order_item_determination_type = 'COUNT'
+                     AND
+                     SBItem.count = 1
+                   )
+                    OR
+                   (
+                     SB.order_item_determination_type ='TERM'
+                     AND
+                     (
+                       SBItem.term_since <= @Now 
+                       AND 
+                       @Now <= SBItem.term_until
+                     )
+                   )
+                 )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductsByHanpukaiIDAndNowDate>
+
+  <!-- 表示名を取得 -->
+  <GetNameDisplay>
+    <Statement>
+      <![CDATA[
+        SELECT  display_name
+          FROM  w2_SubscriptionBox
+         WHERE  w2_SubscriptionBox.subscription_box_course_id = @subscription_box_course_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="520" />
+    </Parameter>
+  </GetNameDisplay>
+
+  <!-- 有効な選択可能商品取得 -->
+  <GetItemsAvailable>
+    <Statement>
+      <![CDATA[
+          SELECT  *
+            FROM  w2_SubscriptionBoxItem
+                  LEFT JOIN w2_Product ON 
+                  (
+                    w2_SubscriptionBoxItem.shop_id = w2_Product.shop_id
+                    AND
+                    w2_SubscriptionBoxItem.product_id = w2_Product.product_id
+                  )
+           WHERE  w2_SubscriptionBoxItem.subscription_box_course_id = @subscription_box_course_id
+             AND  CAST(@date AS DATE) >= CAST(ISNULL(w2_SubscriptionBoxItem.selectable_since, @date) AS DATE)
+             AND  CAST(@date AS DATE) <= CAST(ISNULL(w2_SubscriptionBoxItem.selectable_until, @date) AS DATE)
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+      <Input Name="date" Type="nvarchar" Size="100" />
+    </Parameter>
+  </GetItemsAvailable>
+
+  <!-- 表示件数取得 -->
+  <GetNumberOfDisplay>
+    <Statement>
+      <![CDATA[
+        DECLARE @Result INT = 0
+        DECLARE @determination_type varchar(10)=''
+        DECLARE @dateEnd DATETIME = NULL
+        DECLARE @DateX DATETIME = NULL
+        DECLARE @DateY DATETIME = NULL
+
+        SET @determination_type = (SELECT order_item_determination_type FROM w2_SubscriptionBox WHERE subscription_box_course_id = @subscription_box_course_id)
+
+        IF @determination_type = 'TERM'
+        BEGIN
+          IF @shipping_type = '01'
+          BEGIN
+            SET @dateEnd = (
+              SELECT  MAX(term_until)
+                FROM  w2_SubscriptionBoxDefaultItem
+               WHERE  w2_SubscriptionBoxDefaultItem.subscription_box_course_id = @subscription_box_course_id
+            )
+
+            IF(@fixed_purchase_datetime_compare < @dateEnd)
+            BEGIN
+              SET @DateX = @fixed_purchase_datetime_compare
+              SET @DateY = @dateEnd
+            END ELSE
+            BEGIN
+              SET @DateX = @dateEnd
+              SET @DateY = @fixed_purchase_datetime_compare
+            END
+
+            SET @Result = (
+              SELECT  CASE
+                        WHEN DATEPART(DAY, @DateX) > DATEPART(DAY, @DateY)
+                          THEN DATEDIFF(MONTH, @DateX, @DateY) - 1
+                        ELSE DATEDIFF(MONTH, @DateX, @DateY)
+                      END
+            )
+
+            SELECT (@Result / @fixed_purchase_month) + 1 AS numberDisplay
+          END
+          ELSE IF @shipping_type = '02'
+          BEGIN
+            SET @dateEnd = (
+              SELECT  MAX(term_until)
+                FROM  w2_SubscriptionBoxDefaultItem
+               WHERE  w2_SubscriptionBoxDefaultItem.subscription_box_course_id = @subscription_box_course_id
+            )
+
+            DECLARE @NextDate DATETIME = NULL
+            SET @NextDate = (
+              SELECT dbo.GetDateTimeByGivenDate(@fixed_purchase_datetime_compare, @fixed_purchase_week, @fixed_purchase_day)
+            )
+
+            IF(@NextDate < @dateEnd)
+            BEGIN
+                SET @DateX = @NextDate
+                SET @DateY = @dateEnd
+            END
+            ELSE
+            BEGIN
+                SET @DateX = @dateEnd
+                SET @DateY = @NextDate
+            END
+
+            SET @Result = (
+              SELECT  CASE 
+                        WHEN DATEPART(DAY, @DateX) > DATEPART(DAY, @DateY)
+                        THEN DATEDIFF(MONTH, @DateX, @DateY) - 1
+                        ELSE DATEDIFF(MONTH, @DateX, @DateY)
+                      END
+            )
+
+            SELECT (@Result / @fixed_purchase_month) + 1 AS numberDisplay
+          END
+          ELSE
+          BEGIN
+            SET @dateEnd = (
+              SELECT  MAX(term_until)
+                FROM  w2_SubscriptionBoxDefaultItem
+               WHERE  w2_SubscriptionBoxDefaultItem.subscription_box_course_id = @subscription_box_course_id
+             )
+
+            SELECT DATEDIFF(day, @fixed_purchase_datetime_compare, @dateEnd) / @fixed_purchase_day AS numberDisplay;
+          END
+        END
+        ELSE
+        BEGIN
+          SELECT  MAX(w2_SubscriptionBoxDefaultItem.count) + 1 AS numberDisplay
+            FROM  w2_SubscriptionBoxDefaultItem
+           WHERE  w2_SubscriptionBoxDefaultItem.subscription_box_course_id = @subscription_box_course_id
+        END
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="shipping_type" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_week" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_day" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_datetime_compare" Type="datetime" />
+      <Input Name="fixed_purchase_display_count" Type="Int" />
+      <Input Name="variation_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_month" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetNumberOfDisplay>
+
+  <!-- 商品の一覧を取得 -->
+  <GetListProduct>
+    <Statement>
+      <![CDATA[
+        DECLARE @determination_type varchar(10) = ''
+        SET @determination_type = (SELECT order_item_determination_type FROM w2_SubscriptionBox WHERE subscription_box_course_id = @subscription_box_course_id)
+
+        IF @determination_type = 'TERM'
+        BEGIN
+          IF @shipping_type = '01'
+          BEGIN
+            SELECT  product_id,
+                    variation_id,
+                    item_quantity,
+                    count
+              FROM  w2_SubscriptionBoxDefaultItem
+             WHERE  w2_SubscriptionBoxDefaultItem.subscription_box_course_id = @subscription_box_course_id
+               AND  @fixed_purchase_datetime_compare >= w2_SubscriptionBoxDefaultItem.term_since 
+               AND  @fixed_purchase_datetime_compare <= w2_SubscriptionBoxDefaultItem.term_until
+          END
+          ELSE IF @shipping_type = '02'
+          BEGIN
+
+            DECLARE @NextDate DATETIME = NULL
+            SET @NextDate = (SELECT dbo.GetDateTimeByGivenDate(@fixed_purchase_datetime_compare, @fixed_purchase_week, @fixed_purchase_day))
+
+            SELECT  product_id,
+                    variation_id,
+                    item_quantity,
+                    count
+              FROM  w2_SubscriptionBoxDefaultItem
+             WHERE  w2_SubscriptionBoxDefaultItem.subscription_box_course_id = @subscription_box_course_id
+               AND  @NextDate >= w2_SubscriptionBoxDefaultItem.term_since 
+               AND  @NextDate <= w2_SubscriptionBoxDefaultItem.term_until
+
+          END
+          ELSE
+          BEGIN
+            DECLARE @NextDates DATETIME = @fixed_purchase_datetime_compare
+            SET @NextDates = (select @fixed_purchase_datetime_compare + (@fixed_purchase_display_count * @fixed_purchase_day))
+            SELECT  product_id,
+                    variation_id,
+                    item_quantity,
+                    count
+              FROM  w2_SubscriptionBoxDefaultItem
+             WHERE  w2_SubscriptionBoxDefaultItem.subscription_box_course_id = @subscription_box_course_id
+               AND  @NextDates >= w2_SubscriptionBoxDefaultItem.term_since
+               AND  @NextDates <= w2_SubscriptionBoxDefaultItem.term_until
+          END
+        END
+        ELSE
+        BEGIN
+          SELECT  product_id,
+                  variation_id,
+                  item_quantity,
+                  count
+            FROM  w2_SubscriptionBoxDefaultItem
+           WHERE  w2_SubscriptionBoxDefaultItem.subscription_box_course_id = @subscription_box_course_id
+             AND  w2_SubscriptionBoxDefaultItem.count = @count
+        END
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+      <Input Name="shipping_type" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_week" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_day" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_datetime_compare" Type="datetime" />
+      <Input Name="fixed_purchase_display_count" Type="Int" />
+      <Input Name="count" Type="Int" />
+    </Parameter>
+  </GetListProduct>
+
+  <!-- get next date -->
+  <GetNextDate>
+    <Statement>
+      <![CDATA[
+        DECLARE @NextDate DATETIME = NULL
+        SET @NextDate = (SELECT dbo.GetDateTimeByGivenDate(@fixed_purchase_datetime_compare, @fixed_purchase_week, @fixed_purchase_day))
+        SELECT @NextDate AS next_date
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_week" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_day" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_datetime_compare" Type="datetime" />
+    </Parameter>
+  </GetNextDate>
+
+  <!-- 頒布会商品リスト取得 -->
+  <GetSubscriptionBoxItemList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductView.product_id,
+                w2_ProductView.variation_id,
+                w2_ProductView.name,
+                w2_ProductView.variation_name1,
+                w2_ProductView.variation_name2,
+                w2_ProductView.variation_name3
+          FROM  w2_ProductView
+                LEFT JOIN w2_SubscriptionBoxItem ON
+                (
+                  w2_ProductView.shop_id = @shop_id
+                  AND
+                  w2_ProductView.product_id = w2_SubscriptionBoxItem.product_id
+                  AND
+                  w2_ProductView.variation_id = w2_SubscriptionBoxItem.variation_id
+                )
+         WHERE  w2_ProductView.valid_flg = '1'
+           AND  w2_SubscriptionBoxItem.subscription_box_course_id = @subscription_box_course_id
+           AND  (
+                  w2_SubscriptionBoxItem.selectable_since IS NULL
+                  OR
+                  w2_SubscriptionBoxItem.selectable_since <= @date
+                )
+           AND  (
+                  w2_SubscriptionBoxItem.selectable_until IS NULL
+                  OR
+                  w2_SubscriptionBoxItem.selectable_until >= @date
+                )
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+      <Input Name="date" Type="nvarchar" Size="100" />
+    </Parameter>
+  </GetSubscriptionBoxItemList>
+
+  <!-- 頒布会商品リスト取得 -->
+  <GetSubscriptionItemsWithProductInfo>
+    <Statement>
+      <![CDATA[
+         SELECT  w2_SubscriptionBoxItem.*,
+                 w2_Product.name,
+                 w2_Product.image_head,
+                 w2_ProductVariation.variation_image_head,
+                 ISNULL(w2_ProductVariation.variation_name1, '') AS variation_name1,
+                 ISNULL(w2_ProductVariation.variation_name2, '') AS variation_name2,
+                 ISNULL(w2_ProductVariation.variation_name3, '') AS variation_name3,
+                 ISNULL(w2_FixedPurchaseItem.item_quantity, 0) AS item_quantity,
+                 w2_ProductVariation.variation_fixed_purchase_price,
+                 w2_ProductVariation.price,
+                 w2_ProductVariation.special_price,
+                 w2_Product.fixed_purchase_price,
+                 w2_Product.display_price,
+                 w2_Product.display_special_price
+           FROM  w2_SubscriptionBoxItem
+                 INNER JOIN w2_Product ON
+                 (
+                   w2_SubscriptionBoxItem.shop_id = w2_Product.shop_id
+                   AND
+                   w2_SubscriptionBoxItem.product_id = w2_Product.product_id
+                 )
+                 LEFT JOIN w2_ProductVariation ON
+                 (
+                   w2_SubscriptionBoxItem.shop_id = w2_ProductVariation.shop_id
+                   AND
+                   w2_SubscriptionBoxItem.product_id = w2_ProductVariation.product_id
+                   AND
+                   w2_SubscriptionBoxItem.variation_id = w2_ProductVariation.variation_id
+                 )
+                 LEFT JOIN w2_FixedPurchaseItem ON
+                 (
+                   w2_FixedPurchaseItem.fixed_purchase_id = @fixed_purchase_id
+                   AND
+                   w2_FixedPurchaseItem.shop_id = w2_Product.shop_id
+                   AND
+                   w2_FixedPurchaseItem.product_id = w2_Product.product_id
+                   AND
+                   (
+                     w2_ProductVariation.variation_id IS NULL
+                     OR
+                     w2_FixedPurchaseItem.variation_id = w2_ProductVariation.variation_id
+                   )
+                 )
+          WHERE  w2_SubscriptionBoxItem.subscription_box_course_id = @subscription_box_course_id
+            AND  w2_Product.valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetSubscriptionItemsWithProductInfo>
+
+</SubscriptionBox>

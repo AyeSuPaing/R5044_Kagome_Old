@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モール連携設定系SQLステートメントXML (MallCooperationSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<MallCooperationSetting>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MallCooperationSetting
+         WHERE  shop_id = @shop_id
+           AND  mall_id = @mall_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+   <!-- 取得（全て） -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MallCooperationSetting
+         WHERE  shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAll>
+  
+  <!-- モール区分からモール連携設定情報取得-->
+  <GetValidByMallKbn>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MallCooperationSetting
+         WHERE  shop_id = @shop_id
+           AND  mall_kbn = @mall_kbn
+           AND  valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_kbn" Type="nvarchar" Size="2" />
+    </Parameter>
+  </GetValidByMallKbn>
+
+  <!-- Yahoo API トークンセット更新-->
+  <UpdateYahooApiTokenSet>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallCooperationSetting
+           SET  yahoo_api_access_token = @yahoo_api_access_token
+                ,yahoo_api_access_token_expiration_datetime = @yahoo_api_access_token_expiration_datetime
+                <@@hasval:yahoo_api_refresh_token@@>
+                  ,yahoo_api_refresh_token = @yahoo_api_refresh_token
+                  ,yahoo_api_refresh_token_expiration_datetime = @yahoo_api_refresh_token_expiration_datetime
+                </@@hasval:yahoo_api_refresh_token@@>
+         WHERE  shop_id = @shop_id
+           AND  mall_id = @mall_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="yahoo_api_access_token" Type="nvarchar" Size="2200" />
+      <Input Name="yahoo_api_access_token_expiration_datetime" Type="datetime" />
+      <Input Name="yahoo_api_refresh_token" Type="nvarchar" Size="2200" />
+      <Input Name="yahoo_api_refresh_token_expiration_datetime" Type="datetime" />
+    </Parameter>
+  </UpdateYahooApiTokenSet>
+
+  <!-- Yahoo API 公開鍵認証更新 -->
+  <UpdateYahooApiPublicKey>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallCooperationSetting
+           SET  yahoo_api_last_public_key_authorized_at = @yahoo_api_last_public_key_authorized_at
+         WHERE  shop_id = @shop_id
+           AND  mall_id = @mall_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="yahoo_api_last_public_key_authorized_at" Type="datetime" />
+    </Parameter>
+  </UpdateYahooApiPublicKey>
+
+  <!-- Yahoo API トークンセット削除 -->
+  <DeleteYahooApiTokenSet>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallCooperationSetting
+           SET  yahoo_api_access_token = '',
+                yahoo_api_access_token_expiration_datetime = null,
+                yahoo_api_refresh_token = '',
+                yahoo_api_refresh_token_expiration_datetime = null
+         WHERE  shop_id = @shop_id
+           AND  mall_id = @mall_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteYahooApiTokenSet>
+</MallCooperationSetting>

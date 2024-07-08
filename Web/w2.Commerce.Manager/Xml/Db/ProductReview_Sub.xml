@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品レビュー系SQLサブステートメントXML(ProductReview_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductReview_Sub>
+
+  <!-- 商品レビュー情報一覧取得用WHERE文 -->
+  <PRODUCTREVIEW_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_ProductReview.shop_id = @shop_id
+           AND  (
+                  (@product_id_like_escaped = '' OR w2_ProductReview.product_id LIKE @product_id_like_escaped + '%' ESCAPE '#')      -- 商品ID
+                  AND
+                  (@name_like_escaped = '' OR w2_Product.name LIKE '%' + @name_like_escaped + '%' ESCAPE '#')      -- 商品名
+                  AND
+                  (@nick_name_like_escaped = '' OR w2_ProductReview.nick_name LIKE '%' + @nick_name_like_escaped + '%' ESCAPE '#')      -- ニックネーム
+                  AND
+                  (@review_title_like_escaped = '' OR w2_ProductReview.review_title LIKE '%' + @review_title_like_escaped + '%' ESCAPE '#')      -- タイトル
+                  AND
+                  (@review_comment_like_escaped = '' OR w2_ProductReview.review_comment LIKE '%' + @review_comment_like_escaped + '%' ESCAPE '#')      -- コメント
+                  AND
+                  (@open_flg = '' OR w2_ProductReview.open_flg = @open_flg)      -- 公開フラグ
+                  AND
+                  (@checked_flg = '' OR w2_ProductReview.checked_flg = @checked_flg)      -- チェックフラグ
+                )
+      ]]>
+    </Statement>
+  </PRODUCTREVIEW_SEARCH_WHERE>
+
+  <!-- 商品レビュー情報一覧取得用ORDER_BY -->
+  <PRODUCTREVIEW_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+         ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_ProductReview.date_created
+            WHEN  2 THEN w2_ProductReview.date_opened
+            WHEN  4 THEN w2_ProductReview.date_checked
+            ELSE NULL
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN  1 THEN w2_ProductReview.date_created
+            WHEN  3 THEN w2_ProductReview.date_opened
+            WHEN  5 THEN w2_ProductReview.date_checked
+            ELSE NULL
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_ProductReview.shop_id ASC, w2_ProductReview.product_id ASC, w2_ProductReview.review_no ASC
+      ]]>
+    </Statement>
+  </PRODUCTREVIEW_SEARCH_ORDER_BY>
+
+</ProductReview_Sub>

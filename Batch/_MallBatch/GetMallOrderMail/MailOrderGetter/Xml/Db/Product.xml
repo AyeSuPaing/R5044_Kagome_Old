@@ -1,0 +1,187 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品系SQLステートメントXML(Product.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<Product>
+
+  <!-- 商品在庫更新 -->
+  <GetProductSrockManagementKbn>
+    <Statement>
+      <![CDATA[
+        SELECT  stock_management_kbn
+          FROM  w2_Product
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+		  ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductSrockManagementKbn>
+
+  <!-- 商品在庫更新 -->
+  <UpdateProductStock>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductStock
+           SET  stock = stock - @stock,
+                date_changed = getdate(),
+                last_changed = 'batch'
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+		  ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="stock" Type="int" />
+    </Parameter>
+  </UpdateProductStock>
+
+  <!-- 商品在庫履歴情報追加 -->
+  <InsertProductStockHistory>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductStockHistory 
+                (
+                  order_id,
+                  shop_id,
+                  product_id,
+                  variation_id,
+                  action_status,
+                  add_stock,
+                  date_created,
+                  last_changed
+                )
+				VALUES  (
+                  @order_id,
+			            @shop_id,
+			            @product_id,
+			            @variation_id,
+                  '11',
+                  @add_stock,
+			            getdate(),
+			            'batch'
+                )
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="add_stock" Type="int" />
+    </Parameter>
+  </InsertProductStockHistory>
+
+  <!-- モール拡張商品IDから商品ID取得 -->
+  <GetProductInfo>
+    <Statement>
+      <![CDATA[
+        SELECT  product_id
+          FROM  w2_Product
+         WHERE  shop_id = @shop_id
+	         AND  mall_ex_product_id = @mall_ex_product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_ex_product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductInfo>
+
+  <!-- 商品バリエーションから商品ID取得 -->
+  <GetProductId>
+    <Statement>
+      <![CDATA[
+        SELECT  product_id
+          FROM  w2_ProductVariationView
+         WHERE  shop_id = @shop_id
+	         AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetProductId>
+
+  <!-- モール拡張商品ID + モールバリエーションID1 + モールバリエーションID2から商品バリエーションID取得 -->
+  <GetVariationIdFromMallExProductId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductVariationView.variation_id
+          FROM  w2_Product 
+                INNER JOIN  w2_ProductVariationView ON 
+                (
+                  w2_Product.shop_id = w2_ProductVariationView.shop_id
+                  AND 
+                  w2_Product.product_id = w2_ProductVariationView.product_id
+                )
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  (w2_Product.mall_ex_product_id + w2_ProductVariationView.mall_variation_id1 + w2_ProductVariationView.mall_variation_id2) = @mall_ex_product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_ex_product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetVariationIdFromMallExProductId>
+
+  <!-- モール拡張商品IDから商品IDとバリエーションIDを取得 -->
+  <GetProductVariationIdFromMallExProductId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductVariationView.product_id,
+                w2_ProductVariationView.variation_id
+          FROM  w2_ProductVariationView
+                LEFT JOIN
+                (
+                  SELECT  shop_id,
+                          product_id,
+                          cooperation_id1,
+                          cooperation_id2,
+                          cooperation_id3,
+                          cooperation_id4,
+                          cooperation_id5,
+                          cooperation_id6,
+                          cooperation_id7,
+                          cooperation_id8,
+                          cooperation_id9,
+                          cooperation_id10
+                    FROM  w2_Product
+                ) product
+                ON 
+                (
+                  product.shop_id = w2_ProductVariationView.shop_id
+                  AND 
+                  product.product_id = w2_ProductVariationView.product_id
+                )
+                LEFT JOIN w2_ProductExtend ON
+                (
+                  w2_ProductExtend.shop_id = w2_ProductVariationView.shop_id
+                  AND 
+                  w2_ProductExtend.product_id = w2_ProductVariationView.product_id
+                )
+         WHERE  w2_ProductVariationView.shop_id = @shop_id
+           AND  (
+                  @@ rakuten_sku_management_id_field_for_normal @@ = @mall_ex_product_id
+                  OR
+                  @@ rakuten_sku_management_id_field_for_variation @@ = @mall_ex_product_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_ex_product_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </GetProductVariationIdFromMallExProductId>
+
+</Product>

@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品系SQLステートメントXML(Product.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<Product>
+
+  <!-- 商品詳細取得 -->
+  <GetProduct>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductView.*,
+                (
+                  SELECT  COUNT(*)
+                    FROM  w2_ProductView
+                   WHERE  w2_ProductView.shop_id = @shop_id
+                     AND  w2_ProductView.product_id = @product_id
+                     AND  w2_ProductView.display_from <= getdate()    -- 表示期間内
+                     AND  ((w2_ProductView.display_to IS NULL) OR (w2_ProductView.display_to >= GETDATE()))
+                     AND  w2_ProductView.display_kbn IN ('0','1')     -- 商品一覧○、商品詳細○ OR 商品一覧×、商品詳細○
+                     AND  w2_ProductView.mobile_disp_flg IN ('0','1') -- PC&モバイル OR PCのみ
+                     AND  w2_ProductView.valid_flg = '1'              -- 有効
+                ) AS disp_flg,
+                [[ MEMBER_RANK_PRICE_PRODUCTVARIATION ]]
+          FROM  w2_ProductView
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id = @product_id
+         ORDER BY w2_ProductView.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProduct>
+
+  <!-- 商品情報を取得 -->
+  <GetProductVariation>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                w2_ProductView.*,
+                [[ MEMBER_RANK_PRICE_PRODUCTVARIATION ]]
+          FROM  w2_ProductView
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id             
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductVariation>
+
+
+  <!-- 商品在庫履歴挿入 -->
+  <InsertProductStockHistory>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductStockHistory
+                (
+                order_id,
+                shop_id,
+                product_id,
+                variation_id,
+                action_status,
+                add_stock,
+                add_realstock,
+                add_realstock_reserved,
+                update_stock,
+                update_realstock,
+                update_realstock_reserved,
+                last_changed
+                )
+          VALUES
+                (
+                @order_id,
+                @shop_id,
+                @product_id,
+                @variation_id,
+                @action_status,
+                @add_stock,
+                @add_realstock,
+                @add_realstock_reserved,
+                @update_stock,
+                @update_realstock,
+                @update_realstock_reserved,
+                'batch'
+                )
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="action_status" Type="nvarchar" Size="10" />
+      <Input Name="add_stock" Type="int" />
+      <Input Name="add_realstock" Type="int" />
+      <Input Name="add_realstock_reserved" Type="int" />
+      <Input Name="update_stock" Type="int" />
+      <Input Name="update_realstock" Type="int" />
+      <Input Name="update_realstock_reserved" Type="int" />
+    </Parameter>
+  </InsertProductStockHistory>  
+  
+</Product>

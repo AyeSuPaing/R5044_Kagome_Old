@@ -1,0 +1,254 @@
+﻿@*
+=========================================================================================================
+  Module      : 特集画像リストパーツ画面(_MainContentList.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common
+@using w2.App.Common.Util
+@using w2.Cms.Manager.Codes.View
+@model w2.Cms.Manager.ViewModels.FeatureImage.GroupListViewModel
+@if (Model.GroupImageViewModel.Sum(g => g.ListImageViewModels.Count) > 100)
+{
+	<div id="error_message">
+		表示件数が多すぎるので検索するかグループを絞り込んでください。
+	</div>
+}
+else
+{
+	<!-- リストグループ -->
+<div class="list-group-sortable">
+	@foreach (var groupModel in Model.GroupImageViewModel)
+	{
+		<div class="list-group" data-list-group-id="@groupModel.GroupId">
+			<div class="list-group-row">
+				<span class="icon-drag"></span>
+				<p class="list-group-name list-group-toggle-btn">@groupModel.GroupName
+				</p>
+				@using (Ajax.BeginForm("GroupNameEdit", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE, new DefaultAjaxOptions
+				{
+					OnSuccess = "group_name_edit_success",
+				}))
+				{
+					<div class="list-group-name-form">
+						@Html.TextBoxFor(model => groupModel.GroupName, new
+						{
+							Name = "Input.GroupName"
+						})
+						@Html.HiddenFor(model => groupModel.GroupId, new
+						{
+							Name = "Input.GroupId"
+						})
+						<input type="button" class="btn btn-main btn-size-s list-group-edit-submit" onclick="group_name_edit_check(this)" value="OK">
+						<input type="button" class="btn btn-sub btn-size-s list-group-edit-cancel" value="キャンセル">
+					</div>
+				}
+				@if (groupModel.GroupName != "その他")
+				{
+					<div class="dropdown">
+						<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle"><span class="icon-dots"></span></a>
+						<div class="dropdown-menu">
+							<a class="dropdown-menu-item list-group-name-edit-trigger" data-target-list-group="@groupModel.GroupId" href="">名前を変更する</a>
+							@using (Ajax.BeginForm("GroupDelete", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE, new DefaultAjaxOptions
+							{
+								OnSuccess = "group_delete_success"
+							}))
+							{
+								@Html.HiddenFor(model => groupModel.GroupId, new
+								{
+									Name = "GroupId"
+								})
+								<a class="dropdown-menu-item" href="javascript:void(0)" onclick="this.nextElementSibling.click();return false;">削除</a>
+								<input type="submit" style="display: none;">
+							}
+						</div>
+					</div>
+				}
+			</div>
+			<!-- リスト要素 -->
+			<div class="list-group-toggle-content list-sortable">
+				@{ var i = 1; }
+				@foreach (var imageModel in groupModel.ListImageViewModels)
+				{
+					<div class="list-row" data-list-id="@imageModel.ImagePath">
+						<div class="list-col list-col-drag">
+							<span class="icon-drag ui-sortable-handle"></span>
+						</div>
+						<div class="list-col list-col-thumb w10 hide-style-list hide-list-detail">
+							<figure>
+								<img style="cursor: hand; cursor:pointer;"
+									 onclick="imageModal('@Constants.PATH_ROOT_FRONT_PC@imageModel.ImagePath')"
+									 src="@Constants.PATH_ROOT_FRONT_PC@imageModel.ImagePath" />
+							</figure>
+						</div>
+						<div class="list-col list-col-title">
+							<div class="list-col-inner">
+								<p class="list-col-title-label line-clamp ta-left">
+									<a href="javascript:void(0)" onclick="imageModal('@Constants.PATH_ROOT_FRONT_PC@imageModel.ImagePath')">@imageModel.RealFileName</a>
+								</p>
+								@using (Ajax.BeginForm("ImageNameEdit", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE, new DefaultAjaxOptions()))
+								{
+									<div class="list-col-title-form">
+										@Html.TextBoxFor(model => imageModel.RealFileName, new
+										{
+											Name = "fileName"
+										})
+										@Html.HiddenFor(model => imageModel.ImageId, new
+										{
+											Name = "imageId"
+										})
+										<input type="submit" class="btn btn-main btn-size-s list-title-edit-submit" value="OK">
+										<input type="button" class="btn btn-sub btn-size-s list-title-edit-cancel" value="キャンセル">
+									</div>
+								}
+								<div class="dropdown">
+									<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle"><span class="icon-dots"></span></a>
+									<div class="dropdown-menu">
+										<a class="dropdown-menu-item list-title-edit-trigger" data-target-list="@imageModel.ImagePath" href="">名前を変更する</a>
+										@using (Ajax.BeginForm("ImageDelete", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE, new DefaultAjaxOptions
+										{
+											OnSuccess = "image_delete_success",
+											OnBegin = "if(confirm('ファイルを削除しますか？') == false) return false;"
+										}))
+										{
+											@Html.HiddenFor(model => imageModel.ImageId, new
+											{
+												Name = "ImageId"
+											})
+											<a class="dropdown-menu-item" href="javascript:void(0)" onclick="this.nextElementSibling.click();return false;">削除</a>
+											<input type="submit" style="display: none;">
+										}
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="list-col w15 hide-list-detail">
+							<p>
+							@{
+								var createdDate = DateTimeUtility.ToStringForManager(
+									imageModel.DateCreated, 
+									DateTimeUtility.FormatType.ShortDateHourMinuteSecond2Letter)
+									.Split(new[] { " " }, StringSplitOptions.None);
+								<p>@createdDate[0]</p>
+								<p>@createdDate[1]</p>
+							}
+							</p>
+						</div>
+						<div class="list-col w15 hide-list-detail">
+							<p>@imageModel.FileSize</p>
+						</div>
+						<div class="list-col w15 hide-list-detail">
+							<p>@imageModel.ImageSize</p>
+						</div>
+					</div>
+				i++;
+				}
+			</div>
+		</div>
+	}
+</div>
+}
+<style>
+	#error_message {
+		text-align: center;
+		padding-top: 10px;
+		font-size: 20px;
+		color: red;
+	}
+</style>
+
+<script type="text/javascript">
+	function group_name_edit_check(obj) {
+		var groupName = $(obj).prev().prev().val();
+		var groupId = $(obj).prev().val();
+		if (CheckGroupName(groupName, groupId)) {
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("GroupNameEdit", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE)",
+				data: {
+					'Input.GroupName': groupName,
+					'Input.GroupId': groupId,
+				}
+			}).done(function () {
+				group_name_edit_success();
+			});
+		}
+	}
+
+	function group_delete_success() {
+		group_list_redraw();
+		notification.show('グループが削除されました', 'info', 'fadeout');
+		location.reload();
+	}
+
+	function group_name_edit_success() {
+		group_list_redraw();
+		notification.show('グループ名が変更されました', 'info', 'fadeout');
+		location.reload();
+	}
+
+	function image_delete_success() {
+		group_list_redraw();
+		notification.show('ファイルが削除されました', 'info', 'fadeout');
+	}
+
+	function image_name_edit_success() {
+		group_list_redraw();
+		notification.show('ファイル名が変更されました', 'info', 'fadeout');
+	}
+
+	function image_name_edit_failed() {
+		group_list_redraw();
+		notification.show('ファイル名変更に失敗しました', 'warning', 'fadeout');
+	}
+
+	function upload_failed() {
+		$('.notification').html(''); // ファイルがアップロードされましたがすでに出ているので消す
+		notification.show('アップロードに失敗しました。', 'warning', 'fadeout');
+	}
+
+	$(function () {
+		list.ini();
+		list_group_toggle.ini();
+		dropdown_toggle.ini();
+
+		// commonのクリックイベント無効化
+		$('.list-group-edit-submit').each(function () { $(this).off('click'); });
+
+		// commonのクリックイベント無効化
+		$('.list-title-edit-submit').each(function () { $(this).off('click'); });
+
+		$(".list-group-sortable").sortable({
+			handle: ".icon-drag",
+			axis: "y",
+			placeholder: "ui-state-highlight",
+			update: function (e, ui) {
+				$.ajax({
+					type: "POST",
+					url: "@Url.Action("UpdateGroupSort", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE)",
+					data: { 'groupIds': $(this).sortable("toArray", { attribute: 'data-list-group-id' }) },
+					traditional: true
+				});
+			}
+		});
+
+		$(".list-sortable").sortable({
+			handle: ".icon-drag",
+			axis: "y",
+			connectWith: ".list-sortable",
+			placeholder: "ui-state-highlight",
+			update: function (e, ui) {
+				$.ajax({
+					type: "POST",
+					url: "@Url.Action("UpdateImageSort", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE)",
+					data: {
+						'groupId': $(this).parent().attr('data-list-group-id'),
+						'imagePath': $(this).sortable("toArray", { attribute: 'data-list-id' })
+					},
+					traditional: true
+				});
+			}
+		});
+	});
+</script>

@@ -1,0 +1,165 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : マスタ出力定義系SQLステートメントXML (MasterExportSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<MasterExportSetting>
+
+  <!-- 指定マスタのものを全て取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MasterExportSetting
+         WHERE  shop_id = @shop_id
+           AND  master_kbn = @master_kbn
+           AND  setting_id = @setting_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Get>
+
+  <!-- 指定マスタのものを全て取得 -->
+  <GetAllByMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MasterExportSetting
+         WHERE  shop_id = @shop_id
+           AND  master_kbn = @master_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllByMaster>
+
+
+  <!-- マスタ区分と名称が同じものの件数を取得 -->
+  <GetCountByMasterKbnAndName>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*) AS count
+          FROM  w2_MasterExportSetting
+         WHERE  shop_id = @shop_id 
+           AND  master_kbn = @master_kbn
+           AND  setting_name  = @setting_name
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_name" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCountByMasterKbnAndName>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_MasterExportSetting
+                (
+                  shop_id
+                  ,master_kbn
+                  ,setting_id
+                  ,setting_name
+                  ,fields
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,export_file_type
+                )
+        VALUES  (
+                  @shop_id
+                  ,@master_kbn
+                  ,@setting_id
+                  ,@setting_name
+                  ,@fields
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@export_file_type
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_id" Type="nvarchar" Size="10" />
+      <Input Name="setting_name" Type="nvarchar" Size="30" />
+      <Input Name="fields" Type="ntext" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="export_file_type" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MasterExportSetting
+           SET  fields = @fields
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,export_file_type = @export_file_type
+         WHERE  shop_id = @shop_id
+           AND  master_kbn = @master_kbn
+           AND  setting_id = @setting_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_id" Type="nvarchar" Size="10" />
+      <Input Name="fields" Type="ntext" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="export_file_type" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MasterExportSetting
+         WHERE  shop_id = @shop_id
+           AND  master_kbn = @master_kbn
+           AND  setting_id = @setting_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+
+  <!-- 削除時設定ID更新 -->
+  <UpdateSettingIdForDelete>
+    <Statement>
+      <![CDATA[
+        -- 指定setting_idより大きい物を１つずつ繰り下げる
+        UPDATE  w2_MasterExportSetting
+           SET  w2_MasterExportSetting.setting_id = RIGHT('00' + CONVERT(nvarchar, w2_MasterExportSetting.setting_id -1), 3)
+         WHERE  CONVERT(int, w2_MasterExportSetting.setting_id) > CONVERT(int, @setting_id)
+           AND  w2_MasterExportSetting.shop_id = @shop_id 
+           AND  w2_MasterExportSetting.master_kbn = @master_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="setting_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateSettingIdForDelete>
+
+
+</MasterExportSetting>

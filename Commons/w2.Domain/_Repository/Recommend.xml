@@ -1,0 +1,812 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : レコメンド設定系SQLステートメントXML (Recommend.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<Recommend>
+
+  <!-- レコメンド検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_Recommend
+                [[ RECOMMEND_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+  
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Recommend.*
+          FROM  (
+                  SELECT  w2_Recommend.shop_id,
+                          w2_Recommend.recommend_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ RECOMMEND_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Recommend
+                          [[ RECOMMEND_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Recommend ON
+                (
+                  RowIndex.shop_id = w2_Recommend.shop_id
+                  AND
+                  RowIndex.recommend_id = w2_Recommend.recommend_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_Recommend
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+  
+  <!-- 取得（全件） -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_Recommend
+         WHERE  shop_id = @shop_id
+      ORDER BY  priority ASC -- 小さい数値が優先度が高い
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAll>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_Recommend
+                (
+                  shop_id
+                  ,recommend_id
+                  ,recommend_name
+                  ,discription
+                  ,recommend_display_page
+                  ,recommend_kbn
+                  ,date_begin
+                  ,date_end
+                  ,priority
+                  ,valid_flg
+                  ,recommend_display_kbn_pc
+                  ,recommend_display_pc
+                  ,recommend_display_kbn_sp
+                  ,recommend_display_sp
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,onetime_flg
+                  ,chatbot_use_flg
+                )
+        VALUES  (
+                  @shop_id
+                  ,@recommend_id
+                  ,@recommend_name
+                  ,@discription
+                  ,@recommend_display_page
+                  ,@recommend_kbn
+                  ,@date_begin
+                  ,@date_end
+                  ,@priority
+                  ,@valid_flg
+                  ,@recommend_display_kbn_pc
+                  ,@recommend_display_pc
+                  ,@recommend_display_kbn_sp
+                  ,@recommend_display_sp
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@onetime_flg
+                  ,@chatbot_use_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_name" Type="nvarchar" Size="100" />
+      <Input Name="discription" Type="nvarchar" Size="MAX" />
+      <Input Name="recommend_display_page" Type="nvarchar" Size="50" />
+      <Input Name="recommend_kbn" Type="nvarchar" Size="30" />
+      <Input Name="date_begin" Type="datetime" />
+      <Input Name="date_end" Type="datetime" />
+      <Input Name="priority" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="recommend_display_kbn_pc" Type="nvarchar" Size="1" />
+      <Input Name="recommend_display_pc" Type="nvarchar" Size="MAX" />
+      <Input Name="recommend_display_kbn_sp" Type="nvarchar" Size="1" />
+      <Input Name="recommend_display_sp" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="onetime_flg" Type="nvarchar" Size="10" />
+      <Input Name="chatbot_use_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </Insert>
+  
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Recommend
+           SET  recommend_name = @recommend_name
+                ,discription = @discription
+                ,recommend_display_page = @recommend_display_page
+                ,recommend_kbn = @recommend_kbn
+                ,date_begin = @date_begin
+                ,date_end = @date_end
+                ,priority = @priority
+                ,valid_flg = @valid_flg
+                ,recommend_display_kbn_pc = @recommend_display_kbn_pc
+                ,recommend_display_pc = @recommend_display_pc
+                ,recommend_display_kbn_sp = @recommend_display_kbn_sp
+                ,recommend_display_sp = @recommend_display_sp
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,onetime_flg = @onetime_flg
+                ,chatbot_use_flg = @chatbot_use_flg
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_name" Type="nvarchar" Size="100" />
+      <Input Name="discription" Type="nvarchar" Size="MAX" />
+      <Input Name="recommend_display_page" Type="nvarchar" Size="50" />
+      <Input Name="recommend_kbn" Type="nvarchar" Size="30" />
+      <Input Name="date_begin" Type="datetime" />
+      <Input Name="date_end" Type="datetime" />
+      <Input Name="priority" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="recommend_display_kbn_pc" Type="nvarchar" Size="1" />
+      <Input Name="recommend_display_pc" Type="nvarchar" Size="MAX" />
+      <Input Name="recommend_display_kbn_sp" Type="nvarchar" Size="1" />
+      <Input Name="recommend_display_sp" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="onetime_flg" Type="nvarchar" Size="10" />
+      <Input Name="chatbot_use_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_Recommend
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- レコメンド適用条件アイテム取得（全て） -->
+  <GetApplyConditionItemsAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_RecommendApplyConditionItem
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetApplyConditionItemsAll>
+
+  <!-- レコメンド適用条件アイテム取得（全て）（詳細表示用） -->
+  <GetApplyConditionItemsAllContainer>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+                ,w2_ProductView.name AS product_name
+                ,w2_ProductView.variation_name1
+                ,w2_ProductView.variation_name2
+                ,w2_ProductView.variation_name3
+                ,w2_ProductView.fixed_purchase_flg
+          FROM  w2_RecommendApplyConditionItem
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_RecommendApplyConditionItem.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_RecommendApplyConditionItem.recommend_apply_condition_item_product_id = w2_ProductView.product_id
+                  AND
+                  (
+                    (
+                     (w2_RecommendApplyConditionItem.recommend_apply_condition_item_unit_type = 'PRODUCT')
+                    )
+                    OR
+                    (
+                     (w2_RecommendApplyConditionItem.recommend_apply_condition_item_unit_type = 'VARIATION')
+                     AND
+                     (w2_RecommendApplyConditionItem.recommend_apply_condition_item_product_id = w2_ProductView.product_id)
+                     AND
+                     (w2_RecommendApplyConditionItem.recommend_apply_condition_item_variation_id = w2_ProductView.variation_id)
+                    )
+                  )
+                )
+         WHERE  w2_RecommendApplyConditionItem.shop_id = @shop_id
+           AND  w2_RecommendApplyConditionItem.recommend_id = @recommend_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetApplyConditionItemsAllContainer>
+
+  <!-- レコメンド適用条件アイテム登録 -->
+  <InsertApplyConditionItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_RecommendApplyConditionItem
+                (
+                  shop_id
+                  ,recommend_id
+                  ,recommend_apply_condition_type
+                  ,recommend_apply_condition_item_type
+                  ,recommend_apply_condition_item_unit_type
+                  ,recommend_apply_condition_item_product_id
+                  ,recommend_apply_condition_item_variation_id
+                  ,recommend_apply_condition_item_sort_no
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @shop_id
+                  ,@recommend_id
+                  ,@recommend_apply_condition_type
+                  ,@recommend_apply_condition_item_type
+                  ,@recommend_apply_condition_item_unit_type
+                  ,@recommend_apply_condition_item_product_id
+                  ,@recommend_apply_condition_item_variation_id
+                  ,@recommend_apply_condition_item_sort_no
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_apply_condition_type" Type="nvarchar" Size="30" />
+      <Input Name="recommend_apply_condition_item_type" Type="nvarchar" Size="30" />
+      <Input Name="recommend_apply_condition_item_unit_type" Type="nvarchar" Size="30" />
+      <Input Name="recommend_apply_condition_item_product_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_apply_condition_item_variation_id" Type="nvarchar" Size="60" />
+      <Input Name="recommend_apply_condition_item_sort_no" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertApplyConditionItem>
+  
+  <!-- レコメンド適用条件アイテム削除（全て） -->
+  <DeleteApplyConditionItemsAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_RecommendApplyConditionItem
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteApplyConditionItemsAll>
+  
+  <!-- レコメンドアップセル対象アイテム取得 ※店舗ID＆レコメンドIDのみ指定 -->
+  <GetUpsellTargetItem>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_RecommendUpsellTargetItem
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUpsellTargetItem>
+
+  <!-- レコメンドアップセル対象アイテム取得 ※店舗ID＆レコメンドIDのみ指定（詳細表示用） -->
+  <GetUpsellTargetItemContainer>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_RecommendUpsellTargetItem.*
+                ,w2_ProductView.name AS product_name
+                ,w2_ProductView.variation_name1
+                ,w2_ProductView.variation_name2
+                ,w2_ProductView.variation_name3
+                ,w2_ProductView.shipping_type
+                ,w2_ProductView.fixed_purchase_flg
+          FROM  w2_RecommendUpsellTargetItem
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_RecommendUpsellTargetItem.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_RecommendUpsellTargetItem.recommend_upsell_target_item_product_id = w2_ProductView.product_id
+                  AND
+                  w2_RecommendUpsellTargetItem.recommend_upsell_target_item_variation_id = w2_ProductView.variation_id
+                )
+         WHERE  w2_RecommendUpsellTargetItem.shop_id = @shop_id
+           AND  w2_RecommendUpsellTargetItem.recommend_id = @recommend_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUpsellTargetItemContainer>
+  
+  <!-- レコメンドアップセル対象アイテム登録 -->
+  <InsertUpsellTargetItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_RecommendUpsellTargetItem
+                (
+                  shop_id
+                  ,recommend_id
+                  ,recommend_upsell_target_item_type
+                  ,recommend_upsell_target_item_product_id
+                  ,recommend_upsell_target_item_variation_id
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @shop_id
+                  ,@recommend_id
+                  ,@recommend_upsell_target_item_type
+                  ,@recommend_upsell_target_item_product_id
+                  ,@recommend_upsell_target_item_variation_id
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_upsell_target_item_type" Type="nvarchar" Size="30" />
+      <Input Name="recommend_upsell_target_item_product_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_upsell_target_item_variation_id" Type="nvarchar" Size="60" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertUpsellTargetItem>
+  
+  <!-- レコメンドアップセル対象アイテム削除 ※店舗ID＆レコメンドIDのみ指定 -->
+  <DeleteUpsellTargetItem>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_RecommendUpsellTargetItem
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteUpsellTargetItem>
+  
+  <!-- レコメンドアイテム取得（全て） -->
+  <GetItemsAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_RecommendItem
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_item_type" Type="nvarchar" Size="30" />
+      <Input Name="recommend_item_product_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_item_variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetItemsAll>
+
+  <!-- レコメンドアイテム取得（全て）（詳細表示用） -->
+  <GetItemsAllContainer>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_RecommendItem.*
+                ,w2_ProductView.name AS product_name
+                ,w2_ProductView.variation_name1
+                ,w2_ProductView.variation_name2
+                ,w2_ProductView.variation_name3
+                ,w2_ProductView.shipping_type
+                ,w2_ProductView.fixed_purchase_flg
+                ,w2_ProductView.subscription_box_flg
+          FROM  w2_RecommendItem
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_RecommendItem.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_RecommendItem.recommend_item_product_id = w2_ProductView.product_id
+                  AND
+                  w2_RecommendItem.recommend_item_variation_id = w2_ProductView.variation_id
+                )
+         WHERE  w2_RecommendItem.shop_id = @shop_id
+           AND  w2_RecommendItem.recommend_id = @recommend_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetItemsAllContainer>
+  
+  <!-- レコメンドアイテム登録 -->
+  <InsertItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_RecommendItem
+                (
+                  shop_id
+                  ,recommend_id
+                  ,recommend_item_type
+                  ,recommend_item_product_id
+                  ,recommend_item_variation_id
+                  ,recommend_item_add_quantity_type
+                  ,recommend_item_add_quantity
+                  ,recommend_item_sort_no
+                  ,date_created
+                  ,date_changed
+                  ,last_changed                  
+                  ,fixed_purchase_kbn
+                  ,fixed_purchase_setting1
+                )
+        VALUES  (
+                  @shop_id
+                  ,@recommend_id
+                  ,@recommend_item_type
+                  ,@recommend_item_product_id
+                  ,@recommend_item_variation_id
+                  ,@recommend_item_add_quantity_type
+                  ,@recommend_item_add_quantity
+                  ,@recommend_item_sort_no
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@fixed_purchase_kbn
+                  ,@fixed_purchase_setting1
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_item_type" Type="nvarchar" Size="30" />
+      <Input Name="recommend_item_product_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_item_variation_id" Type="nvarchar" Size="60" />
+      <Input Name="recommend_item_add_quantity_type" Type="nvarchar" Size="30" />
+      <Input Name="recommend_item_add_quantity" Type="int" />
+      <Input Name="recommend_item_sort_no" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="fixed_purchase_kbn" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_setting1" Type="nvarchar" Size="10" />
+    </Parameter>
+  </InsertItem>
+  
+  <!-- レコメンドアイテム削除（全て） -->
+  <DeleteItemsAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_RecommendItem
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteItemsAll>
+
+  <!-- レコメンド表示履歴取得 -->
+  <GetRecommendHistory>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_RecommendHistory
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+           AND  user_id = @user_id
+           AND  recommend_history_no = @recommend_history_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_history_no" Type="int" />
+    </Parameter>
+  </GetRecommendHistory>
+
+  <!-- ユーザーIDからレコメンド表示履歴を取得 -->
+  <GetRecommendHistoryByUserId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_RecommendHistory
+         WHERE  shop_id = @shop_id
+           AND  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetRecommendHistoryByUserId>
+
+  <!-- レコメンド表示履歴登録 -->
+  <InsertRecommendHistory>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_RecommendHistory
+                (
+                  shop_id,
+                  recommend_id,
+                  user_id,
+                  recommend_history_no,
+                  target_order_id,
+                  display_kbn,
+                  ordered_flg,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @shop_id,
+                  @recommend_id,
+                  @user_id,
+                  @recommend_history_no,
+                  @target_order_id,
+                  @display_kbn,
+                  @ordered_flg,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_history_no" Type="int" />
+      <Input Name="target_order_id" Type="nvarchar" Size="30" />
+      <Input Name="display_kbn" Type="nvarchar" Size="10" />
+      <Input Name="ordered_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertRecommendHistory>
+
+  <!-- レコメンド表示履歴更新 -->
+  <UpdateRecommendHistory>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_RecommendHistory
+           SET  target_order_id = @target_order_id,
+                display_kbn = @display_kbn,
+                ordered_flg = @ordered_flg,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+           AND  user_id = @user_id
+           AND  recommend_history_no = @recommend_history_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_history_no" Type="int" />
+      <Input Name="target_order_id" Type="nvarchar" Size="30" />
+      <Input Name="display_kbn" Type="nvarchar" Size="10" />
+      <Input Name="ordered_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateRecommendHistory>
+
+  <!-- 件数取得（レコメンドレポート検索） -->
+  <GetRecommendReportHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_Recommend
+                [[ RECOMMEND_REPORT_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetRecommendReportHitCount>
+
+  <!-- レコメンドレポート検索表示 -->
+  <GetRecommendReport>
+    <Statement>
+      <![CDATA[
+        ;WITH pvNumbers AS
+              (
+                SELECT  recommend_id,
+                        COUNT(*) as pv_number
+                  FROM  w2_RecommendHistory
+                 WHERE  date_changed BETWEEN @date_bgn AND @date_end
+                   AND  shop_id = @shop_id
+                GROUP BY recommend_id
+              ),
+              cvNumbers AS
+              (
+                SELECT  recommend_id,
+                        COUNT(*) as cv_number
+                  FROM  w2_RecommendHistory
+                 WHERE  date_changed BETWEEN @date_bgn AND @date_end
+                   AND  shop_id = @shop_id
+                   AND  ordered_flg = 'BUY'
+                GROUP BY recommend_id
+              )
+        SELECT  *
+          FROM  (
+                  SELECT  ISNULL(pvNumbers.pv_number, 0) AS pv_number,
+                          ISNULL(cvNumbers.cv_number, 0) AS cv_number,
+                          ISNULL(100 * cvNumbers.cv_number / pvNumbers.pv_number, 0) AS cv_rate,
+                          w2_Recommend.*
+                    FROM  w2_Recommend
+                          LEFT JOIN pvNumbers ON
+                          (
+                            w2_Recommend.recommend_id = pvNumbers.recommend_id
+                          )
+                          LEFT JOIN cvNumbers ON
+                          (
+                            w2_Recommend.recommend_id = cvNumbers.recommend_id
+                          )
+                          [[ RECOMMEND_REPORT_SEARCH_WHERE ]]
+                ) AS w2_RecommendReport
+                     [[ RECOMMEND_REPORT_SEARCH_ORDER_BY ]]
+        OFFSET  @bgn_row_num - 1 ROWS
+        FETCH NEXT @end_row_num - @bgn_row_num + 1 ROWS ONLY
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="date_bgn" Type="datetime" />
+      <Input Name="date_end" Type="datetime" />
+    </Parameter>
+  </GetRecommendReport>
+
+  <!-- 合計PV数取得（レコメンドレポート検索） -->
+  <GetPvNumberTotal>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_RecommendHistory
+         WHERE  shop_id = @shop_id
+           AND  recommend_id IN
+                (
+                  SELECT  w2_Recommend.recommend_id
+                    FROM  w2_Recommend
+                          [[ RECOMMEND_REPORT_SEARCH_WHERE ]]
+                )
+           AND  date_created BETWEEN @date_bgn AND @date_end
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date_bgn" Type="datetime" />
+      <Input Name="date_end" Type="datetime" />
+    </Parameter>
+  </GetPvNumberTotal>
+
+  <!-- 合計CV数取得（レコメンドレポート検索） -->
+  <GetCvNumberTotal>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_RecommendHistory
+         WHERE  shop_id = @shop_id
+           AND  ordered_flg = 'BUY'
+           AND  recommend_id IN 
+                (
+                  SELECT  w2_Recommend.recommend_id
+                    FROM  w2_Recommend
+                          [[ RECOMMEND_REPORT_SEARCH_WHERE ]]
+                )
+           AND  date_created BETWEEN @date_bgn AND @date_end
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date_bgn" Type="datetime" />
+      <Input Name="date_end" Type="datetime" />
+    </Parameter>
+  </GetCvNumberTotal>
+
+  <!-- PV数取得（レコメンドレポートグラフ表示） -->
+  <GetGraphPv>
+    <Statement>
+      <![CDATA[
+        SELECT  FORMAT(date_created, 'yyyy') AS tgt_year,
+                FORMAT(date_created, 'MM') AS tgt_month,
+                FORMAT(date_created, 'dd') AS tgt_day,
+                COUNT(*) AS counts
+          FROM  w2_RecommendHistory
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+           AND  date_created BETWEEN @date_bgn AND @date_end
+        GROUP BY FORMAT(date_created, 'yyyy'), FORMAT(date_created, 'MM'), FORMAT(date_created, 'dd')
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="30" />
+      <Input Name="date_bgn" Type="datetime" />
+      <Input Name="date_end" Type="datetime" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetGraphPv>
+
+  <!-- CV数取得（レコメンドレポートグラフ表示） -->
+  <GetGraphCv>
+    <Statement>
+      <![CDATA[
+        SELECT  FORMAT(date_created, 'yyyy') AS tgt_year,
+                FORMAT(date_created, 'MM') AS tgt_month,
+                FORMAT(date_created, 'dd') AS tgt_day,
+                COUNT(*) AS counts
+          FROM  w2_RecommendHistory
+         WHERE  shop_id = @shop_id
+           AND  recommend_id = @recommend_id
+           AND  ordered_flg = 'BUY'
+           AND  date_created BETWEEN @date_bgn AND @date_end
+        GROUP BY FORMAT(date_created, 'yyyy'), FORMAT(date_created, 'MM'), FORMAT(date_created, 'dd')
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="30" />
+      <Input Name="date_bgn" Type="datetime" />
+      <Input Name="date_end" Type="datetime" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetGraphCv>
+</Recommend>

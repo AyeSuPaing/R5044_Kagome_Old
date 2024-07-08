@@ -1,0 +1,1684 @@
+﻿@*
+	=========================================================================================================
+	  Module      : 特集ページ詳細パーツ (_MainContentDetail.cshtml)
+	  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+	  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+	=========================================================================================================
+*@
+@using w2.App.Common.Design
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.PageDesign
+@using w2.Cms.Manager.ViewModels.Shared
+@model w2.Cms.Manager.ViewModels.FeaturePage.FeaturePageDetailViewModel
+@{
+	var sessionWrapper = new SessionWrapper(Session);
+}
+@helper IdAttribute(int i)
+{
+	var id = "product" + i;
+	@:@id
+}
+<style>
+	.text_align_right
+	{
+		text-align: right !important;
+	}
+
+	.expansion_button
+	{
+		margin-top: 15px;
+	}
+</style>
+<div class="main-content-detail-inner">
+	<a class="main-content-detail-btn-close" onclick="confirm_close()" is_cancel=""><span class="icon icon-close"></span>閉じる</a>
+	@using (Html.BeginForm("UpdateDetailPage", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_DESIGN, new { }, FormMethod.Post, new { Id = "detail_form" }))
+	{
+		@Html.HiddenFor(model => Model.Input.PageId, new
+			{
+				Name = "Input.PageId"
+			})
+		<div class="main-content-detail-head">
+			<div class="main-content-detail-head-title h2">
+				@Html.TextBoxFor(model => model.Input.ManagementTitle, new
+					{
+						Name = "Input.ManagementTitle",
+						placeholder = "管理用ページ名を入力してください"
+					})
+			</div>
+			<div class="main-content-detail-head-main-actions">
+				<div class="form-element-group form-element-group-horizontal">
+					<div class="form-element-group-title">
+						<label for="form-select-page-status">状態</label>
+					</div>
+					<div class="form-element-group-content">
+						@Html.DropDownListFor(model => model.Input.Publish, Model.PublishItems, new
+							{
+								Id = "form-select-page-status",
+								Name = "Input.Publish"
+							})
+					</div>
+				</div>
+				<a href="javascript:preview()" class="btn btn-txt btn-size-m">プレビュー</a>
+				<input type="button" id="btnUpdateConfirm" class="btn btn-main btn-size-l" value="更新" onclick="return is_setting_products()">
+				<input type="button" id="btnUpdate" class="btn btn-main btn-size-l feature-page-update" style="display: none">
+				<div class="dropdown">
+					<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle"><span class="icon-dots"></span></a>
+					<div class="dropdown-menu">
+						<a class="dropdown-menu-item" href="javascript:confirm_page_copy(@Model.Input.PageId)">複製して新規作成する</a>
+						<a class="dropdown-menu-item" href="javascript:delete_feature_page(@Model.Input.PageId)">削除する</a>
+						<a class="dropdown-menu-item" onclick="confirm_reset(@Model.Input.PageId)">リセットする</a>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div style="text-align: right;">
+			更新日：@Model.PcRealPage.UpdateDate
+		</div>
+		<div class="main-content-detail-body">
+			<div class="form-element-group form-element-group-horizontal">
+				<div class="form-element-group-title">
+					<label for="form-input-002">URL</label>
+				</div>
+				<div class="form-element-group-content">
+					<div class="page-url">
+						<span class="page-url-value">
+							<a href="javascript:void(0)" onclick="open_front_page()">
+								@PageDesignUtility.WebTargetPageUrl(Model.PcRealPage.PageDirPath, string.Empty)<span class="page-url-value-filename">@Model.Input.FileNameNoExtension</span>.aspx
+							</a>
+						</span>
+						<span class="page-url-value-form">
+							@Model.PcDirPath
+							@Html.TextBoxFor(model => model.Input.FileNameNoExtension, new
+								{
+									Name = string.Empty,
+									Class = "page-url-value-form-input"
+								})
+							@Html.HiddenFor(model => model.Input.FileNameNoExtension, new
+								{
+									Id = "input-file-name-hidden",
+									Class = "page-url-value-form-input-hidden",
+									Name = "Input.FileNameNoExtension",
+								})
+							@PageDesignUtility.PAGE_FILE_EXTENSION
+							<input type="button" class="btn btn-main btn-size-s page-url-edit-submit" value="OK">
+							<input type="button" class="btn btn-sub btn-size-s page-url-edit-cancel" value="キャンセル">
+						</span>
+						<span class="page-url-btns">
+							<button class="btn btn-sub btn-size-s page-url-edit-trigger">編集</button>
+							<button id="url-copy-btn" class="btn btn-sub btn-size-s" type="button">URLコピー</button>
+						</span>
+					</div>
+				</div>
+			</div>
+
+			@Html.Partial("_ProductCategory", Model)
+
+			<div class="form-element-group form-element-group-horizontal-grid">
+				@if (Constants.PRODUCT_BRAND_ENABLED)
+				{
+					<div class="form-element-group-title">
+						<label>特集ページブランド</label>
+					</div>
+				}
+				<div class="form-element-group-content">
+					@if (Constants.PRODUCT_BRAND_ENABLED)
+					{
+						var count = 0;
+						foreach (var brand in Model.BrandItems)
+						{
+							<label id="sample_checkbox">
+								<input type="checkbox"
+									   value="@brand.Value"
+									   name="Input.BrandIdList"
+									   checked="@(Array.IndexOf(Model.Input.BrandIdList, brand.Value) >= 0)"/>
+								@brand.Text
+							</label>
+							count++;
+							if ((count % 5) == 0)
+							{
+								<br />
+							}
+						}
+					}
+				</div>
+			</div>
+			@Html.Partial("_ReleaseRangeSetting", Model.Input.ReleaseRangeSettingInput)
+			<div class="form-element-group form-element-group-horizontal-grid">
+				<div class="form-element-group-title">
+					特集タイプ選択
+				</div>
+				<div class="form-element-group-content">
+					<div class="feature-type-select">
+						@Html.RadioButtonFor(m => Model.Input.PageType, "GROUP", new
+						{
+							Id = "feature-type-1",
+							onchange = "check_feature_page_type();"
+						})
+						<label for="feature-type-1" class="feature-type-select-item">
+							<div class="feature-type-select-item-img">
+								<img src="~/Images/Icon/feature-type-list.png">
+							</div>
+							<dl class="feature-type-select-item-text">
+								<dt>商品一覧訴求</dt>
+								<dd>ページ送りのある特集ページを作成できます。</dd>
+							</dl>
+						</label>
+						@Html.RadioButtonFor(m => Model.Input.PageType, "MULTIGROUP", new
+						{
+							Id = "feature-type-2",
+							onchange = "check_feature_page_type();"
+						})
+						<label for="feature-type-2" class="feature-type-select-item">
+							<div class="feature-type-select-item-img">
+								<img src="~/Images/Icon/feature-type-lists.png">
+							</div>
+							<dl class="feature-type-select-item-text">
+								<dt>複数商品一覧訴求</dt>
+								<dd>複数の商品グループを設定できます。</dd>
+							</dl>
+						</label>
+						@Html.RadioButtonFor(m => Model.Input.PageType, "SINGLE", new
+						{
+							Id = "feature-type-3",
+							onchange = "check_feature_page_type();"
+						})
+						<label for="feature-type-3" class="feature-type-select-item">
+							<div class="feature-type-select-item-img">
+								<img src="~/Images/Icon/feature-type-item.png">
+							</div>
+							<dl class="feature-type-select-item-text">
+								<dt>単品訴求</dt>
+								<dd>一つの商品を紹介するページです。</dd>
+							</dl>
+						</label>
+					</div>
+				</div>
+			</div>
+			<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature">
+				<div class="form-element-group-title">
+					<label for="input-pc-pagetitle">HTMLページタイトル</label>
+				</div>
+				<div class="form-element-group-content">
+					@Html.TextBoxFor(m => Model.Input.HtmlPageTitle, new
+					{
+						@class = "w100"
+					})
+				</div>
+			</div>
+			@if (w2.App.Common.Constants.SEOTAGDISPSETTING_OPTION_ENABLED == true)
+			{
+				<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature">
+					<div class="form-element-group-title">
+						<label for="input-pc-keyword">SEOディスクリプション</label>
+					</div>
+					<div class="form-element-group-content">
+						@Html.TextBoxFor(m => Model.Input.MetadataDesc, new
+						{
+							@class = "w100"
+						})
+					</div>
+				</div>
+			}
+			<div class="form-element-group form-element-group-horizontal-grid">
+				<div class="form-element-group-title">
+					<label>サイト</label>
+				</div>
+				<div class="form-element-group-content">
+					<div class="tabs tabs-site-select">
+						<div class="tabs-tab" id="tab_pc">
+							<a href="javascript:void(0)" class="tab is-active" data-tab-content-selector="#tab-pc" onclick="click_pc_tab()">
+								@if (DesignCommon.UseResponsive)
+								{
+									@Html.Raw("RESPONSIVE")
+								}
+								else
+								{
+									@Html.Raw("PC")
+								}
+							</a>
+						</div>
+						@if (DesignCommon.UseSmartPhone)
+						{
+							<div class="tabs-tab" id="tab_sp">
+								<a href="javascript:void(0)" class="tab" data-tab-content-selector="#tab-sp" onclick="click_sp_tab()">SP</a>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+			<div id="tab-pc" class="main-content-detail-site">
+				<div class="page-layout-template-active-selector">
+					<input id="page-layout-template-active-selector-pc"
+						   name="Input.PcContentInput.NoUse"
+						   data-val="true"
+						   data-val-required="NoUsePc フィールドが必要です。"
+						   type="checkbox"
+						   value="true">
+					@Html.Label("page-layout-template-active-selector-pc", "使用しない")
+				</div>
+				<!-- PC -->
+				<div class="main-content-detail-site-inner">
+					<h3>レイアウト編集</h3>
+					@Html.Partial("_LayoutEditPc", Model.LayoutEditViewModelPc)
+					<h3>コンテンツ編集</h3>
+					<div class="form-element-group form-element-group-vertical">
+						<div class="form-element-group-title">
+							<label>HEAD追加部分</label>
+						</div>
+						<div class="form-element-group-content">
+							@{
+								var codeEditorId0 = "codeEditorId0";
+								var codeEditorBeforeHideAreaId0 = "codeEditorBeforeHideAreaId0";
+								var headerContent = Model.Input.PcContentInput.Content.First(k => k.Key == "HEAD追加部分");
+							}
+							<div class="form-element-group form-element-group-vertical">
+								@Html.TextAreaFor(model => headerContent.Value, new
+								{
+									Name = "Input.PcContentInput.Content[0].Value",
+									Id = codeEditorId0,
+									Rows = "5",
+									style = "width:100%; max-width: 100%;",
+								})
+								<div class="form-element-group-content text_align_right">
+									@Html.HiddenFor(model => headerContent.Key, new
+									{
+										Name = "Input.PcContentInput.Content[0].Key",
+									})
+									@Html.TextAreaFor(model => headerContent.Value, new
+									{
+										Id = codeEditorBeforeHideAreaId0,
+										style = "display: none;"
+									})
+									<input class="btn btn-size-m btn-main expansion_button" type="button" onclick='OpenWysiwyg("codeEditorId0");' value="  HTMLエディタ  " class="btn btn-main" />
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="feature-page-elements-wrapper">
+						<div class="feature-page-elements sortable pc-contents">
+							<div class="feature-page-element" data-list-id="page-title">
+								<div class="feature-page-element-head">
+									<div class="feature-page-element-head-left">
+										<span class="feature-page-element-drag icon-drag"></span>
+										<div class="feature-page-element-title">ページタイトル（テキスト）</div>
+									</div>
+									<div class="feature-page-element-head-right">
+										<div class="feature-page-element-visible-selector">
+											<div class="slide-checkbox-wrap">
+												@Html.CheckBoxFor(m => m.Input.PcContentInput.PageTitleDisp, new
+												{
+													data_on_label = "表示",
+													data_off_label = "非表示",
+												})
+												<label for="Input_PcContentInput_PageTitleDisp" class="slide-checkbox">
+													<span class="slide-checkbox-label"></span>
+													<span class="slide-checkbox-btn"></span>
+												</label>
+											</div>
+										</div>
+										<div class="feature-page-element-sort-btns">
+											<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+												<span class="icon-arrow2-down"></span>
+											</div>
+											<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+												<span class="icon-arrow2-down"></span>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="feature-page-element-content">
+									@Html.TextBoxFor(m => Model.Input.PcContentInput.PageTitle, new
+									{
+										@class = "w100"
+									})
+								</div>
+							</div>
+							<div class="feature-page-element" data-list-id="header-banner">
+								<div class="feature-page-element-head">
+									<div class="feature-page-element-head-left">
+										<span class="feature-page-element-drag icon-drag"></span>
+										<div class="feature-page-element-title">ヘッダーバナー画像</div>
+									</div>
+									<div class="feature-page-element-head-right">
+										<div class="feature-page-element-visible-selector">
+											<div class="slide-checkbox-wrap">
+												@Html.CheckBoxFor(m => m.Input.PcContentInput.HeaderBannerDisp, new
+												{
+													data_on_label = "表示",
+													data_off_label = "非表示",
+												})
+												<label for="Input_PcContentInput_HeaderBannerDisp" class="slide-checkbox">
+													<span class="slide-checkbox-label"></span>
+													<span class="slide-checkbox-btn"></span>
+												</label>
+											</div>
+										</div>
+										<div class="feature-page-element-sort-btns">
+											<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+												<span class="icon-arrow2-down"></span>
+											</div>
+											<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+												<span class="icon-arrow2-down"></span>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="feature-page-element-content">
+									@Html.Partial("_ImageForm", Model.Input.PcContentInput.HeaderBanner)
+									<div class="form-element-group form-element-group-horizontal-grid">
+										<div class="form-element-group-title">
+											<label>代替テキスト</label>
+										</div>
+										<div class="form-element-group-content">
+											@Html.TextBoxFor(m => Model.Input.PcContentInput.AltText, new
+											{
+												@class = "w100"
+											})
+										</div>
+									</div>
+								</div>
+							</div>
+
+							@if ((Model.Input.ProductInput == null)
+								|| ((Model.Input.ProductInput != null)
+								&& (Model.Input.ProductInput.Length == 0))) { @* 新規追加の時 *@
+							<div class="feature-page-element" data-list-id="product-list-0">
+								<div class="feature-page-element-head">
+									<div class="feature-page-element-head-left">
+										<span class="feature-page-element-drag icon-drag"></span>
+										<div class="feature-page-element-title">商品一覧</div>
+									</div>
+									<div class="feature-page-element-head-right">
+										<div class="feature-page-element-visible-selector">
+											<div class="slide-checkbox-wrap">
+												<input type="checkbox" name="sample5" value="" id="feature-page-element-4" data-on-label="表示" data-off-label="非表示" checked>
+												<label for="feature-page-element-4" class="slide-checkbox">
+													<span class="slide-checkbox-label"></span>
+													<span class="slide-checkbox-btn"></span>
+												</label>
+											</div>
+										</div>
+										<div class="feature-page-element-sort-btns">
+											<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+												<span class="icon-arrow2-down"></span>
+											</div>
+											<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+												<span class="icon-arrow2-down"></span>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="feature-page-element-content" id="product0">
+									<div class="feature-item-list-btn">
+										<a href="javascript:void(0);" onclick="change_product_list(this)" class="btn btn-main btn-size-m">商品一覧を設定する</a>
+										<a href="javascript:void(0);" onclick="delete_product_list(this)" class="btn btn-main btn-size-m feature-type-multi-group">削除する</a>
+									</div>
+								</div>
+							</div>
+						}
+						else
+						{
+							var pcIndex = 0;
+							foreach (var productInput in Model.Input.ProductInput)
+							{
+								if (productInput.ProductList.Length == 0) {@* 追加した直後 *@
+								<div class="feature-page-element" data-list-id="product-list-@pcIndex">
+									<div class="feature-page-element-head">
+										<div class="feature-page-element-head-left">
+											<span class="feature-page-element-drag icon-drag"></span>
+											<div class="feature-page-element-title">商品一覧</div>
+										</div>
+										<div class="feature-page-element-head-right">
+											<div class="feature-page-element-visible-selector">
+												<div class="slide-checkbox-wrap">
+													<input type="checkbox" name="sample5" value="" id="feature-page-element-4" data-on-label="表示" data-off-label="非表示" checked="@Model.Input.PcContentInput.ProductListDisp[pcIndex]">
+													<label for="feature-page-element-4" class="slide-checkbox">
+														<span class="slide-checkbox-label"></span>
+														<span class="slide-checkbox-btn"></span>
+													</label>
+												</div>
+											</div>
+										</div>
+										<div class="feature-page-element-sort-btns">
+											<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+												<span class="icon-arrow2-down"></span>
+											</div>
+											<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+												<span class="icon-arrow2-down"></span>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="feature-page-element-content" id=@IdAttribute(pcIndex)>
+									<div class="feature-item-list-btn">
+										<a href="javascript:void(0);" onclick="change_product_list(this)" class="btn btn-main btn-size-m">商品一覧を設定する</a>
+										<a href="javascript:void(0);" onclick="delete_product_list(this)" class="btn btn-main btn-size-m feature-type-multi-group">削除する</a>
+									</div>
+								</div>
+							} else if (string.IsNullOrEmpty(productInput.GroupId)) {@* グループ化前 *@
+							<div class="feature-page-element" data-list-id="product-list-@pcIndex">
+								<div class="feature-page-element-head">
+									<div class="feature-page-element-head-left">
+										<span class="feature-page-element-drag icon-drag"></span>
+										<div class="feature-page-element-title">商品一覧</div>
+									</div>
+									<div class="feature-page-element-head-right">
+										<div class="feature-page-element-visible-selector">
+											<div class="slide-checkbox-wrap">
+												<input type="checkbox" name="sample5" value="" id="feature-page-element-@(pcIndex + 9)" data-on-label="表示" data-off-label="非表示" checked="@Model.Input.PcContentInput.ProductListDisp[pcIndex]">
+												<label for="feature-page-element-@(pcIndex + 9)" class="slide-checkbox">
+													<span class="slide-checkbox-label"></span>
+													<span class="slide-checkbox-btn"></span>
+												</label>
+											</div>
+										</div>
+										<div class="feature-page-element-sort-btns">
+											<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+												<span class="icon-arrow2-down"></span>
+											</div>
+											<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+												<span class="icon-arrow2-down"></span>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="feature-page-element-content" id=@IdAttribute(pcIndex)>
+									@Html.HiddenFor(m => productInput.GroupId, new { Name = "input.productInput[" + pcIndex + "].GroupId" })
+									<div class="form-element-group form-element-group-vertical">
+										<div class="form-element-group-title">
+											<label>タイトル</label>
+										</div>
+										<div class="form-element-group-content">
+											@Html.TextBoxFor(m => productInput.Title, new { Name = "input.productInput[" + pcIndex + "].Title", @class = "w100" })
+										</div>
+									</div>
+									<div class="feature-item-list-paging">
+										<div class="form-element-group form-element-group-vertical" style="width: 60px;">
+											<div class="form-element-group-title">
+												<label>表示件数</label>
+											</div>
+											<div class="form-element-group-content">
+												@Html.TextBoxFor(m => productInput.DispNum, new { Name = "input.productInput[" + pcIndex + "].DispNum", @class = "w80" })
+											</div>
+										</div>
+									</div>
+									<div class="feature-selected-item-list">
+										<div class="feature-selected-item-list-head">
+											<div class="feature-selected-item-list-head-order">表示順</div>
+											<div class="feature-selected-item-list-head-item-id">商品ID</div>
+											<div class="feature-selected-item-list-head-item-name">商品名</div>
+											<div class="feature-selected-item-list-head-stock">在庫数</div>
+											<div class="feature-selected-item-list-head-delete">削除</div>
+										</div>
+										<div class="feature-selected-item-list-body">
+											@{ var productIndex = 0;}
+											@foreach (var product in productInput.ProductList)
+											{
+												<div class="feature-selected-item-list-item" data-list-id="@product.Id">
+													<div class="feature-selected-item-list-item-drag"><span class="icon-drag"></span></div>
+													<div class="feature-selected-item-list-item-order">
+														@Html.TextBoxFor(model => product.SortNo, new
+														{
+															Name = "input.productInput[" + pcIndex + "].ProductList[" + productIndex + "].SortNo"
+														})
+													</div>
+													<div class="feature-selected-item-list-item-id">@product.Id</div>
+													<div class="feature-selected-item-list-item-image">
+														<img src="@Constants.PATH_ROOT_FRONT_PC@product.ImagePath" alt="商品画像">
+													</div>
+													<div class="feature-selected-item-list-item-name">@product.Name</div>
+													@Html.HiddenFor(model => product.Id, new
+													{
+														Name = "input.productInput[" + pcIndex + "].ProductList[" + productIndex + "].Id"
+														})
+													<div class="feature-selected-item-list-item-stock">@product.Stock</div>
+													<div class="feature-selected-item-list-item-delete">
+														<input id="sample_checkbox1" type="checkbox" name="delete_checkbox">
+													</div>
+												</div>
+												productIndex++;
+											}
+										</div>
+										<div class="feature-selected-item-list-bottom">
+											<select name="sort-type">
+												<option selected="selected" value="">並べ替え</option>
+												<option value="1">商品価格</option>
+												<option value="2">商品コード</option>
+												<option value="3">カテゴリ</option>
+												<option value="4">ブランド</option>
+												<option value="5">商品名</option>
+												<option value="6">商品並び順</option>
+												<option value="7">販売開始日</option>
+											</select>
+											<button class="btn btn-sub btn-size-s" type="button" onclick="sort(this)">表示順を変更</button>
+											<button class="btn btn-sub btn-size-s feature-selected-item-list-bottom-all-delete" onclick="all_delete_click()" type="button">すべて削除</button>
+											<a href="javascript:void(0);" class="btn btn-sub btn-size-s" onclick="checked_delete_click()">選択した商品を削除 </a>
+										</div>
+									</div>
+								</div>
+							</div>
+						}
+						else
+						{
+							<div class="feature-page-element" data-list-id="product-list-@pcIndex">
+								<div class="feature-page-element-head">
+									<div class="feature-page-element-head-left">
+										<span class="feature-page-element-drag icon-drag"></span>
+										<div class="feature-page-element-title">商品一覧</div>
+									</div>
+									<div class="feature-page-element-head-right">
+										<div class="feature-page-element-visible-selector">
+											<div class="slide-checkbox-wrap">
+												<input type="checkbox" name="sample5" value="" id="feature-page-element-@(pcIndex + 9)" data-on-label="表示" data-off-label="非表示" checked="@Model.Input.PcContentInput.ProductListDisp[pcIndex]">
+												<label for="feature-page-element-@(pcIndex + 9)" class="slide-checkbox">
+													<span class="slide-checkbox-label"></span>
+													<span class="slide-checkbox-btn"></span>
+												</label>
+											</div>
+										</div>
+										<div class="feature-page-element-sort-btns">
+											<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+												<span class="icon-arrow2-down"></span>
+											</div>
+											<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+												<span class="icon-arrow2-down"></span>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="feature-page-element-content" id=@IdAttribute(pcIndex)>
+									@Html.HiddenFor(m => productInput.GroupId, new { Name = "input.productInput[" + pcIndex + "].GroupId" })
+									<div class="feature-item-list">
+										<div class="form-element-group form-element-group-vertical">
+											<div class="form-element-group-title">
+												<label>タイトル</label>
+											</div>
+											<div class="form-element-group-content">
+												@Html.TextBoxFor(m => productInput.Title, new { Name = "input.productInput[" + pcIndex + "].Title", @class = "w100" })
+											</div>
+										</div>
+										<div class="feature-item-list-paging">
+											<div class="form-element-group form-element-group-vertical" style="width: 60px;">
+												<div class="form-element-group-title">
+													<label>表示件数</label>
+												</div>
+												<div class="form-element-group-content">
+													@Html.TextBoxFor(m => productInput.DispNum, new { Name = "input.productInput[" + pcIndex + "].DispNum", @class = "w80" })
+												</div>
+											</div>
+										</div>
+										<div class="form-element-group form-element-group-vertical">
+											<div class="form-element-group-title">
+												表示する商品
+											</div>
+										</div>
+										<div class="form-element-group-content">
+											<div class="feature-selected-item-group">
+												<p class="feature-selected-item-group-caption">商品グループ</p>
+												<div class="feature-selected-item-group-items">
+													@foreach (var product in productInput.ProductList)
+													{
+														if (string.IsNullOrEmpty(product.ImagePath) == false)
+														{
+															<div class="feature-selected-item-group-item">
+																<img src="@Constants.PATH_ROOT_FRONT_PC@product.ImagePath" alt="@product.Id">
+															</div>
+														}
+													}
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="feature-item-list-btn">
+										<a href="javascript:void(0);" class="btn btn-sub btn-size-m" onclick="change_product_list(this)">変更する</a>
+										<a href="javascript:void(0)" class="btn btn-sub btn-size-m feature-type-multi-group" onclick="delete_product_list(this)">削除する</a>
+									</div>
+								</div>
+							</div>
+						} pcIndex++;
+					}
+				}@* ProductInputがnullではない終わり *@
+
+				<div class="feature-page-element feature-type-multi-group" data-list-id="add-product-list">
+					<div class="feature-page-element-content">
+						<div class="feature-item-list-btn">
+							<a href="javascript:void(0);" class="btn btn-main btn-size-m" onclick="add_product_element()"><span class="icon-plus"></span>商品一覧を追加する</a>
+						</div>
+					</div>
+				</div>
+
+				<div class="feature-page-element" data-list-id="upper-contents-area">
+					<div class="feature-page-element-head">
+						<div class="feature-page-element-head-left">
+							<span class="feature-page-element-drag icon-drag"></span>
+							<div class="feature-page-element-title">コンテンツエリア上部</div>
+						</div>
+						<div class="feature-page-element-head-right">
+							<div class="feature-page-element-visible-selector">
+								<div class="slide-checkbox-wrap">
+									@Html.CheckBoxFor(m => m.Input.PcContentInput.UpperContentsAreaDisp, new
+									{
+										data_on_label = "表示",
+										data_off_label = "非表示",
+									})
+									<label for="Input_PcContentInput_UpperContentsAreaDisp" class="slide-checkbox">
+										<span class="slide-checkbox-label"></span>
+										<span class="slide-checkbox-btn"></span>
+									</label>
+								</div>
+							</div>
+							<div class="feature-page-element-sort-btns">
+								<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+									<span class="icon-arrow2-down"></span>
+								</div>
+								<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+									<span class="icon-arrow2-down"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="feature-page-element-content">
+						@{
+							var codeEditorId1 = "codeEditorId1";
+							var codeEditorBeforeHideAreaId1 = "codeEditorBeforeHideAreaId1";
+							var upperContent = Model.Input.PcContentInput.Content.First(k => k.Key == "コンテンツエリア上部");
+						}
+						<div class="form-element-group form-element-group-vertical">
+							@Html.TextAreaFor(model => upperContent.Value, new
+							{
+								Name = "Input.PcContentInput.Content[1].Value",
+								Id = codeEditorId1,
+								Rows = "5",
+								style = "width:100%; max-width: 100%;"
+							})
+							<div class="form-element-group-content text_align_right">
+								@Html.HiddenFor(model => upperContent.Key, new
+								{
+									Name = "Input.PcContentInput.Content[1].Key",
+								})
+								@Html.TextAreaFor(model => upperContent.Value, new
+								{
+									Id = codeEditorBeforeHideAreaId1,
+									style = "display: none;"
+								})
+								<input class="btn btn-size-m btn-main expansion_button" type="button" onclick='OpenWysiwyg("codeEditorId1");' value="  HTMLエディタ  " class="btn btn-main" />
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="feature-page-element" data-list-id="lower-contents-area">
+					<div class="feature-page-element-head">
+						<div class="feature-page-element-head-left">
+							<span class="feature-page-element-drag icon-drag"></span>
+							<div class="feature-page-element-title">コンテンツエリア下部</div>
+						</div>
+						<div class="feature-page-element-head-right">
+							<div class="feature-page-element-visible-selector">
+								<div class="slide-checkbox-wrap">
+									@Html.CheckBoxFor(m => m.Input.PcContentInput.LowerContentsAreaDisp, new
+									{
+										data_on_label = "表示",
+										data_off_label = "非表示",
+									})
+									<label for="Input_PcContentInput_LowerContentsAreaDisp" class="slide-checkbox">
+										<span class="slide-checkbox-label"></span>
+										<span class="slide-checkbox-btn"></span>
+									</label>
+								</div>
+							</div>
+							<div class="feature-page-element-sort-btns">
+								<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+									<span class="icon-arrow2-down"></span>
+								</div>
+								<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+									<span class="icon-arrow2-down"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+					@{
+						var codeEditorId2 = "codeEditorId2";
+						var codeEditorBeforeHideAreaId2 = "codeEditorBeforeHideAreaId2";
+						var lowerContent = Model.Input.PcContentInput.Content.First(k => k.Key == "コンテンツエリア下部");
+					}
+					<div class="feature-page-element-content">
+						<div class="form-element-group form-element-group-vertical">
+							@Html.TextAreaFor(model => lowerContent.Value, new
+							{
+								Name = "Input.PcContentInput.Content[2].Value",
+								Id = codeEditorId2,
+								Rows = "5",
+								style = "width:100%; max-width: 100%;",
+							})
+							<div class="form-element-group-content text_align_right">
+								@Html.HiddenFor(model => lowerContent.Key, new
+								{
+									Name = "Input.PcContentInput.Content[2].Key",
+								})
+								@Html.TextAreaFor(model => lowerContent.Value, new
+								{
+									Id = codeEditorBeforeHideAreaId2,
+									style = "display: none;"
+								})
+								<input class="btn btn-size-m btn-main expansion_button" type="button" onclick='OpenWysiwyg("codeEditorId2");' value="  HTMLエディタ  " class="btn btn-main" />
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- /PC -->
+</div>
+<div id="tab-sp" class="main-content-detail-site" style="display: none;">
+	<div class="page-layout-template-active-selector">
+		<input id="page-layout-template-active-selector-sp"
+			   name="Input.SpContentInput.NoUse"
+			   data-val="true"
+			   data-val-required="NoUseSp フィールドが必要です。"
+			   type="checkbox"
+			   value="true">
+		@Html.Label("page-layout-template-active-selector-sp", "使用しない")
+	</div>
+	<!-- sp -->
+	<div class="main-content-detail-site-inner">
+		<h3>レイアウト編集</h3>
+		@Html.Partial("_LayoutEditSp", Model.LayoutEditViewModelSp)
+		<h3>コンテンツ編集</h3>
+		<div class="form-element-group form-element-group-vertical">
+			<div class="form-element-group-title">
+				<label>HEAD追加部分</label>
+			</div>
+			<div class="form-element-group-content">
+				@{
+					var spCodeEditorId0 = "spCodeEditorId0";
+					var spCodeEditorBeforeHideAreaId0 = "spCodeEditorBeforeHideAreaId0";
+					var spHeaderContent = Model.Input.SpContentInput.Content.First(k => k.Key == "HEAD追加部分");
+				}
+				<div class="form-element-group form-element-group-vertical">
+					@Html.TextAreaFor(model => spHeaderContent.Value, new
+					{
+						Name = "Input.SpContentInput.Content[0].Value",
+						Id = spCodeEditorId0,
+						Rows = "5",
+						style = "width:100%; max-width: 100%;",
+					})
+					<div class="form-element-group-content text_align_right">
+						@Html.HiddenFor(model => spHeaderContent.Key, new
+						{
+							Name = "Input.SpContentInput.Content[0].Key",
+						})
+						@Html.TextAreaFor(model => spHeaderContent.Value, new
+						{
+							Id = spCodeEditorBeforeHideAreaId0,
+							style = "display: none;"
+						})
+						<input class="btn btn-size-m btn-main expansion_button" type="button" onclick='OpenWysiwyg("spCodeEditorId0");' value="  HTMLエディタ  " class="btn btn-main"/>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="feature-page-elements-wrapper">
+			<div class="feature-page-elements sortable sp-contents">
+				<div class="feature-page-element" data-list-id="page-title">
+					<div class="feature-page-element-head">
+						<div class="feature-page-element-head-left">
+							<span class="feature-page-element-drag icon-drag"></span>
+							<div class="feature-page-element-title">ページタイトル（テキスト）</div>
+						</div>
+						<div class="feature-page-element-head-right">
+							<div class="feature-page-element-visible-selector">
+								<div class="slide-checkbox-wrap">
+									@Html.CheckBoxFor(m => m.Input.SpContentInput.PageTitleDisp, new
+										{
+											data_on_label = "表示",
+											data_off_label = "非表示",
+										})
+									<label for="Input_SpContentInput_PageTitleDisp" class="slide-checkbox">
+										<span class="slide-checkbox-label"></span>
+										<span class="slide-checkbox-btn"></span>
+									</label>
+								</div>
+							</div>
+							<div class="feature-page-element-sort-btns">
+								<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+									<span class="icon-arrow2-down"></span>
+								</div>
+								<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+									<span class="icon-arrow2-down"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="feature-page-element-content">
+						@Html.TextBoxFor(m => Model.Input.SpContentInput.PageTitle, new
+							{
+								@class = "w100"
+							})
+					</div>
+				</div>
+				<div class="feature-page-element" data-list-id="header-banner">
+					<div class="feature-page-element-head">
+						<div class="feature-page-element-head-left">
+							<span class="feature-page-element-drag icon-drag"></span>
+							<div class="feature-page-element-title">ヘッダーバナー画像</div>
+						</div>
+						<div class="feature-page-element-head-right">
+							<div class="feature-page-element-visible-selector">
+								<div class="slide-checkbox-wrap">
+									@Html.CheckBoxFor(m => m.Input.SpContentInput.HeaderBannerDisp, new
+										{
+											data_on_label = "表示",
+											data_off_label = "非表示",
+										})
+									<label for="Input_SpContentInput_HeaderBannerDisp" class="slide-checkbox">
+										<span class="slide-checkbox-label"></span>
+										<span class="slide-checkbox-btn"></span>
+									</label>
+								</div>
+							</div>
+							<div class="feature-page-element-sort-btns">
+								<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+									<span class="icon-arrow2-down"></span>
+								</div>
+								<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+									<span class="icon-arrow2-down"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="feature-page-element-content">
+						@Html.Partial("_ImageForm", Model.Input.SpContentInput.HeaderBanner)
+						<div class="form-element-group form-element-group-horizontal-grid">
+							<div class="form-element-group-title">
+								<label>代替テキスト</label>
+							</div>
+							<div class="form-element-group-content">
+								@Html.TextBoxFor(m => Model.Input.SpContentInput.AltText, new
+									{
+										@class = "w100"
+									})
+							</div>
+						</div>
+					</div>
+				</div>
+				@if ((Model.Input.ProductInput == null)
+					|| ((Model.Input.ProductInput != null)
+					&& (Model.Input.ProductInput.Length == 0)))
+				{
+					<div class="feature-page-element" data-list-id="product-list-0">
+					</div>
+				}
+				else
+				{
+					var spIndex = 0;
+					foreach (var productInput in Model.Input.ProductInput)
+					{
+						@* 枠だけ用意 *@
+						<div class="feature-page-element" data-list-id="product-list-@spIndex">
+						</div>
+						spIndex++;
+					}
+				}
+
+				<div class="feature-page-element feature-type-multi-group" data-list-id="add-product-list">
+					<div class="feature-page-element-content">
+						<div class="feature-item-list-btn">
+							<a href="javascript:void(0);" class="btn btn-main btn-size-m" onclick="add_product_element()"><span class="icon-plus"></span>商品一覧を追加する</a>
+						</div>
+					</div>
+				</div>
+
+				<div class="feature-page-element" data-list-id="upper-contents-area">
+					<div class="feature-page-element-head">
+						<div class="feature-page-element-head-left">
+							<span class="feature-page-element-drag icon-drag"></span>
+							<div class="feature-page-element-title">コンテンツエリア上部</div>
+						</div>
+						<div class="feature-page-element-head-right">
+							<div class="feature-page-element-visible-selector">
+								<div class="slide-checkbox-wrap">
+									@Html.CheckBoxFor(m => m.Input.SpContentInput.UpperContentsAreaDisp, new
+										{
+											data_on_label = "表示",
+											data_off_label = "非表示",
+										})
+									<label for="Input_SpContentInput_UpperContentsAreaDisp" class="slide-checkbox">
+										<span class="slide-checkbox-label"></span>
+										<span class="slide-checkbox-btn"></span>
+									</label>
+								</div>
+							</div>
+							<div class="feature-page-element-sort-btns">
+								<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+									<span class="icon-arrow2-down"></span>
+								</div>
+								<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+									<span class="icon-arrow2-down"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+					@{
+						var spCodeEditorId1 = "spCodeEditorId1";
+						var spCodeEditorBeforeHideAreaId1 = "spCodeEditorBeforeHideAreaId1";
+						var spUpperContent = Model.Input.SpContentInput.Content.First(k => k.Key == "コンテンツエリア上部");
+					}
+					<div class="feature-page-element-content">
+						@Html.TextAreaFor(model => spUpperContent.Value, new
+						{
+							Name = "Input.SpContentInput.Content[1].Value",
+							Id = spCodeEditorId1,
+							Rows = "5",
+							style = "width:100%",
+						})
+						<div class="form-element-group form-element-group-vertical">
+							<div class="form-element-group-content text_align_right">
+								@Html.HiddenFor(model => spUpperContent.Key, new
+								{
+									Name = "Input.SpContentInput.Content[1].Key",
+								})
+								@Html.TextAreaFor(model => spUpperContent.Value, new
+								{
+									Id = spCodeEditorBeforeHideAreaId1,
+									style = "display: none;"
+								})
+								<input class="btn btn-size-m btn-main expansion_button" type="button" onclick='OpenWysiwyg("spCodeEditorId1");' value="  HTMLエディタ  " class="btn btn-main"/>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="feature-page-element" data-list-id="lower-contents-area">
+					<div class="feature-page-element-head">
+						<div class="feature-page-element-head-left">
+							<span class="feature-page-element-drag icon-drag"></span>
+							<div class="feature-page-element-title">コンテンツエリア下部</div>
+						</div>
+						<div class="feature-page-element-head-right">
+							<div class="feature-page-element-visible-selector">
+								<div class="slide-checkbox-wrap">
+									@Html.CheckBoxFor(m => m.Input.SpContentInput.LowerContentsAreaDisp, new
+										{
+											data_on_label = "表示",
+											data_off_label = "非表示",
+										})
+									<label for="Input_SpContentInput_LowerContentsAreaDisp" class="slide-checkbox">
+										<span class="slide-checkbox-label"></span>
+										<span class="slide-checkbox-btn"></span>
+									</label>
+								</div>
+							</div>
+							<div class="feature-page-element-sort-btns">
+								<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+									<span class="icon-arrow2-down"></span>
+								</div>
+								<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+									<span class="icon-arrow2-down"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+					@{
+						var spCodeEditorId2 = "spCodeEditorId2";
+						var spCodeEditorBeforeHideAreaId2 = "spCodeEditorBeforeHideAreaId2";
+						var spLowerContent = Model.Input.SpContentInput.Content.First(k => k.Key == "コンテンツエリア下部");
+					}
+					<div class="feature-page-element-content">
+						<div class="form-element-group form-element-group-vertical">
+							@Html.TextAreaFor(model => spLowerContent.Value, new
+							{
+								Name = "Input.SpContentInput.Content[2].Value",
+								Id = spCodeEditorId2,
+								Rows = "5",
+								style = "width:100%; max-width: 100%;",
+							})
+							<div class="form-element-group-content text_align_right">
+								@Html.HiddenFor(model => spLowerContent.Key, new
+								{
+									Name = "Input.SpContentInput.Content[2].Key",
+								})
+								@Html.TextAreaFor(model => spLowerContent.Value, new
+								{
+									Id = spCodeEditorBeforeHideAreaId2,
+									style = "display: none;"
+								})
+								<input class="btn btn-size-m btn-main expansion_button" type="button" onclick='OpenWysiwyg("spCodeEditorId2");' value="  HTMLエディタ  " class="btn btn-main"/>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+</div>
+}
+</div>
+<div class="modal-content-hide">
+	@Html.Partial("_ProductModal", new ProductSettingModalModel(sessionWrapper.LoginShopId, Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_DESIGN))
+</div>
+@Html.Partial("_ImageListModal", Model.ImageModalViewModel)
+<div id="parts_modal_content_detail"></div>
+<div id="product-list-template" style="display: none;">
+	<div class="feature-page-element" data-list-id="product-list-x">
+		<div class="feature-page-element-head">
+			<div class="feature-page-element-head-left">
+				<span class="feature-page-element-drag icon-drag"></span>
+				<div class="feature-page-element-title">商品一覧</div>
+			</div>
+			<div class="feature-page-element-head-right">
+				<div class="feature-page-element-visible-selector">
+					<div class="slide-checkbox-wrap">
+						<input type="checkbox" name="sample5" value="" id="feature-page-element-4" data-on-label="表示" data-off-label="非表示" checked>
+						<label for="feature-page-element-4" class="slide-checkbox">
+							<span class="slide-checkbox-label"></span>
+							<span class="slide-checkbox-btn"></span>
+						</label>
+					</div>
+				</div>
+				<div class="feature-page-element-sort-btns">
+					<div class="feature-page-element-sort-btn feature-page-element-sort-btn-up btn btn-sub btn-size-s">
+						<span class="icon-arrow2-down"></span>
+					</div>
+					<div class="feature-page-element-sort-btn feature-page-element-sort-btn-down btn btn-sub btn-size-s">
+						<span class="icon-arrow2-down"></span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="feature-page-element-content" id="productx">
+			<div class="feature-item-list-btn">
+				<a href="javascript:void(0);" onclick="change_product_list(this)" class="btn btn-main btn-size-m">商品一覧を設定する</a>
+				<a href="javascript:void(0);" onclick="delete_product_list(this)" class="btn btn-main btn-size-m feature-type-multi-group">削除する</a>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	var pcSort = [];
+	@foreach (var s in Model.Input.PcContentInput.Sort)
+	{
+		@:pcSort.push('@s');
+	}
+	var spSort = [];
+	@foreach (var s in Model.Input.SpContentInput.Sort)
+	{
+		@:spSort.push('@s');
+	}
+
+	var form = "";
+
+	$(function () {
+		page.ini();
+		custom_scroll.ini();
+		page_url_edit.ini();
+		tab.ini();
+		feature.ini();
+		dropdown_toggle.ini();
+		image_file_select.ini();
+		slide_check.ini();
+		check_feature_page_type();
+		use_device_check_ini();
+		tab_layout_ini();
+		list.ini();
+		content_sort(pcSort, spSort);
+
+		var parentId = "@this.Model.Input.ParentCategoryId";
+		if (parentId === '') {
+			$('.child-category').css('display', 'none');
+		} else {
+			console.log(parentId);
+			$('.child-category').show();
+		}
+
+		// PCかSPか判断するためにクラス追加
+		var pcImage = $('.pc-contents > .feature-page-element > .feature-page-element-content > div > .image-upload-content');
+		$(pcImage).addClass('pc-header-banner');
+
+		var spImage = $('.sp-contents > .feature-page-element > .feature-page-element-content > div > .image-upload-content');
+		$(spImage).addClass('sp-header-banner');
+
+		$('.main-content-detail-btn-close').on('click', function () {
+			$("#main-content-detail").html(null);
+			$('.main-content-detail-inner').hide();
+			$('.main-content-frame').removeClass('is-open-detail');
+		});
+
+		var pageId = "@this.Model.Input.PageId";
+		history.replaceState("", "", "#page" + pageId);
+
+		$(document).on('click', '.list-col-title-a', function () {
+			if (is_edit_display_confirm()) {
+				return confirm("変更内容を破棄し、最終更新時の状態に戻します。よろしいでしょうか？");
+			}
+        });
+
+		// Webブラウザ離脱確認
+		$(window).on('beforeunload', function (e) {
+			if (is_edit_display_confirm()) {
+				return true;
+			}
+			return;
+		});
+
+		form = $("form").serialize();
+	});
+
+	// コンテンツの並び順を復元
+	function content_sort(array, spArray) {
+		for (var startPos = 0; startPos < array.length; startPos++) {
+			var firstElement = $('.pc-contents > .feature-page-element[data-list-id=' + array[startPos] + ']');
+			for (var afterElement = startPos + 1; afterElement < array.length; afterElement++) {
+				afterElement = $('.pc-contents > .feature-page-element[data-list-id=' + array[afterElement] + ']');
+				$(firstElement).after($(afterElement));
+			}
+		}
+
+		for (var spStartPos = 0; spStartPos < spArray.length; spStartPos++) {
+			var spFirstElement = $('.sp-contents > .feature-page-element[data-list-id=' + spArray[spStartPos] + ']');
+			for (var spAfterElement = spStartPos + 1; spAfterElement < spArray.length; spAfterElement++) {
+				spAfterElement = $('.sp-contents > .feature-page-element[data-list-id=' + spArray[spAfterElement] + ']');
+				$(spFirstElement).after($(spAfterElement));
+			}
+		}
+	}
+
+	// 商品一覧を追加するをクリック
+	function add_product_element() {
+		var pl = $(".sortable.pc-contents [data-list-id^='product-list-']");
+
+		var template = $('#product-list-template').html();
+		template = template.replace(/product-list-x/g, "product-list-" + pl.length);
+		template = template.replace(/productx/g, "product" + pl.length);
+
+		if (is_pc_active()) {
+			$(".sortable.pc-contents [data-list-id='add-product-list']").before(template);
+			$(".sortable.sp-contents [data-list-id='add-product-list']").before(
+				'<div class="feature-page-element" data-list-id="product-list-' + pl.length + '"></div>');
+		} else {
+			$(".sortable.sp-contents [data-list-id='add-product-list']").before(template);
+			$(".sortable.pc-contents [data-list-id='add-product-list']").before(
+				'<div class="feature-page-element" data-list-id="product-list-' + pl.length + '"></div>');
+		}
+	}
+
+	// 商品一覧の削除するボタンクリック
+	function delete_product_list(obj) {
+		var pl = $(".sortable.pc-contents [data-list-id^='product-list-']");
+		var removeElement = $(obj).parent().parent().parent();
+		var id = removeElement.attr('data-list-id').slice(13);
+
+		var deleteId = "product-list-" + id;
+
+		$('.sortable.pc-contents [data-list-id=' + deleteId + ']').remove();
+		$('.sortable.sp-contents [data-list-id=' + deleteId + ']').remove();
+
+		for (; id < pl.length; id++) {
+			var oldId = Number(id) + 1;
+
+			var target = (is_pc_active())
+				? $('.sortable.pc-contents [data-list-id=product-list-' + oldId + ']')
+				: $('.sortable.sp-contents [data-list-id=product-list-' + oldId + ']');
+
+			target.find('input,select,textarea').each(function () {
+				var name_ = $(this).attr('name');
+				if (name_) {
+					var replaced_name_ = name_.replace(/input\.productInput\[\d\]/, "input.productInput[" + id + "]");
+					$(this).attr('name', replaced_name_);
+				}
+			});
+
+			target.find('div[id^=product]').attr('id', 'product' + id);
+			target.attr('data-list-id', "product-list-" + id);
+
+			// タブが選択されていない方もid変更
+			(is_pc_active())
+				? $('.sortable.sp-contents [data-list-id=product-list-' + oldId + ']')
+				.attr('data-list-id', "product-list-" + id)
+				: $('.sortable.pc-contents [data-list-id=product-list-' + oldId + ']')
+				.attr('data-list-id', "product-list-" + id);
+		}
+	}
+
+	var tempForm = null;
+	var tempTitle = null;
+	var tempDispNum = null;
+	var tempPagination = null;
+	// 商品一覧の変更するボタンクリック
+	function change_product_list(obj) {
+		var no = $(obj).parent().parent().attr('id').slice(7);
+		$('#modal-no').val(no);
+		$('#base-name').val('input.productInput[' + no + ']');
+
+		var productIds;
+
+		var products = $('#product' + no)
+			.find('.feature-selected-item-list > .feature-selected-item-list-body > .feature-selected-item-list-item')
+			.children('.feature-selected-item-list-item-id');
+
+		if ((products !== undefined)) {
+			for (var i = 0; i < products.length; i++) {
+				if (productIds === undefined) {
+					productIds = '"' + products[i].textContent + '"';
+				} else {
+					productIds += ',' + '"' + products[i].textContent + '"';
+				};
+			}
+		}
+
+		$('#featurePageProductHidden').val(productIds);
+		$('#featurePageFlg').val(true);
+
+		// タイトル・表示件数・ページ送りを保存
+		if ($(obj).parent().prev().find('div .form-element-group-content').length == 3) {
+			tempForm = $(obj).parent().prev().find('div .form-element-group-content');
+			tempTitle = $(tempForm[0]).find('input').val();
+			tempDispNum = $(tempForm[1]).find('input').val();
+			tempPagination = $(tempForm[2]).find('select option:selected').val();
+		}
+
+		window.check_products();
+		modal.open('#modal-item-list', 'modal-size-m modal-item-list');
+	}
+
+	// 商品一覧をpcからspに移動する
+	function click_sp_tab() {
+		$('.pc-contents > .feature-page-element[data-list-id^="product-list"]').each(function (index, element) {
+			var id = $(element).attr('data-list-id');
+			var sp = $('.sp-contents > .feature-page-element[data-list-id=' + id + ']');
+			$(sp).html(element.innerHTML);
+
+			$(element).html("");
+		});
+	}
+
+	// 商品一覧をspからpcに移動する
+	function click_pc_tab() {
+		$('.sp-contents > .feature-page-element[data-list-id^="product-list"]').each(function (index, element) {
+			var id = $(element).attr('data-list-id');
+			var pc = $('.pc-contents > .feature-page-element[data-list-id=' + id + ']');
+			$(pc).html(element.innerHTML);
+
+			$(element).html("");
+		});
+	}
+
+	// 商品リストのPartialViewを商品一覧にセット
+	function set_product_view_html(viewHtml) {
+		var modalNo = $('#modal-no').val();
+		$('#product' + modalNo).html(viewHtml);
+		$('.modal-header-close-btn').click();
+		if (tempForm != null) {
+			// タイトル・表示件数・ページ送りを復元
+			setTimeout(function () {
+				var form = $('#product' + modalNo).find('.feature-item-list div .form-element-group-content');
+				var itemCount = 0;
+				if (form.length == 0) {
+					form = $('#product' + modalNo).find('.form-element-group-content div .form-element-group-content');
+					// 商品ID指定
+					itemCount = $('#product' + modalNo)
+						.find('.feature-selected-item-list > .feature-selected-item-list-body > .feature-selected-item-list-item')
+						.length;
+				} else {
+					// 商品グループ指定
+					var groupItem = $('#product' + modalNo).find('.feature-item-list > .form-element-group-content > div > .feature-selected-item-group-items');
+					itemCount = groupItem[0].childElementCount;
+				}
+				$(form[0]).find('input').val(tempTitle);
+				$(form[1]).find('input').val(itemCount);
+				$(form[2]).find('select').val(tempPagination);
+			},
+				500);
+		}
+	}
+
+	// 商品一覧か、複数商品一覧か、単品訴求かで表示したいものを分ける
+	// 商品一覧:商品一覧を追加と削除を非表示
+	// 複数商品一覧: ページ送りを非表示
+	// 単品訴求:ページ送りと商品一覧を追加と削除を非表示
+	function check_feature_page_type() {
+		if ($('#feature-type-2').is(':checked')) {
+			$('.feature-type-group').css('display', 'none');
+			$('.feature-type-multi-group').css('display', '');
+			return;
+		}
+
+		// 複数商品一覧からの変更で商品一覧の欄が複数出ている場合先頭だけにする
+		var pl = (is_pc_active())
+			? $(".sortable.pc-contents .feature-page-element [id^='product']")
+			: $(".sortable.sp-contents .feature-page-element [id^='product']");
+
+		$.each(pl, function (index, p) {
+			var listBtn = $(p).find(".feature-item-list-btn a");
+			if (index !== 0) $(listBtn[1]).click();
+		});
+
+		if ($('#feature-type-1').is(':checked')) {
+			$('.feature-type-multi-group').css('display', 'none');
+			$('.feature-type-group').css('display', '');
+			return;
+		}
+		$('.feature-type-group').css('display', 'none');
+		$('.feature-type-multi-group').css('display', 'none');
+	}
+
+	// コピー新規
+	function open_feature_page_copy(pageId) {
+		loading_animation.start();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("MainContentDetailCopy", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_DESIGN)",
+			data: { 'pageId': pageId }
+		}).done(function (viewHTML) {
+			list_redraw();
+			open_main_content_detail_success(viewHTML);
+			notification.show('ページを複製しました。', 'info', 'fadeout');
+		}).fail(function () {
+		});
+		loading_animation.end();
+	}
+
+	// プレビュー表示
+	function preview() {
+    loading_animation.start();
+    var url = "";
+    var windowSize = "";
+
+    if ($('.tab.is-active').data('tab-content-selector') === "#tab-pc") {
+        url = "@Url.Action("PreviewPc", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_DESIGN)";
+        windowSize = "";
+    } else {
+        url = "@Url.Action("PreviewSp", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_DESIGN)";
+        windowSize = "width=450,height=800";
+    }
+
+    $.ajax({
+		type: "POST",
+		url: url,
+		data: get_main_content_detail_data(),
+		processData: false,
+		contentType: false,
+	}).done(function (response) {
+		if (response.errorMessage) {
+			notification.show(response.errorMessage, 'warning', 'fixed');
+		} else {
+			setTimeout(function () {
+				loading_animation.end();
+				open_window(response.url, '_blank', windowSize);
+			}, 1500);
+		}
+		loading_animation.end();
+	}).fail(function () {
+});
+}
+
+	//詳細エリアフォームの入力データ取得
+	function get_main_content_detail_data() {
+		var result = $('input[id^="feature-page-element-"]');
+		var form = $('#detail_form').get(0);
+		var formData = new FormData(form);
+
+		var arr = $(".feature-page-elements")
+			.sortable("toArray", { attribute: 'data-list-id' });
+		var spArr = $(".sp-contents")
+			.sortable("toArray", { attribute: 'data-list-id' });
+		for (var i = 0; i < arr.length; i++) {
+			// 商品一覧を追加するはカウントしない
+			if (arr[i] != "") formData.append('input.PcContentInput.sort', arr[i]);
+		}
+		for (var i = 0; i < spArr.length; i++) {
+			if (spArr[i] != "") formData.append('input.SpContentInput.sort', spArr[i]);
+		}
+		// PC用の商品一覧を設定
+		for (var i = 0; i < arr.length; i++) {
+			if ((arr[i] != "") && (arr[i].indexOf("product-list-") != -1)) formData.append('input.PcContentInput.ProductList', arr[i]);
+		}
+
+		// PC用のトグル情報を設定
+		for (var i = 0; i < result.length; i++) {
+			formData.append('input.PcContentinput.ProductListDisp', result[i].checked);
+		}
+
+		// SP用の商品一覧を設定
+		for (var i = 0; i < spArr.length; i++) {
+			if ((spArr[i] != "") && (spArr[i].indexOf("product-list-") != -1)) formData.append('input.SpContentInput.ProductList', spArr[i]);
+		}
+
+		// SP用のトグル情報を設定
+		for (var i = 0; i < result.length; i++) {
+			formData.append('input.SpContentinput.ProductListDisp', result[i].checked);
+		}
+		$('.image-upload-content.pc-header-banner').each(function () {
+			$(this).find('.image-upload-content-block').each(function () {
+				var src = $(this).find('.image-upload-content-block-image img').attr('src');
+				formData.append('input.PcContentInput.HeaderBanner.PreviewBinary', src);
+			});
+
+			if ($(this).find('.image-upload-content-block').length == 0) {
+				formData.append('input.PcContentInput.HeaderBanner.IsRemove', true);
+			}
+		});
+		$('.image-upload-content.sp-header-banner').each(function () {
+			$(this).find('.image-upload-content-block').each(function () {
+				var src = $(this).find('.image-upload-content-block-image img').attr('src');
+				formData.append('input.SpContentInput.HeaderBanner.PreviewBinary', src);
+			});
+
+			if ($(this).find('.image-upload-content-block').length == 0) {
+				formData.append('input.SpContentInput.HeaderBanner.IsRemove', true);
+			}
+		});
+
+		set_pc_layout_form_data(formData);
+		set_sp_layout_form_data(formData);
+
+		return formData;
+	}
+
+	// 商品グループを編集をポップアップで表示
+	function open_product_group_edit(groupId) {
+		var link = '@Url.Action("Edit", Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_GROUP,
+		new
+		{
+			actionStatus = ActionStatus.Update,
+			productGroupId = "$",
+			PageLayout = Constants.POPUP_LAYOUT_PATH_DEFAULT
+		})';
+		link = link.replace("%24", groupId);
+		link = link.replace(/\#/g, "%23");
+		open_window(link.replace(/&amp;/g, "&"), '',
+			'width=1350,height=900,top=50,left=200,status=yes,scrollbars=yes');
+	}
+
+	/**
+	* クリップボードコピー コピー内容
+	* param {} trigger
+	* returns {}
+	*/
+	function clipboard_url_copy(trigger) {
+		return get_front_url();
+	}
+
+	/**
+	 * フロントページ表示
+	 */
+	function open_front_page() {
+		window.open(get_front_url());
+	}
+
+	/**
+	 * フロントURL取得
+	 * returns フロントURL
+	 */
+	function get_front_url() {
+		return "@PageDesignUtility.WebTargetPageUrl(Model.PcRealPage.PageDirPath, string.Empty)" +
+			$('#input-file-name-hidden').val() +
+			'@PageDesignUtility.PAGE_FILE_EXTENSION';
+	}
+
+	/**
+	* 各デバイス使用の有無チェックボックス初期配置
+	*/
+	function use_device_check_ini() {
+		@* PCを利用しない場合は使用しないにチェック *@
+		@if (Model.Input.PcContentInput.NoUse)
+		{
+			@Html.Raw("$('#page-layout-template-active-selector-pc').click();")
+		}
+
+		@* SPを利用しない場合は使用しないにチェック *@
+		@if (Model.Input.SpContentInput.NoUse)
+		{
+			@Html.Raw("$('#page-layout-template-active-selector-sp').click();")
+		}
+
+		@* SPのみを利用の場合はデフォルトSP表示 *@
+		@if (Model.Input.PcContentInput.NoUse && (Model.Input.SpContentInput.NoUse == false))
+		{
+			@Html.Raw("$('#tab_sp > a').click();")
+		}
+	}
+
+	/**
+	* 端末タブ レイアウト初期配置
+	*/
+	function tab_layout_ini() {
+		@* レイアウト初期選択 *@
+		$(".layout-edit-page").each(function () {
+			var layoutEditPage = $(this);
+			layoutEditPage.find(".layout-edit-basic-layout-select-item").each(function () {
+				if (layoutEditPage.find('.basic-layout-select-hidden-input-date').val() ===
+					$(this).data('layout-type')) {
+					$(this).addClass("is-selected");
+					layoutEditPage.find(".layout-edit-page-droparea").addClass($(this).data('layout-classname'));
+				}
+			});
+		});
+	}
+
+	function ChangeRootCategory(rootCategoryId) {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("CreateChildCategoryList", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_DESIGN)",
+			data: {
+				'rootCategoryId': rootCategoryId
+			}
+		}).done(function (viewHtml) {
+			$("#product-category-area").html(viewHtml);
+			setTimeout(function () {
+					loading_animation.end();
+					$('.main-content-detail-inner').show();
+				},
+				500);
+			if (rootCategoryId === '') {
+				$('.child-category').css('display', 'none');
+			} else {
+				$('.child-category').show();
+			}
+		});
+	}
+
+	// 商品一覧を設定するまえの商品一覧の要素を削除
+	function delete_default_product_list() {
+		if ($('#feature-type-2').is(':checked')) {
+			var pl = (is_pc_active())
+				? $(".sortable.pc-contents .feature-page-element [id^='product']")
+				: $(".sortable.sp-contents .feature-page-element [id^='product']");
+
+			$.each(pl, function (index, p) {
+				var mainBtn = $(p).find(".feature-item-list-btn .btn-main");
+				if (mainBtn.length !== 0) $(mainBtn[1]).click();
+			});
+		}
+	}
+
+	// 対象の特集ページ編集画面の表示
+	function open_main_content_detail_success(viewHTML) {
+		$("#search_keyword").addClass("placeholder-display-none");
+		$("#main-content-detail").html(viewHTML);
+		setTimeout(function () {
+				loading_animation.end();
+			$('.main-content-detail-inner').show();
+		},
+			500);
+	}
+
+	// PCが選択されているか
+	function is_pc_active() {
+		return $('#tab-pc').css('display') === "block";
+	}
+
+	// Wysiwygエディタで編集中のTextarea
+	var textAreaWysiwygBinded;
+
+	// Wysiwygエディタを開く
+	function OpenWysiwyg(textAreaId) {
+		textAreaWysiwygBinded = document.getElementById(textAreaId);
+		open_window('@Url.Action("Edit", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_WYSIWYG_EDITOR)',
+			'wysiwyg',
+			'width=1000,height=740,top=120,left=420,status=NO, resizable=yes,scrollbars=yes');
+		textAreaWysiwygBinded.setAttribute("disabled", "disabled");
+	}
+
+	// 商品有無チェック
+	function is_setting_products() {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("IsSettingProducts", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_PAGE_DESIGN)",
+			data: $("#detail_form").serializeArray()
+		}).done(function (result) {
+			if (result === 'False') {
+				if (window.confirm("商品が設定されていません。よろしいでしょうか？")) {
+					document.getElementById('btnUpdate').click();
+					return true;
+				} else {
+					return false;
+				}
+			}
+			document.getElementById('btnUpdate').click();
+			return true;
+		});
+	}
+
+	// 閉じる確認
+	function confirm_close() {
+		var displayStyle = $(".main-content-detail-inner").css("display");
+		var updatedForm = $("form").serialize();
+
+		if ((displayStyle !== "none") && (form !== updatedForm)) {
+			var result = confirm('行った変更が保存されない可能性があります。');
+
+			if (result) {
+				$(".main-content-detail-btn-close").attr("is_cancel", "")
+				return;
+			}
+			$(".main-content-detail-btn-close").attr("is_cancel", "cancel");
+		}
+	}
+
+	// ページ複製確認
+	function confirm_page_copy(pageId) {
+		if (confirm('変更内容が破棄され、ページが複製されます。よろしいでしょうか？')) {
+			open_feature_page_copy(pageId);
+		};
+	}
+
+	// リセット確認
+	function confirm_reset(pageId) {
+		if (confirm('変更内容を破棄し、最終更新時の状態に戻します。よろしいでしょうか？')) {
+			open_page(pageId);
+		};
+	}
+
+	// 編集ポップアップ表示確認
+	function is_edit_display_confirm() {
+		var displayStyle = $(".main-content-detail-inner").css("display");
+		var updatedForm = $("form").serialize();
+
+		if ((displayStyle === "none") || (form === updatedForm)) return;
+
+		return true;
+	}
+</script>

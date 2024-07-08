@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 共有情報系SQLステートメントXML(CsShareInfo.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsShareInfo>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsShareInfo.*,
+                w2_ShopOperator.name,
+                A.share_count,
+                B.read_count
+          FROM  w2_CsShareInfo
+                LEFT JOIN w2_ShopOperator ON
+                (
+                  w2_CsShareInfo.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsShareInfo.sender = w2_ShopOperator.operator_id
+                )
+                LEFT JOIN
+                (
+                  SELECT  w2_CsShareInfoRead.info_no,
+                          COUNT(*) AS share_count  -- 全件数
+                    FROM  w2_CsShareInfoRead
+                          INNER JOIN w2_ShopOperator ON
+                          (
+                            w2_CsShareInfoRead.dept_id = w2_ShopOperator.shop_id
+                            AND
+                            w2_CsShareInfoRead.operator_id = w2_ShopOperator.operator_id
+                            AND
+                            w2_ShopOperator.valid_flg = 1
+                          )  -- オペレータ存在チェック
+                  GROUP BY w2_CsShareInfoRead.dept_id, w2_CsShareInfoRead.info_no
+                  HAVING w2_CsShareInfoRead.dept_id = @dept_id
+                ) AS A ON
+                (
+                  w2_CsShareInfo.info_no = A.info_no
+                )
+                LEFT JOIN
+                (
+                  SELECT  w2_CsShareInfoRead.info_no,
+                          COUNT(*) AS read_count  -- 既読件数
+                    FROM  w2_CsShareInfoRead
+                          INNER JOIN w2_ShopOperator ON
+                          (
+                            w2_CsShareInfoRead.dept_id = w2_ShopOperator.shop_id
+                            AND
+                            w2_CsShareInfoRead.operator_id = w2_ShopOperator.operator_id
+                            AND
+                            w2_ShopOperator.valid_flg = 1
+                          )  -- オペレータ存在チェック
+                   WHERE  w2_CsShareInfoRead.read_flg = '1'
+                  GROUP BY w2_CsShareInfoRead.dept_id, w2_CsShareInfoRead.info_no
+                  HAVING w2_CsShareInfoRead.dept_id = @dept_id
+                ) AS B ON
+                (
+                  w2_CsShareInfo.info_no = B.info_no
+                )
+         WHERE  w2_CsShareInfo.dept_id = @dept_id
+           AND  w2_CsShareInfo.info_no = @info_no
+      ]]>
+    </Statement>  
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="info_no" Type="bigint" />
+    </Parameter>
+  </Get>
+
+  <!-- 全件検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        -- 件数取得
+        DECLARE @row_count int;
+        SELECT  @row_count = ISNULL(COUNT(1), 0)
+          FROM  w2_CsShareInfo
+         WHERE  [[ Search_Where ]]
+
+        SELECT  w2_CsShareInfo.*,
+                w2_ShopOperator.name,
+                A.share_count,
+                B.read_count,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_CsShareInfo.dept_id,
+                          w2_CsShareInfo.info_no,
+                          ROW_NUMBER() OVER (ORDER BY [[ Search_OrderBy ]]) AS row_num
+                    FROM  w2_CsShareInfo
+                  WHERE  [[ Search_Where ]]
+                ) AS RowIndex
+                LEFT JOIN w2_CsShareInfo ON
+                (
+                  w2_CsShareInfo.dept_id = RowIndex.dept_id
+                  AND
+                  w2_CsShareInfo.info_no = RowIndex.info_no
+                )
+                LEFT JOIN w2_ShopOperator ON
+                (
+                  w2_CsShareInfo.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  w2_CsShareInfo.sender = w2_ShopOperator.operator_id
+                )
+                LEFT JOIN
+                (
+                  SELECT  w2_CsShareInfoRead.info_no,
+                          COUNT(*) AS share_count  -- 全件数
+                    FROM  w2_CsShareInfoRead
+                          INNER JOIN w2_ShopOperator ON
+                          (
+                            w2_CsShareInfoRead.dept_id = w2_ShopOperator.shop_id
+                            AND
+                            w2_CsShareInfoRead.operator_id = w2_ShopOperator.operator_id
+                            AND
+                            w2_ShopOperator.valid_flg = 1
+                          )  -- オペレータ存在チェック
+                  GROUP BY w2_CsShareInfoRead.dept_id, w2_CsShareInfoRead.info_no
+                  HAVING w2_CsShareInfoRead.dept_id = @dept_id
+                ) AS A ON
+                (
+                  w2_CsShareInfo.info_no = A.info_no
+                )
+                LEFT JOIN
+                (
+                  SELECT  w2_CsShareInfoRead.info_no,
+                          COUNT(*) AS read_count  -- 既読件数
+                    FROM  w2_CsShareInfoRead
+                          INNER JOIN w2_ShopOperator ON
+                          (
+                             w2_CsShareInfoRead.dept_id = w2_ShopOperator.shop_id
+                            AND
+                            w2_CsShareInfoRead.operator_id = w2_ShopOperator.operator_id
+                            AND
+                            w2_ShopOperator.valid_flg = 1
+                          )  -- オペレータ存在チェック
+                   WHERE  w2_CsShareInfoRead.read_flg = '1'
+                  GROUP BY w2_CsShareInfoRead.dept_id, w2_CsShareInfoRead.info_no
+                  HAVING w2_CsShareInfoRead.dept_id = @dept_id
+                ) AS B ON
+                (
+                  w2_CsShareInfo.info_no = B.info_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="info_no" Type="bigint" />
+      <Input Name="info_text" Type="nvarchar" Size="max" />
+      <Input Name="info_kbn" Type="nvarchar" Size="10" />
+      <Input Name="info_importance" Type="int" />
+      <Input Name="sender" Type="nvarchar" Size="20" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CsShareInfo
+                (
+                dept_id,
+                info_no,
+                sender,
+                info_text_kbn,
+                info_text,
+                info_kbn,
+                info_importance,	
+                date_created, 
+                date_changed, 
+                last_changed
+                )
+         VALUES (
+                @dept_id, 
+                @info_no, 
+                @sender,
+                @info_text_kbn,
+                @info_text,
+                @info_kbn,
+                @info_importance,	
+                getdate(), 
+                getdate(), 
+                @last_changed 
+                )					
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="info_no" Type="bigint" />
+      <Input Name="sender" Type="nvarchar" Size="30" />
+      <Input Name="info_text_kbn" Type="nvarchar" Size="1" />
+      <Input Name="info_text" Type="ntext" />
+      <Input Name="info_kbn" Type="nvarchar" Size="10" />
+      <Input Name="info_importance" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsShareInfo 
+           SET  w2_CsShareInfo.info_text_kbn = @info_text_kbn,
+                w2_CsShareInfo.info_text = @info_text, 
+                w2_CsShareInfo.info_kbn = @info_kbn, 
+                w2_CsShareInfo.info_importance = @info_importance, 
+                w2_CsShareInfo.date_changed = getdate(), 
+                w2_CsShareInfo.last_changed = @last_changed 
+         WHERE  w2_CsShareInfo.dept_id = @dept_id 
+           AND  w2_CsShareInfo.info_no = @info_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="info_no" Type="bigint" />
+      <Input Name="info_text_kbn" Type="nvarchar" Size="1" />
+      <Input Name="info_text" Type="ntext" />
+      <Input Name="info_kbn" Type="nvarchar" Size="10" />
+      <Input Name="info_importance" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CsShareInfo
+         WHERE  w2_CsShareInfo.dept_id = @dept_id 
+           AND  w2_CsShareInfo.info_no = @info_no
+       ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="info_no" Type="bigint" />
+    </Parameter>
+  </Delete>
+
+</CsShareInfo>

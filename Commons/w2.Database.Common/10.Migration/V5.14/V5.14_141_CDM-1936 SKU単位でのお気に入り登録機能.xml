@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_Favorite' AND COLUMN_NAME = 'variation_id')
+          BEGIN
+            ALTER TABLE w2_Favorite ADD variation_id NVARCHAR(60) NOT NULL DEFAULT '';
+
+            ALTER TABLE w2_Favorite DROP PK_w2_Favorite
+            ALTER TABLE w2_Favorite ADD CONSTRAINT PK_w2_Favorite PRIMARY KEY(user_id, shop_id, product_id, variation_id);
+
+            create index IX_w2_Favorite_2 on w2_Favorite (shop_id, product_id, variation_id)
+            drop index IX_w2_Favorite_1 on w2_Favorite
+            exec sp_rename 'w2_Favorite.IX_w2_Favorite_2', 'IX_w2_Favorite_1'
+          END
+        GO
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : お気に入り系SQLサブステートメントXML(Favorite_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<Favorite_Sub>
+
+  <!-- お気に入り情報一覧取得用WHERE文 -->
+  <FAVORITE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_Favorite.user_id = @user_id
+           AND  w2_Favorite.shop_id = w2_Product.shop_id
+           AND  w2_Favorite.product_id = w2_Product.product_id
+           AND  w2_Product.display_from <= @current_date  -- 表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+           AND  w2_Product.mobile_disp_flg IN ('0','1') -- PC&モバイル OR PCのみ
+           AND  w2_Product.valid_flg = '1'
+           AND  w2_Product.display_kbn IN ('0','1') -- 商品一覧○、商品詳細○ OR 商品一覧×、商品詳細○
+           AND  (
+                  (
+                    w2_Favorite.variation_id != ''
+                    AND 
+                    w2_Favorite.variation_id = w2_ProductVariation.variation_id
+                  )
+                  OR
+                  (
+                    w2_Favorite.variation_id = ''
+                    AND
+                    w2_Favorite.product_id = w2_Product.product_id
+                  )
+                )
+      ]]>
+    </Statement>
+  </FAVORITE_SEARCH_WHERE>
+
+  <!-- お気に入り情報一覧取得用ORDER_BY -->
+  <FAVORITE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_Favorite.user_id ASC, w2_Favorite.shop_id ASC, w2_Favorite.product_id ASC, w2_Favorite.variation_id ASC, w2_Favorite.date_created ASC
+      ]]>
+    </Statement>
+  </FAVORITE_SEARCH_ORDER_BY>
+
+  <!-- 商品セール価格結合 -->
+  <JOIN_PRODUCT_SALE_PRICE>
+    <Statement>
+      <![CDATA[
+                LEFT JOIN
+                (
+                  SELECT  w2_ProductSale.shop_id,
+                          w2_ProductSalePriceTmp.product_id,
+                          w2_ProductSalePriceTmp.sale_price
+                    FROM  w2_ProductSale
+                          LEFT JOIN w2_ProductSalePriceTmp ON
+                          (
+                            w2_ProductSale.shop_id = w2_ProductSalePriceTmp.shop_id
+                            AND
+                            w2_ProductSale.productsale_id = w2_ProductSalePriceTmp.productsale_id
+                          )
+                   WHERE  w2_ProductSale.productsale_kbn = 'TS'
+                     AND  w2_ProductSale.date_bgn <= @current_date
+                     AND  w2_ProductSale.date_end >= @current_date
+                     AND  w2_ProductSale.valid_flg = '1'
+                ) AS productSale ON
+                (
+                   w2_Product.shop_id = productSale.shop_id
+                   AND
+                   w2_Product.product_id = productSale.product_id
+                )
+      ]]>
+    </Statement>
+  </JOIN_PRODUCT_SALE_PRICE>
+
+</Favorite_Sub>

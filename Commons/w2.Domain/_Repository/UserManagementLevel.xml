@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザー管理レベルマスタ系SQLステートメントXML (UserManagementLevel.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2020 All Rights Reserved.
+=========================================================================================================
+-->
+<UserManagementLevel>
+
+  <!-- 全取得 -->
+  <GetAllList>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserManagementLevel
+        ORDER BY w2_UserManagementLevel.display_order, w2_UserManagementLevel.user_management_level_id
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetAllList>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserManagementLevel
+         WHERE  user_management_level_id = @user_management_level_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_management_level_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+  
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_UserManagementLevel
+                (
+                  user_management_level_id
+                  ,user_management_level_name
+                  ,display_order
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @user_management_level_id
+                  ,@user_management_level_name
+                  ,@display_order
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_management_level_id" Type="nvarchar" Size="30" />
+      <Input Name="user_management_level_name" Type="nvarchar" Size="100" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+  
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserManagementLevel
+           SET  user_management_level_name = @user_management_level_name
+                ,display_order = @display_order
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  user_management_level_id = @user_management_level_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_management_level_id" Type="nvarchar" Size="30" />
+      <Input Name="user_management_level_name" Type="nvarchar" Size="100" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserManagementLevel
+         WHERE  user_management_level_id = @user_management_level_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_management_level_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- Get user management level names by user management level ids -->
+  <GetUserManagementLevelNamesByUserManagementLevelIds>
+    <Statement>
+      <![CDATA[
+        SELECT  user_management_level_name
+          FROM  w2_UserManagementLevel
+         WHERE  user_management_level_name <> ''
+           AND  user_management_level_id IN (@@ user_management_level_ids @@)
+      ]]>
+    </Statement>
+  </GetUserManagementLevelNamesByUserManagementLevelIds>
+
+</UserManagementLevel>

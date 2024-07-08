@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        -- カラム追加
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_OrderItem' AND COLUMN_NAME = 'subscription_box_course_id')
+          BEGIN
+            ALTER TABLE [w2_OrderItem] ADD [subscription_box_course_id] [nvarchar] (30) NOT NULL DEFAULT (N'');
+          END
+        GO
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_OrderItem' AND COLUMN_NAME = 'subscription_box_fixed_amount')
+          BEGIN
+            ALTER TABLE [w2_OrderItem] ADD [subscription_box_fixed_amount] [decimal] (18, 3)
+          END
+        GO
+
+        -- 頒布会コースID、頒布会定額価格の補正用クエリ
+        UPDATE  w2_OrderItem
+           SET  w2_OrderItem.subscription_box_course_id = w2_Order.subscription_box_course_id,
+                w2_OrderItem.subscription_box_fixed_amount = w2_Order.subscription_box_fixed_amount
+          FROM  w2_OrderItem
+                INNER JOIN w2_Order ON
+                (
+                  w2_OrderItem.order_id = w2_Order.order_id
+                  AND
+                  w2_Order.subscription_box_course_id <> ''
+                )
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 監視ログ系SQLサブステートメントXML(MallWatchingLog_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MallWatchingLog_Sub>
+
+  <!-- 監視ログ情報一覧取得用WHERE文 -->
+  <MALLWATCHINGLOG_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (
+                    @mall_id_like_escaped = '' 
+                    OR 
+                    w2_MallWatchingLog.mall_id LIKE @mall_id_like_escaped + '%' ESCAPE '#'
+                  )      -- モールID
+                  AND 
+                  (
+                    @batch_id = '' 
+                    OR 
+                    @@where_batch_id@@
+                  )    -- バッチID
+                  AND
+                  (
+                    @log_kbn = '' 
+                    OR 
+                    @@where_log_kbn@@
+                  )    -- ログ区分
+                  AND
+                  (
+                    @watching_date_from IS NULL 
+                    OR 
+                    CONVERT(DATETIME, (w2_MallWatchingLog.watching_date + ' ' + w2_MallWatchingLog.watching_time)) >= @watching_date_from
+                  )
+                  AND 
+                  (
+                    @watching_date_to IS NULL 
+                    OR 
+                    CONVERT(DATETIME, (w2_MallWatchingLog.watching_date + ' ' + w2_MallWatchingLog.watching_time)) < @watching_date_to
+                  )
+                  AND
+                  (
+                    @log_message_like_escaped = '' 
+                    OR 
+                    w2_MallWatchingLog.log_message LIKE '%' + @log_message_like_escaped + '%' ESCAPE '#'
+                  )      -- ログメッセージ
+                )
+      ]]>
+    </Statement>
+  </MALLWATCHINGLOG_SEARCH_WHERE>
+
+  <!-- 監視ログ情報一覧取得用ORDER_BY -->
+  <MALLWATCHINGLOG_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          w2_MallWatchingLog.log_no DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_MallWatchingLog.log_no ASC
+      ]]>
+    </Statement>
+  </MALLWATCHINGLOG_SEARCH_ORDER_BY>
+
+</MallWatchingLog_Sub>

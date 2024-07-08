@@ -1,0 +1,217 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 決済種別マスタ系SQLステートメントXML (Payment.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<Payment>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_Payment
+         WHERE  shop_id = @shop_id
+           AND  payment_id = @payment_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="payment_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Get>
+
+  <!-- 取得（全て） -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_Payment
+         WHERE  shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAll>
+
+  <!-- 決済種別一覧を取得する -->
+  <GetPaymentList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_Payment.payment_id), 0)
+          FROM  w2_Payment
+                [[ PAYMENT_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_Payment.shop_id,
+                w2_Payment.payment_id,
+                w2_Payment.payment_name,
+                w2_Payment.usable_price_min,
+                w2_Payment.usable_price_max,
+                w2_Payment.payment_price_kbn,
+                w2_PaymentPrice.payment_price,  -- ※未使用のw2_Payment.payment_priceを取得しない
+                w2_Payment.mobile_disp_flg,
+                w2_Payment.display_order,
+                w2_Payment.valid_flg,
+                w2_Payment.user_management_level_not_use,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_Payment.shop_id,
+                          w2_Payment.payment_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PAYMENT_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Payment
+                          [[ PAYMENT_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Payment ON
+                (
+                  RowIndex.shop_id = w2_Payment.shop_id
+                  AND
+                  RowIndex.payment_id = w2_Payment.payment_id
+                )
+                LEFT JOIN w2_PaymentPrice ON
+                (
+                  w2_Payment.shop_id = w2_PaymentPrice.shop_id
+                  AND
+                  w2_Payment.payment_id = w2_PaymentPrice.payment_id
+                  AND
+                  w2_PaymentPrice.payment_price_no = 1
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetPaymentList>
+
+  <!-- 決済種別一覧を取得する(有効判定あり) -->
+  <GetPaymentListEnabled>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_Payment.payment_id), 0)
+          FROM  w2_Payment
+                [[ PAYMENT_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_Payment.shop_id,
+                w2_Payment.payment_id,
+                w2_Payment.payment_name,
+                w2_Payment.usable_price_min,
+                w2_Payment.usable_price_max,
+                w2_Payment.payment_price_kbn,
+                w2_PaymentPrice.payment_price,  -- ※未使用のw2_Payment.payment_priceを取得しない
+                w2_Payment.mobile_disp_flg,
+                w2_Payment.display_order,
+                w2_Payment.valid_flg,
+                w2_Payment.user_management_level_not_use,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_Payment.shop_id,
+                          w2_Payment.payment_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PAYMENT_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Payment
+                          [[ PAYMENT_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Payment ON
+                (
+                  RowIndex.shop_id = w2_Payment.shop_id
+                  AND
+                  RowIndex.payment_id = w2_Payment.payment_id
+                )
+                INNER JOIN w2_PaymentPrice ON
+                (
+                  w2_Payment.shop_id = w2_PaymentPrice.shop_id
+                  AND
+                  w2_Payment.payment_id = w2_PaymentPrice.payment_id
+                  AND
+                  w2_PaymentPrice.payment_price_no = 1
+                )
+        ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+  </GetPaymentListEnabled>
+
+  <!-- 価格取得（関連する全て） -->
+  <GetRelatedPrice>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PaymentPrice
+         WHERE  shop_id = @shop_id
+           AND  payment_id = @payment_id
+      ORDER BY  shop_id ASC, payment_id ASC, payment_group_id ASC, payment_price_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="payment_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetRelatedPrice>
+
+  <!-- 価格取得（全て） -->
+  <GetAllPrice>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PaymentPrice
+         WHERE  shop_id = @shop_id
+      ORDER BY  shop_id ASC, payment_id ASC, payment_group_id ASC, payment_price_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAllPrice>
+
+  <!-- Get payment names by payment ids -->
+  <GetPaymentNamesByPaymentIds>
+    <Statement>
+      <![CDATA[
+        SELECT  payment_name
+          FROM  w2_Payment
+         WHERE  shop_id = @shop_id
+           AND  payment_name <> ''
+           AND  payment_id IN (@@ payment_ids @@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetPaymentNamesByPaymentIds>
+
+  <!-- 決済種別一覧を取得する(有効なもの) -->
+  <GetValidPayments>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Payment.*
+          FROM  w2_Payment
+         WHERE  shop_id = @shop_id
+           AND  valid_flg = '1'
+        ORDER BY w2_Payment.display_order ASC, w2_Payment.payment_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetValidPayments>
+
+</Payment>

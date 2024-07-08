@@ -1,0 +1,384 @@
+﻿@*
+=========================================================================================================
+  Module      : 公開範囲設定(パーシャルビュー)(_ReleaseRangeSetting.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using w2.App.Common
+@model w2.Cms.Manager.Input.ReleaseRangeSettingInput
+@{
+	var id = Model.Id;
+	var parentName = Model.BaseName + ".";
+}
+<div class="form-element-group form-element-group-horizontal-grid">
+	<div class="form-element-group-title">
+		<label>公開範囲設定</label>
+	</div>
+	<div class="form-element-group-content">
+		@if (Model.UseDate)
+		{
+			<div class="access-authority-setting-period-info">
+				<div class="access-authority-setting-period-info-title">期間</div>
+				<div class="access-authority-setting-period-info-value-wrap" id="access-authority-setting-period-info-value-wrap-@id">
+					<a href="javascript:void(0);" onclick="modal.open('#modal-access-authority-setting-period-@id', 'modal-size-m', 'access_authority_setting.period.ini()');">
+						<span class="access-authority-setting-period-info-value">設定なし（すべての期間で公開する）</span>
+					</a>
+					@Html.HiddenFor(model => model.ConditionPublishDateFromDate, new
+					{
+						Class = "access-authority-setting-period-info-hidden-input-start-date",
+						Name = parentName + "ConditionPublishDateFromDate"
+					})
+					@Html.HiddenFor(model => model.ConditionPublishDateFromTime, new
+					{
+						Class = "access-authority-setting-period-info-hidden-input-start-time",
+						Name = parentName + "ConditionPublishDateFromTime"
+					})
+					@Html.HiddenFor(model => model.ConditionPublishDateToDate, new
+					{
+						Class = "access-authority-setting-period-info-hidden-input-end-date",
+						Name = parentName + "ConditionPublishDateToDate"
+					})
+					@Html.HiddenFor(model => model.ConditionPublishDateToTime, new
+					{
+						Class = "access-authority-setting-period-info-hidden-input-end-time",
+						Name = parentName + "ConditionPublishDateToTime"
+					})
+
+				</div>
+			</div>
+			@Html.HiddenFor(model => Model.UseDate, new
+			{
+				Name = parentName + "UseDate"
+			})
+		}
+
+		@if (Constants.MEMBER_RANK_OPTION_ENABLED && Model.UseMemberRank)
+		{
+			<div class="access-authority-setting-member-info">
+				<div class="access-authority-setting-member-info-title">会員</div>
+				<div class="access-authority-setting-member-info-value-wrap" id="access-authority-setting-member-info-value-wrap-@id">
+					<a href="javascript:void(0);" onclick="modal.open('#modal-access-authority-setting-member-@id', 'modal-size-s');">
+						<span class="access-authority-setting-member-info-value">設定なし（すべてのユーザーに公開する）</span>
+					</a>
+					@Html.HiddenFor(model => model.ConditionMemberOnlyType, new
+					{
+						Class = "access-authority-setting-member-info-hidden-input-type",
+						Name = parentName + "ConditionMemberOnlyType"
+					})
+					@Html.HiddenFor(model => model.ConditionMemberRankId, new
+					{
+						Class = "access-authority-setting-member-info-hidden-input-rank",
+						Name = parentName + "ConditionMemberRankId"
+					})
+				</div>
+			</div>
+			@Html.HiddenFor(model => Model.UseMemberRank, new
+			{
+				Name = parentName + "UseMemberRank"
+			})
+		}
+
+		@if ((Model.UseTargetList) && (Constants.MARKETINGPLANNER_TARGETLIST_OPTION_ENABLE))
+		{
+			<div class="access-authority-setting-targetlist-info">
+				<div class="access-authority-setting-targetlist-info-title">ターゲットリスト</div>
+				<div class="access-authority-setting-targetlist-info-value-wrap" id="access-authority-setting-targetlist-info-value-wrap-@id">
+					<a href="javascript:void(0);" onclick="modal.open('#modal-access-authority-setting-targetlist-@id', 'modal-size-m');">
+						<span class="access-authority-setting-targetlist-info-value">設定なし</span>
+					</a>
+					@Html.HiddenFor(model => model.ConditionTargetListIds, new
+					{
+						Class = "access-authority-setting-targetlist-info-hidden-input-ids",
+						Name = parentName + "ConditionTargetListIds"
+					})
+					@Html.HiddenFor(model => model.ConditionTargetListType, new
+					{
+						Class = "access-authority-setting-targetlist-info-hidden-input-type",
+						Name = parentName + "ConditionTargetListType"
+					})
+				</div>
+			</div>
+			@Html.HiddenFor(model => Model.UseTargetList, new
+			{
+				Name = parentName + "UseTargetList"
+			})
+		}
+
+	</div>
+</div>
+
+<!-- モーダル：公開期間設定 -->
+@if (Model.UseDate)
+{
+	<div class="modal-content-hide">
+		<div id="modal-access-authority-setting-period-@id">
+			<p class="modal-inner-ttl">公開する期間を設定する</p>
+			<div class="access-authority-setting-period">
+				<div class="access-authority-setting-period-start">
+					<div class="access-authority-setting-period-start-title">開始</div>
+					<div class="access-authority-setting-period-start-input">
+						<div class="access-authority-setting-period-start-input-date">
+							@Html.Label("access-authority-setting-period-start-input-date" + @id, "日付")
+							@Html.TextBoxFor(model => model.ConditionPublishDateFromDate, new
+							{
+								Id = "access-authority-setting-period-start-input-date" + @id,
+								Class = "input-datepicker",
+							})
+						</div>
+						<div class="access-authority-setting-period-start-input-time">
+							@Html.Label("access-authority-setting-period-start-input-time" + @id, "時間")
+							@Html.TextBoxFor(model => model.ConditionPublishDateFromTime, new
+							{
+								Id = "access-authority-setting-period-start-input-time" + @id,
+								Class = "input-timepicker",
+							})
+						</div>
+						<a href="javascript:void(0)" class="access-authority-setting-period-start-clear btn btn-txt btn-size-s">クリア</a>
+					</div>
+				</div>
+				<div class="access-authority-setting-period-wave">～</div>
+				<div class="access-authority-setting-period-end">
+					<div class="access-authority-setting-period-end-title">終了</div>
+					<div class="access-authority-setting-period-end-input">
+						<div class="access-authority-setting-period-end-input-date">
+							@Html.Label("access-authority-setting-period-end-input-date" + @id, "日付")
+							@Html.TextBoxFor(model => model.ConditionPublishDateToDate, new
+							{
+								Id = "access-authority-setting-period-end-input-date" + @id,
+								Class = "input-datepicker",
+							})
+						</div>
+						<div class="access-authority-setting-period-end-input-time">
+							@Html.Label("access-authority-setting-period-end-input-time" + @id, "時間")
+							@Html.TextBoxFor(model => model.ConditionPublishDateToTime, new
+							{
+								Id = "access-authority-setting-period-end-input-time" + @id,
+								Class = "input-timepicker",
+							})
+						</div>
+						<a href="javascript:void(0)" class="access-authority-setting-period-end-clear btn btn-txt btn-size-s">クリア</a>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer-action">
+				<input type="button" class="btn btn-main btn-size-l access-authority-setting-period-submit" value="設定する">
+			</div>
+		</div>
+	</div>
+}
+<!-- /モーダル：公開期間設定 -->
+
+<!-- モーダル：公開会員設定 -->
+@if (Constants.MEMBER_RANK_OPTION_ENABLED && Model.UseMemberRank)
+{
+	<div class="modal-content-hide">
+		<div id="modal-access-authority-setting-member-@id">
+			<p class="modal-inner-ttl">公開する会員を設定する</p>
+			<div class="modal-inner-access-authority-setting-member">
+				<div class="form-element-group">
+					<div class="form-element-group-content">
+						<div class="form-element-group-content-item">
+							@Html.RadioButtonFor(model => model.ConditionMemberOnlyType, Constants.FLG_PAGEDESIGN_MEMBER_ONLY_TYPE_ALL, new
+							{
+								Id = "access-authority-setting-member-all" + @id,
+								Name = "access-authority-setting-member" + @id
+							})
+							@Html.Label("access-authority-setting-member-all" + @id, "すべてのユーザーに公開する")
+						</div>
+						<div class="form-element-group-content-item">
+							@Html.RadioButtonFor(model => model.ConditionMemberOnlyType, Constants.FLG_PAGEDESIGN_MEMBER_ONLY_TYPE_MEMBER_ONLY, new
+							{
+								Id = "access-authority-setting-member-all-member" + @id,
+								Name = "access-authority-setting-member" + @id
+							})
+							@Html.Label("access-authority-setting-member-all-member" + @id, "すべての会員に公開する（ログイン時のみ）")
+						</div>
+						<div class="form-element-group-content-item">
+							@Html.RadioButtonFor(model => model.ConditionMemberOnlyType, Constants.FLG_PAGEDESIGN_MEMBER_ONLY_TYPE_PARTIAL_MEMBER_ONLY, new
+							{
+								Id = "access-authority-setting-member-rank" + @id,
+								Name = "access-authority-setting-member" + @id,
+								Class = "js-toggle-form-radio",
+								data_toggle_content_selector = ".access-authority-setting-member-rank-selector"
+							})
+							@Html.Label("access-authority-setting-member-rank" + @id, "特定の会員ランクに公開する")
+							<div class="access-authority-setting-member-rank-selector"
+								@if (Model.ConditionMemberOnlyType != Constants.FLG_PAGEDESIGN_MEMBER_ONLY_TYPE_PARTIAL_MEMBER_ONLY)
+								{
+									@Html.Raw("style=\"display: none;\"")
+									;
+								}>
+								@Html.DropDownListFor(model => model.ConditionMemberRankId, Model.MemberRankItems, new
+								{
+									Name = "access-authority-setting-member-rank"
+								})以上に公開する
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer-action">
+				<input type="button" class="btn btn-main btn-size-l access-authority-setting-member-submit" value="設定する">
+			</div>
+		</div>
+	</div>
+}
+<!-- /モーダル：公開会員設定 -->
+
+<!-- モーダル：公開ターゲットリスト設定 -->
+@if (Model.UseTargetList)
+{
+	<div class="modal-content-hide">
+		<div id="modal-access-authority-setting-targetlist-@id">
+			<p class="modal-inner-ttl">公開するターゲットリストを設定する</p>
+			<div class="access-authority-setting-targetlist">
+				<div class="access-authority-setting-targetlist-selected-list-wrapper custom-scroll-area">
+					<div class="access-authority-setting-targetlist-selected-list is-selected">
+						<p class="access-authority-setting-targetlist-selected-list-null-message">ターゲットリストを選択してください</p>
+
+						@foreach (var targetListSelectModel in Model.TargetListSelect)
+						{
+							<div class="access-authority-setting-targetlist-selected-list-item" id="access-authority-setting-targetlist-selected-list-item-@targetListSelectModel.TargetId" data-targetlist-id="@targetListSelectModel.TargetId">
+								<p class="access-authority-setting-targetlist-selected-list-item-id">@targetListSelectModel.TargetId</p>
+								<p class="access-authority-setting-targetlist-selected-list-item-title line-clamp">@targetListSelectModel.TargetName</p>
+								<div class="access-authority-setting-targetlist-selected-list-item-delete btn-close" onclick="var temp = $(this).closest('.modal-inner');access_authority_setting.targetlist.delete('@targetListSelectModel.TargetId');target_list_select(temp);">
+									<span class="icon icon-close"></span>
+								</div>
+							</div>
+						}
+
+					</div>
+				</div>
+				<div style="padding-bottom: 10px">
+					@Html.RadioButtonFor(model => model.ConditionTargetListType, Constants.FLG_PAGEDESIGN_CONDITION_TARGET_LIST_TYPE_OR, new
+					{
+						Name = "access-authority-setting-targetlist-type" + @id,
+						Id = "access-authority-setting-targetlist-type-or" + @id,
+						Class = "btn-radio"
+					})
+					@Html.Label("access-authority-setting-targetlist-type-or" + @id, "どれかを満たす(OR)", new
+					{
+						Class = "btn btn-size-m"
+					})
+
+					@Html.RadioButtonFor(model => model.ConditionTargetListType, Constants.FLG_PAGEDESIGN_CONDITION_TARGET_LIST_TYPE_AND, new
+					{
+						Name = "access-authority-setting-targetlist-type" + @id,
+						Id = "access-authority-setting-targetlist-type-and" + @id,
+						Class = "btn-radio"
+					})
+					@Html.Label("access-authority-setting-targetlist-type-and" + @id, "全てを満たす(AND)", new
+					{
+						Class = "btn btn-size-m"
+					})
+				</div>
+				<div class="access-authority-setting-targetlist-list list">
+					<div class="access-authority-setting-targetlist-list-head list-head">
+						<div class="list-head-row">
+							<div class="list-head-col ta-left">
+								ターゲットID
+							</div>
+							<div class="list-head-col ta-left">
+								ターゲット名
+							</div>
+							<div class="list-head-col w30">
+								<div class="keyword-search">
+									@Html.TextBox("targetListKeyword", "", new
+									{
+										Class = "keyword-search-input",
+										Placeholder = "ターゲットID/名"
+									})
+									<a href="javascript:target_list_redraw($('#access-authority-setting-targetlist-info-value-wrap-@id'), $('#modal-access-authority-setting-targetlist-@id'))" class="keyword-search-submit">
+										<span class="icon-search"></span>
+									</a>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="target_list_area"></div>
+				</div>
+			</div>
+			<div class="modal-footer-action">
+				<input type="button" class="btn btn-main btn-size-l access-authority-setting-targetlist-submit" value="設定する">
+			</div>
+		</div>
+	</div>
+}
+<!-- /モーダル：公開ターゲットリスト設定 -->
+
+<script type="text/javascript">
+	$(function() {
+		input_datepicker.ini();
+		toggle.ini();
+		access_authority_setting.ini();
+		// 初期設定
+		access_authority_setting.period.set(
+			$("#access-authority-setting-period-info-value-wrap-" + "@id"),
+			$("#modal-access-authority-setting-period-" + "@id"));
+		access_authority_setting.member.set(
+			$("#access-authority-setting-member-info-value-wrap-" + "@id"),
+			$("#modal-access-authority-setting-member-" + "@id"));
+		access_authority_setting.targetlist.set(
+			$("#access-authority-setting-targetlist-info-value-wrap-" + "@id"),
+			$("#modal-access-authority-setting-targetlist-" + "@id"));
+		@if (Model.UseTargetList)
+		{
+			@Html.Raw("target_list_redraw($(\"#access-authority-setting-targetlist-info-value-wrap-" + @id + "\")," + " $(\"#modal-access-authority-setting-targetlist-" + @id + "\"));")
+			@Html.Raw("target_list_keyword_ini($(\"#access-authority-setting-targetlist-info-value-wrap-" + @id + "\"), " + "$(\"#modal-access-authority-setting-targetlist-" + @id + "\"));")
+		}
+	});
+
+	/**
+	* キーワードフォーム初期化
+	*/
+	function target_list_keyword_ini(tgt, tgt_modal) {
+		tgt_modal.find('.keyword-search-input').off("keydown").on("keydown",
+			function(e) {
+				if (e.keyCode === 13) {
+					target_list_redraw(tgt, tgt_modal);
+				}
+			});
+	}
+
+	/**
+	* ターゲットリスト再描画
+	*/
+	function target_list_redraw(tgt, tgt_modal) {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("TargetList", Constants.CONTROLLER_W2CMS_MANAGER_RELEASE_RANG_SETTING)",
+			data: { "keyword": tgt_modal.find('.keyword-search-input').val() }
+		}).done(function(viewHTML) {
+			tgt_modal.find('.target_list_area').html(viewHTML);
+			target_list_select(tgt_modal);
+			new SimpleBar(tgt_modal.find('.access-authority-setting-targetlist-list-content').get(0));
+		}).fail(function() {
+		});
+	}
+
+	/**
+	 * ターゲットリスト 選択状況初期化
+	 */
+	function target_list_select(tgt_modal) {
+		var selectTargetIds = [];
+		tgt_modal.find('.access-authority-setting-targetlist-selected-list-item').each(function() {
+			selectTargetIds.push($(this).data('targetlist-id'));
+		});
+
+		tgt_modal.find('.target-list-select-btn').each(function() {
+			if (selectTargetIds.indexOf($(this).data('target-list-id')) >= 0) {
+				$(this).css('pointer-events', 'none');
+				$(this).addClass('btn-sub');
+				$(this).removeClass('btn-main');
+				$(this).text('選択済み');
+			} else {
+				$(this).css('pointer-events', 'auto');
+				$(this).removeClass('btn-sub');
+				$(this).addClass('btn-main');
+				$(this).text('選択する');
+			}
+		});
+	};
+</script>

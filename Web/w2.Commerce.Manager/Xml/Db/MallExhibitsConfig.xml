@@ -1,0 +1,703 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モール出品設定系SQLステートメントXML(MallExhibitsConfig.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MallExhibitsConfig>
+
+  <!-- モール出品設定情報取得 -->
+  <GetMallExhibitsConfigList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_Product.product_id), 0)
+          FROM  w2_Product
+                INNER JOIN w2_MallExhibitsConfig ON   -- 紐づけて表示させる場合は、LEFT JOINに変更する
+                (
+                  w2_Product.shop_id = w2_MallExhibitsConfig.shop_id
+                  AND
+                  w2_Product.product_id = w2_MallExhibitsConfig.product_id
+                )
+                [[ MALLEXHIBITSCONFIG_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_Product.shop_id,
+                w2_Product.product_id,
+                w2_Product.name,
+                w2_Product.name_kana,
+                w2_MallExhibitsConfig.exhibits_flg1,
+                w2_MallExhibitsConfig.exhibits_flg2,
+                w2_MallExhibitsConfig.exhibits_flg3,
+                w2_MallExhibitsConfig.exhibits_flg4,
+                w2_MallExhibitsConfig.exhibits_flg5,
+                w2_MallExhibitsConfig.exhibits_flg6,
+                w2_MallExhibitsConfig.exhibits_flg7,
+                w2_MallExhibitsConfig.exhibits_flg8,
+                w2_MallExhibitsConfig.exhibits_flg9,
+                w2_MallExhibitsConfig.exhibits_flg10,
+                w2_MallExhibitsConfig.exhibits_flg11,
+                w2_MallExhibitsConfig.exhibits_flg12,
+                w2_MallExhibitsConfig.exhibits_flg13,
+                w2_MallExhibitsConfig.exhibits_flg14,
+                w2_MallExhibitsConfig.exhibits_flg15,
+                w2_MallExhibitsConfig.exhibits_flg16,
+                w2_MallExhibitsConfig.exhibits_flg17,
+                w2_MallExhibitsConfig.exhibits_flg18,
+                w2_MallExhibitsConfig.exhibits_flg19,
+                w2_MallExhibitsConfig.exhibits_flg20,
+                w2_MallExhibitsConfig.date_created,
+                w2_MallExhibitsConfig.date_changed,
+                w2_MallExhibitsConfig.last_changed,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_Product.shop_id,
+                          w2_Product.product_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MALLEXHIBITSCONFIG_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Product
+                          INNER JOIN w2_MallExhibitsConfig ON
+                          (
+                            w2_Product.shop_id = w2_MallExhibitsConfig.shop_id
+                            AND
+                            w2_Product.product_id = w2_MallExhibitsConfig.product_id
+                          )
+                          [[ MALLEXHIBITSCONFIG_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Product ON
+                (
+                  RowIndex.shop_id = w2_Product.shop_id
+                  AND
+                  RowIndex.product_id = w2_Product.product_id
+                )
+                INNER JOIN w2_MallExhibitsConfig ON
+                (
+                  w2_Product.shop_id = w2_MallExhibitsConfig.shop_id
+                  AND
+                  w2_Product.product_id = w2_MallExhibitsConfig.product_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="sort_kbn" Type="int"></Input>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetMallExhibitsConfigList>
+
+  <!-- モール出品設定情報該当件数取得 -->
+  <GetMallExhibitsConfigCount>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        SELECT  ISNULL(COUNT(w2_Product.product_id), 0) AS row_count
+          FROM  w2_Product
+                INNER JOIN w2_MallExhibitsConfig ON   -- 紐づけて表示させる場合は、LEFT JOINに変更する
+                (
+                  w2_Product.shop_id = w2_MallExhibitsConfig.shop_id
+                  AND
+                  w2_Product.product_id = w2_MallExhibitsConfig.product_id
+                )
+                [[ MALLEXHIBITSCONFIG_SEARCH_WHERE ]]
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMallExhibitsConfigCount>
+
+  <!-- モール出品設定情報取得（CSV全件出力用） -->
+  <GetMallExhibitsConfigMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_Product
+                INNER JOIN w2_MallExhibitsConfig ON
+                (
+                  w2_Product.shop_id = w2_MallExhibitsConfig.shop_id
+                  AND
+                  w2_Product.product_id = w2_MallExhibitsConfig.product_id
+                )
+         -- 全件出力のため、条件は有効フラグのみとする
+         WHERE  w2_Product.valid_flg = '1'  -- 有効
+                [[ MALLEXHIBITSCONFIG_SEARCH_ORDER_BY ]]
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word" Type="nvarchar" Size="4000" />
+      <Input Name="sort_kbn" Type="int"></Input>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetMallExhibitsConfigMaster>
+  
+  <!-- モール出品設定情報更新 -->
+  <UpdateMallExhibitsConfig>
+    <Statement>
+    <![CDATA[
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg1 = @exhibits_flg1, 
+                  w2_MallExhibitsConfig.exhibits_flg2 = @exhibits_flg2, 
+                  w2_MallExhibitsConfig.exhibits_flg3 = @exhibits_flg3, 
+                  w2_MallExhibitsConfig.exhibits_flg4 = @exhibits_flg4, 
+                  w2_MallExhibitsConfig.exhibits_flg5 = @exhibits_flg5, 
+                  w2_MallExhibitsConfig.exhibits_flg6 = @exhibits_flg6, 
+                  w2_MallExhibitsConfig.exhibits_flg7 = @exhibits_flg7, 
+                  w2_MallExhibitsConfig.exhibits_flg8 = @exhibits_flg8, 
+                  w2_MallExhibitsConfig.exhibits_flg9 = @exhibits_flg9, 
+                  w2_MallExhibitsConfig.exhibits_flg10 = @exhibits_flg10, 
+                  w2_MallExhibitsConfig.exhibits_flg11 = @exhibits_flg11, 
+                  w2_MallExhibitsConfig.exhibits_flg12 = @exhibits_flg12, 
+                  w2_MallExhibitsConfig.exhibits_flg13 = @exhibits_flg13, 
+                  w2_MallExhibitsConfig.exhibits_flg14 = @exhibits_flg14, 
+                  w2_MallExhibitsConfig.exhibits_flg15 = @exhibits_flg15, 
+                  w2_MallExhibitsConfig.exhibits_flg16 = @exhibits_flg16, 
+                  w2_MallExhibitsConfig.exhibits_flg17 = @exhibits_flg17, 
+                  w2_MallExhibitsConfig.exhibits_flg18 = @exhibits_flg18, 
+                  w2_MallExhibitsConfig.exhibits_flg19 = @exhibits_flg19, 
+                  w2_MallExhibitsConfig.exhibits_flg20 = @exhibits_flg20, 
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+             AND  w2_MallExhibitsConfig.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="exhibits_flg1" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg2" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg3" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg4" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg5" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg6" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg7" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg8" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg9" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg10" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg11" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg12" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg13" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg14" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg15" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg16" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg17" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg18" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg19" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg20" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateMallExhibitsConfig>
+
+  <!-- モール出品設定情報登録（Insert） -->
+  <InsertMallExhibitsConfig>
+    <Statement>
+      <![CDATA[
+      
+         DECLARE  @MallExhibitsCount int
+          
+          SELECT  @MallExhibitsCount = COUNT(product_id)
+            FROM  w2_MallExhibitsConfig
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+             AND  w2_MallExhibitsConfig.product_id = @product_id
+      
+          IF @MallExhibitsCount = 0
+            -- 登録
+            INSERT INTO 
+                    w2_MallExhibitsConfig
+                    (
+                      shop_id,
+                      product_id,
+                      exhibits_flg1,
+                      exhibits_flg2,
+                      exhibits_flg3,
+                      exhibits_flg4,
+                      exhibits_flg5,
+                      exhibits_flg6,
+                      exhibits_flg7,
+                      exhibits_flg8,
+                      exhibits_flg9,
+                      exhibits_flg10,
+                      exhibits_flg11,
+                      exhibits_flg12,
+                      exhibits_flg13,
+                      exhibits_flg14,
+                      exhibits_flg15,
+                      exhibits_flg16,
+                      exhibits_flg17,
+                      exhibits_flg18,
+                      exhibits_flg19,
+                      exhibits_flg20,
+                      date_created,
+                      date_changed,
+                      last_changed
+                    )
+            VALUES  (
+                      @shop_id,
+                      @product_id,
+                      @exhibits_flg1,
+                      @exhibits_flg2,
+                      @exhibits_flg3,
+                      @exhibits_flg4,
+                      @exhibits_flg5,
+                      @exhibits_flg6,
+                      @exhibits_flg7,
+                      @exhibits_flg8,
+                      @exhibits_flg9,
+                      @exhibits_flg10,
+                      @exhibits_flg11,
+                      @exhibits_flg12,
+                      @exhibits_flg13,
+                      @exhibits_flg14,
+                      @exhibits_flg15,
+                      @exhibits_flg16,
+                      @exhibits_flg17,
+                      @exhibits_flg18,
+                      @exhibits_flg19,
+                      @exhibits_flg20,
+                      getdate(),
+                      getdate(),
+                      @last_changed
+                    )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="exhibits_flg1" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg2" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg3" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg4" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg5" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg6" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg7" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg8" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg9" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg10" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg11" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg12" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg13" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg14" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg15" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg16" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg17" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg18" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg19" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg20" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertMallExhibitsConfig>
+
+  <!-- モール出品設定情報全削除（Delete） -->
+  <DeleteMallExhibitsConfigAll>
+    <Statement>
+      <![CDATA[
+          -- 削除         
+          DELETE  w2_MallExhibitsConfig
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteMallExhibitsConfigAll>
+
+  <!-- モール出品設定情報全削除（Delete） -->
+  <DeleteMallExhibitsConfig>
+    <Statement>
+      <![CDATA[
+      
+          -- 削除         
+          DELETE  w2_MallExhibitsConfig
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+             AND  w2_MallExhibitsConfig.product_id = @product_id
+            
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteMallExhibitsConfig>
+
+  <!-- モール出品設定情報登録更新（InsertUpdate） -->
+  <UpdateInsertMallExhibitsConfig>
+    <Statement>
+      <![CDATA[
+      
+          DECLARE @MallExhibitsCount int
+          
+          SELECT  @MallExhibitsCount = COUNT(product_id)
+            FROM  w2_MallExhibitsConfig
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+             AND  w2_MallExhibitsConfig.product_id = @product_id
+      
+          IF @MallExhibitsCount > 0
+            BEGIN
+              UPDATE  w2_MallExhibitsConfig 
+                 SET  w2_MallExhibitsConfig.exhibits_flg1 = @exhibits_flg1, 
+                      w2_MallExhibitsConfig.exhibits_flg2 = @exhibits_flg2, 
+                      w2_MallExhibitsConfig.exhibits_flg3 = @exhibits_flg3, 
+                      w2_MallExhibitsConfig.exhibits_flg4 = @exhibits_flg4, 
+                      w2_MallExhibitsConfig.exhibits_flg5 = @exhibits_flg5, 
+                      w2_MallExhibitsConfig.exhibits_flg6 = @exhibits_flg6, 
+                      w2_MallExhibitsConfig.exhibits_flg7 = @exhibits_flg7, 
+                      w2_MallExhibitsConfig.exhibits_flg8 = @exhibits_flg8, 
+                      w2_MallExhibitsConfig.exhibits_flg9 = @exhibits_flg9, 
+                      w2_MallExhibitsConfig.exhibits_flg10 = @exhibits_flg10, 
+                      w2_MallExhibitsConfig.exhibits_flg11 = @exhibits_flg11, 
+                      w2_MallExhibitsConfig.exhibits_flg12 = @exhibits_flg12, 
+                      w2_MallExhibitsConfig.exhibits_flg13 = @exhibits_flg13, 
+                      w2_MallExhibitsConfig.exhibits_flg14 = @exhibits_flg14, 
+                      w2_MallExhibitsConfig.exhibits_flg15 = @exhibits_flg15, 
+                      w2_MallExhibitsConfig.exhibits_flg16 = @exhibits_flg16, 
+                      w2_MallExhibitsConfig.exhibits_flg17 = @exhibits_flg17, 
+                      w2_MallExhibitsConfig.exhibits_flg18 = @exhibits_flg18, 
+                      w2_MallExhibitsConfig.exhibits_flg19 = @exhibits_flg19, 
+                      w2_MallExhibitsConfig.exhibits_flg20 = @exhibits_flg20, 
+                      w2_MallExhibitsConfig.date_changed = getdate(), 
+                      w2_MallExhibitsConfig.last_changed = @last_changed
+               WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+                 AND  w2_MallExhibitsConfig.product_id = @product_id
+            END
+          ELSE
+            BEGIN
+              INSERT INTO 
+                      w2_MallExhibitsConfig
+                      (
+                        shop_id,
+                        product_id,
+                        exhibits_flg1,
+                        exhibits_flg2,
+                        exhibits_flg3,
+                        exhibits_flg4,
+                        exhibits_flg5,
+                        exhibits_flg6,
+                        exhibits_flg7,
+                        exhibits_flg8,
+                        exhibits_flg9,
+                        exhibits_flg10,
+                        exhibits_flg11,
+                        exhibits_flg12,
+                        exhibits_flg13,
+                        exhibits_flg14,
+                        exhibits_flg15,
+                        exhibits_flg16,
+                        exhibits_flg17,
+                        exhibits_flg18,
+                        exhibits_flg19,
+                        exhibits_flg20,
+                        date_created,
+                        date_changed,
+                        last_changed
+                      )
+              VALUES  (
+                        @shop_id,
+                        @product_id,
+                        @exhibits_flg1,
+                        @exhibits_flg2,
+                        @exhibits_flg3,
+                        @exhibits_flg4,
+                        @exhibits_flg5,
+                        @exhibits_flg6,
+                        @exhibits_flg7,
+                        @exhibits_flg8,
+                        @exhibits_flg9,
+                        @exhibits_flg10,
+                        @exhibits_flg11,
+                        @exhibits_flg12,
+                        @exhibits_flg13,
+                        @exhibits_flg14,
+                        @exhibits_flg15,
+                        @exhibits_flg16,
+                        @exhibits_flg17,
+                        @exhibits_flg18,
+                        @exhibits_flg19,
+                        @exhibits_flg20,
+                        getdate(),
+                        getdate(),
+                        @last_changed
+                      )
+            END
+            
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="exhibits_flg1" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg2" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg3" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg4" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg5" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg6" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg7" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg8" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg9" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg10" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg11" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg12" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg13" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg14" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg15" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg16" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg17" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg18" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg19" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg20" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateInsertMallExhibitsConfig>
+
+  <!-- モール出品設定情報取得 -->
+  <GetMallExhibitsConfigAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MallExhibitsConfig.*
+          FROM  w2_MallExhibitsConfig
+         WHERE  w2_MallExhibitsConfig.shop_id = @shop_id
+           AND  w2_MallExhibitsConfig.product_id = @product_id
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMallExhibitsConfigAll>
+
+  <!-- モール出品設定リセット -->
+  <UpdateMallExhibitsConfigReset>
+    <Statement>
+      <![CDATA[
+      
+      IF @exhibits_flg1 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg1 = @exhibits_flg1,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg2 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg2 = @exhibits_flg2,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg3 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg3 = @exhibits_flg3,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg4 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg4 = @exhibits_flg4,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg5 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg5 = @exhibits_flg5,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg6 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg6 = @exhibits_flg6,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg7 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg7 = @exhibits_flg7,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg8 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg8 = @exhibits_flg8,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg9 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg9 = @exhibits_flg9,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg10 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg10 = @exhibits_flg10,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg11 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg11 = @exhibits_flg11,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg12 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg12 = @exhibits_flg12,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg13 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg13 = @exhibits_flg13,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg14 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg14 = @exhibits_flg14,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg15 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg15 = @exhibits_flg15,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg16 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg16 = @exhibits_flg16,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg17 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg17 = @exhibits_flg17,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg18 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg18 = @exhibits_flg18,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg19 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg19 = @exhibits_flg19,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      IF @exhibits_flg20 = '1'
+        BEGIN
+          UPDATE  w2_MallExhibitsConfig 
+             SET  w2_MallExhibitsConfig.exhibits_flg20 = @exhibits_flg20,
+                  w2_MallExhibitsConfig.date_changed = getdate(), 
+                  w2_MallExhibitsConfig.last_changed = @last_changed
+           WHERE  w2_MallExhibitsConfig.shop_id = @shop_id 
+        END
+        
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg1" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg2" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg3" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg4" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg5" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg6" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg7" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg8" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg9" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg10" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg11" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg12" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg13" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg14" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg15" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg16" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg17" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg18" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg19" Type="nvarchar" Size="10" />
+      <Input Name="exhibits_flg20" Type="nvarchar" Size="10" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateMallExhibitsConfigReset>
+  
+</MallExhibitsConfig>

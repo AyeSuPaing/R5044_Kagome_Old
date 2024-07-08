@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : アクセスランキングセッティングXML(AccessRanking.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<AccessRanking>
+  <!--
+    Statementへはvalue_name、countsが取得できるSQLを記述する。
+    （例）
+    ========================================
+    [rank]  [value_name]            [counts]
+    ========================================
+        1   www.w2solution.co.jp       35
+        2   www.w2solution.com         32
+        2   w2solution.co.jp           32
+    ========================================
+  -->
+  <AccessPageRanking>
+    <Title>アクセスページランキング</Title>
+    <Value>アクセスページ</Value>
+    <Unit>アクセス数</Unit>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @summary_kbn nvarchar(30)
+        SET @summary_kbn = 'acspage'
+      
+        -- PC限定
+        IF @access_kbn = '1'
+          BEGIN
+            SET @summary_kbn = 'acspage'
+          END
+        -- スマートフォン限定
+        ELSE IF @access_kbn = '3'
+          BEGIN
+            SET @summary_kbn = 'acspage_sp'
+          END
+      
+        ---------------------------------------
+        -- 変数テーブル作成
+        ---------------------------------------
+        DECLARE  @temp_table TABLE
+        (
+          [row_num] [int] IDENTITY(1, 1),
+          [row_count] [int],
+          [value_name] [nvarchar](1000),
+          [counts] [int],
+          [total_counts] [int]
+        )
+
+        ---------------------------------------
+        -- データ取得(アクセス総数)
+        ---------------------------------------
+        DECLARE @total_counts int
+        SELECT  @total_counts = SUM(counts)
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)    
+
+        ---------------------------------------
+        -- データ取得
+        ---------------------------------------
+        INSERT
+          INTO  @temp_table
+                (
+                value_name,
+                counts,
+                total_counts
+                )
+        SELECT  value_name,
+                SUM(counts) AS counts,
+                @total_counts
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+        GROUP BY value_name
+        ORDER BY counts DESC
+
+        ---------------------------------------
+        -- 件数情報更新
+        ---------------------------------------
+        UPDATE  @temp_table
+           SET  row_count = (SELECT COUNT(*) FROM @temp_table)
+
+        ---------------------------------------
+        -- 絞込み（順位決定）
+        ---------------------------------------
+        SELECT  (
+                  SELECT  COUNT(*) + 1 
+                    FROM  @temp_table A 
+                   WHERE  A.counts > B.counts
+                ) AS rank, *
+          FROM  @temp_table B
+         WHERE  @bgn_row_num <= row_num 
+           AND  row_num <= @end_row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="access_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </AccessPageRanking>
+
+  <ReferrerDomainRanking>
+    <Title>リファラードメインランキング</Title>
+    <Value>リファラードメイン</Value>
+    <Unit>アクセス数</Unit>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @summary_kbn nvarchar(30)
+        SET @summary_kbn = 'refdomain'
+      
+        -- PC限定
+        IF @access_kbn = '1'
+          BEGIN
+            SET @summary_kbn = 'refdomain'
+          END
+        -- スマートフォン限定
+        ELSE IF @access_kbn = '3'
+          BEGIN
+            SET @summary_kbn = 'refdomain_sp'
+          END
+      
+        ---------------------------------------
+        -- 変数テーブル作成
+        ---------------------------------------
+        DECLARE  @temp_table TABLE
+        (
+          [row_num] [int] IDENTITY(1, 1),
+          [row_count] [int],
+          [value_name] [nvarchar](1000),
+          [counts] [int],
+          [total_counts] [int]
+        )
+        
+        ---------------------------------------
+        -- データ取得(アクセス総数)
+        ---------------------------------------
+        DECLARE @total_counts int
+        SELECT  @total_counts = SUM(counts)
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+           AND  reserved1 = '0'  -- アクセスページと同じドメインの場合は排除
+
+        ---------------------------------------
+        -- データ取得
+        ---------------------------------------
+        INSERT
+          INTO  @temp_table
+                (
+                value_name,
+                counts,
+                total_counts
+                )
+        SELECT  value_name,
+                SUM(counts) AS counts,
+                @total_counts
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+           AND  reserved1 = '0'  -- アクセスページと同じドメインの場合は排除
+        GROUP BY value_name
+        ORDER BY counts DESC
+
+        ---------------------------------------
+        -- 件数情報更新
+        ---------------------------------------
+        UPDATE  @temp_table
+           SET  row_count = (SELECT COUNT(*) FROM @temp_table)
+
+        ---------------------------------------
+        -- 絞込み（順位決定）
+        ---------------------------------------
+        SELECT  (
+                  SELECT  COUNT(*) + 1 
+                    FROM  @temp_table A 
+                   WHERE  A.counts > B.counts
+                ) AS rank, *
+          FROM  @temp_table B
+         WHERE  @bgn_row_num <= row_num 
+           AND  row_num <= @end_row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="access_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </ReferrerDomainRanking>
+
+  <SearchEngineRanking>
+    <Title>検索エンジンランキング</Title>
+    <Value>検索エンジン</Value>
+    <Unit>アクセス数</Unit>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @summary_kbn nvarchar(30)
+        SET @summary_kbn = 'srchengine'
+      
+        -- PC限定
+        IF @access_kbn = '1'
+          BEGIN
+            SET @summary_kbn = 'srchengine'
+          END
+        -- スマートフォン限定
+        ELSE IF @access_kbn = '3'
+          BEGIN
+            SET @summary_kbn = 'srchengine_sp'
+          END
+      
+        ---------------------------------------
+        -- 変数テーブル作成
+        ---------------------------------------
+        DECLARE  @temp_table TABLE
+        (
+          [row_num] [int] IDENTITY(1, 1),
+          [row_count] [int],
+          [value_name] [nvarchar](1000),
+          [counts] [int],
+          [total_counts] [int]
+        )
+        
+        ---------------------------------------
+        -- データ取得(アクセス総数)
+        ---------------------------------------
+        DECLARE @total_counts int
+        SELECT  @total_counts = SUM(counts)
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+
+        ---------------------------------------
+        -- データ取得
+        ---------------------------------------
+        INSERT
+          INTO  @temp_table
+                (
+                value_name,
+                counts,
+                total_counts
+                )
+        SELECT  value_name,
+                SUM(counts) AS counts,
+                @total_counts
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+        GROUP BY value_name
+        ORDER BY counts DESC
+
+        ---------------------------------------
+        -- 件数情報更新
+        ---------------------------------------
+        UPDATE  @temp_table
+           SET  row_count = (SELECT COUNT(*) FROM @temp_table)
+
+        ---------------------------------------
+        -- 絞込み（順位決定）
+        ---------------------------------------
+        SELECT  (
+                  SELECT  COUNT(*) + 1 
+                    FROM  @temp_table A 
+                   WHERE  A.counts > B.counts
+                ) AS rank, *
+          FROM  @temp_table B
+         WHERE  @bgn_row_num <= row_num 
+           AND  row_num <= @end_row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="access_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </SearchEngineRanking>
+
+  <SearchWordsRanking>
+    <Title>検索ワードランキング</Title>
+    <Value>検索ワード</Value>
+    <Unit>アクセス数</Unit>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @summary_kbn nvarchar(30)
+        SET @summary_kbn = 'srchwords'
+      
+        -- PC限定
+        IF @access_kbn = '1'
+          BEGIN
+            SET @summary_kbn = 'srchwords'
+          END
+        -- スマートフォン限定
+        ELSE IF @access_kbn = '3'
+          BEGIN
+            SET @summary_kbn = 'srchwords_sp'
+          END
+      
+        ---------------------------------------
+        -- 変数テーブル作成
+        ---------------------------------------
+        DECLARE  @temp_table TABLE
+        (
+          [row_num] [int] IDENTITY(1, 1),
+          [row_count] [int],
+          [value_name] [nvarchar](1000),
+          [counts] [int],
+          [total_counts] [int]
+        )
+        
+        ---------------------------------------
+        -- データ取得(アクセス総数)
+        ---------------------------------------
+        DECLARE @total_counts int
+        SELECT  @total_counts = SUM(counts)
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+
+        ---------------------------------------
+        -- データ取得
+        ---------------------------------------
+        INSERT
+          INTO  @temp_table
+                (
+                value_name,
+                counts,
+                total_counts
+                )
+        SELECT  value_name,
+                SUM(counts) AS counts,
+                @total_counts
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+        GROUP BY value_name
+        ORDER BY counts DESC
+
+        ---------------------------------------
+        -- 件数情報更新
+        ---------------------------------------
+        UPDATE  @temp_table
+           SET  row_count = (SELECT COUNT(*) FROM @temp_table)
+
+        ---------------------------------------
+        -- 絞込み（順位決定）
+        ---------------------------------------
+        SELECT  (
+                  SELECT  COUNT(*) + 1 
+                    FROM  @temp_table A 
+                   WHERE  A.counts > B.counts
+                ) AS rank, *
+          FROM  @temp_table B
+         WHERE  @bgn_row_num <= row_num 
+           AND  row_num <= @end_row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="access_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </SearchWordsRanking>
+
+
+</AccessRanking>

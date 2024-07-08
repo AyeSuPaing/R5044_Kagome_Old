@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 受注注文者情報出力SQLステートメントXML(OrderOwner.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderOwner>
+  <!-- 差分出力 -->
+  <ExportDifferential>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        WITH
+          targetOwner AS
+          (
+            SELECT  order_id
+              FROM  w2_Order
+             WHERE  w2_Order.date_changed >= @date_changed
+          )
+
+        SELECT  @@ EXPORT_FIELDS @@
+          FROM  w2_OrderOwner
+                INNER JOIN targetOwner ON
+                (
+                  w2_OrderOwner.order_id = targetOwner.order_id
+                )
+      ORDER BY  w2_OrderOwner.order_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date_changed" Type="datetime" />
+    </Parameter>
+  </ExportDifferential>
+
+  <!-- 全件出力 -->
+  <ExportAll>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  @@ EXPORT_FIELDS @@
+          FROM  w2_OrderOwner
+      ORDER BY  w2_OrderOwner.order_id ASC
+      ]]>
+    </Statement>
+  </ExportAll>
+</OrderOwner>

@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザー統合情報系SQLサブステートメントXML (UserIntegration_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<UserIntegration_Sub>
+
+  <!-- 検索用WHERE文 -->
+  <USERINTEGRATION_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (@user_integration_no IS NULL OR w2_UserIntegration.user_integration_no = @user_integration_no)
+                  AND
+                  (w2_UserIntegration.status = @status)
+                  AND
+                  (w2_UserIntegration.user_integration_no IN
+                    (
+                      SELECT  DISTINCT(w2_UserIntegrationUser.user_integration_no)
+                        FROM  w2_UserIntegrationUser
+                              INNER JOIN w2_User ON
+                              (
+                                w2_UserIntegrationUser.user_id = w2_User.user_id
+                              )
+                       WHERE  (
+                                (@user_id_like_escaped = '' OR w2_User.user_id LIKE @user_id_like_escaped + '%'  ESCAPE '#')      -- ユーザーID
+                                AND
+                                (@name_like_escaped = '' OR w2_User.name LIKE '%' + @name_like_escaped + '%' ESCAPE '#')        -- 氏名
+                                AND
+                                (@name_kana_like_escaped = '' OR w2_User.name_kana LIKE '%' +@name_kana_like_escaped + '%' ESCAPE '#')  -- ふりがな
+                                AND
+                                (
+                                  w2_User.tel1 LIKE @tel_like_escaped + '%' ESCAPE '#'
+                                  OR
+                                  w2_User.tel1_1 + w2_User.tel1_2 + w2_User.tel1_3 LIKE '%' + @tel_like_escaped + '%' ESCAPE '#'      -- 電話番号1
+                                  OR
+                                  w2_User.tel2 LIKE @tel_like_escaped + '%' ESCAPE '#'
+                                  OR
+                                  w2_User.tel2_1 + w2_User.tel2_2 + w2_User.tel2_3 LIKE '%' + @tel_like_escaped + '%' ESCAPE '#'      -- 電話番号2
+                                )
+                                AND
+                                (
+                                  @mail_addr_like_escaped = ''
+                                  OR
+                                  w2_User.mail_addr2 LIKE '%' + @mail_addr_like_escaped + '%' ESCAPE '#'    -- メールアドレス
+                                  OR
+                                  w2_User.mail_addr LIKE '%' + @mail_addr_like_escaped + '%' ESCAPE '#'    -- モバイルメールアドレス
+                                )
+                                AND
+                                (
+                                  w2_User.zip LIKE '%' + @zip_like_escaped + '%' ESCAPE '#'
+                                  OR
+                                  w2_User.zip1 + w2_User.zip2 LIKE '%' + @zip_like_escaped + '%' ESCAPE '#'          -- 郵便番号
+                                )
+                                AND
+                                (@addr_like_escaped = '' OR w2_User.addr LIKE '%' + @addr_like_escaped + '%' ESCAPE '#')        -- 住所
+                               )
+                    )
+                  )
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="80" />
+      <Input Name="name_kana_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="tel_like_escaped" Type="nvarchar" Size="32" />
+      <Input Name="mail_addr_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="zip_like_escaped" Type="nvarchar" Size="16" />
+      <Input Name="addr_like_escaped" Type="nvarchar" Size="400" />
+    </Parameter>
+  </USERINTEGRATION_SEARCH_WHERE>
+  
+  <!-- 検索用ORDER BY -->
+  <USERINTEGRATION_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  2 THEN w2_UserIntegration.date_created
+            WHEN  4 THEN w2_UserIntegration.date_changed
+            ELSE NULL
+          END ASC,
+          CASE @sort_kbn
+            WHEN  3 THEN w2_UserIntegration.date_created
+            WHEN  5 THEN w2_UserIntegration.date_changed
+            ELSE NULL
+          END DESC,
+          CASE @sort_kbn
+            WHEN  0 THEN w2_UserIntegration.user_integration_no
+            ELSE '1'
+          END ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_UserIntegration.user_integration_no
+            ELSE '1'
+          END DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_UserIntegration.user_integration_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sort_kbn" Type="nvarchar" Size="2" />
+    </Parameter>
+  </USERINTEGRATION_SEARCH_ORDER_BY>
+
+  <!-- 検索用WHERE文（履歴） -->
+  <USERINTEGRATIONHISTORY_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (w2_UserIntegrationHistory.user_integration_no = @user_integration_no) -- ユーザー統合No
+                  AND
+                  (@table_name = '' OR w2_UserIntegrationHistory.table_name = @table_name)      -- テーブル名
+                  AND
+                  (@user_id_like_escaped = '' OR w2_UserIntegrationHistory.user_id LIKE @user_id_like_escaped + '%'  ESCAPE '#')      -- ユーザーID
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_integration_no" Type="bigint" />
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="table_name" Type="nvarchar" Size="50" />
+    </Parameter>
+  </USERINTEGRATIONHISTORY_SEARCH_WHERE>
+
+  <!-- 検索用ORDER BY（履歴） -->
+  <USERINTEGRATIONHISTORY_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY w2_UserIntegrationHistory.user_integration_no ASC, w2_UserIntegrationHistory.user_id ASC, w2_UserIntegrationHistory.branch_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </USERINTEGRATIONHISTORY_SEARCH_ORDER_BY>
+
+</UserIntegration_Sub>

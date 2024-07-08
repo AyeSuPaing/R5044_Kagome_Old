@@ -1,0 +1,360 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期出荷予測系SQLステートメントXML (FixedPurchaseForecast.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchaseForecast>
+
+  <!-- 件数取得 -->
+  <GetCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_FixedPurchaseForecast
+      ]]>
+    </Statement>
+  </GetCount>
+
+  <!-- 検索(商品単位) -->
+  <SearchTargetProduct>
+    <Statement>
+      <![CDATA[
+       -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(RowIndex.product_id), 0)
+          FROM  (
+                  SELECT  shop_id, 
+                          product_id,
+                          target_month,
+                          SUM(product_price * item_quantity * @@ frequency_field @@) AS one_month_later_sales
+                    FROM  w2_FixedPurchaseForecast
+                  <@@hasval:target_month@@>
+                    WHERE  target_month = @target_month
+                  </@@hasval:target_month@@>
+                  GROUP BY w2_FixedPurchaseForecast.shop_id, w2_FixedPurchaseForecast.product_id, w2_FixedPurchaseForecast.target_month
+                 ) AS RowIndex
+                 LEFT JOIN w2_Product ON
+                 (
+                   w2_Product.shop_id = RowIndex.shop_id
+                   AND
+                   w2_Product.product_id = RowIndex.product_id
+                 )
+                 [[ FIXEDPURCHASEFORECAST_PRODUCT_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  target_month,
+                shop_id,
+                product_id,
+                name AS product_name,
+                month_later_sales AS target_month_later_sales,
+                month_later_stock AS target_month_later_stock,
+                row_count
+          FROM  (
+                  SELECT  RowInnerIndex.*,
+                          w2_Product.name,
+                          @row_count AS row_count,
+                          ROW_NUMBER() OVER(ORDER BY RowInnerIndex.product_id) AS row_num
+                    FROM  (
+                            SELECT  shop_id, 
+                                    product_id,
+                                    target_month,
+                                    SUM(product_price * item_quantity * @@ frequency_field @@) AS month_later_sales,
+                                    SUM(item_quantity * @@ frequency_field @@) AS month_later_stock
+                              FROM  w2_FixedPurchaseForecast
+                            <@@hasval:target_month@@>
+                              WHERE  target_month = @target_month
+                            </@@hasval:target_month@@>
+                            GROUP BY w2_FixedPurchaseForecast.shop_id, w2_FixedPurchaseForecast.product_id, w2_FixedPurchaseForecast.target_month
+                          ) AS RowInnerIndex
+                          LEFT JOIN w2_Product ON
+                          (
+                            w2_Product.shop_id = RowInnerIndex.shop_id
+                            AND
+                            w2_Product.product_id = RowInnerIndex.product_id
+                          )
+                          [[ FIXEDPURCHASEFORECAST_PRODUCT_SEARCH_WHERE ]]
+                ) AS RowIndex
+        <@@notval:end_row_num:0@@>
+          WHERE  @bgn_row_num <= RowIndex.row_num
+            AND  RowIndex.row_num <= @end_row_num
+        </@@notval:end_row_num:0@@>
+        ORDER BY RowIndex.product_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="target_month" Type="datetime" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchTargetProduct>
+
+  <!-- 検索(商品バリエーション単位) -->
+  <SearchTargetProductVariation>
+    <Statement>
+      <![CDATA[
+       -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(RowIndex.variation_id), 0)
+          FROM  (
+                  SELECT  shop_id,
+                          product_id,
+                          variation_id,
+                          target_month,
+                          SUM(product_price * item_quantity * @@ frequency_field @@) AS one_month_later_sales
+                    FROM  w2_FixedPurchaseForecast
+                   <@@hasval:target_month@@>
+                    WHERE  target_month = @target_month
+                   </@@hasval:target_month@@>
+                  GROUP BY w2_FixedPurchaseForecast.shop_id,  w2_FixedPurchaseForecast.product_id, w2_FixedPurchaseForecast.variation_id, w2_FixedPurchaseForecast.target_month
+                ) AS RowIndex
+                LEFT JOIN w2_Product ON
+                (
+                  w2_Product.shop_id = RowIndex.shop_id
+                  AND
+                  w2_Product.product_id = RowIndex.product_id
+                )
+                LEFT JOIN w2_ProductVariationView ON
+                (
+                  w2_ProductVariationView.shop_id = RowIndex.shop_id
+                  AND
+                  w2_ProductVariationView.variation_id = RowIndex.variation_id
+                )
+                [[ FIXEDPURCHASEFORECAST_PRODUCT_VARIATION_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  target_month,
+                shop_id,
+                product_id,
+                variation_id,
+                name AS product_name,
+                month_later_sales AS target_month_later_sales,
+                month_later_stock AS target_month_later_stock,
+                row_count
+          FROM  (
+                  SELECT  RowInnerIndex.shop_id,
+                          RowInnerIndex.product_id,
+                          RowInnerIndex.variation_id,
+                          RowInnerIndex.target_month,
+                          RowInnerIndex.month_later_sales,
+                          RowInnerIndex.month_later_stock,
+                          w2_Product.name,
+                          w2_ProductVariationView.variation_name1,
+                          @row_count AS row_count,
+                          ROW_NUMBER() OVER(ORDER BY RowInnerIndex.variation_id) AS row_num
+                    FROM  (
+                            SELECT  shop_id,
+                                    product_id,
+                                    variation_id,
+                                    target_month,
+                                    SUM(product_price * item_quantity * @@ frequency_field @@) AS month_later_sales,
+                                    SUM(item_quantity * @@ frequency_field @@) AS month_later_stock
+                              FROM  w2_FixedPurchaseForecast
+                             <@@hasval:target_month@@>
+                              WHERE  target_month = @target_month
+                             </@@hasval:target_month@@>
+                            GROUP BY w2_FixedPurchaseForecast.shop_id, w2_FixedPurchaseForecast.product_id, w2_FixedPurchaseForecast.variation_id, w2_FixedPurchaseForecast.target_month
+                          ) AS RowInnerIndex
+                          LEFT JOIN w2_Product ON
+                          (
+                            w2_Product.shop_id = RowInnerIndex.shop_id
+                            AND
+                            w2_Product.product_id = RowInnerIndex.product_id
+                          )
+                          LEFT JOIN w2_ProductVariationView ON
+                          (
+                            w2_ProductVariationView.shop_id = RowInnerIndex.shop_id
+                            AND
+                            w2_ProductVariationView.variation_id = RowInnerIndex.variation_id
+                          )
+                          [[ FIXEDPURCHASEFORECAST_PRODUCT_VARIATION_SEARCH_WHERE ]]
+                )  AS RowIndex
+        <@@notval:end_row_num:0@@>
+          WHERE  @bgn_row_num <= RowIndex.row_num
+            AND  RowIndex.row_num <= @end_row_num
+        </@@notval:end_row_num:0@@>
+        ORDER BY RowIndex.variation_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="target_month" Type="datetime" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchTargetProductVariation>
+
+  <!-- 月単位取得 -->
+  <GetMonthly>
+    <Statement>
+      <![CDATA[
+        SELECT  target_month,
+                SUM(product_price * item_quantity * @@ frequency_field @@) AS target_month_later_sales,
+                SUM(item_quantity * @@ frequency_field @@) AS target_month_later_stock
+          FROM  w2_FixedPurchaseForecast
+        GROUP BY w2_FixedPurchaseForecast.target_month
+      ]]>
+    </Statement>
+  </GetMonthly>
+
+  <!-- 商品ID単位で取得 -->
+  <GetTargetProductId>
+    <Statement>
+      <![CDATA[
+        SELECT  target_month,
+                SUM(product_price * item_quantity * @@ frequency_field @@) AS target_month_later_sales,
+                SUM(item_quantity * @@ frequency_field @@) AS target_month_later_stock
+          FROM  w2_FixedPurchaseForecast
+                LEFT JOIN w2_Product ON
+                (
+                  w2_Product.shop_id = w2_FixedPurchaseForecast.shop_id
+                  AND
+                  w2_Product.product_id = w2_FixedPurchaseForecast.product_id
+                )
+         WHERE  w2_FixedPurchaseForecast.target_month = @target_month
+           AND  w2_FixedPurchaseForecast.shop_id = @shop_id
+           AND  w2_FixedPurchaseForecast.product_id = @product_id
+        GROUP BY w2_FixedPurchaseForecast.shop_id, w2_FixedPurchaseForecast.product_id, w2_FixedPurchaseForecast.target_month
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="target_month" Type="datetime" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetTargetProductId>
+
+  <!-- 商品バリエーションID単位で取得 -->
+  <GetTargetProductVariationId>
+    <Statement>
+      <![CDATA[
+        SELECT  target_month,
+                SUM(product_price * item_quantity * @@ frequency_field @@) AS target_month_later_sales,
+                SUM(item_quantity * @@ frequency_field @@) AS target_month_later_stock
+          FROM  w2_FixedPurchaseForecast
+                LEFT  JOIN w2_ProductVariationView ON
+                (
+                  w2_ProductVariationView.shop_id = w2_FixedPurchaseForecast.shop_id
+                  AND
+                  w2_ProductVariationView.variation_id = w2_FixedPurchaseForecast.variation_id
+                )
+         WHERE  w2_FixedPurchaseForecast.target_month = @target_month
+           AND  w2_FixedPurchaseForecast.shop_id = @shop_id
+           AND  w2_FixedPurchaseForecast.variation_id = @variation_id
+        GROUP BY w2_FixedPurchaseForecast.shop_id, w2_FixedPurchaseForecast.variation_id, w2_FixedPurchaseForecast.target_month
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="target_month" Type="datetime" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetTargetProductVariationId>
+
+  <!-- 最も今日に近い日付取得 -->
+  <GetTheMonthClosestToThisMonth>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MIN(target_month), '')
+          FROM  w2_FixedPurchaseForecast
+      ]]>
+    </Statement>
+  </GetTheMonthClosestToThisMonth>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FixedPurchaseForecast
+                (
+                  target_month
+                  ,fixed_purchase_id
+                  ,shop_id
+                  ,product_id
+                  ,variation_id
+                  ,product_price
+                  ,item_quantity
+                  ,delivery_frequency
+                  ,date_created
+                  ,delivery_frequency_by_scheduled_shipping_date
+                )
+        VALUES  (
+                  @target_month
+                  ,@fixed_purchase_id
+                  ,@shop_id
+                  ,@product_id
+                  ,@variation_id
+                  ,@product_price
+                  ,@item_quantity
+                  ,@delivery_frequency
+                  ,GETDATE()
+                  ,@delivery_frequency_by_scheduled_shipping_date
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="target_month" Type="datetime" />
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="product_price" Type="decimal" Size="18,3" />
+      <Input Name="item_quantity" Type="int" />
+      <Input Name="delivery_frequency" Type="int" />
+      <Input Name="delivery_frequency_by_scheduled_shipping_date" Type="int" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FixedPurchaseForecast
+           SET  product_price = @product_price
+                ,item_quantity = @item_quantity
+                ,delivery_frequency = @delivery_frequency
+         WHERE  target_month = @target_month
+           AND  fixed_purchase_id = @fixed_purchase_id
+           AND  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="target_month" Type="datetime" />
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="product_price" Type="decimal" Size="18,3" />
+      <Input Name="item_quantity" Type="int" />
+      <Input Name="delivery_frequency" Type="int" />
+    </Parameter>
+  </Update>
+  
+  <!-- 対象定期にヒットするデータを削除 -->
+  <DeleteTargeFixedPurechaseId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FixedPurchaseForecast
+         WHERE  shop_id = @shop_id
+           AND  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteTargeFixedPurechaseId>
+
+  <!-- 全件削除 -->
+  <DeleteAll>
+    <Statement>
+      <![CDATA[
+        TRUNCATE TABLE w2_FixedPurchaseForecast
+      ]]>
+    </Statement>
+  </DeleteAll>
+
+</FixedPurchaseForecast>

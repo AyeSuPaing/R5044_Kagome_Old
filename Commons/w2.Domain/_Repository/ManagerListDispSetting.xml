@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 表示設定管理系SQLステートメントXML (ManagerListDispSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<ManagerListDispSetting>
+
+  <!-- 設定区分先の表示設定を全て取得 -->
+  <GetAllByDispSettingKbn>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ManagerListDispSetting
+         WHERE  shop_id = @shop_id
+           AND  disp_setting_kbn = @disp_setting_kbn
+        ORDER BY disp_flag desc,
+                 disp_order asc
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="disp_setting_kbn" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllByDispSettingKbn>
+
+  <!-- 注文IDを省いたデータを取得 -->
+  <GetForDispSettingItemNotIncludedOrderId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ManagerListDispSetting
+         WHERE  shop_id = @shop_id
+           AND  disp_setting_kbn = @disp_setting_kbn
+           AND  disp_flag = '1'
+           AND  disp_colmun_name  NOT  LIKE 'order_id'
+        ORDER BY disp_order asc
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="disp_setting_kbn" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetForDispSettingItemNotIncludedOrderId>
+
+  <!-- 表示区分先の設定情報を更新する -->
+  <UpdateDispSetting>
+  <Statement>
+    <![CDATA[
+        UPDATE  w2_ManagerListDispSetting
+           SET  disp_flag = @disp_flag,
+                disp_order = @disp_order,
+                date_changed = getdate(),
+                last_changed = @last_changed
+         WHERE  shop_id = @shop_id
+           AND  disp_setting_kbn = @disp_setting_kbn
+           AND  disp_colmun_name = @disp_colmun_name
+      ]]>
+  </Statement>
+  <Parameter>
+    <Input Name="shop_id" Type="nvarchar" Size="10" />
+    <Input Name="disp_setting_kbn" Type="nvarchar" Size="30" />
+    <Input Name="disp_colmun_name" Type="nvarchar" Size="40" />
+    <Input Name="disp_flag" Type="nvarchar" Size="1" />
+    <Input Name="disp_order" Type="int" />
+    <Input Name="date_changed" Type="datetime" />
+    <Input Name="last_changed" Type="nvarchar" Size="20" />
+  </Parameter>
+  </UpdateDispSetting>
+
+  <!-- 項目の表示フラグをOFFにする -->
+  <UpdateDispSettingFlagOff>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ManagerListDispSetting
+           SET  disp_flag = 0,
+                date_changed = getdate(),
+                last_changed = @last_changed
+         WHERE  shop_id = @shop_id
+           AND  disp_setting_kbn = @disp_setting_kbn
+           AND  disp_colmun_name = @disp_colmun_name
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="disp_setting_kbn" Type="nvarchar" Size="30" />
+      <Input Name="disp_colmun_name" Type="nvarchar" Size="40" />
+      <Input Name="disp_flag" Type="nvarchar" Size="1" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateDispSettingFlagOff>
+
+</ManagerListDispSetting>

@@ -1,0 +1,209 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メッセージ系SQLサブステートメントXML(CsMessage_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<CsMessage_Sub>
+
+  <!-- メッセージ詳細検索 WHERE -->
+  <SearchAdvanced_Where>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_CsMessage.dept_id = @dept_id
+                AND
+                (
+                  (@typefilter = '0')
+                  OR
+                  (@type_mail_in = '1' AND (w2_CsMessage.media_kbn = 'MAIL' AND w2_CsMessage.direction_kbn = 'REC'))
+                  OR
+                  (@type_mail_out = '1' AND (w2_CsMessage.media_kbn = 'MAIL' AND w2_CsMessage.direction_kbn = 'SEND'))
+                  OR
+                  (@type_tel_in = '1' AND (w2_CsMessage.media_kbn = 'TEL' AND w2_CsMessage.direction_kbn = 'REC'))
+                  OR
+                  (@type_tel_out = '1' AND (w2_CsMessage.media_kbn = 'TEL' AND w2_CsMessage.direction_kbn = 'SEND'))
+                  OR
+                  (@type_others_in = '1' AND (w2_CsMessage.media_kbn = 'OTHERS' AND w2_CsMessage.direction_kbn = 'REC'))
+                  OR
+                  (@type_others_out = '1' AND (w2_CsMessage.media_kbn = 'OTHERS' AND w2_CsMessage.direction_kbn = 'SEND'))
+                )
+                <@@hasval:message_status@@>
+                AND
+                (
+                  w2_CsMessage.message_status = @message_status
+                )
+                </@@hasval:message_status@@>
+                <@@hasval:status@@>
+                AND
+                (
+                  w2_CsIncident.status = @status
+                )
+                </@@hasval:status@@>
+                <@@hasval:incident_category_id@@>
+                AND
+                (
+                  w2_CsIncident.incident_category_id = @incident_category_id
+                )
+                </@@hasval:incident_category_id@@>
+                <@@hasval:importance@@>
+                AND
+                (
+                  w2_CsIncident.importance = @importance
+                )
+                </@@hasval:importance@@>
+                <@@hasval:voc_id@@>
+                AND
+                (
+                  w2_CsIncident.voc_id = @voc_id
+                )
+                </@@hasval:voc_id@@>
+                <@@hasval:cs_group_id@@>
+                AND
+                (
+                  w2_CsIncident.cs_group_id = @cs_group_id
+                )
+                </@@hasval:cs_group_id@@>
+                <@@hasval:operator_id@@>
+                AND
+                (
+                  w2_CsIncident.operator_id = @operator_id
+                )
+                </@@hasval:operator_id@@>
+                -- 送信・受信日
+                <@@hasval:inquiry_date_after@@>
+                AND
+                (
+                  w2_CsMessage.inquiry_reply_date >= @inquiry_date_after
+                  OR
+                  w2_CsMessage.date_created >= @inquiry_date_after
+                )
+                </@@hasval:inquiry_date_after@@>
+                <@@hasval:inquiry_date_before@@>
+                AND
+                (
+                  w2_CsMessage.inquiry_reply_date < @inquiry_date_before
+                  OR
+                  w2_CsMessage.date_created < @inquiry_date_before
+                )
+                </@@hasval:inquiry_date_before@@>
+                -- 最新問合せ日（指定された最新問合せ日のメッセージを持つインシデントに紐付く問合せ）
+                <@@hasval:latest_inquiry_date_after@@>
+                AND
+                (
+                  (
+                    w2_CsMessage.inquiry_reply_date >= @latest_inquiry_date_after
+                    AND
+                    w2_CsMessage.inquiry_reply_date = 
+                    (
+                      SELECT  TOP 1 inquiry_reply_date
+                        FROM  w2_CsMessage
+                       WHERE  w2_CsMessage.dept_id = w2_CsIncident.dept_id
+                         AND  w2_CsMessage.incident_id = w2_CsIncident.incident_id
+                    ORDER BY  w2_CsMessage.message_no DESC
+                    )
+                  )
+                )
+                </@@hasval:latest_inquiry_date_after@@>
+                <@@hasval:latest_inquiry_date_before@@>
+                AND
+                (
+                  (
+                    w2_CsMessage.inquiry_reply_date < @latest_inquiry_date_before
+                    AND
+                    w2_CsMessage.inquiry_reply_date =
+                    (
+                      SELECT  TOP 1 inquiry_reply_date
+                        FROM  w2_CsMessage
+                       WHERE  w2_CsMessage.dept_id = w2_CsIncident.dept_id
+                         AND  w2_CsMessage.incident_id = w2_CsIncident.incident_id
+                    ORDER BY  w2_CsMessage.message_no DESC
+                    )
+                  )
+                )
+                </@@hasval:latest_inquiry_date_before@@>
+                -- 最終更新日
+                <@@hasval:date_changed_after@@>
+                AND
+                (
+                  w2_CsMessage.date_changed >= @date_changed_after
+                )
+                </@@hasval:date_changed_after@@>
+                <@@hasval:date_changed_before@@>
+                AND
+                (
+                  w2_CsMessage.date_changed < @date_changed_before
+                )
+                </@@hasval:date_changed_before@@>
+                -- 発生日
+                <@@hasval:created_after@@>
+                AND
+                (
+                  w2_CsIncident.date_created >= @created_after
+                )
+                </@@hasval:created_after@@>
+                <@@hasval:created_before@@>
+                AND
+                (
+                  w2_CsIncident.date_created < @created_before
+                )
+                </@@hasval:created_before@@>
+                -- 対応完了日
+                <@@hasval:completed_after@@>
+                AND
+                (
+                  w2_CsIncident.date_completed >= @completed_after
+                )
+                </@@hasval:completed_after@@>
+                <@@hasval:completed_before@@>
+                AND
+                (
+                  w2_CsIncident.date_completed < @completed_before
+                )
+                </@@hasval:completed_before@@>
+                -- ゴミ箱の中も検索
+                <@@hasval:valid_flg@@>
+                AND
+                (
+                  (
+                    w2_CsIncident.valid_flg = @valid_flg
+                    AND
+                    w2_CsMessage.valid_flg = @valid_flg
+                  )
+                )
+                </@@hasval:valid_flg@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="message_status" Type="nvarchar" Size="10" />
+      <Input Name="typefilter" Type="nvarchar" Size="10" />
+      <Input Name="type_mail_in" Type="nvarchar" Size="10" />
+      <Input Name="type_mail_out" Type="nvarchar" Size="10" />
+      <Input Name="type_tel_in" Type="nvarchar" Size="10" />
+      <Input Name="type_tel_out" Type="nvarchar" Size="10" />
+      <Input Name="type_others_in" Type="nvarchar" Size="10" />
+      <Input Name="type_others_out" Type="nvarchar" Size="10" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="incident_category_id" Type="nvarchar" Size="30" />
+      <Input Name="importance" Type="nvarchar" Size="10" />
+      <Input Name="voc_id" Type="nvarchar" Size="10" />
+      <Input Name="cs_group_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="inquiry_date_after" Type="datetime" />
+      <Input Name="inquiry_date_before" Type="datetime" />
+      <Input Name="latest_inquiry_date_after" Type="datetime" />
+      <Input Name="latest_inquiry_date_before" Type="datetime" />
+      <Input Name="date_changed_after" Type="datetime" />
+      <Input Name="date_changed_before" Type="datetime" />
+      <Input Name="created_after" Type="datetime" />
+      <Input Name="created_before" Type="datetime" />
+      <Input Name="completed_after" Type="datetime" />
+      <Input Name="completed_before" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+    </Parameter>
+  </SearchAdvanced_Where>
+
+</CsMessage_Sub>

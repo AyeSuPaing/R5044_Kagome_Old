@@ -1,0 +1,452 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : シリアルキー情報系SQLステートメントXML (SerialKey.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<SerialKey>
+
+  <!-- シリアルキー情報該当件数取得 -->
+  <GetSerialKeyCount>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        SELECT  COUNT(w2_SerialKey.product_id) AS row_count
+          FROM  w2_SerialKey
+                [[ SERIALKEY_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="serial_key_like_escaped" Type="nvarchar" Size="240" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="order_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="status" Type="nvarchar" Size="20" />
+      <Input Name="valid_flg" Type="nvarchar" Size="2" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetSerialKeyCount>
+
+  <!-- シリアルキー情報一覧取得 -->
+  <GetSerialKeyList>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  w2_SerialKey.*,
+                SUBSTRING(w2_SerialKey.variation_id, LEN(w2_SerialKey.product_id) + 1, LEN(w2_SerialKey.variation_id)) AS v_id
+          FROM  (
+                  SELECT  w2_SerialKey.serial_key,
+                          w2_SerialKey.product_id,
+                          w2_SerialKey.variation_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ SERIALKEY_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_SerialKey
+                          [[ SERIALKEY_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_SerialKey ON
+                (
+                  RowIndex.serial_key = w2_SerialKey.serial_key
+                  AND
+                  RowIndex.product_id = w2_SerialKey.product_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="serial_key_like_escaped" Type="nvarchar" Size="240" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="order_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="status" Type="nvarchar" Size="20" />
+      <Input Name="valid_flg" Type="nvarchar" Size="2" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetSerialKeyList>
+
+  <!-- シリアルキー情報取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  *
+          FROM  w2_SerialKey
+         WHERE  serial_key = @serial_key
+           AND  product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="serial_key" Type="nvarchar" Size="120" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- シリアルキー情報登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_SerialKey
+                (
+                  w2_SerialKey.serial_key,
+                  w2_SerialKey.product_id,
+                  w2_SerialKey.variation_id,
+                  w2_SerialKey.order_id,
+                  w2_SerialKey.order_item_no,
+                  w2_SerialKey.user_id,
+                  w2_SerialKey.status,
+                  w2_SerialKey.valid_flg,
+                  w2_SerialKey.date_delivered,
+                  w2_SerialKey.download_count,
+                  w2_SerialKey.date_created,
+                  w2_SerialKey.date_changed,
+                  w2_SerialKey.last_changed
+                )
+        VALUES  (
+                  @serial_key,
+                  @product_id,
+                  @variation_id,
+                  @order_id,
+                  @order_item_no,
+                  @user_id,
+                  @status,
+                  @valid_flg,
+                  @date_delivered,
+                  @download_count,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="serial_key" Type="nvarchar" Size="60" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_item_no" Type="int" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="20" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_delivered" Type="datetime" />
+      <Input Name="download_count" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- シリアルキー情報更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_SerialKey
+           SET  w2_SerialKey.product_id = @product_id,
+                w2_SerialKey.variation_id = @variation_id,
+                w2_SerialKey.order_id = @order_id,
+                w2_SerialKey.order_item_no = @order_item_no,
+                w2_SerialKey.user_id = @user_id,
+                w2_SerialKey.status = @status,
+                w2_SerialKey.valid_flg = @valid_flg,
+                w2_SerialKey.date_delivered = @date_delivered,
+                w2_SerialKey.download_count = @download_count,
+                w2_SerialKey.date_changed = GETDATE(),
+                w2_SerialKey.last_changed = @last_changed
+         WHERE  w2_SerialKey.serial_key = @serial_key
+           AND  w2_SerialKey.product_id = @product_id_old
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="serial_key" Type="nvarchar" Size="60" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_item_no" Type="int" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="20" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_delivered" Type="datetime" />
+      <Input Name="download_count" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="product_id_old" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Update>
+
+  <!-- シリアルキー情報削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_SerialKey
+         WHERE  w2_SerialKey.serial_key = @serial_key
+           AND  w2_SerialKey.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="serial_key" Type="nvarchar" Size="60" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- シリアルキー引当前チェック処理-->
+  <CheckForReserveSerialKey>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP (@key_count)
+                w2_SerialKey.serial_key
+          FROM  w2_SerialKey
+         WHERE  w2_SerialKey.product_id = @product_id
+           AND  w2_SerialKey.variation_id = @variation_id
+           AND  w2_SerialKey.status = 'NOTRESERVED'
+           AND  w2_SerialKey.valid_flg = '1'
+      ORDER BY  w2_SerialKey.date_changed
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="key_count" Type="int" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </CheckForReserveSerialKey>
+
+  <!-- シリアルキー認証 -->
+  <Authenticate>
+    <Statement>
+      <![CDATA[
+      SELECT  w2_SerialKey.*,
+              w2_Product.name AS 'product_name',
+              w2_Product.download_url
+        FROM  w2_SerialKey,
+              w2_Product
+       WHERE  w2_SerialKey.order_id = @order_id
+         AND  w2_SerialKey.serial_key = @serial_key
+         AND  w2_SerialKey.valid_flg = '1'
+         AND  w2_SerialKey.product_id = @product_id
+         AND  w2_SerialKey.product_id = w2_Product.product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="serial_key" Type="nvarchar" Size="60" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Authenticate>
+
+  <!-- シリアルキー引当処理-->
+  <ReserveSerialKey>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_SerialKey
+           SET  w2_SerialKey.order_id = @order_id,
+                w2_SerialKey.order_item_no = @order_item_no,
+                w2_SerialKey.user_id = @user_id,
+                w2_SerialKey.status = 'RESERVED',
+                w2_SerialKey.date_changed = GETDATE(),
+                w2_SerialKey.last_changed = @last_changed
+         WHERE  w2_SerialKey.serial_key IN
+                (
+                  SELECT  TOP (@key_count)
+                          w2_SerialKey.serial_key
+                    FROM  w2_SerialKey WITH (UPDLOCK)
+                   WHERE  w2_SerialKey.product_id = @product_id
+                     AND  w2_SerialKey.variation_id = @variation_id
+                     AND  w2_SerialKey.status = 'NOTRESERVED'
+                     AND  w2_SerialKey.valid_flg = '1'
+                ORDER BY  w2_SerialKey.date_changed
+                )
+           AND  w2_SerialKey.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_item_no" Type="int" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="key_count" Type="int" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </ReserveSerialKey>
+  
+  <!-- 注文からシリアルキー情報取得 -->
+  <GetSerialKeyFromOrder>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_SerialKey
+         WHERE  w2_SerialKey.order_id = @order_id
+           AND  w2_SerialKey.order_item_no = @order_item_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_item_no" Type="int" />
+    </Parameter>
+  </GetSerialKeyFromOrder>
+
+  <!-- 購入毎のシリアルキー一覧を取得 -->
+  <GetDeliveredSerialKeys>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_SerialKey
+         WHERE  w2_SerialKey.order_id = @order_id
+           AND  w2_SerialKey.order_item_no = @order_item_no
+           AND  w2_SerialKey.status = 'DELIVERED' -- 引渡し済
+           AND  w2_SerialKey.valid_flg = '1'
+           AND  
+           (
+             w2_SerialKey.date_delivered IS NOT NULL
+             AND
+             GETDATE() <=
+             CASE @period_days
+               WHEN 0 THEN GETDATE()
+               ELSE DATEADD(day, @period_days, date_delivered) -- 参照日が有効期間（発行日＋N日）以内
+             END
+           )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_item_no" Type="int" />
+      <Input Name="period_days" Type="int" />
+    </Parameter>
+  </GetDeliveredSerialKeys>
+  
+  <!-- シリアルキー引当戻し処理-->
+  <UnreserveSerialKey>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_SerialKey
+           SET  w2_SerialKey.order_id = '',
+                w2_SerialKey.order_item_no = default,
+                w2_SerialKey.user_id = '',
+                w2_SerialKey.status = 'NOTRESERVED',
+                w2_SerialKey.date_changed = GETDATE(),
+                w2_SerialKey.last_changed = @last_changed
+         WHERE  w2_SerialKey.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UnreserveSerialKey>
+  
+  <!-- シリアルキー引渡処理 -->
+  <DeliverSerialKey>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_SerialKey
+           SET  w2_SerialKey.status = 'DELIVERED',
+                w2_SerialKey.date_delivered = GETDATE(),
+                w2_SerialKey.date_changed = GETDATE(),
+                w2_SerialKey.last_changed = @last_changed
+         WHERE  w2_SerialKey.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </DeliverSerialKey>
+
+  <!-- 注文情報キャンセルに連動したシリアルキー戻し処理-->
+  <UpdateByCancelOrder>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_SerialKey
+           SET  w2_SerialKey.order_id =
+                  CASE status WHEN 'RESERVED'  THEN ''
+                              WHEN 'DELIVERED' THEN order_id
+                              ELSE order_id
+                  END,
+                w2_SerialKey.order_item_no =
+                  CASE status WHEN 'RESERVED'  THEN '0' -- default
+                              WHEN 'DELIVERED' THEN order_item_no
+                              ELSE order_item_no
+                  END,
+                w2_SerialKey.user_id =
+                  CASE status WHEN 'RESERVED'  THEN ''
+                              WHEN 'DELIVERED' THEN user_id
+                              ELSE user_id
+                  END,
+                w2_SerialKey.status =
+                  CASE status WHEN 'RESERVED'  THEN 'NOTRESERVED'
+                              WHEN 'DELIVERED' THEN 'CANCELLED'
+                              ELSE status
+                  END,
+                w2_SerialKey.date_changed = GETDATE(),
+                w2_SerialKey.last_changed = @last_changed
+         WHERE  w2_SerialKey.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateByCancelOrder>
+
+  <!-- シリアルキーマスタ情報取得(CSV出力用) -->
+  <GetSerialKeyMaster>
+    <Statement>
+      <![CDATA[ 
+        SELECT  @@ fields @@
+          FROM  w2_SerialKey
+                [[ SERIALKEY_SEARCH_WHERE ]]
+                [[ SERIALKEY_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="serial_key_like_escaped" Type="nvarchar" Size="240" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="order_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="status" Type="nvarchar" Size="20" />
+      <Input Name="valid_flg" Type="nvarchar" Size="2" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetSerialKeyMaster>
+
+  <!-- シリアルキーマスタフィールドチェック -->
+  <CheckSerialKeyFields>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  w2_SerialKey
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </CheckSerialKeyFields>
+
+  <!-- シリアルキー件数取得（重複チェック用） -->
+  <CountSerialKeyForDuplicationCheck>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_SerialKey 
+         WHERE  serial_key = @serial_key 
+           AND  product_id = @product_id
+           <@@hasval:product_id_old@@>
+           AND  product_id != @product_id_old
+           </@@hasval:product_id_old@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="serial_key" Type="nvarchar" Size="60" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id_old" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CountSerialKeyForDuplicationCheck>
+  
+</SerialKey>

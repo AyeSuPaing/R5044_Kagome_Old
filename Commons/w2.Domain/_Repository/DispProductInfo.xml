@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品表示情報マスタ系SQLステートメントXML (DispProductInfo.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<DispProductInfo>
+
+  <!-- 商品ランキング機能で設定した情報を元に集計 -->
+  <CreateProductRanking>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+          [display_order] [int] IDENTITY(1, 1),
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [product_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                  shop_id,
+                  product_id
+                )
+        SELECT  w2_OrderItem.shop_id,
+                w2_OrderItem.product_id
+          FROM  (
+                  SELECT  *
+                    FROM  w2_OrderItem
+                   WHERE  w2_OrderItem.shop_id = @shop_id
+                     AND  w2_OrderItem.item_return_exchange_kbn <> '01'
+                          -- 集計期間区分:日数指定は日付まで、期間指定は時分秒まで比較する
+                     AND  (
+                            <@@val:total_kbn:DAYS@@>
+                            w2_OrderItem.date_created >= CONVERT(VARCHAR, DATEADD(day, -1 * @total_days, @current_date), 111) -- 日数指定:N日前
+                            AND
+                            w2_OrderItem.date_created < CONVERT(VARCHAR, @current_date, 111)                                  -- 日数指定:前日
+                            </@@val:total_kbn:DAYS@@>
+                            <@@val:total_kbn:PERIOD@@>
+                            w2_OrderItem.date_created >= @total_from                                                          -- 期間指定:注文日From
+                            AND
+                            w2_OrderItem.date_created < @total_to                                                             -- 期間指定:注文日To
+                            </@@val:total_kbn:PERIOD@@>
+                          )
+                ) AS w2_OrderItem
+                INNER JOIN
+                (
+                  SELECT  *
+                    FROM  w2_Product
+                   WHERE  w2_Product.valid_flg = '1'                -- 有効
+                     AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+                     AND  w2_Product.display_from <= @current_date  -- 表示期間内
+                     AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+                ) AS w2_Product
+                ON (
+                     w2_OrderItem.shop_id = w2_Product.shop_id
+                     AND
+                     w2_OrderItem.product_id = w2_Product.product_id
+                   )
+         WHERE  1 = 1
+           <@@hasval:category_id@@>
+           -- カテゴリID指定
+           AND
+           (
+             (w2_Product.category_id1 LIKE @category_id + '%')
+             OR
+             (w2_Product.category_id2 LIKE @category_id + '%')
+             OR
+             (w2_Product.category_id3 LIKE @category_id + '%')
+             OR
+             (w2_Product.category_id4 LIKE @category_id + '%')
+             OR
+             (w2_Product.category_id5 LIKE @category_id + '%')
+           )
+           </@@hasval:category_id@@>
+           <@@notval:brand_kbn:0@@>
+           -- ブランド指定
+           AND
+           (
+             w2_Product.brand_id1 = @brand_id
+             OR
+             w2_Product.brand_id2 = @brand_id
+             OR
+             w2_Product.brand_id3 = @brand_id
+             OR
+             w2_Product.brand_id4 = @brand_id
+             OR
+             w2_Product.brand_id5 = @brand_id
+           )
+           </@@notval:brand_kbn:0@@>
+           -- カテゴリ除外指定
+           AND
+           (
+             @@ where_target_data @@
+           )
+        GROUP BY w2_OrderItem.shop_id, w2_OrderItem.product_id
+        ORDER BY COUNT(w2_OrderItem.product_id) DESC, w2_OrderItem.product_id ASC
+        
+        SELECT  TOP 5000
+                TMP.display_order,
+                TMP.shop_id,
+                TMP.product_id
+          FROM  @temp_table TMP
+                LEFT JOIN w2_ProductView ON
+                (
+                  TMP.shop_id = w2_ProductView.shop_id
+                  AND
+                  TMP.product_id = w2_ProductView.product_id
+                )
+         WHERE
+                -- 在庫切れ商品
+                (
+                  <@@val:stock_kbn:1@@>
+                  --在庫切れ商品も表示
+                  1
+                  </@@val:stock_kbn:1@@>
+                  <@@val:stock_kbn:0@@>
+                  --在庫切れ商品は非表示
+                  CASE w2_ProductView.stock_management_kbn
+                        WHEN '0' THEN 1  -- 在庫管理をしない
+                        WHEN '1' THEN 1  -- 商品情報：在庫０以下の場合でも表示する。購入可能
+                        WHEN '2' THEN    -- 商品情報：在庫０以下の場合でも表示する。購入不可
+                          CASE
+                            WHEN ISNULL(w2_ProductView.stock, 0) > 0 THEN 1
+                            ELSE 0
+                          END
+                        WHEN '3' THEN    -- 商品情報：在庫０以下の場合は表示しない。購入不可
+                          CASE
+                            WHEN ISNULL(w2_ProductView.stock, 0) > 0 THEN 1
+                            ELSE 0
+                          END
+                      END
+                  </@@val:stock_kbn:0@@>
+                > 0
+                )
+        GROUP BY TMP.display_order, TMP.shop_id, TMP.product_id
+        ORDER BY TMP.display_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="total_kbn" Type="nvarchar" Size="10" />
+      <Input Name="total_from" Type="datetime" />
+      <Input Name="total_to" Type="datetime" />
+      <Input Name="total_days" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_kbn" Type="nvarchar" Size="1" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="stock_kbn" Type="nvarchar" Size="1" />
+    </Parameter>
+  </CreateProductRanking>
+
+  <!-- 統計情報更新 商品金額 -->
+  <UpdateStatisticsProductPrice>
+    <Statement>
+      <![CDATA[
+        UPDATE  STATISTICS w2_ProductPrice WITH FULLSCAN
+      ]]>
+    </Statement>
+  </UpdateStatisticsProductPrice>
+
+  <!-- 統計情報更新 商品カテゴリ -->
+  <UpdateStatisticsProductCategory>
+    <Statement>
+      <![CDATA[
+        UPDATE  STATISTICS w2_ProductCategory WITH FULLSCAN
+      ]]>
+    </Statement>
+  </UpdateStatisticsProductCategory>
+
+  <!-- 統計情報更新 商品在庫 -->
+  <UpdateStatisticsProductStock>
+    <Statement>
+      <![CDATA[
+        UPDATE  STATISTICS w2_ProductStock WITH FULLSCAN
+      ]]>
+    </Statement>
+  </UpdateStatisticsProductStock>
+
+  <!-- 統計情報更新 商品 -->
+  <UpdateStatisticsProduct>
+    <Statement>
+      <![CDATA[
+        UPDATE  STATISTICS w2_Product WITH FULLSCAN
+      ]]>
+    </Statement>
+  </UpdateStatisticsProduct>
+
+  <!-- 統計情報更新 商品詳細 -->
+  <UpdateStatisticsDispProductInfo>
+    <Statement>
+      <![CDATA[
+        UPDATE  STATISTICS w2_DispProductInfo WITH FULLSCAN
+      ]]>
+    </Statement>
+  </UpdateStatisticsDispProductInfo>
+
+  <!-- 商品表示情報マスタの登録 -->
+  <InsertDispProductInfo>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_DispProductInfo
+                (
+                  shop_id,
+                  data_kbn,
+                  display_order,
+                  product_id,
+                  last_changed
+                ) 
+        VALUES  (
+                  @shop_id,
+                  @data_kbn,
+                  @display_order,
+                  @product_id,
+                  'batch'
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="data_kbn" Type="nvarchar" Size="10" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </InsertDispProductInfo>
+
+  <!-- 商品表示情報マスタの削除 -->
+  <DeleteDispProductInfo>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_DispProductInfo
+         WHERE  w2_DispProductInfo.shop_id = @shop_id 
+           AND  w2_DispProductInfo.data_kbn = @data_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="data_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteDispProductInfo>
+
+</DispProductInfo>

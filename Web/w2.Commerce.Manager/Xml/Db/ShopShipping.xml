@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 店舗配送料系SQLステートメントXML(ShopShipping.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ShopShipping>
+  <!-- 配送料一覧を取得する -->
+  <GetShippingList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_ShopShipping.shipping_id), 0)
+          FROM  w2_ShopShipping
+                [[ SHOPSHIPPING_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_ShopShipping.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ShopShipping.shop_id,
+                          w2_ShopShipping.shipping_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ SHOPSHIPPING_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ShopShipping
+                          [[ SHOPSHIPPING_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ShopShipping ON
+                (
+                  RowIndex.shop_id = w2_ShopShipping.shop_id
+                  AND
+                  RowIndex.shipping_id = w2_ShopShipping.shipping_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetShippingList>
+  
+  <!-- 配送料一覧を取得する -->
+  <GetShippingAllList>
+    <Statement>
+      <![CDATA[
+        SELECT  * 
+          FROM  w2_ShopShipping 
+         WHERE  w2_ShopShipping.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetShippingAllList>
+  
+  <!-- 配送料情報を取得する -->
+  <GetShopShipping>
+    <Statement>
+      <![CDATA[
+        SELECT  *,
+                (
+                  SELECT  COUNT(product_id)
+                    FROM  w2_Product
+                   WHERE  w2_Product.shop_id = @shop_id
+                     AND  w2_Product.shipping_type = @shipping_id
+                ) AS product_count
+          FROM  w2_ShopShipping 
+         WHERE  w2_ShopShipping.shop_id = @shop_id
+           AND  w2_ShopShipping.shipping_id = @shipping_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetShopShipping>
+  
+  <!-- 特別配送先が存在する配送料情報を取得する -->
+  <GetShippingExtra>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ShopShipping.shipping_id, 
+                w2_ShopShipping.shop_shipping_name 
+          FROM  w2_ShopShipping, w2_ShopShippingZone 
+         WHERE  w2_ShopShipping.shop_id = w2_ShopShippingZone.shop_id
+           AND  w2_ShopShipping.shipping_id = w2_ShopShippingZone.shipping_id 
+           AND  w2_ShopShipping.shop_id = @shop_id
+           AND  w2_ShopShippingZone.shipping_zone_no > 47 
+        GROUP BY w2_ShopShipping.shipping_id,w2_ShopShipping.name 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetShippingExtra>
+  
+  <!-- 配送料情報を登録する -->
+  <InsertShipping>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ShopShipping
+            (
+            shop_id,
+            shipping_id,
+            shop_shipping_name,
+            shipping_date_set_flg,
+            shipping_date_set_begin,
+            shipping_date_set_end,
+            date_created,
+            date_changed,
+            last_changed,
+            fixed_purchase_flg,
+            fixed_purchase_kbn1_flg,
+            fixed_purchase_kbn1_setting,
+            fixed_purchase_kbn2_flg,
+            --fixed_purchase_kbn2_setting,
+            fixed_purchase_kbn3_flg,
+            fixed_purchase_kbn3_setting,
+            fixed_purchase_order_entry_timing,
+            fixed_purchase_cancel_deadline,
+            fixed_purchase_shipping_days_required,
+            fixed_purchase_minimum_shipping_span,
+            wrapping_paper_flg,
+            wrapping_paper_types,
+            wrapping_bag_flg,
+            wrapping_bag_types,
+            payment_selection_flg,
+            permitted_payment_ids,
+            shipping_price_separate_estimates_flg,
+            shipping_price_separate_estimates_message,
+            shipping_price_separate_estimates_message_mobile,
+            fixed_purchase_free_shipping_flg,
+            business_days_for_shipping,
+            next_shipping_max_change_days,
+            fixed_purchase_shipping_notdisplay_flg,
+            fixed_purchase_kbn4_flg,
+            fixed_purchase_kbn4_setting1,
+            fixed_purchase_kbn4_setting2,
+            fixed_purchase_kbn1_setting2,
+            fixed_purchase_first_shipping_next_month_flg,
+            shipping_base_id
+            )
+         VALUES  (
+            @shop_id,
+            @shipping_id,
+            @shop_shipping_name,
+            @shipping_date_set_flg,
+            @shipping_date_set_begin,
+            @shipping_date_set_end,
+            getdate(),
+            getdate(),
+            @last_changed,
+            @fixed_purchase_flg,
+            @fixed_purchase_kbn1_flg,
+            @fixed_purchase_kbn1_setting,
+            @fixed_purchase_kbn2_flg,
+            --@fixed_purchase_kbn2_setting,
+            @fixed_purchase_kbn3_flg,
+            @fixed_purchase_kbn3_setting,
+            @fixed_purchase_order_entry_timing,
+            @fixed_purchase_cancel_deadline,
+            @fixed_purchase_shipping_days_required,
+            @fixed_purchase_minimum_shipping_span,
+            @wrapping_paper_flg,
+            @wrapping_paper_types,
+            @wrapping_bag_flg,
+            @wrapping_bag_types,
+            @payment_selection_flg,
+            @permitted_payment_ids,
+            @shipping_price_separate_estimates_flg,
+            @shipping_price_separate_estimates_message,
+            @shipping_price_separate_estimates_message_mobile,
+            @fixed_purchase_free_shipping_flg,
+            @business_days_for_shipping,
+            @next_shipping_max_change_days,
+            @fixed_purchase_shipping_notdisplay_flg,
+            @fixed_purchase_kbn4_flg,
+            @fixed_purchase_kbn4_setting1,
+            @fixed_purchase_kbn4_setting2,
+            @fixed_purchase_kbn1_setting2,
+            @fixed_purchase_first_shipping_next_month_flg,
+            @shipping_base_id
+            )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="shop_shipping_name" Type="nvarchar" Size="30" />
+      <Input Name="shipping_date_set_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_date_set_begin" Type="int" />
+      <Input Name="shipping_date_set_end" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="fixed_purchase_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_kbn1_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_kbn1_setting" Type="nvarchar" Size="200" />
+      <Input Name="fixed_purchase_kbn2_flg" Type="nvarchar" Size="1" />
+      <!--Input Name="fixed_purchase_kbn2_setting" Type="nvarchar" Size="200" /-->
+      <Input Name="fixed_purchase_kbn3_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_kbn3_setting" Type="nvarchar" Size="200" />
+      <Input Name="fixed_purchase_order_entry_timing" Type="int" />
+      <Input Name="fixed_purchase_cancel_deadline" Type="int" />
+      <Input Name="fixed_purchase_shipping_days_required" Type="int" />
+      <Input Name="fixed_purchase_minimum_shipping_span" Type="int" />
+      <Input Name="wrapping_paper_flg" Type="nvarchar" Size="1" />
+      <Input Name="wrapping_paper_types" Type="nvarchar" Size="MAX" />
+      <Input Name="wrapping_bag_flg" Type="nvarchar" Size="1" />
+      <Input Name="wrapping_bag_types" Type="nvarchar" Size="MAX" />
+      <Input Name="payment_selection_flg" Type="nvarchar" Size="1" />
+      <Input Name="permitted_payment_ids" Type="nvarchar" Size="200" />
+      <Input Name="shipping_price_separate_estimates_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_price_separate_estimates_message" Type="nvarchar" Size="30" />
+      <Input Name="shipping_price_separate_estimates_message_mobile" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_free_shipping_flg" Type="nvarchar" Size="1" />
+      <Input Name="business_days_for_shipping" Type="int" />
+      <Input Name="next_shipping_max_change_days" Type="int" />
+      <Input Name="fixed_purchase_shipping_notdisplay_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_kbn4_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_kbn4_setting1" Type="nvarchar" Size="50" />
+      <Input Name="fixed_purchase_kbn4_setting2" Type="nvarchar" Size="20" />
+      <Input Name="fixed_purchase_kbn1_setting2" Type="nvarchar" Size="150" />
+      <Input Name="fixed_purchase_first_shipping_next_month_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_base_id" Type="nvarchar" Size="2" />
+    </Parameter>
+  </InsertShipping>
+  
+  <!-- 配送料情報を更新する -->
+  <UpdateShipping>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ShopShipping
+           SET  w2_ShopShipping.shop_shipping_name = @shop_shipping_name,
+                w2_ShopShipping.shipping_date_set_flg = @shipping_date_set_flg,
+                w2_ShopShipping.shipping_date_set_begin = @shipping_date_set_begin,
+                w2_ShopShipping.shipping_date_set_end = @shipping_date_set_end,
+                w2_ShopShipping.date_changed = getdate(),
+                w2_ShopShipping.last_changed = @last_changed,
+                w2_ShopShipping.fixed_purchase_flg = @fixed_purchase_flg,
+                w2_ShopShipping.fixed_purchase_kbn1_flg = @fixed_purchase_kbn1_flg,
+                w2_ShopShipping.fixed_purchase_kbn1_setting = @fixed_purchase_kbn1_setting,
+                w2_ShopShipping.fixed_purchase_kbn2_flg = @fixed_purchase_kbn2_flg,
+                --w2_ShopShipping.fixed_purchase_kbn2_setting = @fixed_purchase_kbn2_setting,
+                w2_ShopShipping.fixed_purchase_kbn3_flg = @fixed_purchase_kbn3_flg,
+                w2_ShopShipping.fixed_purchase_kbn3_setting = @fixed_purchase_kbn3_setting,
+                w2_ShopShipping.fixed_purchase_order_entry_timing = @fixed_purchase_order_entry_timing,
+                w2_ShopShipping.fixed_purchase_cancel_deadline = @fixed_purchase_cancel_deadline,
+                w2_ShopShipping.fixed_purchase_shipping_days_required = @fixed_purchase_shipping_days_required,
+                w2_ShopShipping.fixed_purchase_minimum_shipping_span = @fixed_purchase_minimum_shipping_span,
+                w2_ShopShipping.wrapping_paper_flg = @wrapping_paper_flg,
+                w2_ShopShipping.wrapping_paper_types = @wrapping_paper_types,
+                w2_ShopShipping.wrapping_bag_flg = @wrapping_bag_flg,
+                w2_ShopShipping.wrapping_bag_types = @wrapping_bag_types,
+                w2_ShopShipping.payment_selection_flg = @payment_selection_flg,
+                w2_ShopShipping.permitted_payment_ids = @permitted_payment_ids,
+                w2_ShopShipping.shipping_price_separate_estimates_flg = @shipping_price_separate_estimates_flg,
+                w2_ShopShipping.shipping_price_separate_estimates_message = @shipping_price_separate_estimates_message,
+                w2_ShopShipping.shipping_price_separate_estimates_message_mobile = @shipping_price_separate_estimates_message_mobile,
+                w2_ShopShipping.fixed_purchase_free_shipping_flg = @fixed_purchase_free_shipping_flg,
+                w2_ShopShipping.business_days_for_shipping = @business_days_for_shipping,
+                w2_ShopShipping.next_shipping_max_change_days = @next_shipping_max_change_days,
+                w2_ShopShipping.fixed_purchase_shipping_notdisplay_flg = @fixed_purchase_shipping_notdisplay_flg,
+                w2_ShopShipping.fixed_purchase_kbn4_flg = @fixed_purchase_kbn4_flg,
+                w2_ShopShipping.fixed_purchase_kbn4_setting1 = @fixed_purchase_kbn4_setting1,
+                w2_ShopShipping.fixed_purchase_kbn4_setting2 = @fixed_purchase_kbn4_setting2,
+                w2_ShopShipping.fixed_purchase_kbn1_setting2 = @fixed_purchase_kbn1_setting2,
+                w2_ShopShipping.fixed_purchase_first_shipping_next_month_flg = @fixed_purchase_first_shipping_next_month_flg,
+                w2_ShopShipping.shipping_base_id = @shipping_base_id
+         WHERE  w2_ShopShipping.shop_id = @shop_id
+           AND  w2_ShopShipping.shipping_id = @shipping_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="shop_shipping_name" Type="nvarchar" Size="30" />
+      <Input Name="shipping_date_set_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_date_set_begin" Type="int" />
+      <Input Name="shipping_date_set_end" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="fixed_purchase_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_kbn1_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_kbn1_setting" Type="nvarchar" Size="200" />
+      <Input Name="fixed_purchase_kbn2_flg" Type="nvarchar" Size="1" />
+      <!--Input Name="fixed_purchase_kbn2_setting" Type="nvarchar" Size="200" /-->
+      <Input Name="fixed_purchase_kbn3_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_kbn3_setting" Type="nvarchar" Size="200" />
+      <Input Name="fixed_purchase_order_entry_timing" Type="int" />
+      <Input Name="fixed_purchase_cancel_deadline" Type="int" />
+      <Input Name="fixed_purchase_shipping_days_required" Type="int" />
+      <Input Name="fixed_purchase_minimum_shipping_span" Type="int" />
+      <Input Name="wrapping_paper_flg" Type="nvarchar" Size="1" />
+      <Input Name="wrapping_paper_types" Type="nvarchar" Size="MAX" />
+      <Input Name="wrapping_bag_flg" Type="nvarchar" Size="1" />
+      <Input Name="wrapping_bag_types" Type="nvarchar" Size="MAX" />
+      <Input Name="payment_selection_flg" Type="nvarchar" Size="1" />
+      <Input Name="permitted_payment_ids" Type="nvarchar" Size="200" />
+      <Input Name="shipping_price_separate_estimates_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_price_separate_estimates_message" Type="nvarchar" Size="30" />
+      <Input Name="shipping_price_separate_estimates_message_mobile" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_free_shipping_flg" Type="nvarchar" Size="1" />
+      <Input Name="business_days_for_shipping" Type="int" />
+      <Input Name="next_shipping_max_change_days" Type="int" />
+      <Input Name="fixed_purchase_shipping_notdisplay_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_kbn4_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_kbn4_setting1" Type="nvarchar" Size="50" />
+      <Input Name="fixed_purchase_kbn4_setting2" Type="nvarchar" Size="20" />
+      <Input Name="fixed_purchase_kbn1_setting2" Type="nvarchar" Size="150" />
+      <Input Name="fixed_purchase_first_shipping_next_month_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_base_id" Type="nvarchar" Size="2" />
+    </Parameter>
+  </UpdateShipping>
+  
+  <!-- 配送料情報を削除する -->
+  <DeleteShipping>
+    <Statement>
+      <![CDATA[
+        -- 配送料情報
+        DELETE  
+          FROM  w2_ShopShipping
+         WHERE  w2_ShopShipping.shop_id = @shop_id
+           AND  w2_ShopShipping.shipping_id = @shipping_id
+           
+        -- 配送料地帯情報
+        DELETE  
+          FROM  w2_ShopShippingZone
+         WHERE  w2_ShopShippingZone.shop_id = @shop_id
+           AND  w2_ShopShippingZone.shipping_id = @shipping_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteShipping>
+
+  <!-- 配送種別ID重複チェック -->
+  <CheckDuplicationShopShippingId>
+    <Statement>
+      <![CDATA[
+        SELECT  count(shipping_id) AS count
+          FROM  w2_ShopShipping
+         WHERE  w2_ShopShipping.shop_id = @shop_id
+           AND  w2_ShopShipping.shipping_id = @shipping_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckDuplicationShopShippingId>
+
+  <!-- 本配送種別に紐づく注文情報が存在するチェック -->
+  <CheckExistOrder>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  count(*) AS count
+          FROM  w2_Order
+         WHERE  w2_Order.shop_id = @shop_id
+           AND  w2_Order.shipping_id = @shipping_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckExistOrder>
+
+  <!-- 配送会社IDの重複チェック -->
+  <CheckDuplicationInsertDeliveryCompanyId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(delivery_company_id) AS delivery_company_count 
+          FROM  w2_DeliveryCompany 
+         WHERE  w2_DeliveryCompany.delivery_company_id = @delivery_company_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="delivery_company_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckDuplicationInsertDeliveryCompanyId>
+
+</ShopShipping>

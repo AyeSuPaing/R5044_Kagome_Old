@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品タグ出力SQLステートメントXML(ProductTag.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductTag>
+  <!-- 差分出力 -->
+  <ExportDifferential>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        WITH
+          targetProduct AS
+          (
+            SELECT  product_id
+              FROM  w2_Product
+             WHERE  w2_Product.date_changed >= @date_changed
+          ),
+          targetVariation AS
+          (
+            SELECT  product_id
+              FROM  w2_ProductVariation
+             WHERE  w2_ProductVariation.date_changed >= @date_changed
+          ),
+          targetTag AS
+          (
+            SELECT  product_id
+              FROM  w2_ProductTag
+             WHERE  w2_ProductTag.date_changed >= @date_changed
+          ),
+          targetProductIds AS
+          (
+            SELECT DISTINCT product_id
+              FROM
+              (
+                  SELECT * FROM targetProduct
+                  UNION ALL
+                  SELECT * FROM targetVariation
+                  UNION ALL
+                  SELECT * FROM targetTag
+              ) AS tt
+          )
+        
+        SELECT  @@ EXPORT_FIELDS @@
+          FROM  w2_ProductTag
+                INNER JOIN targetProductIds ON
+                (
+                  w2_ProductTag.product_id = targetProductIds.product_id
+                )
+      ORDER BY  w2_ProductTag.product_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date_changed" Type="datetime" />
+    </Parameter>
+  </ExportDifferential>
+
+  <!-- 全件出力 -->
+  <ExportAll>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  @@ EXPORT_FIELDS @@
+          FROM  w2_ProductTag
+      ORDER BY  w2_ProductTag.product_id ASC
+      ]]>
+    </Statement>
+  </ExportAll>
+</ProductTag>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品レビュー系SQLステートメントXML(ProductReview.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductReview>
+  
+  <!-- 商品レビュー挿入 -->
+  <InsertProductReview>
+    <Statement>
+      <![CDATA[
+        DECLARE @review_no int
+        SELECT  @review_no = ISNULL(MAX(review_no), 0) + 1
+          FROM  w2_ProductReview
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+       
+        INSERT  w2_ProductReview
+                (
+                  shop_id,
+                  product_id,
+                  review_no,
+                  user_id,
+                  nick_name,
+                  review_rating,
+                  review_title,
+                  review_comment,
+                  open_flg,
+                  date_opened,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @shop_id,
+                  @product_id,
+                  @review_no,
+                  @user_id,
+                  @nick_name,
+                  @review_rating,
+                  @review_title,
+                  @review_comment,
+                  @open_flg,
+                  @date_opened,
+                  getdate(),
+                  getdate(),
+                  'user'
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="nick_name" Type="nvarchar" Size="40" />
+      <Input Name="review_rating" Type="int" />
+      <Input Name="review_title" Type="ntext" />
+      <Input Name="review_comment" Type="ntext" />
+      <Input Name="open_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_opened" Type="datetime" />
+    </Parameter>
+  </InsertProductReview>
+  
+  <!-- 商品レビュー取得 -->
+  <GetProductReview>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_ProductReview.review_no), 0)
+          FROM  w2_ProductReview
+                [[ PRODUCTREVIEW_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_ProductReview.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ProductReview.shop_id,
+                          w2_ProductReview.product_id,
+                          w2_ProductReview.review_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCTREVIEW_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductReview
+                          [[ PRODUCTREVIEW_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductReview ON
+                (
+                  RowIndex.shop_id = w2_ProductReview.shop_id
+                  AND
+                  RowIndex.product_id = w2_ProductReview.product_id
+                  AND
+                  RowIndex.review_no = w2_ProductReview.review_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetProductReview>
+  
+</ProductReview>

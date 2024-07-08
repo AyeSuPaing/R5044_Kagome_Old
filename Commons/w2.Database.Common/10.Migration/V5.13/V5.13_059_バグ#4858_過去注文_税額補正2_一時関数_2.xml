@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+-- 注文IDから商品小計税額を抽出する関数
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_GetOrderItemSubtotalTaxPrice]') and OBJECTPROPERTY(id, N'IsScalarFunction') = 1)
+drop function [dbo].[w2_GetOrderItemSubtotalTaxPrice]
+GO
+CREATE FUNCTION dbo.w2_GetOrderItemSubtotalTaxPrice(
+	@OrderId varchar(30), -- 注文ID
+	@discountPrice decimal(18,3), -- 商品値引き額
+	@taxRate decimal(18,0), -- 税率(%)
+	@taxExcludedFractionRounding varchar(10), -- 税率丸め方法(ROUNDUP:切り上げ ROUNDDOWN:切り捨て ROUNDOFF:四捨五入)
+	@priceTaxExcludedFlag varchar(1) -- 税込み金額フラグ（1:金額が税込み 0:金額が税抜き）
+	)
+RETURNS decimal(18,3) AS
+BEGIN
+	DECLARE @resultPrice decimal(18,3); -- 税額
+	DECLARE @itemPriceSubtotal decimal(18,3); -- 注文商品合計金額(値引き前)
+	
+	SELECT @itemPriceSubtotal =  SUM(product_price * item_quantity)
+	FROM w2_OrderItem
+	WHERE w2_OrderItem.order_id = @OrderId   
+	AND product_bundle_id = '';
+	
+	IF @itemPriceSubtotal = 0 
+	BEGIN 
+		RETURN 0;
+	END
+	
+	SELECT
+	@resultPrice = SUM(
+		[dbo].[w2_GetTaxPrice](
+			product_price - (@discountPrice * product_price / @itemPriceSubtotal), @taxRate, @taxExcludedFractionRounding, @priceTaxExcludedFlag
+		) * item_quantity
+	)
+	FROM w2_OrderItem
+	WHERE w2_OrderItem.order_id = @OrderId   
+	AND product_bundle_id = '';
+
+	RETURN @resultPrice
+END;
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

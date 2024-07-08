@@ -1,0 +1,146 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+      
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_Order' AND COLUMN_NAME = 'external_order_id')
+	ALTER TABLE [w2_Order] ADD [external_order_id] [nvarchar] (50) NOT NULL DEFAULT (N'');
+GO
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_Order' AND COLUMN_NAME = 'external_import_status')
+	ALTER TABLE [w2_Order] ADD [external_import_status] [nvarchar] (10) NOT NULL DEFAULT (N'');
+GO
+
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'10000080')
+BEGIN
+INSERT INTO [w2_MailTemplate] (
+	[shop_id]
+	,[mail_id]
+	,[mail_name]
+	,[mail_from]
+	,[mail_to]
+	,[mail_cc]
+	,[mail_bcc]
+	,[mail_subject]
+	,[mail_body]
+	,[mail_subject_mobile]
+	,[mail_body_mobile]
+	,[mail_attachmentfile_path]
+	,[del_flg]
+	,[date_created]
+	,[date_changed]
+	,[last_changed]
+	,[mail_from_name]
+	,[mail_category]
+	,[auto_send_flg]
+	)
+VALUES (
+	'0'
+	,'10000080'
+	,'外部連携注文取込エラー通知メール【管理者向け】'
+	,'bh@w2s.xyz'
+	,'bh@w2s.xyz'
+	,''
+	,''
+	,'外部連携注文取込エラー通知メール'
+	,'開始時間：@@ time_begin @@  
+終了時間：@@ time_end @@
+
+詳細情報  
+実行件数：@@ execute_count @@件
+成功件数：@@ success_count @@件
+失敗件数：@@ failure_count @@件
+取込スキップ件数：@@ skip_count @@件
+@@ message @@'
+	,''
+	,''
+	,''
+	,'0'
+	,CAST('20170829 14:55:58.113' AS DATETIME)
+	,CAST('20170913 12:39:43.280' AS DATETIME)
+	,'ｗ２ユーザー'
+	,''
+	,''
+	,'1'
+	)
+END
+
+IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'10000081')
+BEGIN
+INSERT INTO [w2_MailTemplate] (
+	[shop_id]
+	,[mail_id]
+	,[mail_name]
+	,[mail_from]
+	,[mail_to]
+	,[mail_cc]
+	,[mail_bcc]
+	,[mail_subject]
+	,[mail_body]
+	,[mail_subject_mobile]
+	,[mail_body_mobile]
+	,[mail_attachmentfile_path]
+	,[del_flg]
+	,[date_created]
+	,[date_changed]
+	,[last_changed]
+	,[mail_from_name]
+	,[mail_category]
+	,[auto_send_flg]
+	)
+VALUES (
+	'0'
+	,'10000081'
+	,'外部連携注文取込 与信取得エラー【ユーザ向け】'
+	,'bh@w2s.xyz'
+	,''
+	,''
+	,''
+	,'注文でエラーが発生いたしました'
+	,'いつもありがとうございます。
+カスタマーセンターでございます。
+
+只今ご注文をいただいております商品の発送準備のため
+後払いの仮決済を行ったところ、エラーが発生いたしました。
+
+お手数ではございますが、お支払い方法を変更していただき、
+その旨をカスタマーサービスまでご連絡をいただければ
+商品をお届けすることが可能でございます。
+下記方法にてご対応をお願いいたします。
+
+【支払方法の変更】
+
+　①xxx
+　②xxx
+'
+	,'注文でエラーが発生いたしました'
+	,'いつもありがとうございます。
+カスタマーセンターでございます。
+
+只今ご注文をいただいております商品の発送準備のため
+後払いの仮決済を行ったところ、エラーが発生いたしました。
+
+お手数ではございますが、お支払い方法を変更していただき、
+その旨をカスタマーサービスまでご連絡をいただければ
+商品をお届けすることが可能でございます。
+下記方法にてご対応をお願いいたします。
+
+【支払方法の変更】
+
+　①xxx
+　②xxx
+'
+	,''
+	,'0'
+	,CAST('20170914 20:15:57.000' AS DATETIME)
+	,CAST('20170914 20:15:57.000' AS DATETIME)
+	,'ｗ２ユーザー'
+	,'bh@w2s.xyz'
+	,''
+	,'1'
+	)
+END
+			]]>
+    </Statement>
+  </Up>
+</Migration>

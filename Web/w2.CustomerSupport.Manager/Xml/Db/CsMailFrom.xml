@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メール送信元管理画面系SQLステートメントXML(CsMailFrom.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsMailFrom>
+  
+  <!-- 一覧取得 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+       DECLARE  @row_count int
+       
+        -- 該当件数取得
+        SELECT  @row_count = ISNULL(COUNT(dept_id), 0)
+          FROM  w2_CsMailFrom
+         WHERE  w2_CsMailFrom.dept_id = @dept_id 
+       
+        -- 一覧情報取得
+        SELECT  w2_CsMailFrom.*,
+                @row_count as row_count
+          FROM  (
+                  SELECT  w2_CsMailFrom.dept_id,
+                          w2_CsMailFrom.mail_from_id,
+                          ROW_NUMBER() OVER (ORDER BY w2_CsMailFrom.display_order, w2_CsMailFrom.mail_from_id) AS row_num
+                    FROM  w2_CsMailFrom
+                   WHERE  w2_CsMailFrom.dept_id = @dept_id 
+                ) AS RowIndex
+                INNER JOIN w2_CsMailFrom ON
+                (
+                  RowIndex.dept_id = w2_CsMailFrom.dept_id
+                  AND
+                  RowIndex.mail_from_id = w2_CsMailFrom.mail_from_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  w2_CsMailFrom.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMailFrom.* 
+          FROM  w2_CsMailFrom
+         WHERE  w2_CsMailFrom.dept_id = @dept_id
+           AND  w2_CsMailFrom.mail_from_id = @mail_from_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_from_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Get>
+
+  <!-- 有効なものを取得 -->
+  <GetValidAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsMailFrom.* 
+          FROM  w2_CsMailFrom
+         WHERE  w2_CsMailFrom.dept_id = @dept_id
+           AND	w2_CsMailFrom.valid_flg = '1'
+      ORDER BY  w2_CsMailFrom.display_order ASC, w2_CsMailFrom.mail_from_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetValidAll>
+
+  <!--登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CsMailFrom
+          (
+            w2_CsMailFrom.dept_id, 
+            w2_CsMailFrom.mail_from_id, 
+            w2_CsMailFrom.mail_address, 
+            w2_CsMailFrom.display_name, 
+            w2_CsMailFrom.display_order, 
+            w2_CsMailFrom.valid_flg, 
+            w2_CsMailFrom.date_created, 
+            w2_CsMailFrom.date_changed, 
+            w2_CsMailFrom.last_changed 
+          ) 
+          VALUES
+          (
+            @dept_id, 
+            @mail_from_id, 
+            @mail_address, 
+            @display_name, 
+            @display_order, 
+            @valid_flg, 
+            getdate(),
+            getdate(),
+            @last_changed  
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_from_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_address" Type="nvarchar" Size="256" />
+      <Input Name="display_name" Type="nvarchar" Size="256" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMailFrom 
+           SET  w2_CsMailFrom.mail_address = @mail_address, 
+                w2_CsMailFrom.display_name = @display_name, 
+                w2_CsMailFrom.display_order = @display_order, 
+                w2_CsMailFrom.valid_flg = @valid_flg, 
+                w2_CsMailFrom.date_changed = getdate(), 
+                w2_CsMailFrom.last_changed = @last_changed 
+         WHERE  w2_CsMailFrom.dept_id = @dept_id
+           AND  w2_CsMailFrom.mail_from_id = @mail_from_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_from_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_address" Type="nvarchar" Size="256" />
+      <Input Name="display_name" Type="nvarchar" Size="256" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE 
+          FROM  w2_CsMailFrom
+         WHERE  w2_CsMailFrom.dept_id = @dept_id 
+           AND  w2_CsMailFrom.mail_from_id = @mail_from_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_from_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+  
+</CsMailFrom>

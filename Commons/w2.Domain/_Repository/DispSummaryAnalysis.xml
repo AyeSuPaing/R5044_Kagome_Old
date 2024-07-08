@@ -1,0 +1,389 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : サマリ分析結果テーブル系SQLステートメントXML (DispSummaryAnalysis.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<DispSummaryAnalysis>
+
+  <!-- 日別レポート取得 -->
+  <GetDailyReport>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  tgt_year = @tgt_year
+           AND  tgt_month = @tgt_month
+         ORDER BY tgt_year, tgt_month, tgt_day, data_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_kbn" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+    </Parameter>
+  </GetDailyReport>
+
+  <!-- 月別レポート取得（日レポートで最新のものを月のレポートとする） -->
+  <GetMonthlyReport>
+    <Statement>
+      <![CDATA[
+        WITH MonthlyKey (dept_id, summary_kbn, tgt_year, tgt_month, tgt_day)
+        AS
+        (
+          SELECT  dept_id, summary_kbn, tgt_year, tgt_month, MAX(tgt_day)
+            FROM  w2_DispSummaryAnalysis
+           WHERE  dept_id = @dept_id
+             AND  summary_kbn = @summary_kbn
+             AND  tgt_year = @tgt_year
+          GROUP BY dept_id, summary_kbn, tgt_year, tgt_month
+        )
+        SELECT  w2_DispSummaryAnalysis.*
+          FROM  w2_DispSummaryAnalysis
+                INNER JOIN MonthlyKey ON
+                (
+                  w2_DispSummaryAnalysis.dept_id = MonthlyKey.dept_id
+                  AND
+                  w2_DispSummaryAnalysis.summary_kbn = MonthlyKey.summary_kbn
+                  AND
+                  w2_DispSummaryAnalysis.tgt_year = MonthlyKey.tgt_year
+                  AND
+                  w2_DispSummaryAnalysis.tgt_month = MonthlyKey.tgt_month
+                  AND
+                  w2_DispSummaryAnalysis.tgt_day = MonthlyKey.tgt_day
+                )
+         ORDER BY w2_DispSummaryAnalysis.tgt_year, w2_DispSummaryAnalysis.tgt_month, w2_DispSummaryAnalysis.tgt_day, w2_DispSummaryAnalysis.data_no;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_kbn" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+    </Parameter>
+  </GetMonthlyReport>
+
+  <!-- レポート取得(日) -->
+  <GetReportDay>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  tgt_year = @tgt_year
+           AND  tgt_month = @tgt_month
+           AND  tgt_day = @tgt_day
+         ORDER BY tgt_year, tgt_month, tgt_day, data_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_kbn" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+    </Parameter>
+  </GetReportDay>
+
+  <!-- レポート取得(月) （日レポートで最新のものを月のレポートとする） -->
+  <GetReportMonth>
+    <Statement>
+      <![CDATA[
+        WITH MonthlyKey (dept_id, summary_kbn, tgt_year, tgt_month, tgt_day)
+        AS
+        (
+          SELECT  dept_id, summary_kbn, tgt_year, tgt_month, MAX(tgt_day)
+            FROM  w2_DispSummaryAnalysis
+           WHERE  dept_id = @dept_id
+             AND  summary_kbn = @summary_kbn
+             AND  tgt_year = @tgt_year
+             AND  tgt_month = @tgt_month
+          GROUP BY dept_id, summary_kbn, tgt_year, tgt_month
+        )
+        SELECT  w2_DispSummaryAnalysis.*
+          FROM  w2_DispSummaryAnalysis
+                INNER JOIN MonthlyKey ON
+                (
+                  w2_DispSummaryAnalysis.dept_id = MonthlyKey.dept_id
+                  AND
+                  w2_DispSummaryAnalysis.summary_kbn = MonthlyKey.summary_kbn
+                  AND
+                  w2_DispSummaryAnalysis.tgt_year = MonthlyKey.tgt_year
+                  AND
+                  w2_DispSummaryAnalysis.tgt_month = MonthlyKey.tgt_month
+                  AND
+                  w2_DispSummaryAnalysis.tgt_day = MonthlyKey.tgt_day
+                )
+         ORDER BY w2_DispSummaryAnalysis.tgt_year, w2_DispSummaryAnalysis.tgt_month, w2_DispSummaryAnalysis.tgt_day, w2_DispSummaryAnalysis.data_no;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_kbn" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+    </Parameter>
+  </GetReportMonth>
+
+  <!-- マージ -->
+  <Merge>
+    <Statement>
+      <![CDATA[
+        MERGE w2_DispSummaryAnalysis
+        USING
+        (
+          SELECT  @dept_id AS dept_id
+                  ,@summary_kbn AS summary_kbn
+                  ,@tgt_year AS tgt_year
+                  ,@tgt_month AS tgt_month
+                  ,@tgt_day AS tgt_day
+                  ,@value_name AS value_name
+                  ,@counts AS counts
+                  ,@reserved1 AS reserved1
+                  ,@reserved2 AS reserved2
+                  ,@reserved3 AS reserved3
+                  ,@reserved4 AS reserved4
+                  ,@reserved5 AS reserved5
+                  ,@reserved6 AS reserved6
+                  ,@reserved7 AS reserved7
+                  ,@reserved8 AS reserved8
+                  ,@reserved9 AS reserved9
+                  ,@reserved10 AS reserved10
+        ) AS tmp
+        ON
+        (
+          w2_DispSummaryAnalysis.dept_id = tmp.dept_id
+          AND
+          w2_DispSummaryAnalysis.summary_kbn = tmp.summary_kbn
+          AND
+          w2_DispSummaryAnalysis.tgt_year = tmp.tgt_year
+          AND
+          w2_DispSummaryAnalysis.tgt_month = tmp.tgt_month
+          AND
+          w2_DispSummaryAnalysis.tgt_day = tmp.tgt_day
+          AND
+          w2_DispSummaryAnalysis.value_name = tmp.value_name
+        )
+        WHEN MATCHED THEN
+          UPDATE  
+             SET  dept_id = tmp.dept_id
+                  ,summary_kbn = tmp.summary_kbn
+                  ,tgt_year = tmp.tgt_year
+                  ,tgt_month = tmp.tgt_month
+                  ,tgt_day = tmp.tgt_day
+                  ,value_name = tmp.value_name
+                  ,counts = tmp.counts
+                  ,reserved1 = tmp.reserved1
+                  ,reserved2 = tmp.reserved2
+                  ,reserved3 = tmp.reserved3
+                  ,reserved4 = tmp.reserved4
+                  ,reserved5 = tmp.reserved5
+                  ,reserved6 = tmp.reserved6
+                  ,reserved7 = tmp.reserved7
+                  ,reserved8 = tmp.reserved8
+                  ,reserved9 = tmp.reserved9
+                  ,reserved10 = tmp.reserved10
+
+        WHEN NOT MATCHED THEN
+          INSERT  (
+                    dept_id
+                    ,summary_kbn
+                    ,tgt_year
+                    ,tgt_month
+                    ,tgt_day
+                    ,value_name
+                    ,counts
+                    ,reserved1
+                    ,reserved2
+                    ,reserved3
+                    ,reserved4
+                    ,reserved5
+                    ,reserved6
+                    ,reserved7
+                    ,reserved8
+                    ,reserved9
+                    ,reserved10
+                  )
+          VALUES  (
+                    tmp.dept_id
+                    ,tmp.summary_kbn
+                    ,tmp.tgt_year
+                    ,tmp.tgt_month
+                    ,tmp.tgt_day
+                    ,tmp.value_name
+                    ,tmp.counts
+                    ,tmp.reserved1
+                    ,tmp.reserved2
+                    ,tmp.reserved3
+                    ,tmp.reserved4
+                    ,tmp.reserved5
+                    ,tmp.reserved6
+                    ,tmp.reserved7
+                    ,tmp.reserved8
+                    ,tmp.reserved9
+                    ,tmp.reserved10
+                  )
+          ; -- MERGEはセミコロンで終わる必要がある
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="summary_kbn" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+      <Input Name="value_name" Type="nvarchar" Size="1000" />
+      <Input Name="counts" Type="bigint" />
+      <Input Name="reserved1" Type="bigint" />
+      <Input Name="reserved2" Type="bigint" />
+      <Input Name="reserved3" Type="bigint" />
+      <Input Name="reserved4" Type="bigint" />
+      <Input Name="reserved5" Type="bigint" />
+      <Input Name="reserved6" Type="nvarchar" Size="50" />
+      <Input Name="reserved7" Type="nvarchar" Size="50" />
+      <Input Name="reserved8" Type="nvarchar" Size="50" />
+      <Input Name="reserved9" Type="nvarchar" Size="50" />
+      <Input Name="reserved10" Type="nvarchar" Size="50" />
+    </Parameter>
+  </Merge>
+
+  <!-- Get order count for workflow setting -->
+  <GetOrderCountForWorkflowSetting>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  w2_DispSummaryAnalysis.counts
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  value_name = @value_name
+           AND  summary_kbn = @summary_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="value_name" Type="nvarchar" Size="1000" />
+      <Input Name="summary_kbn" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetOrderCountForWorkflowSetting>
+
+  <!-- Insert order count for workflow setting -->
+  <InsertOrderCountForWorkflowSetting>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_DispSummaryAnalysis
+         WHERE  value_name = @value_name
+           AND  summary_kbn = @summary_kbn
+
+        INSERT  w2_DispSummaryAnalysis
+                (
+                  dept_id,
+                  summary_kbn,
+                  value_name,
+                  counts
+                )
+        VALUES  (
+                  @dept_id,
+                  @summary_kbn,
+                  @value_name,
+                  @counts
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="value_name" Type="nvarchar" Size="1000" />
+      <Input Name="counts" Type="bigint" />
+      <Input Name="summary_kbn" Type="nvarchar" Size="30" />
+    </Parameter>
+  </InsertOrderCountForWorkflowSetting>
+
+  <!-- Get count page scoring sales -->
+  <GetCountPageScoringSales>
+    <Statement>
+      <![CDATA[
+        DECLARE @separator NVarChar(1)
+        SET @separator = '?'
+
+        -- カレンダーテーブル生成(日別)
+        [[ GET_CALENDAR_DAY ]]
+
+        ;WITH  ScoringSaleTemp AS (
+        SELECT  SUM(w2_DispSummaryAnalysis.counts) number,
+                RIGHT
+                (
+                  LEFT(w2_DispSummaryAnalysis.value_name, CHARINDEX(@separator, w2_DispSummaryAnalysis.value_name) - 6),
+                  LEN(LEFT(w2_DispSummaryAnalysis.value_name, CHARINDEX(@separator, w2_DispSummaryAnalysis.value_name) - 6))
+                  + 1
+                  - LEN(@sub_directory_common + '/')
+                  - CHARINDEX(@sub_directory_common, LEFT(w2_DispSummaryAnalysis.value_name, CHARINDEX(@separator, w2_DispSummaryAnalysis.value_name) - 6))
+                ) value_name,
+                CASE
+                  WHEN CHARINDEX('pno', w2_DispSummaryAnalysis.value_name) > 0
+                    THEN CAST(
+                      LEFT(
+                        RIGHT(w2_DispSummaryAnalysis.value_name, LEN(w2_DispSummaryAnalysis.value_name) - CHARINDEX('pno=', w2_DispSummaryAnalysis.value_name) - 3),
+                        CHARINDEX('&', RIGHT(w2_DispSummaryAnalysis.value_name, LEN(w2_DispSummaryAnalysis.value_name) - CHARINDEX('pno=', w2_DispSummaryAnalysis.value_name) - 3)) - 1) as INT)
+                  ELSE 1
+                END pageno
+          FROM  w2_DispSummaryAnalysis
+          INNER JOIN @calendar AS calendar ON
+          (
+            w2_DispSummaryAnalysis.tgt_year = calendar.tgt_year
+            AND
+            w2_DispSummaryAnalysis.tgt_month = calendar.tgt_month
+            AND
+            w2_DispSummaryAnalysis.tgt_day = calendar.tgt_day
+          )
+         WHERE  w2_DispSummaryAnalysis.dept_id = @dept_id
+           AND  summary_kbn IN ('acspage', 'acspage_sp')
+           AND  (
+                  w2_DispSummaryAnalysis.value_name LIKE + '%/' + @top_url + '%scid=' + @scoring_sale_id + '%'
+                  OR
+                  w2_DispSummaryAnalysis.value_name LIKE + '%/' + @result_url + '%scid=' + @scoring_sale_id + '%'
+                  OR
+                  w2_DispSummaryAnalysis.value_name LIKE + '%/' + @question_url + '%scid=' + @scoring_sale_id + '%'
+                )
+           AND  CHARINDEX('previewKey=', w2_DispSummaryAnalysis.value_name) = 0
+      GROUP BY  RIGHT
+                (
+                  LEFT(w2_DispSummaryAnalysis.value_name, CHARINDEX(@separator, w2_DispSummaryAnalysis.value_name) - 6),
+                  LEN(LEFT(w2_DispSummaryAnalysis.value_name, CHARINDEX(@separator, w2_DispSummaryAnalysis.value_name) - 6))
+                  + 1
+                  - LEN(@sub_directory_common + '/')
+                  - CHARINDEX(@sub_directory_common, LEFT(w2_DispSummaryAnalysis.value_name, CHARINDEX(@separator, w2_DispSummaryAnalysis.value_name) - 6))
+                ),
+                CASE
+                  WHEN CHARINDEX('pno', w2_DispSummaryAnalysis.value_name) > 0
+                    THEN CAST(
+                      LEFT(
+                        RIGHT(w2_DispSummaryAnalysis.value_name, LEN(w2_DispSummaryAnalysis.value_name) - CHARINDEX('pno=', w2_DispSummaryAnalysis.value_name) - 3),
+                        CHARINDEX('&', RIGHT(w2_DispSummaryAnalysis.value_name, LEN(w2_DispSummaryAnalysis.value_name) - CHARINDEX('pno=', w2_DispSummaryAnalysis.value_name) - 3)) - 1) as INT)
+                  ELSE 1
+                END)
+        SELECT  CASE
+                  WHEN value_name = 'Question' THEN CAST (pageno AS NVARCHAR)
+                  ELSE value_name
+                END value_name,
+                number
+          FROM  ScoringSaleTemp
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="scoring_sale_id" Type="nvarchar" Size="32" />
+      <Input Name="top_url" Type="nvarchar" Size="MAX" />
+      <Input Name="question_url" Type="nvarchar" Size="MAX" />
+      <Input Name="result_url" Type="nvarchar" Size="MAX" />
+      <Input Name="sub_directory_common" Type="nvarchar" Size="MAX" />
+      <Input Name="start_date" Type="datetime" />
+      <Input Name="number_of_days" Type="int" />
+    </Parameter>
+  </GetCountPageScoringSales>
+
+</DispSummaryAnalysis>

@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+-- 制約名を取得し、制約内容削除後、新しい制約を追加する（login_idはインデックスあるため一旦削除後、再度作成）
+-- w2_user と w2Workuserを実施
+DECLARE @CONSTRAINT_NAME nvarchar (255)
+DECLARE @script VARCHAR(2000)
+
+SET @script = 'ALTER TABLE w2_User DROP CONSTRAINT ' + 
+	(
+	SELECT sysobjects.name
+	  FROM sysobjects, syscolumns
+	 WHERE syscolumns.id = object_id('w2_User')
+	   AND sysobjects.id = syscolumns.cdefault
+	   AND syscolumns.name = 'login_id'
+	)
+EXEC(@script)
+UPDATE w2_User SET login_id = '' WHERE login_id is NULL
+DROP INDEX [w2_User].[IX_w2_User_1]
+ALTER TABLE w2_User ALTER COLUMN [login_id] [nvarchar] (256) COLLATE Japanese_CS_AS_KS_WS NOT NULL;
+ALTER TABLE w2_User ADD DEFAULT (N'') for [login_id];
+CREATE INDEX [IX_w2_User_1] ON [dbo].[w2_User]([login_id]) ON [PRIMARY]
+
+
+
+SET @script = 'ALTER TABLE w2_User DROP CONSTRAINT ' + 
+	(
+	SELECT sysobjects.name
+	  FROM sysobjects, syscolumns
+	 WHERE syscolumns.id = object_id('w2_User')
+	   AND sysobjects.id = syscolumns.cdefault
+	   AND syscolumns.name = 'password'
+	)
+EXEC(@script)
+UPDATE w2_User SET password = '' WHERE password is NULL
+ALTER TABLE w2_User ALTER COLUMN [password] [nvarchar] (30) COLLATE Japanese_CS_AS_KS_WS NOT NULL;
+ALTER TABLE w2_User ADD DEFAULT (N'') for [password];
+
+
+
+SET @script = 'ALTER TABLE w2_WorkUser DROP CONSTRAINT ' + 
+	(
+	SELECT sysobjects.name
+	  FROM sysobjects, syscolumns
+	 WHERE syscolumns.id = object_id('w2_WorkUser')
+	   AND sysobjects.id = syscolumns.cdefault
+	   AND syscolumns.name = 'login_id'
+	)
+EXEC(@script)
+UPDATE w2_WorkUser SET login_id = '' WHERE login_id is NULL
+DROP INDEX [w2_WorkUser].[IX_w2_WorkUser_1]
+ALTER TABLE w2_WorkUser ALTER COLUMN [login_id] [nvarchar] (256) COLLATE Japanese_CS_AS_KS_WS NOT NULL;
+ALTER TABLE w2_WorkUser ADD DEFAULT (N'') for [login_id];
+CREATE INDEX [IX_w2_WorkUser_1] ON [dbo].[w2_WorkUser]([login_id]) ON [PRIMARY]
+
+
+SET @script = 'ALTER TABLE w2_WorkUser DROP CONSTRAINT ' +
+	(
+	SELECT sysobjects.name
+	  FROM sysobjects, syscolumns
+	 WHERE syscolumns.id = object_id('w2_WorkUser')
+	   AND sysobjects.id = syscolumns.cdefault
+	   AND syscolumns.name = 'password'
+	)
+EXEC(@script)
+UPDATE w2_WorkUser SET password = '' WHERE password is NULL
+ALTER TABLE w2_WorkUser ALTER COLUMN [password] [nvarchar] (30) COLLATE Japanese_CS_AS_KS_WS NOT NULL;
+ALTER TABLE w2_WorkUser ADD DEFAULT (N'') for [password];
+
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

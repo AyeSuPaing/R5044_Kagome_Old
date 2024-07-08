@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザー統合設定XML(UserIntegrationSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<!--
+ ■説明
+ ・ <Description />
+ ⇒説明タグ。
+ 　w2Commerce管理 > ユーザー統合 > 一覧にて表示。本設定ファイルの一致条件の説明を記述する。
+
+ ・ <MatchCondition />
+ ⇒一致条件タグ。
+ 　論理演算子タグ、一致タグを組みさわせて一致条件を指定する。
+
+ ・ <LogicalOperators Operator="XX" />
+ ⇒論理演算子タグ。
+ 　属性「Operator」は「Or」または「And」を指定。子階層タグの評価に利用する。
+
+ 　<例>メールアドレス または 電話番号が一致
+ 　======================
+ 　<LogicalOperators Operator="Or">
+ 　　<Match Key="mail_addr" Qry="Eq" />
+ 　　<Match Key="tel1" Qry="Eq" />
+ 　</LogicalOperators>
+ 　======================
+
+ 　※一致条件タグ（<MatchCondition />）の子階層には必ず指定する。
+
+ ・<Match Key="XX" Qry="YY" Length="ZZ" />
+ ⇒一致タグ。
+ 　属性「Key」にはユーザー情報の項目を指定。
+ 　属性「Qry」には「Eq（等しい）」または属性「Length」と組み合わせて 「Sw（○文字まで等しい）」を指定します。
+
+ 　<例>市区町村+番地の先頭5文字が一致
+ 　======================
+ 　<Match Key="addr3+addr4" Qry="Sw" Length="5" />
+ 　======================
+
+ 　※メールアドレス1,2はメールアドレス1と2を両方比較します。
+ 　※電話番号1,2は電話番号1と2を両方比較します。
+-->
+<UserIntegrationSetting>
+
+  <!-- 説明（w2Commerce管理 > ユーザー統合 > 一覧にて表示）-->
+  <Description>
+    <![CDATA[
+&nbsp;&nbsp;メールアドレスが一致<br />
+&nbsp;&nbsp;もしくは、姓名が一致<br />
+&nbsp;&nbsp;もしくは、姓・電話番号・都道府県が一致<br />
+&nbsp;&nbsp;もしくは、姓・都道府県・市区郡町村が一致<br />
+&nbsp;&nbsp;もしくは、都道府県・市区町村・それ以降の住所の先頭5文字が一致<br />]]></Description>
+
+  <!-- 一致条件  -->
+  <MatchCondition>
+    <LogicalOperators Operator="Or">
+
+      <!-- メールアドレスが一致 -->
+      <Match Key="mail_addr" Qry="Eq" />
+
+      <!-- 氏名が一致  -->
+      <Match Key="name" Qry="Eq" />
+
+      <!-- 姓・電話番号・都道府県が一致 -->
+      <LogicalOperators Operator="And">
+        <Match Key="name1" Qry="Eq" />
+        <Match Key="tel1" Qry="Eq" />
+        <Match Key="addr1" Qry="Eq" />
+      </LogicalOperators>
+
+      <!-- 姓・都道府県・市区郡町村が一致 -->
+      <LogicalOperators Operator="And">
+        <Match Key="name1" Qry="Eq" />
+        <Match Key="addr1+addr2" Qry="Eq" />
+      </LogicalOperators>
+
+      <!-- 都道府県・市区町村・それ以降の住所の先頭5文字が一致-->
+      <LogicalOperators Operator="And">
+        <Match Key="addr1+addr2" Qry="Eq" />
+        <Match Key="addr3+addr4" Qry="Sw" Length="5" />
+      </LogicalOperators>
+
+    </LogicalOperators>
+  </MatchCondition>
+
+</UserIntegrationSetting>

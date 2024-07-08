@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Product stock xml(ProductStock.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2014 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductStock>
+
+  <!-- Update stock for order -->
+  <UpdateProductStockForOrder>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductStock
+           SET  w2_ProductStock.stock = w2_ProductStock.stock - @item_quantity,
+                w2_ProductStock.date_changed = getdate(),
+                w2_ProductStock.last_changed = 'batch'
+          FROM  w2_ProductStock
+         WHERE  w2_ProductStock.shop_id  = @shop_id
+           AND  w2_ProductStock.product_id  = @product_id
+           AND  w2_ProductStock.variation_id  = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="item_quantity" Type="int" />
+    </Parameter>
+  </UpdateProductStockForOrder>
+
+  <!-- 商品在庫履歴情報追加 -->
+  <InsertProductStockHistoryForOrder>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductStockHistory 
+                (
+                  order_id,
+                  shop_id,
+                  product_id,
+                  variation_id,
+                  action_status,
+                  add_stock,
+                  date_created,
+                  last_changed
+                )
+        VALUES  (
+                  @order_id,
+                  @shop_id,
+                  @product_id,
+                  @variation_id,
+                  '11',
+                  @add_stock,
+                  getdate(),
+                  'batch'
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="add_stock" Type="int" />
+    </Parameter>
+  </InsertProductStockHistoryForOrder>
+
+</ProductStock>

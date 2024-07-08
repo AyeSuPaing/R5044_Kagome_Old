@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : インシデント系SQLステートメントXML(CsIncident.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsIncident>
+  
+  <!-- 滞留警告メール送信用に件数集計 -->
+  <CountWarning>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsIncident.status,
+                w2_CsIncident.operator_id,
+                w2_CsIncident.valid_flg,
+                COUNT(*) as row_count
+          FROM  w2_CsIncident
+         WHERE  w2_CsIncident.dept_id = @dept_id
+           AND  w2_CsIncident.valid_flg = '1'
+           AND  w2_CsIncident.status = 'NONE'
+           AND  w2_CsIncident.date_changed < DATEADD(day, @day_count, GETDATE())
+        GROUP BY  w2_CsIncident.status, w2_CsIncident.operator_id, w2_CsIncident.valid_flg
+                
+        SELECT  w2_CsIncident.status,
+                w2_CsOperator.operator_id,
+                w2_CsIncident.valid_flg,
+                COUNT(*) as row_count
+          FROM  w2_CsIncident,w2_CsOperator
+         WHERE  w2_CsIncident.dept_id = @dept_id
+           AND  w2_CsIncident.valid_flg = '1'
+           AND  w2_CsIncident.cs_group_id IN (SELECT cs_group_id FROM w2_CsOperatorGroup WHERE operator_id = w2_CsOperator.operator_id)
+           AND  w2_CsIncident.status = 'NONE'
+           AND  w2_CsIncident.date_changed < DATEADD(day, @day_count, GETDATE())
+        GROUP BY  w2_CsIncident.status, w2_CsOperator.operator_id, w2_CsIncident.valid_flg
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="day_count" Type="int" />
+    </Parameter>
+  </CountWarning>
+  
+</CsIncident>

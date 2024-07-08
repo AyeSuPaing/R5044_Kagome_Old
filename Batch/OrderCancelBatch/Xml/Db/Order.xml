@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文系ステートメントXML(OrderCancel.xml)  ※管理画面より引用
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<Order>
+
+  <!-- 注文情報を取得 -->
+  <GetOrder>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Order.*,
+                w2_OrderOwner.*,
+                w2_OrderShipping.*,
+                w2_OrderItem.*,
+                w2_OrderCoupon.*,
+                w2_ShopShipping.*,
+                RIGHT(w2_OrderItem.variation_id, LEN(w2_OrderItem.variation_id) - LEN(w2_OrderItem.product_id)) AS v_id,
+                w2_Payment.payment_name,
+                w2_ShopShipping.shop_shipping_name,
+                w2_MallCooperationSetting.mall_name            
+          FROM  w2_Order
+                INNER JOIN w2_OrderOwner ON
+                (
+                  w2_Order.order_id = w2_OrderOwner.order_id
+                )
+                INNER JOIN w2_OrderShipping ON
+                (
+                  w2_Order.order_id = w2_OrderShipping.order_id
+                )
+                INNER JOIN w2_OrderItem ON
+                (
+                  w2_OrderShipping.order_id = w2_OrderItem.order_id
+                  AND
+                  w2_OrderShipping.order_shipping_no = w2_OrderItem.order_shipping_no
+                )
+                LEFT JOIN w2_OrderCoupon ON
+                (
+                  w2_Order.order_id = w2_OrderCoupon.order_id
+                )
+                LEFT JOIN w2_Payment ON
+                (
+                  w2_Order.shop_id = w2_Payment.shop_id
+                  AND
+                  w2_Order.order_payment_kbn = w2_Payment.payment_id
+                )
+                LEFT JOIN w2_ShopShipping ON
+                (
+                  w2_Order.shop_id = w2_ShopShipping.shop_id
+                  AND
+                  w2_Order.shipping_id = w2_ShopShipping.shipping_id
+                )
+                LEFT JOIN w2_MallCooperationSetting ON
+                (
+                  w2_Order.mall_id = w2_MallCooperationSetting.mall_id
+                )
+         WHERE  w2_Order.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetOrder>
+
+  <!-- 注文商品情報を取得 -->
+  <GetOrderItem>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_OrderItem.*,
+                w2_Product.stock_management_kbn
+          FROM  w2_OrderItem
+                LEFT JOIN w2_Product ON
+                (
+                  w2_OrderItem.shop_id = w2_Product.shop_id
+                  AND
+                  w2_OrderItem.product_id = w2_Product.product_id
+                )
+         WHERE  w2_OrderItem.order_id = @order_id
+           AND  w2_OrderItem.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetOrderItem>
+
+</Order>

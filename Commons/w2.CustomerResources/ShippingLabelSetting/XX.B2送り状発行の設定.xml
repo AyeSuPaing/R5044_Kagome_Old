@@ -1,0 +1,362 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<OrderDataExportSetting>
+
+  <!-- 出力ファイルの設定 -->
+  <ExportSetting>
+    <!-- 受注一覧・ワークフロー一覧画面に表示する送り状ダウンロードリンクの文言 -->
+    <DisplayName><![CDATA[B2送り状発行]]></DisplayName>
+    <!-- 出力ファイルの種類（設定可能値：csv） -->
+    <FormatType>csv</FormatType>
+    <!-- 出力単位（設定可能値：Order） -->
+    <UnitType>Order</UnitType>
+    <!-- 出力ファイル名 -->
+    <FileName>
+      <Value Type="string">B2Okurijyo_</Value>
+      <Value Type="dateString" Format="yyyyMMddHHmmss">Now</Value>
+      <Value Type="string">.csv</Value>
+    </FileName>
+    <!-- ヘッダ行出力有無（設定可能値：true, false） -->
+    <ExportHeader>false</ExportHeader>
+    <!-- 引用符常時出力有無（設定可能値：true, false） -->
+    <!--
+         例：引用符が「"」、1列目の値は「123」、2列目の値は「abc」、3列目の値は「1,2」の場合、
+             ・true の場合、"123","abc","1,2"を出力しますが、
+             ・false の場合、123,abc,"1,2"を出力します。（値にカンマ(,)があるときは強制エスケープ）
+    -->
+    <AlwaysExportQuotation>true</AlwaysExportQuotation>
+    <!-- 列の引用符 -->
+    <StringQuotationMark><![CDATA["]]></StringQuotationMark>
+    <!-- 区切り文字（設定可能値：COMMA, TAB） -->
+    <Separator>COMMA</Separator>
+    <!-- 文字コード（設定可能値：Shift_JIS, UTF-8） -->
+    <Encoding>Shift_JIS</Encoding>
+  </ExportSetting>
+
+  <!-- 出力項目・内容の設定 -->
+  <FieldsSetting>
+    <!-- 1.出荷予定日 -->
+    <Field Name="1.出荷予定日">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[(w2_OrderShipping.scheduled_shipping_date IS NOT NULL)]]></Condition>
+          <Value Type="dateString" Format="yyyy/mm/dd">w2_OrderShipping.scheduled_shipping_date</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 2.お客様管理番（楽天注文の場合は-分割し3つ目を取得） -->
+    <Field Name="2.お客様管理番">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[((SELECT w2_MallCooperationSetting.mall_kbn FROM w2_MallCooperationSetting WHERE w2_MallCooperationSetting.mall_id = w2_Order.mall_id) = 'R') AND (LEN(w2_Order.order_id) - LEN(REPLACE(w2_Order.order_id, '-', '')) >= 2) AND (ISNUMERIC(REPLACE(w2_Order.order_id, '-', '')) > 0)]]></Condition>
+          <Value Type="field"><![CDATA[PARSENAME(REPLACE(w2_Order.order_id, '-', '.'), LEN(w2_Order.order_id) - LEN(REPLACE(w2_Order.order_id, '-', '')) - 1)]]></Value>
+        </Case>
+        <Else>
+          <Value Type="field">w2_Order.order_id</Value>
+        </Else>
+      </Switch>
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_Order.gift_flg = '1']]></Condition>
+          <Value Type="field"><![CDATA['_' + CAST(w2_OrderShipping.order_shipping_no AS nvarchar)]]></Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 3. 送り状種類 -->
+    <Field Name="3. 送り状種類">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_Order.order_payment_kbn = 'K20']]></Condition>
+          <Value Type="string">2</Value>
+        </Case>
+        <Else>
+          <Value Type="string">0</Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 4.お届け先コード -->
+    <Field Name="4.お届け先コード">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 5.お届け先電話番号 -->
+    <Field Name="5.お届け先電話番号">
+      <Value Type="field">w2_OrderShipping.shipping_tel1</Value>
+    </Field>
+
+    <!-- 5.お届け先電話番号★ -->
+    <Field Name="5.お届け先電話番号★">
+      <Value Type="field">w2_OrderShipping.shipping_tel1</Value>
+    </Field>
+
+    <!-- 6.お届け先電話番号枝番 -->
+    <Field Name="6.お届け先電話番号枝番">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 7.お届け先名 -->
+    <Field Name="7.お届け先名">
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_name)</Value>
+    </Field>
+
+    <!-- 8.お届け先郵便番号 -->
+    <Field Name="8.お届け先郵便番号">
+      <Value Type="field"><![CDATA[REPLACE(w2_OrderShipping.shipping_zip, '-', '')]]></Value>
+    </Field>
+
+    <!-- 9.お届け先住所 -->
+    <Field Name="9.お届け先住所">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[LEN(REPLACE(w2_OrderShipping.shipping_addr1 + w2_OrderShipping.shipping_addr2 + w2_OrderShipping.shipping_addr3, '　', '')) > 21]]></Condition>
+          <Value Type="field"><![CDATA[dbo.w2_ConvertToFullWidth(LEFT(REPLACE(w2_OrderShipping.shipping_addr1 + w2_OrderShipping.shipping_addr2 + w2_OrderShipping.shipping_addr3, '　', ''), 21) + '　' + SUBSTRING(REPLACE(w2_OrderShipping.shipping_addr1 + w2_OrderShipping.shipping_addr2 + w2_OrderShipping.shipping_addr3, '　', ''), 22, 75))]]></Value>
+        </Case>
+        <Else>
+          <Value Type="field"><![CDATA[dbo.w2_ConvertToFullWidth(REPLACE(w2_OrderShipping.shipping_addr1 + w2_OrderShipping.shipping_addr2 + w2_OrderShipping.shipping_addr3, '　', ''))]]></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 10.お届け先建物名 -->
+    <Field Name="10.お届け先建物名">
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_addr4)</Value>
+    </Field>
+
+    <!-- 11.会社・部門名1 ※w2Commerceでは企業名として利用 -->
+    <Field Name="11.会社・部門名1" StartBytePosition="0" ByteLength="50">
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_company_name)</Value>
+    </Field>
+
+    <!-- 12.会社・部門名2 ※w2Commerceでは部署名として利用 -->
+    <Field Name="12.会社・部門名2" StartBytePosition="0" ByteLength="50">
+      <Value Type="field">dbo.w2_ConvertToFullWidth(w2_OrderShipping.shipping_company_post_name)</Value>
+    </Field>
+
+    <!-- 13.お届け先略称カナ -->
+    <!--
+    <Field Name="13.お届け先略称カナ">
+      <Value Type="string"></Value>
+    </Field>
+    -->
+
+    <!-- 14.敬称 -->
+    <Field Name="14.敬称">
+      <Value Type="string">様</Value>
+    </Field>
+
+    <!-- 15.ご依頼主コード -->
+    <!--
+    <Field Name="15.ご依頼主コード">
+      <Value Type="string"></Value>
+    </Field>
+    -->
+
+    <!-- 16.ご依頼主電話番号 -->
+    <Field Name="16.ご依頼主電話番号">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ShopTel値を「@@ ShopTel @@」箇所に差し替えください。 -->
+      <Value Type="field"><![CDATA[REPLACE('@@ ShopTel @@', '-', '')]]></Value>
+    </Field>
+
+    <!-- 16.ご依頼主電話番号★ -->
+    <Field Name="16.ご依頼主電話番号★">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ShopTel値を「@@ ShopTel @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShopTel @@</Value>
+    </Field>
+
+    <!-- 17.ご依頼主電話番号枝番 -->
+    <Field Name="17.ご依頼主電話番号枝番">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 18.ご依頼主名 -->
+    <Field Name="18.ご依頼主名">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ShopName値を「@@ ShopName @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShopName @@</Value>
+    </Field>
+
+    <!-- 19.ご依頼主郵便番号 -->
+    <Field Name="19.ご依頼主郵便番号">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ShopZip値を「@@ ShopZip @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShopZip @@</Value>
+    </Field>
+
+    <!-- 20.ご依頼主住所 -->
+    <Field Name="20.ご依頼主住所">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ShopAddr1値を「@@ ShopAddr1 @@」箇所に差し替えください。 -->
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ShopAddr2値を「@@ ShopAddr2 @@」箇所に差し替えください。 -->
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ShopAddr3値を「@@ ShopAddr3 @@」箇所に差し替えください。 -->
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ShopAddr4値を「@@ ShopAddr4 @@」箇所に差し替えください。 -->
+      <Value Type="string">@@ ShopAddr1 @@@@ ShopAddr2 @@@@ ShopAddr3 @@@@ ShopAddr4 @@</Value>
+    </Field>
+
+    <!-- 21.ご依頼主建物名 -->
+    <Field Name="21.ご依頼主建物名">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 22.運賃管理番号 -->
+    <Field Name="22.運賃管理番号">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ShopTel値を「@@ ShopTel @@」箇所に差し替えください。 -->
+      <Value Type="field"><![CDATA[REPLACE('@@ ShopTel @@', '-', '')]]></Value>
+    </Field>
+
+    <!-- 23.品名コード1 -->
+    <Field Name="23.品名コード1">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 37.発行枚数 -->
+    <Field Name="37.発行枚数">
+      <Value Type="string">1</Value>
+    </Field>
+
+    <!-- 38.請求先番号コード -->
+    <Field Name="38.請求先番号コード">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 24.品名1 -->
+    <Field Name="24.品名1" StartBytePosition="0" ByteLength="50">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ProductName1値が空以外の場合、「@@ ProductName1 @@」箇所に差し替えください。 -->
+      <!-- その後、Type="string"のValueタグのコメントを外して、 Type="field"のValueタグをコメントしてください。 -->
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ProductName1値が空の場合、Type="string"のValueタグをコメントしてください。 -->
+      <!--Value Type="string">@@ ProductName1 @@</Value-->
+      <Value Type="field"><![CDATA[ISNULL((SELECT TOP 1 product_name FROM w2_OrderItem WHERE w2_OrderItem.order_id = w2_Order.order_id), '')]]></Value>
+    </Field>
+
+    <!-- 25.品名コード2 -->
+    <Field Name="25.品名コード2">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 26.品名2 -->
+    <Field Name="26.品名2" StartBytePosition="51" ByteLength="48">
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ProductName1値が空以外の場合、Type="string"のValueタグのコメントを外して、 Type="field"のValueタグをコメントしてください。 -->
+      <!-- Manager/Xml/Setting/OrderFileExportSetting.xmlファイルのOrderFileのid＝"B2"を検索して、ProductName1値が空の場合、Type="string"のValueタグをコメントしてください。 -->
+      <!--Value Type="string"></Value-->
+      <Value Type="field"><![CDATA[ISNULL((SELECT TOP 1 product_name FROM w2_OrderItem WHERE w2_OrderItem.order_id = w2_Order.order_id), '')]]></Value>
+    </Field>
+
+    <!-- 27.荷扱い1 -->
+    <Field Name="27.荷扱い1">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 28.荷扱い2 -->
+    <Field Name="28.荷扱い2">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 29.記事 -->
+    <Field Name="29.記事">
+      <Value Type="field">w2_Order.order_id</Value>
+    </Field>
+
+    <!-- 30.お届け予定（指定）日 -->
+    <Field Name="30.お届け予定（指定）日">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[(w2_OrderShipping.shipping_date IS NOT NULL) AND (w2_OrderShipping.shipping_date > GETDATE())]]></Condition>
+          <Value Type="dateString" Format="yyyy/mm/dd">w2_OrderShipping.shipping_date</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[CONVERT(varchar(8), w2_OrderShipping.shipping_date, 112) = '19000101']]></Condition>
+          <Value Type="string">配送日が指定されています</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 31.配達時間帯 -->
+    <!-- 配送会社設定の時間滞設定があれば、設定した時間滞の分岐をやります -->
+    <!-- 配送会社設定の時間滞設定がなければ、技術者が設定してくれます -->
+    <!-- ヤフー側設定などをご注意 -->
+    <Field Name="31.配達時間帯" IsB2ShippingTimeField="true">
+      <B2DeliveryCompanyIdValue>
+        <Value Type="field">w2_OrderShipping.delivery_company_id</Value>
+      </B2DeliveryCompanyIdValue>
+      <B2ShippingTimeValue>
+        <Value Type="field">w2_OrderShipping.shipping_time</Value>
+      </B2ShippingTimeValue>
+    </Field>
+
+    <!-- 32.コレクト代金引換額（税込） -->
+    <Field Name="32.コレクト代金引換額（税込）">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_Order.order_payment_kbn = 'K20']]></Condition>
+          <Value Type="field">CAST(CAST( Floor(w2_Order.order_price_total * POWER(10,@@ KEY_CURRENCY_DIGITS @@)) / POWER(10,@@ KEY_CURRENCY_DIGITS @@) AS decimal(18,@@ KEY_CURRENCY_DIGITS @@)) AS nvarchar)</Value>
+        </Case>
+        <Else>
+          <Value Type="string"></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 33.コレクト内消費税額等 -->
+    <!--
+    <Field Name="33.コレクト内消費税額等">
+      <Value Type="string">CAST(w2_Order.order_price_total * 0.05 AS int)</Value>
+    </Field>
+    -->
+
+    <!-- 34.営業所止置き -->
+    <!--
+    <Field Name="34.営業所止置き">
+      <Value Type="string"></Value>
+    </Field>
+    -->
+
+    <!-- 35.営業所コード -->
+    <!--
+    <Field Name="35.営業所コード">
+      <Value Type="string"></Value>
+    </Field>
+    -->
+
+    <!-- 36.個数口枠 -->
+    <!--
+    <Field Name="36.個数口枠">
+      <Value Type="string">1</Value>
+    </Field>
+    -->
+
+    <!-- 37.発行枚数 -->
+    <!--
+    <Field Name="37.発行枚数">
+      <Value Type="string">1</Value>
+    </Field>
+    -->
+
+    <!-- 38.請求先番号コード -->
+    <!--
+    <Field Name="38.請求先番号コード">
+      <Value Type="string"></Value>
+    </Field>
+    -->
+
+    <!-- 39.分類コード -->
+    <!--
+    <Field Name="39.分類コード">
+      <Value Type="string"></Value>
+    </Field>
+    -->
+
+    <!-- 最後の空列 -->
+    <Field Name="最後の空列">
+      <Value Type="string"></Value>
+    </Field>
+
+  </FieldsSetting>
+
+</OrderDataExportSetting>

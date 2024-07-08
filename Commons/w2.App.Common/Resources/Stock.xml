@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文処理SQLステートメントXML(Stock.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<Stock>
+  <!-- 現在の在庫数を取得 -->
+  <!-- ApiCommandのため、カラム名はＤＢに依存せず、すべて定義する -->
+  <GetStockQuantitiesNow>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_ProductStock.product_id as ProductID
+                ,w2_ProductStock.variation_id as VariationID
+                ,ISNULL(w2_Product.cooperation_id1,'') AS CooperationID1
+                ,ISNULL(w2_ProductVariation.variation_cooperation_id1,'') AS VariationCooperationID1
+                ,ISNULL(w2_Product.cooperation_id2,'') AS CooperationID2
+                ,ISNULL(w2_ProductVariation.variation_cooperation_id2,'') AS VariationCooperationID2
+                ,ISNULL(w2_Product.cooperation_id3,'') AS CooperationID3
+                ,ISNULL(w2_ProductVariation.variation_cooperation_id3,'') AS VariationCooperationID3  
+                ,ISNULL(w2_Product.cooperation_id4,'') AS CooperationID4
+                ,ISNULL(w2_ProductVariation.variation_cooperation_id4,'') AS VariationCooperationID4
+                ,ISNULL(w2_Product.cooperation_id5,'') AS CooperationID5
+                ,ISNULL(w2_ProductVariation.variation_cooperation_id5,'') AS VariationCooperationID5
+                ,stock AS Stock
+          FROM  w2_ProductStock
+                LEFT JOIN w2_Product ON
+                (
+                  w2_Product.shop_id = w2_ProductStock.shop_id
+                  and
+                  w2_Product.product_id = w2_ProductStock.product_id
+                )
+                LEFT JOIN w2_ProductVariation ON
+                (
+                  w2_ProductVariation.shop_id = w2_ProductStock.shop_id
+                  and
+                  w2_ProductVariation.product_id = w2_ProductStock.product_id
+                  and
+                  w2_ProductVariation.variation_id = w2_ProductStock.variation_id
+                  and
+                  w2_Product.use_variation_flg = '1'
+                )
+      ]]>
+    </Statement>
+  </GetStockQuantitiesNow>
+  
+  <!-- 指定基幹の在庫変動履歴を取得 -->
+  <!-- ApiCommandのため、カラム名はＤＢに依存せず、すべて定義する -->
+  <GetStockQuantitiesFrom>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  product_id AS ProductID
+                ,variation_id AS VariationID
+                ,'' AS CooperationID1
+                ,'' AS VariationCooperationID1
+                ,'' AS CooperationID2
+                ,'' AS VariationCooperationID2
+                ,'' AS CooperationID3
+                ,'' AS VariationCooperationID3
+                ,'' AS CooperationID4
+                ,'' AS VariationCooperationID4
+                ,'' AS CooperationID5
+                ,'' AS VariationCooperationID5
+                ,SUM(add_stock) AS Stock
+          FROM  w2_ProductStockHistory
+         WHERE  (@fromtime <= date_created AND date_created <  @beforetime)
+      GROUP BY  shop_id, product_id, variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fromtime" Type="datetime" />
+      <Input Name="beforetime" Type="datetime" />
+    </Parameter>
+  </GetStockQuantitiesFrom>
+  
+  <!-- 商品在庫情報更新 -->
+  <UpdateProductStock>
+    <Statement>
+      <![CDATA[
+          UPDATE  w2_ProductStock 
+             SET  w2_ProductStock.stock = w2_ProductStock.stock + @stock 
+                  ,w2_ProductStock.realstock = w2_ProductStock.realstock + @realstock 
+                  ,w2_ProductStock.realstock_b = w2_ProductStock.realstock_b + @realstock_b
+                  ,w2_ProductStock.realstock_c = w2_ProductStock.realstock_c + @realstock_c 
+                  ,w2_ProductStock.realstock_reserved = w2_ProductStock.realstock_reserved + @realstock_reserved
+                  ,w2_ProductStock.stock_alert = @stock_alert 
+                  ,w2_ProductStock.date_changed = getdate() 
+                  ,w2_ProductStock.last_changed = @last_changed 
+           WHERE  w2_ProductStock.shop_id = @shop_id 
+             AND  w2_ProductStock.product_id = @product_id
+             AND  w2_ProductStock.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="stock_alert" Type="int" />
+      <Input Name="stock" Type="int" />
+      <Input Name="realstock" Type="int" />
+      <Input Name="realstock_b" Type="int" />
+      <Input Name="realstock_c" Type="int" />
+      <Input Name="realstock_reserved" Type="int" />
+    </Parameter>
+  </UpdateProductStock>
+
+  <!-- 天賞堂用商品在庫情報更新 -->
+  <UpdateProductStockForTenshodo>
+    <Statement>
+      <![CDATA[
+          UPDATE  w2_ProductStock 
+             SET  w2_ProductStock.stock = @stock 
+                  ,w2_ProductStock.realstock = w2_ProductStock.realstock + @realstock 
+                  ,w2_ProductStock.realstock_b = w2_ProductStock.realstock_b + @realstock_b
+                  ,w2_ProductStock.realstock_c = w2_ProductStock.realstock_c + @realstock_c 
+                  ,w2_ProductStock.realstock_reserved = w2_ProductStock.realstock_reserved + @realstock_reserved
+                  ,w2_ProductStock.stock_alert = @stock_alert 
+                  ,w2_ProductStock.date_changed = getdate() 
+                  ,w2_ProductStock.last_changed = @last_changed 
+           WHERE  w2_ProductStock.shop_id = @shop_id 
+             AND  w2_ProductStock.product_id = @product_id
+             AND  w2_ProductStock.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="stock_alert" Type="int" />
+      <Input Name="stock" Type="int" />
+      <Input Name="realstock" Type="int" />
+      <Input Name="realstock_b" Type="int" />
+      <Input Name="realstock_c" Type="int" />
+      <Input Name="realstock_reserved" Type="int" />
+    </Parameter>
+  </UpdateProductStockForTenshodo>
+
+  <!-- 商品在庫情報取得 -->
+  <GetProductStock>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  *
+          FROM  w2_ProductStock
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetProductStock>
+  
+  <!-- 再入荷通知メールステータス更新 -->
+  <UpdateUserProductArrivalMail>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserProductArrivalMail
+           SET  mail_send_status = @mail_send_status
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+           AND  arrival_mail_kbn = @arrival_mail_kbn
+           AND  mail_send_status = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_send_status" Type="nvarchar" Size="1"/>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="arrival_mail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateUserProductArrivalMail>
+
+  <!-- サプライアを指定して在庫履歴から在庫変動数を取得(作成日が指定日数前から現時点までのものを対象） -->
+  <GetNotSyncChangeStockBySupplier>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_ProductStockHistory.history_no
+                ,w2_ProductStockHistory.shop_id
+                ,w2_ProductStockHistory.product_id
+                ,w2_ProductStockHistory.variation_id
+                ,w2_ProductStockHistory.add_stock
+          FROM  w2_ProductStockHistory
+                ,w2_Product
+         WHERE  w2_ProductStockHistory.date_created > DATEADD(day,@term,GETDATE())
+           AND  w2_ProductStockHistory.sync_flg = @sync_flg
+           AND  w2_Product.supplier_id = @supplier_id
+           AND  w2_ProductStockHistory.shop_id = w2_Product.shop_id
+           AND  w2_ProductStockHistory.product_id = w2_Product.product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sync_flg" Type="bit" />
+      <Input Name="supplier_id" Type="nvarchar" Size="20" />
+      <Input Name="term" Type="int" />
+    </Parameter>
+  </GetNotSyncChangeStockBySupplier>
+
+  <!-- 在庫履歴の同期フラグを更新する -->
+  <UpdateStockHistorySyncFlg>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductStockHistory 
+           SET  sync_flg = @sync_flg
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+           AND  history_no = @history_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sync_flg" Type="bit" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="history_no" Type="int" />
+    </Parameter>
+  </UpdateStockHistorySyncFlg>
+
+  <!-- 商品在庫履歴情報登録(同期フラグ含む） -->
+  <InsertProductStockHistoryWithSyncFlg>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductStockHistory
+                (
+                  order_id
+                  ,shop_id
+                  ,product_id
+                  ,variation_id
+                  ,action_status
+                  ,add_stock
+                  ,add_realstock
+                  ,add_realstock_b
+                  ,add_realstock_c
+                  ,add_realstock_reserved
+                  ,update_memo
+                  ,date_created
+                  ,last_changed
+                  ,sync_flg
+                )
+        VALUES
+                (
+                  @order_id
+                  ,@shop_id
+                  ,@product_id
+                  ,@variation_id
+                  ,@action_status
+                  ,@add_stock
+                  ,@add_realstock
+                  ,@add_realstock_b
+                  ,@add_realstock_c
+                  ,@add_realstock_reserved
+                  ,@update_memo
+                  ,getdate()
+                  ,@last_changed
+                  ,@sync_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="action_status" Type="nvarchar" Size="10" />
+      <Input Name="add_stock" Type="int" />
+      <Input Name="add_realstock" Type="int" />
+      <Input Name="add_realstock_b" Type="int" />
+      <Input Name="add_realstock_c" Type="int" />
+      <Input Name="add_realstock_reserved" Type="int" />
+      <Input Name="update_memo" Type="nvarchar" Size="200" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="sync_flg" Type="bit" />
+    </Parameter>
+  </InsertProductStockHistoryWithSyncFlg>
+
+  <!-- Insert product stock history with external api -->
+  <InsertProductStockHistoryWithExternalApi>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductStockHistory
+                (
+                  order_id,
+                  shop_id,
+                  product_id,
+                  variation_id,
+                  action_status,
+                  update_stock,
+                  update_realstock,
+                  update_realstock_b,
+                  update_realstock_c,
+                  update_realstock_reserved,
+                  update_memo,
+                  date_created,
+                  last_changed,
+                  sync_flg
+                )
+        VALUES
+                (
+                  @order_id,
+                  @shop_id,
+                  @product_id,
+                  @variation_id,
+                  @action_status,
+                  @update_stock,
+                  @update_realstock,
+                  @update_realstock_b,
+                  @update_realstock_c,
+                  @update_realstock_reserved,
+                  @update_memo,
+                  getdate(),
+                  @last_changed,
+                  @sync_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="action_status" Type="nvarchar" Size="10" />
+      <Input Name="update_stock" Type="int" />
+      <Input Name="update_realstock" Type="int" />
+      <Input Name="update_realstock_b" Type="int" />
+      <Input Name="update_realstock_c" Type="int" />
+      <Input Name="update_realstock_reserved" Type="int" />
+      <Input Name="update_memo" Type="nvarchar" Size="200" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="sync_flg" Type="bit" />
+    </Parameter>
+  </InsertProductStockHistoryWithExternalApi>
+
+  <!-- サプライアを指定して在庫数を取得(更新日が指定日数前から現時点までのもの） -->
+  <!-- 在庫安全基準値を下回っていた場合は在庫数を0として返却 -->
+  <GetStockQuantitiesNowBySupplier>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_ProductStock.product_id as ProductID
+                ,w2_ProductStock.variation_id as VariationID
+                ,
+                CASE 
+					        WHEN w2_ProductStock.stock > w2_ProductStock.stock_alert  THEN w2_ProductStock.stock
+					        ELSE 0
+				        END AS Stock
+          FROM  w2_ProductStock
+                ,w2_Product
+         WHERE  w2_ProductStock.date_changed > DATEADD(day,@term,GETDATE())
+           AND  w2_Product.supplier_id = @supplier_id
+           AND  w2_ProductStock.shop_id = w2_Product.shop_id
+           AND  w2_ProductStock.product_id = w2_Product.product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="supplier_id" Type="nvarchar" Size="20" />
+      <Input Name="term" Type="int" />
+    </Parameter>
+  </GetStockQuantitiesNowBySupplier>
+   
+
+</Stock>

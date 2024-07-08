@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id = OBJECT_ID(N'[dbo].[w2_CsOperatorAuthority]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+        BEGIN
+          IF NOT EXISTS (SELECT * FROM sys.columns WHERE NAME = 'permit_permanent_delete_flg'	AND OBJECT_ID = OBJECT_ID('[dbo].[w2_CsOperatorAuthority]'))
+          BEGIN
+            ALTER TABLE [dbo].[w2_CsOperatorAuthority]
+              ADD [permit_permanent_delete_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+
+            EXEC('UPDATE [dbo].[w2_CsOperatorAuthority] SET [permit_permanent_delete_flg] = ''1'';');
+          END
+        END
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

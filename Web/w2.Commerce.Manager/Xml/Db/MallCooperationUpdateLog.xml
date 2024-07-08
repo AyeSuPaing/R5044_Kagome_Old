@@ -1,0 +1,957 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モール連携更新ログ系SQLステートメントXML(MallCooperationUpdateLog.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MallCooperationUpdateLog>
+
+  <!-- 最終登録/更新ログ取得 -->
+  <GetLastLog>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1 *
+          FROM  w2_MallCooperationUpdateLog
+         WHERE  w2_MallCooperationUpdateLog.shop_id = @shop_id
+           AND  [[ MALL_ID_EXISTS ]]
+           AND  master_kbn IN ('Product', 'ProductVariation')
+           AND  action_kbn IN ('I')
+        ORDER BY w2_MallCooperationUpdateLog.date_created DESC
+
+        SELECT  TOP 1 *
+          FROM  w2_MallCooperationUpdateLog
+         WHERE  w2_MallCooperationUpdateLog.shop_id = @shop_id
+           AND  [[ MALL_ID_EXISTS ]]
+           AND  master_kbn IN ('Product', 'ProductVariation')
+           AND  action_kbn = 'U'
+        ORDER BY w2_MallCooperationUpdateLog.date_created DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetLastLog>
+
+  <!--対象件数取得 -->
+  <GetTarget>
+    <Statement>
+      <![CDATA[
+        -- 一時テーブル作成
+        CREATE TABLE #temp_table (
+          shop_id nvarchar(10) NOT NULL,
+          product_id nvarchar(30) NOT NULL
+        )
+        INSERT  #temp_table
+        SELECT  shop_id,
+                product_id
+          FROM  w2_Product
+         WHERE   w2_Product.shop_id = @shop_id
+           AND  (
+                  @product_id_like_escaped = '' 
+                  OR 
+                  w2_Product.product_id like @product_id_like_escaped + '%' ESCAPE '#'
+                )
+           AND  (
+                  @name_like_escaped = '' 
+                  OR 
+                  w2_Product.name like '%' + @name_like_escaped + '%' ESCAPE '#'
+                )
+           AND  (
+                  @valid_flg = '' 
+                  OR 
+                  w2_Product.valid_flg = @valid_flg
+                )  -- チェックが入っていない場合は空としてくる
+                   
+        -- 商品マスタ・登録
+        SELECT  COUNT(w2_Product.product_id)
+          FROM  w2_Product
+                INNER JOIN #temp_table ON
+                (
+                  w2_Product.shop_id = #temp_table.shop_id
+                  AND
+                  w2_Product.product_id = #temp_table.product_id
+                )
+         WHERE  (
+                  @date_insert_from IS NULL
+                  OR
+                  @date_insert_from <= w2_Product.date_created
+                )
+           AND  (
+                  @date_insert_to IS NULL
+                  OR
+                  @date_insert_to > w2_Product.date_created
+                )
+                
+        -- 商品マスタ・更新
+        SELECT  COUNT(DISTINCT w2_Product.product_id)
+          FROM  w2_Product
+                INNER JOIN #temp_table ON
+                (
+                  w2_Product.shop_id = #temp_table.shop_id
+                  AND
+                  w2_Product.product_id = #temp_table.product_id
+                )
+                LEFT JOIN w2_ProductVariationView ON
+                (
+                  w2_Product.shop_id = w2_ProductVariationView.shop_id
+                  AND
+                  w2_Product.product_id = w2_ProductVariationView.product_id
+                  AND
+                  (
+                    @valid_flg = '' 
+                    OR 
+                    w2_ProductVariationView.valid_flg = @valid_flg
+                  )  -- チェックが入っていない場合は空としてくる
+                )
+                LEFT JOIN w2_ProductExtend ON
+                (
+                  w2_Product.shop_id = w2_ProductExtend.shop_id
+                  AND
+                  w2_Product.product_id = w2_ProductExtend.product_id
+                )
+                LEFT JOIN w2_ProductTag ON
+                (
+                  w2_Product.product_id = w2_ProductTag.product_id
+                )
+                LEFT JOIN w2_ProductCategory ON
+                (
+                  w2_Product.shop_id = w2_ProductCategory.shop_id
+                  AND
+                  (
+                    w2_Product.category_id1 = w2_ProductCategory.category_id
+                    OR
+                    w2_Product.category_id2 = w2_ProductCategory.category_id
+                    OR
+                    w2_Product.category_id3 = w2_ProductCategory.category_id
+                    OR
+                    w2_Product.category_id4 = w2_ProductCategory.category_id
+                    OR
+                    w2_Product.category_id5 = w2_ProductCategory.category_id
+                  )
+                )
+         WHERE  [[ DATE_CHANGED_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="date_insert_from" Type="datetime" />
+      <Input Name="date_insert_to" Type="datetime" />
+      <Input Name="date_update_from" Type="datetime" />
+      <Input Name="date_update_to" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="2" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetTarget>
+
+  <!-- 商品系登録ログ作成 -->
+  <CreateProductInsertLog>
+    <Statement>
+      <![CDATA[
+        ------------------------------------------------------
+        -- 商品一時テーブル作成
+        ------------------------------------------------------
+        CREATE TABLE #temp_table_product (
+          shop_id nvarchar(10) NOT NULL,
+          product_id nvarchar(30) NOT NULL
+        )
+        INSERT  #temp_table_product
+        SELECT  shop_id,
+                product_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  (
+                  @product_id_like_escaped = '' 
+                  OR 
+                  w2_Product.product_id like @product_id_like_escaped + '%' ESCAPE '#'
+                )
+           AND  (
+                  @name_like_escaped = '' 
+                  OR 
+                  w2_Product.name like '%' + @name_like_escaped + '%' ESCAPE '#'
+                )
+           AND  (
+                  @valid_flg = '' 
+                  OR 
+                  w2_Product.valid_flg = @valid_flg
+                )
+           AND  (
+                  @date_insert_from IS NULL
+                  OR
+                  @date_insert_from <= w2_Product.date_created
+                )
+           AND  (
+                  @date_insert_to IS NULL
+                  OR
+                  @date_insert_to >= w2_Product.date_created
+                )
+                
+        ------------------------------------------------------
+        -- モールに対してループ
+        ------------------------------------------------------
+        DECLARE cur_mall CURSOR FOR
+        SELECT  mall_id, mall_exhibits_config
+          FROM  w2_MallCooperationSetting
+         WHERE  valid_flg = '1' AND mall_id IN (@@ mall_ids @@)
+           
+        DECLARE @mall_id nvarchar(30)
+        DECLARE @mall_exhibits_config nvarchar(10)
+        OPEN cur_mall
+        FETCH NEXT FROM cur_mall
+        INTO @mall_id, @mall_exhibits_config
+        
+        WHILE @@FETCH_STATUS = 0
+          BEGIN
+          
+            DECLARE @shop_id_tmp nvarchar(30)
+            DECLARE @product_id_tmp nvarchar(30)
+            DECLARE @variation_id_tmp nvarchar(60)
+
+            ------------------------------------------------------
+            -- 商品に対してループ
+            ------------------------------------------------------
+            DECLARE cur_product CURSOR FOR
+            SELECT  shop_id,
+                    product_id
+              FROM  #temp_table_product
+               
+            OPEN cur_product
+            FETCH NEXT FROM cur_product
+            INTO @shop_id_tmp, @product_id_tmp
+            
+            WHILE @@FETCH_STATUS = 0
+              BEGIN
+              
+                -- モール出品設定チェック
+                DECLARE @mall_exhibits_count int 
+                
+                -- モール出品設定指定情報取得
+                SELECT @mall_exhibits_count = COUNT(mall_id)
+                  FROM w2_MallCooperationSetting
+                 WHERE shop_id = @shop_id_tmp
+                   AND mall_id = @mall_id
+                   AND mall_exhibits_config = ''
+                
+                -- モール出品設定指定がある場合、商品毎にモール出品設定を取得
+                IF @mall_exhibits_count = 0
+                BEGIN
+                  SELECT  @mall_exhibits_count = COUNT(product_id) 
+                    FROM  w2_MallExhibitsConfig
+                   WHERE  w2_MallExhibitsConfig.shop_id = @shop_id_tmp
+                          AND
+                          w2_MallExhibitsConfig.product_id = @product_id_tmp
+                          AND
+                          (
+                            @mall_exhibits_config = ''
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH1'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg1 = '1'
+                            )
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH2'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg2 = '1'
+                            )
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH3'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg3 = '1'
+                            )
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH4'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg4 = '1'
+                            )
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH5'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg5 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH6'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg6 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH7'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg7 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH8'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg8 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH9'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg9 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH10'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg10 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH11'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg11 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH12'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg12 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH13'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg13 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH14'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg14 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH15'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg15 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH16'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg16 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH17'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg17 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH18'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg18 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH19'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg19 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH20'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg20 = '1'
+                            )
+                          )
+                END
+                -- モール出品商品であればログ作成
+                IF @mall_exhibits_count > 0
+                  BEGIN
+                    -- モール連携更新ログ作成
+                    INSERT  w2_MallCooperationUpdateLog
+                            (
+                              shop_id,
+                              mall_id,
+                              product_id,
+                              variation_id,
+                              master_kbn,
+                              action_kbn
+                            )
+                    VALUES  (
+                              @shop_id_tmp,
+                              @mall_id,
+                              @product_id_tmp,
+                              @product_id_tmp,
+                              'Product',
+                              'I'
+                            )
+                  END
+                        
+                FETCH NEXT FROM cur_product
+                INTO @shop_id_tmp, @product_id_tmp
+              END
+          
+              CLOSE cur_product
+              DEALLOCATE cur_product
+              
+            FETCH NEXT FROM cur_mall
+            INTO @mall_id, @mall_exhibits_config
+          END
+      
+        CLOSE cur_mall
+        DEALLOCATE cur_mall
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="date_insert_from" Type="datetime" />
+      <Input Name="date_insert_to" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="2" />
+    </Parameter>
+  </CreateProductInsertLog>
+
+  <!-- 商品系更新ログ作成 -->
+  <CreateProductUpdateLog>
+    <Statement>
+      <![CDATA[
+        ------------------------------------------------------
+        -- 商品一時テーブル作成
+        ------------------------------------------------------
+        CREATE TABLE #temp_table_product (
+          shop_id nvarchar(10) NOT NULL,
+          product_id nvarchar(30) NOT NULL
+        )
+        INSERT  #temp_table_product
+        SELECT  DISTINCT 
+                w2_Product.shop_id,
+                w2_Product.product_id
+          FROM  w2_Product
+                LEFT JOIN w2_ProductVariationView ON
+                (
+                  w2_Product.shop_id = w2_ProductVariationView.shop_id
+                  AND
+                  w2_Product.product_id = w2_ProductVariationView.product_id
+                  AND
+                  (
+                    @valid_flg = '' 
+                    OR 
+                    w2_ProductVariationView.valid_flg = @valid_flg
+                  )
+                )
+                LEFT JOIN w2_ProductExtend ON
+                (
+                  w2_Product.shop_id = w2_ProductExtend.shop_id
+                  AND
+                  w2_Product.product_id = w2_ProductExtend.product_id
+                )
+                LEFT JOIN w2_ProductTag ON
+                (
+                  w2_Product.product_id = w2_ProductTag.product_id
+                )
+                LEFT JOIN w2_ProductCategory ON
+                (
+                  w2_Product.shop_id = w2_ProductCategory.shop_id
+                  AND
+                  (
+                    w2_Product.category_id1 = w2_ProductCategory.category_id
+                    OR
+                    w2_Product.category_id2 = w2_ProductCategory.category_id
+                    OR
+                    w2_Product.category_id3 = w2_ProductCategory.category_id
+                    OR
+                    w2_Product.category_id4 = w2_ProductCategory.category_id
+                    OR
+                    w2_Product.category_id5 = w2_ProductCategory.category_id
+                  )
+                )
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  (
+                  @product_id_like_escaped = '' 
+                  OR 
+                  w2_Product.product_id like @product_id_like_escaped + '%' ESCAPE '#'
+                )
+           AND  (
+                  @name_like_escaped = '' 
+                  OR 
+                  w2_Product.name like '%' + @name_like_escaped + '%' ESCAPE '#'
+                )
+           AND  (
+                  @valid_flg = '' 
+                  OR 
+                  w2_Product.valid_flg = @valid_flg
+                )
+           AND  (
+                  [[ DATE_CHANGED_WHERE ]]
+                )
+                
+        ------------------------------------------------------
+        -- モールに対してループ
+        ------------------------------------------------------
+        DECLARE cur_mall CURSOR FOR
+        SELECT  mall_id, mall_exhibits_config
+          FROM  w2_MallCooperationSetting
+         WHERE  valid_flg = '1' AND mall_id IN (@@ mall_ids @@)
+           
+        DECLARE @mall_id nvarchar(30)
+        DECLARE @mall_exhibits_config nvarchar(10)
+        OPEN cur_mall
+        FETCH NEXT FROM cur_mall
+        INTO @mall_id, @mall_exhibits_config
+        
+        WHILE @@FETCH_STATUS = 0
+          BEGIN
+          
+            DECLARE @shop_id_tmp nvarchar(30)
+            DECLARE @product_id_tmp nvarchar(30)
+            DECLARE @variation_id_tmp nvarchar(60)
+
+            ------------------------------------------------------
+            -- 商品に対してループ
+            ------------------------------------------------------
+            DECLARE cur_product CURSOR FOR
+            SELECT  shop_id,
+                    product_id
+              FROM  #temp_table_product
+               
+            OPEN cur_product
+            FETCH NEXT FROM cur_product
+            INTO @shop_id_tmp, @product_id_tmp
+            
+            WHILE @@FETCH_STATUS = 0
+              BEGIN
+              
+                -- モール出品設定チェック
+                DECLARE @mall_exhibits_count int 
+                
+                -- モール出品設定指定情報取得
+                SELECT @mall_exhibits_count = COUNT(mall_id)
+                  FROM w2_MallCooperationSetting
+                 WHERE shop_id = @shop_id_tmp
+                   AND mall_id = @mall_id
+                   AND mall_exhibits_config = ''
+                
+                -- モール出品設定指定がある場合、商品毎にモール出品設定を取得
+                IF @mall_exhibits_count = 0
+                BEGIN
+                  SELECT  @mall_exhibits_count = COUNT(w2_MallExhibitsConfig.product_id) 
+                    FROM  w2_MallExhibitsConfig
+                   WHERE  w2_MallExhibitsConfig.shop_id = @shop_id_tmp
+                          AND
+                          w2_MallExhibitsConfig.product_id = @product_id_tmp
+                          AND
+                          (
+                            @mall_exhibits_config = ''
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH1'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg1 = '1'
+                            )
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH2'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg2 = '1'
+                            )
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH3'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg3 = '1'
+                            )
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH4'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg4 = '1'
+                            )
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH5'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg5 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH6'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg6 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH7'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg7 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH8'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg8 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH9'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg9 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH10'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg10 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH11'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg11 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH12'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg12 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH13'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg13 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH14'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg14 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH15'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg15 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH16'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg16 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH17'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg17 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH18'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg18 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH19'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg19 = '1'
+                            ) 
+                            OR
+                            (
+                              @mall_exhibits_config = 'EXH20'
+                              AND
+                              w2_MallExhibitsConfig.exhibits_flg20 = '1'
+                            ) 
+                          )
+                      END
+                -- モール出品商品であればログ作成
+                IF @mall_exhibits_count > 0
+                  -- モール連携更新ログ作成
+                  INSERT  w2_MallCooperationUpdateLog
+                          (
+                            shop_id,
+                            mall_id,
+                            product_id,
+                            variation_id,
+                            master_kbn,
+                            action_kbn
+                          )
+                  VALUES  (
+                            @shop_id_tmp,
+                            @mall_id,
+                            @product_id_tmp,
+                            @product_id_tmp,
+                            'Product',
+                            'U'
+                          )
+                  
+                  FETCH NEXT FROM cur_product
+                  INTO @shop_id_tmp, @product_id_tmp
+                END
+          
+              CLOSE cur_product
+              DEALLOCATE cur_product
+              
+            FETCH NEXT FROM cur_mall
+            INTO @mall_id, @mall_exhibits_config
+          END
+      
+        CLOSE cur_mall
+        DEALLOCATE cur_mall
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="date_update_from" Type="datetime" />
+      <Input Name="date_update_to" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="2" />
+    </Parameter>
+  </CreateProductUpdateLog>
+
+  <!-- 商品一覧取得 -->
+  <MallProductUploadProductList>
+    <Statement>
+      <![CDATA[
+        -- 一時テーブル作成
+        CREATE TABLE #temp_table (
+              shop_id nvarchar(10) NOT NULL,
+              product_id nvarchar(30) NOT NULL
+        )
+        -- 抽出結果用テーブル作成
+        CREATE TABLE #return_table (
+              row_num int IDENTITY(1, 1),
+              row_count int ,
+              shop_id nvarchar(10) NOT NULL,
+              product_id nvarchar(30) NOT NULL
+        )
+
+        -- 一時テーブルに挿入
+        INSERT  #temp_table
+        SELECT  w2_Product.shop_id,
+                w2_Product.product_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  (
+                  @product_id_like_escaped = '' 
+                  OR 
+                  w2_Product.product_id like @product_id_like_escaped + '%' ESCAPE '#'
+                )
+           AND  (
+                  @name_like_escaped = '' 
+                  OR 
+                  w2_Product.name like '%' + @name_like_escaped + '%' ESCAPE '#'
+                )
+           AND  (
+                  @product_id_like_escaped2 = '' 
+                  OR 
+                  w2_Product.product_id like @product_id_like_escaped2 + '%' ESCAPE '#'
+                )
+           AND  (
+                  @name_like_escaped2 = '' 
+                  OR 
+                  w2_Product.name like '%' + @name_like_escaped2 + '%' ESCAPE '#'
+                )
+           AND  (
+                  @valid_flg = '' 
+                  OR 
+                  w2_Product.valid_flg = @valid_flg
+                ) -- チェックが入っていない場合は空としてくる
+
+        -- 登録商品の場合？
+        IF @disp_kbn = '0'
+            BEGIN
+                -- 商品マスタ・登録
+                INSERT
+                  INTO  #return_table (
+                         shop_id,
+                         product_id
+                        )
+                SELECT  w2_Product.shop_id,
+                        w2_Product.product_id
+                  FROM  w2_Product
+                        INNER JOIN #temp_table ON
+                        (
+                         w2_Product.shop_id = #temp_table.shop_id
+                         AND
+                         w2_Product.product_id = #temp_table.product_id
+                        )
+                 WHERE  (
+                         @date_insert_from IS NULL
+                         OR
+                         @date_insert_from <= w2_Product.date_created
+                        )
+                   AND  (
+                         @date_insert_to IS NULL
+                         OR
+                         @date_insert_to >= w2_Product.date_created
+                        )
+            END
+        -- 更新商品の場合？
+        ELSE
+            BEGIN
+                -- 商品マスタ・更新
+                INSERT
+                  INTO  #return_table (
+                         shop_id,
+                         product_id
+                        )
+                SELECT  w2_Product.shop_id,
+                        w2_Product.product_id
+                  FROM  w2_Product
+                        INNER JOIN #temp_table ON
+                        (
+                         w2_Product.shop_id = #temp_table.shop_id
+                         AND
+                         w2_Product.product_id = #temp_table.product_id
+                        )
+                        INNER JOIN
+                        (
+                         SELECT  DISTINCT w2_Product.shop_id, w2_Product.product_id
+                           FROM  w2_Product
+                                 INNER JOIN #temp_table ON
+                                 (
+                                   w2_Product.shop_id = #temp_table.shop_id
+                                   AND
+                                   w2_Product.product_id = #temp_table.product_id
+                                 )
+                                 LEFT JOIN w2_ProductVariationView ON
+                                 (
+                                   w2_Product.shop_id = w2_ProductVariationView.shop_id
+                                   AND
+                                   w2_Product.product_id = w2_ProductVariationView.product_id
+                                   AND
+                                   (
+                                    @valid_flg = ''
+                                    OR
+                                    w2_ProductVariationView.valid_flg = @valid_flg
+                                   )  -- チェックが入っていない場合は空としてくる
+                                 )
+                                 LEFT JOIN w2_ProductExtend ON
+                                 (
+                                   w2_Product.shop_id = w2_ProductExtend.shop_id
+                                   AND
+                                   w2_Product.product_id = w2_ProductExtend.product_id
+                                 )
+                                 LEFT JOIN w2_ProductTag ON
+                                 (
+                                   w2_Product.product_id = w2_ProductTag.product_id
+                                 )
+                                 LEFT JOIN w2_ProductCategory ON
+                                 (
+                                   w2_Product.shop_id = w2_ProductCategory.shop_id
+                                   AND
+                                   (
+                                     w2_Product.category_id1 = w2_ProductCategory.category_id
+                                     OR
+                                     w2_Product.category_id2 = w2_ProductCategory.category_id
+                                     OR
+                                     w2_Product.category_id3 = w2_ProductCategory.category_id
+                                     OR
+                                     w2_Product.category_id4 = w2_ProductCategory.category_id
+                                     OR
+                                     w2_Product.category_id5 = w2_ProductCategory.category_id
+                                   )
+                                 )
+                          WHERE  [[ DATE_CHANGED_WHERE ]]
+                        ) AS A
+                        ON
+                        (
+                         w2_Product.shop_id = A.shop_id
+                         AND
+                         w2_Product.product_id = A.product_id
+                        )
+        END
+
+        -- 全行数取得
+        UPDATE  #return_table
+           SET  row_count = (SELECT COUNT(*) FROM #return_table)
+
+        -- 結果を返す
+        SELECT  *
+          FROM  #return_table
+                INNER JOIN w2_Product ON
+                (
+                  w2_Product.shop_id = #return_table.shop_id
+                  AND
+                  w2_Product.product_id = #return_table.product_id
+                )
+         WHERE  @bgn_row_num <= row_num 
+           AND  row_num <= @end_row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="date_insert_from" Type="datetime" />
+      <Input Name="date_insert_to" Type="datetime" />
+      <Input Name="date_update_from" Type="datetime" />
+      <Input Name="date_update_to" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="2" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="product_id_like_escaped2" Type="nvarchar" Size="30" />
+      <Input Name="name_like_escaped2" Type="nvarchar" Size="100" />
+      <Input Name="disp_kbn" Type="nvarchar" Size="1" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </MallProductUploadProductList>
+
+  <!-- ネクストエンジン モール商品CSV -->
+  <GetTargetNextEngineMallProductCsv>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+        SELECT  w2_ProductView.product_id,
+                w2_ProductView.variation_id,
+                w2_ProductView.name,
+                w2_ProductView.price
+          FROM  w2_ProductView
+    INNER JOIN  w2_MallExhibitsConfig
+            ON  (
+                  w2_ProductView.shop_id = w2_MallExhibitsConfig.shop_id
+                  AND
+                  w2_ProductView.product_id = w2_MallExhibitsConfig.product_id
+                  ## EXHIBITS_FLG ##
+                )
+         WHERE  w2_ProductView.shop_id = @shop_id
+           <@@hasval:product_id_like_escaped@@>
+           AND  w2_ProductView.product_id like @product_id_like_escaped + '%' ESCAPE '#'
+           </@@hasval:product_id_like_escaped@@>
+           
+           <@@hasval:name_like_escaped@@>
+           AND  w2_ProductView.name like '%' + @name_like_escaped + '%' ESCAPE '#'
+           </@@hasval:name_like_escaped@@>
+           
+           <@@hasval:valid_flg@@>
+           AND  w2_ProductView.valid_flg = @valid_flg
+           </@@hasval:valid_flg@@>
+           
+           <@@hasval:date_insert_from@@>
+           AND  @date_insert_from <= w2_ProductView.date_created
+           </@@hasval:date_insert_from@@>
+           
+           <@@hasval:date_insert_to@@>
+           AND  @date_insert_to >= w2_ProductView.date_created
+           </@@hasval:date_insert_to@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="date_insert_from" Type="datetime" />
+      <Input Name="date_insert_to" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="2" />
+    </Parameter>
+  </GetTargetNextEngineMallProductCsv>
+
+</MallCooperationUpdateLog>

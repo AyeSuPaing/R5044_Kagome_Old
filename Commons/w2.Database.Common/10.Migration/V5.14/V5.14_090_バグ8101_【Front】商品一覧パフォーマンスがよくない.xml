@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ProductSalePriceTmp]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_ProductSalePriceTmp]
+GO
+/*
+=========================================================================================================
+  Module      : 商品セール価格テンポラリテーブル (w2_ProductSalePriceTmp.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ProductSalePriceTmp] (
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[productsale_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[product_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[sale_price] [decimal] (18,3) NOT NULL DEFAULT (0),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_ProductSalePriceTmp] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ProductSalePriceTmp] PRIMARY KEY  CLUSTERED
+	(
+		[shop_id],
+		[productsale_id],
+		[product_id]
+	) ON [PRIMARY]
+GO
+
+-- データ作成
+DECLARE @last_changed nvarchar(30) = 'MIG'
+INSERT  w2_ProductSalePriceTmp
+        (
+          shop_id
+          ,productsale_id
+          ,product_id
+          ,sale_price
+          ,display_order
+          ,last_changed
+        )
+        SELECT  shop_id,
+                productsale_id,
+                product_id,
+                sale_price,
+                display_order,
+                @last_changed
+        FROM
+        (
+          SELECT  *,
+                  RANK() OVER(
+                    PARTITION BY w2_ProductSalePrice.product_id
+                    ORDER BY w2_ProductSalePrice.display_order ASC, w2_ProductSalePrice.variation_id ASC
+                  ) AS priority
+            FROM  w2_ProductSalePrice
+            -- 有効で終了が未来のものについて作成
+            WHERE  EXISTS(
+                SELECT  *
+                  FROM  w2_ProductSale
+                  WHERE  w2_ProductSale.shop_id = w2_ProductSalePrice.shop_id
+                    AND  w2_ProductSale.productsale_id = w2_ProductSalePrice.productsale_id
+                    AND  w2_ProductSale.valid_flg = '1'
+                    AND  (
+                          w2_ProductSale.date_end IS NULL
+                          OR
+                          w2_ProductSale.date_end > GETDATE()
+                        )
+                  )
+        ) PSPT
+        WHERE  PSPT.priority = 1
+		
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

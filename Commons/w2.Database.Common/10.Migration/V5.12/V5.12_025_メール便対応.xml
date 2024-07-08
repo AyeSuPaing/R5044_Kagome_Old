@@ -1,0 +1,230 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_DeliveryCompany]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_DeliveryCompany]
+GO
+/*
+=========================================================================================================
+  Module      : 配送会社マスタ (w2_DeliveryCompany.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_DeliveryCompany] (
+	[delivery_company_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[delivery_company_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[delivery_company_type] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shipping_time_set_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[shipping_time_id1] [nvarchar] (5) NOT NULL DEFAULT (N''),
+	[shipping_time_message1] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shipping_time_id2] [nvarchar] (5) NOT NULL DEFAULT (N''),
+	[shipping_time_message2] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shipping_time_id3] [nvarchar] (5) NOT NULL DEFAULT (N''),
+	[shipping_time_message3] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shipping_time_id4] [nvarchar] (5) NOT NULL DEFAULT (N''),
+	[shipping_time_message4] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shipping_time_id5] [nvarchar] (5) NOT NULL DEFAULT (N''),
+	[shipping_time_message5] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shipping_time_id6] [nvarchar] (5) NOT NULL DEFAULT (N''),
+	[shipping_time_message6] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shipping_time_id7] [nvarchar] (5) NOT NULL DEFAULT (N''),
+	[shipping_time_message7] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shipping_time_id8] [nvarchar] (5) NOT NULL DEFAULT (N''),
+	[shipping_time_message8] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shipping_time_id9] [nvarchar] (5) NOT NULL DEFAULT (N''),
+	[shipping_time_message9] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[shipping_time_id10] [nvarchar] (5) NOT NULL DEFAULT (N''),
+	[shipping_time_message10] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (1),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_DeliveryCompany] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_DeliveryCompany] PRIMARY KEY  CLUSTERED
+	(
+		[delivery_company_id]
+	) ON [PRIMARY]
+GO
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ShopShippingCompany]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_ShopShippingCompany]
+GO
+
+/*
+=========================================================================================================
+  Module      : 配送種別配送会社マスタ (w2_ShopShippingCompany.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ShopShippingCompany] (
+	[shipping_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[shipping_kbn] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[delivery_company_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[default_delivery_company] [nvarchar] (10) NOT NULL DEFAULT (N'0'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_ShopShippingCompany] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ShopShippingCompany] PRIMARY KEY  CLUSTERED
+	(
+		[shipping_id],
+		[shipping_kbn],
+		[delivery_company_id]
+	) ON [PRIMARY]
+GO
+
+/* 定期送料無料、メール便送料 */
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_ShopShipping' AND column_name = 'fixed_purchase_free_shipping_flg')
+	ALTER TABLE [w2_ShopShipping] ADD [fixed_purchase_free_shipping_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_ShopShippingZone' AND column_name = 'size_mail_shipping_price')
+	ALTER TABLE [w2_ShopShippingZone] ADD [size_mail_shipping_price] [decimal] NOT NULL DEFAULT (0);
+GO
+
+/* 配送会社 */
+INSERT INTO w2_DeliveryCompany
+(
+	delivery_company_id,
+	delivery_company_name,
+	delivery_company_type,
+	shipping_time_set_flg,
+	shipping_time_id1,
+	shipping_time_message1,
+	shipping_time_id2,
+	shipping_time_message2,
+	shipping_time_id3,
+	shipping_time_message3,
+	shipping_time_id4,
+	shipping_time_message4,
+	shipping_time_id5,
+	shipping_time_message5,
+	shipping_time_id6,
+	shipping_time_message6,
+	shipping_time_id7,
+	shipping_time_message7,
+	shipping_time_id8,
+	shipping_time_message8,
+	shipping_time_id9,
+	shipping_time_message9,
+	shipping_time_id10,
+	shipping_time_message10,
+	display_order,
+	date_created,
+	date_changed,
+	last_changed
+)
+SELECT
+	shipping_id,
+	shop_shipping_name,
+	'OTHER',
+	shipping_time_set_flg,
+	shipping_time_id1,
+	shipping_time_message1,
+	shipping_time_id2,
+	shipping_time_message2,
+	shipping_time_id3,
+	shipping_time_message3,
+	shipping_time_id4,
+	shipping_time_message4,
+	shipping_time_id5,
+	shipping_time_message5,
+	shipping_time_id6,
+	shipping_time_message6,
+	shipping_time_id7,
+	shipping_time_message7,
+	shipping_time_id8,
+	shipping_time_message8,
+	shipping_time_id9,
+	shipping_time_message9,
+	shipping_time_id10,
+	shipping_time_message10,
+	100,
+	date_created,
+	date_changed,
+	last_changed
+FROM w2_ShopShipping
+GO
+
+/* 配送種別配送会社 */
+INSERT INTO w2_ShopShippingCompany
+(
+	shipping_id,
+	shipping_kbn,
+	delivery_company_id,
+	default_delivery_company,
+	date_created,
+	date_changed,
+	last_changed
+)
+SELECT
+	shipping_id,
+	'EXPRESS',
+	shipping_id,
+	'1',
+	date_created,
+	date_changed,
+	last_changed
+FROM w2_ShopShipping
+
+INSERT INTO w2_ShopShippingCompany
+(
+	shipping_id,
+	shipping_kbn,
+	delivery_company_id,
+	default_delivery_company,
+	date_created,
+	date_changed,
+	last_changed
+)
+SELECT
+	shipping_id,
+	'MAIL',
+	shipping_id,
+	'1',
+	date_created,
+	date_changed,
+	last_changed
+FROM w2_ShopShipping
+GO
+
+/* 注文配送先 */
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderShipping' AND column_name = 'shipping_method')
+	ALTER TABLE [w2_OrderShipping] ADD [shipping_method] [nvarchar] (10) NOT NULL DEFAULT (N'');
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderShipping' AND column_name = 'delivery_company_id')
+	ALTER TABLE [w2_OrderShipping] ADD [delivery_company_id] [nvarchar] (10) NOT NULL DEFAULT (N'');
+GO
+
+UPDATE w2_OrderShipping
+SET shipping_method = 'EXPRESS',
+    delivery_company_id = w2_Order.shipping_id
+FROM w2_OrderShipping
+INNER JOIN w2_Order ON w2_Order.order_id = w2_OrderShipping.order_id
+GO
+
+/* 定期配送先 */
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseShipping' AND column_name = 'shipping_method')
+	ALTER TABLE [w2_FixedPurchaseShipping] ADD [shipping_method] [nvarchar] (10) NOT NULL DEFAULT (N'');
+IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseShipping' AND column_name = 'delivery_company_id')
+	ALTER TABLE [w2_FixedPurchaseShipping] ADD [delivery_company_id] [nvarchar] (10) NOT NULL DEFAULT (N'');
+GO
+
+UPDATE w2_FixedPurchaseShipping
+SET shipping_method = 'EXPRESS',
+    delivery_company_id = w2_Order.shipping_id
+FROM w2_FixedPurchaseShipping
+INNER JOIN w2_Order ON w2_Order.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+--INNER JOIN w2_OrderShipping ON w2_Order.order_id = w2_OrderShipping.order_id
+GO
+
+		]]>
+    </Statement>
+  </Up>
+</Migration>

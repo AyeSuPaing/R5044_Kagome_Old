@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Product(Product.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2020 All Rights Reserved.
+=========================================================================================================
+-->
+<Product>
+
+  <!-- Get product -->
+  <GetProduct>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        [[ USER_MEMBER_RANK_ORDER ]]
+
+        SELECT  w2_ProductView.*,
+                w2_ProductTag.*,
+                (
+                  CASE
+                    WHEN  w2_ProductView.display_from <= getdate()
+                     AND  ((w2_ProductView.display_to IS NULL) OR (w2_ProductView.display_to >= getdate()))
+                     AND  w2_ProductView.display_kbn IN ('0', '1')
+                     AND  w2_ProductView.mobile_disp_flg IN ('0', '1')
+                     AND  w2_ProductView.valid_flg = '1'
+                    THEN 1
+                    ELSE 0
+                  END
+                ) AS disp_flg,
+                [[ PRODUCTVIEW_SOLD_OUT_SELECT ]] AS productsoldout,
+                [[ MEMBER_RANK_PRICE_PRODUCTVARIATION ]]
+          FROM  w2_ProductView
+                LEFT JOIN w2_ProductTag ON
+                (
+                  w2_ProductTag.product_id = w2_ProductView.product_id
+                )
+                [[ JOIN_PRODUCT_CATEGORY_VIEW ]]
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id = @product_id
+           AND  (
+                  w2_ProductView.display_only_fixed_purchase_member_flg = '0'
+                  OR
+                  (
+                    w2_ProductView.display_only_fixed_purchase_member_flg = '1'
+                    AND
+                    @fixed_purchase_member_flg = '1'
+                  )
+                )
+                [[ PRODUCT_CATEGORY_SEARCH_WHERE ]]
+         ORDER BY w2_ProductView.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetProduct>
+
+  <!-- Get product variation -->
+  <GetProductVariation>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                w2_ProductView.*,
+                [[ MEMBER_RANK_PRICE_PRODUCTVARIATION ]]
+          FROM  w2_ProductView
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id = @product_id
+           AND  w2_ProductView.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductVariation>
+
+</Product>

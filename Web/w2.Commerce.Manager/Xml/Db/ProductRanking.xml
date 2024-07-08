@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品ランキングSQLステートメントXML(ProductRanking.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductRanking>
+
+  <!-- 商品ランキング一覧情報の該当件数取得 -->
+  <GetProductRankingCount>
+    <Statement>
+      <![CDATA[
+      -- 全件数取得
+      SELECT  ISNULL(COUNT(w2_ProductRanking.ranking_id), 0) AS row_count
+        FROM  w2_ProductRanking
+              [[ PRODUCTRANKING_SEARCH_WHERE ]]
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id_like_escaped" Type="nvarchar" Size="20" />
+      <Input Name="total_type" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetProductRankingCount>
+  
+  <!-- 商品ランキング一覧情報取得 -->
+  <GetProductRankingList>
+    <Statement>
+      <![CDATA[
+      -- 該当情報取得
+      SELECT  w2_ProductRanking.*
+        FROM  (
+                SELECT  w2_ProductRanking.shop_id,
+                        w2_ProductRanking.ranking_id,
+                        ROW_NUMBER()
+                        OVER
+                        (
+                          [[ PRODUCTRANKING_SEARCH_ORDER_BY ]]
+                        ) AS row_num
+                  FROM  w2_ProductRanking
+                        [[ PRODUCTRANKING_SEARCH_WHERE ]]
+              ) AS RowIndex
+              INNER JOIN w2_ProductRanking ON
+              (
+                RowIndex.shop_id = w2_ProductRanking.shop_id
+                AND
+                RowIndex.ranking_id = w2_ProductRanking.ranking_id
+              )
+        WHERE  @bgn_row_num <= RowIndex.row_num
+          AND  RowIndex.row_num <= @end_row_num
+    ORDER BY  RowIndex.row_num ASC
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id_like_escaped" Type="nvarchar" Size="20" />
+      <Input Name="total_type" Type="nvarchar" Size="10" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetProductRankingList>
+
+  <!-- 商品ランキング情報取得-->
+  <GetProductRanking>
+    <Statement>
+      <![CDATA[      
+      SELECT  w2_ProductRanking.*
+        FROM  w2_ProductRanking
+        WHERE  w2_ProductRanking.shop_id = @shop_id 
+          AND  w2_ProductRanking.ranking_id = @ranking_id 
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductRanking>
+
+  <!-- 商品ランキングアイテム情報取得（商品ランキングアイテム情報数分取得）-->
+  <GetProductRankingItem>
+    <Statement>
+      <![CDATA[
+      SELECT  w2_ProductRankingItem.ranking_id,
+              w2_ProductRankingItem.rank,
+              w2_ProductRankingItem.product_id,
+              w2_ProductRankingItem.fixation_flg,
+              w2_Product.display_price,
+              w2_Product.display_special_price,
+              w2_Product.name
+        FROM  w2_ProductRanking
+              JOIN w2_ProductRankingItem ON
+              (
+                w2_ProductRanking.shop_id = w2_ProductRankingItem.shop_id
+                AND
+                w2_ProductRanking.ranking_id = w2_ProductRankingItem.ranking_id
+              )
+              JOIN w2_Product ON
+              (
+                w2_Product.shop_id = w2_ProductRankingItem.shop_id
+                AND
+                w2_Product.product_id = w2_ProductRankingItem.product_id
+              )
+        WHERE  w2_ProductRanking.shop_id = @shop_id 
+          AND  w2_ProductRanking.ranking_id = @ranking_id 
+      ORDER BY w2_ProductRankingItem.rank ASC
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductRankingItem>
+
+  <!-- 商品ランキング情報登録 -->
+  <InsertProductRanking>
+    <Statement>
+      <![CDATA[
+      INSERT  w2_ProductRanking
+              (
+                w2_ProductRanking.shop_id,
+                w2_ProductRanking.ranking_id,
+                w2_ProductRanking.total_type,
+                w2_ProductRanking.total_kbn,
+                w2_ProductRanking.total_from,
+                w2_ProductRanking.total_to,
+                w2_ProductRanking.total_days,
+                w2_ProductRanking.category_id,
+                w2_ProductRanking.desc1,
+                w2_ProductRanking.stock_kbn,
+                w2_ProductRanking.valid_flg,
+                w2_ProductRanking.date_created,
+                w2_ProductRanking.date_changed,
+                w2_ProductRanking.last_changed,
+                w2_ProductRanking.brand_kbn,
+                w2_ProductRanking.brand_id,
+                w2_ProductRanking.exclude_category_ids
+              ) 
+      VALUES  (
+                @shop_id,
+                @ranking_id,
+                @total_type,
+                @total_kbn,
+                @total_from,
+                @total_to,
+                @total_days,
+                @category_id,
+                @desc1,
+                @stock_kbn,
+                @valid_flg,
+                getdate(),
+                getdate(),
+                @last_changed,
+                @brand_kbn,
+                @brand_id,
+                @exclude_category_ids
+              )
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id" Type="nvarchar" Size="10" />
+      <Input Name="total_type" Type="nvarchar" Size="10" />
+      <Input Name="total_kbn" Type="nvarchar" Size="10" />
+      <Input Name="total_from" Type="datetime" />
+      <Input Name="total_to" Type="datetime" />
+      <Input Name="total_days" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="desc1" Type="nvarchar" Size="250" />
+      <Input Name="stock_kbn" Type="nvarchar" Size="1" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="brand_kbn" Type="nvarchar" Size="1" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="exclude_category_ids" Type="nvarchar" Size="MAX" />
+    </Parameter>
+  </InsertProductRanking>
+
+  <!-- 商品ランキング情報更新 -->
+  <UpdateProductRanking>
+    <Statement>
+      <![CDATA[
+      UPDATE  w2_ProductRanking 
+         SET  w2_ProductRanking.shop_id = @shop_id,
+              w2_ProductRanking.ranking_id = @ranking_id,
+              w2_ProductRanking.total_type = @total_type,
+              w2_ProductRanking.total_kbn = @total_kbn,
+              w2_ProductRanking.total_from = @total_from,
+              w2_ProductRanking.total_to = @total_to,
+              w2_ProductRanking.total_days = @total_days,
+              w2_ProductRanking.category_id = @category_id,
+              w2_ProductRanking.desc1 = @desc1,
+              w2_ProductRanking.stock_kbn = @stock_kbn,
+              w2_ProductRanking.valid_flg = @valid_flg,
+              w2_ProductRanking.date_changed = getdate(),
+              w2_ProductRanking.last_changed = @last_changed,
+              w2_ProductRanking.brand_kbn = @brand_kbn,
+              w2_ProductRanking.brand_id = @brand_id,
+              w2_ProductRanking.exclude_category_ids = @exclude_category_ids
+       WHERE  w2_ProductRanking.shop_id = @shop_id 
+         AND  w2_ProductRanking.ranking_id = @ranking_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id" Type="nvarchar" Size="10" />
+      <Input Name="total_type" Type="nvarchar" Size="10" />
+      <Input Name="total_kbn" Type="nvarchar" Size="10" />
+      <Input Name="total_from" Type="datetime" />
+      <Input Name="total_to" Type="datetime" />
+      <Input Name="total_days" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="desc1" Type="nvarchar" Size="250" />
+      <Input Name="stock_kbn" Type="nvarchar" Size="1" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="brand_kbn" Type="nvarchar" Size="1" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="exclude_category_ids" Type="nvarchar" Size="MAX" />
+    </Parameter>
+  </UpdateProductRanking>
+
+  <!-- カテゴリーID更新時の整合性保持用 -->
+  <UpdateCategoryIds>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductRanking
+           SET  w2_ProductRanking.category_id =
+                  STUFF (w2_ProductRanking.category_id, 1, LEN(@category_id), @category_id)
+         WHERE  w2_ProductRanking.category_id LIKE @category_id_old + '%'
+         
+        UPDATE  w2_ProductRanking
+           SET  w2_ProductRanking.exclude_category_ids =
+                  REPLACE (
+                            w2_ProductRanking.exclude_category_ids,
+                            @category_id_old,
+                            @category_id
+                          )
+         WHERE  w2_ProductRanking.exclude_category_ids LIKE '%' + @category_id_old + '%'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="category_id_old" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UpdateCategoryIds>
+
+  <!-- 商品ランキング情報削除 -->
+  <DeleteProductRanking>
+    <Statement>
+      <![CDATA[
+      DELETE  w2_ProductRanking
+        WHERE  w2_ProductRanking.shop_id = @shop_id 
+          AND  w2_ProductRanking.ranking_id = @ranking_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteProductRanking>
+
+  <!-- 商品ランキングアイテム情報削除 -->
+  <DeleteProductRankingItem>
+    <Statement>
+      <![CDATA[
+      DELETE  w2_ProductRankingItem
+        WHERE  w2_ProductRankingItem.shop_id = @shop_id 
+          AND  w2_ProductRankingItem.ranking_id = @ranking_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteProductRankingItem>
+
+  <!-- 重複チェック（商品ランキング情報登録時） -->
+  <CheckDuplicationInsertRankingId>
+    <Statement>
+      <![CDATA[
+      SELECT  COUNT(ranking_id) AS ranking_count 
+        FROM  w2_ProductRanking 
+        WHERE  w2_ProductRanking.shop_id = @shop_id 
+          AND  w2_ProductRanking.ranking_id = @ranking_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckDuplicationInsertRankingId>
+
+  <!-- 重複チェック（商品ランキング情報更新時） -->
+  <CheckDuplicationUpdateRankingId>
+    <Statement>
+      <![CDATA[
+      SELECT  COUNT(ranking_id) AS ranking_count 
+        FROM  w2_ProductRanking 
+        WHERE  w2_ProductRanking.shop_id = @shop_id 
+          AND  w2_ProductRanking.ranking_id = @ranking_id
+          AND  w2_ProductRanking.ranking_id != @ranking_id_old
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id_old" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckDuplicationUpdateRankingId>
+
+  <!-- 商品ランキングアイテム情報登録/更新 -->
+  <InsertProductRankingItem>
+    <Statement>
+      <![CDATA[
+        -- 登録
+        INSERT  w2_ProductRankingItem
+                (
+                  w2_ProductRankingItem.shop_id,
+                  w2_ProductRankingItem.ranking_id,
+                  w2_ProductRankingItem.rank,
+                  w2_ProductRankingItem.product_id,
+                  w2_ProductRankingItem.fixation_flg,
+                  w2_ProductRankingItem.date_created,
+                  w2_ProductRankingItem.date_changed,
+                  w2_ProductRankingItem.last_changed
+                )
+          VALUES
+               (
+                  @shop_id,
+                  @ranking_id,
+                  @rank,
+                  @product_id,
+                  @fixation_flg,
+                  getdate(),
+                  getdate(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id" Type="nvarchar" Size="10" />
+      <Input Name="rank" Type="int" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="fixation_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertProductRankingItem>
+
+  <!-- 商品表示情報マスタの登録/更新(集計タイプが手動時のみ) -->
+  <CreateDisplayProductRanking>
+    <Statement>
+      <![CDATA[
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+	        [display_order] [int] IDENTITY(1, 1),
+	        [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	        [product_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+          [last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                shop_id,
+                product_id,
+                last_changed
+                )
+	      SELECT  w2_ProductRankingItem.shop_id,
+                w2_ProductRankingItem.product_id,
+                w2_ProductRankingItem.last_changed
+	        FROM  w2_ProductRankingItem
+	       WHERE  w2_ProductRankingItem.shop_id = @shop_id
+           AND  w2_ProductRankingItem.ranking_id = @ranking_id
+      ORDER BY  w2_ProductRankingItem.ranking_id ASC
+      
+        -- 既存データ削除
+        DELETE
+          FROM  w2_DispProductInfo
+         WHERE  data_kbn = @ranking_id
+
+        -- 新データインサート
+        INSERT  w2_DispProductInfo
+                (
+                shop_id,
+                data_kbn,
+                display_order,
+                product_id,
+                last_changed
+                )
+	      SELECT  shop_id,
+                @ranking_id,
+                display_order,
+                product_id,
+                last_changed
+	        FROM  @temp_table
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CreateDisplayProductRanking>
+
+  <!-- 商品表示情報マスタの登録/更新(商品ランキングマスタ削除時) -->
+  <DeleteDisplayProductRanking>
+    <Statement>
+      <![CDATA[
+      DELETE  w2_DispProductInfo
+        WHERE  w2_DispProductInfo.shop_id = @shop_id 
+          AND  w2_DispProductInfo.data_kbn = @ranking_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="ranking_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteDisplayProductRanking>
+
+  <!-- 商品の存在チェック -->
+  <GetProduct>
+    <Statement>
+      <![CDATA[
+      SELECT  w2_Product.*
+        FROM  w2_Product
+       WHERE  shop_id = @shop_id
+         AND  product_id = @product_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProduct>
+
+</ProductRanking>

@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_MallCooperationSetting' AND COLUMN_NAME = 'yahoo_api_public_key')
+          BEGIN
+            ALTER TABLE w2_MallCooperationSetting ADD yahoo_api_public_key NVARCHAR(340) NOT NULL DEFAULT (N'');
+          END
+        GO
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_MallCooperationSetting' AND COLUMN_NAME = 'yahoo_api_public_key_version')
+          BEGIN
+            ALTER TABLE w2_MallCooperationSetting ADD yahoo_api_public_key_version NVARCHAR(30) NOT NULL DEFAULT (N'');
+          END
+        GO
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_MallCooperationSetting' AND COLUMN_NAME = 'yahoo_api_last_public_key_authorized_at')
+          BEGIN
+            ALTER TABLE w2_MallCooperationSetting ADD yahoo_api_last_public_key_authorized_at DATETIME;
+          END
+        GO
+
+        UPDATE  w2_MailTemplate
+           SET  mail_name = 'Yahoo!モール注文取込バッチ完了メール【管理者向け】',
+                mail_subject = 'Yahoo!モール注文取込バッチ完了メール【管理者向け】',
+                mail_body = N'mall_id (@@ mall_id @@) のモール注文取込が完了しました。'+ NCHAR(13) + NCHAR(10)
+                            + NCHAR(13) + NCHAR(10)
+                            + '件数: @@ total_count @@' + NCHAR(13) + NCHAR(10)
+                            + '成功: @@ successful_count @@' + NCHAR(13) + NCHAR(10)
+                            + '警告: @@ warning_count @@' + NCHAR(13) + NCHAR(10)
+                            + '失敗: @@ failed_count @@' + NCHAR(13) + NCHAR(10)
+                            + NCHAR(13) + NCHAR(10)
+                            + '@@ public_key_authorized_message @@' + NCHAR(13) + NCHAR(10)
+         WHERE  w2_MailTemplate.mail_id = '10000121'
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

@@ -1,0 +1,468 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 配送会社マスタ系SQLステートメントXML (DeliveryCompany.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<DeliveryCompany>
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_DeliveryCompany.*
+          FROM  w2_DeliveryCompany
+         WHERE  w2_DeliveryCompany.delivery_company_id = @delivery_company_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="delivery_company_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Get>
+
+  <!-- 全件取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_DeliveryCompany.*
+          FROM  w2_DeliveryCompany
+        ORDER BY w2_DeliveryCompany.display_order, w2_DeliveryCompany.delivery_company_id
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetAll>
+
+  <!-- 配送種別に紐づく配送サービス情報取得 -->
+  <GetByShippingId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_DeliveryCompany.*
+          FROM  (
+                  SELECT  DISTINCT delivery_company_id
+                    FROM  w2_ShopShippingCompany
+                   WHERE  shipping_id = @shipping_id
+                ) ShopShipping
+                INNER JOIN w2_DeliveryCompany ON
+                (
+                  w2_DeliveryCompany.delivery_company_id = ShopShipping.delivery_company_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetByShippingId>
+
+  <!-- 配送希望時間帯ID検索 -->
+  <SearchShippingTimeId>
+    <Statement>
+      <![CDATA[
+        SELECT  CASE @shipping_time_message
+                  WHEN w2_DeliveryCompany.shipping_time_message1 THEN w2_DeliveryCompany.shipping_time_id1
+                  WHEN w2_DeliveryCompany.shipping_time_message2 THEN w2_DeliveryCompany.shipping_time_id2
+                  WHEN w2_DeliveryCompany.shipping_time_message3 THEN w2_DeliveryCompany.shipping_time_id3
+                  WHEN w2_DeliveryCompany.shipping_time_message4 THEN w2_DeliveryCompany.shipping_time_id4
+                  WHEN w2_DeliveryCompany.shipping_time_message5 THEN w2_DeliveryCompany.shipping_time_id5
+                  WHEN w2_DeliveryCompany.shipping_time_message6 THEN w2_DeliveryCompany.shipping_time_id6
+                  WHEN w2_DeliveryCompany.shipping_time_message7 THEN w2_DeliveryCompany.shipping_time_id7
+                  WHEN w2_DeliveryCompany.shipping_time_message8 THEN w2_DeliveryCompany.shipping_time_id8
+                  WHEN w2_DeliveryCompany.shipping_time_message9 THEN w2_DeliveryCompany.shipping_time_id9
+                  WHEN w2_DeliveryCompany.shipping_time_message10 THEN w2_DeliveryCompany.shipping_time_id10
+                  ELSE ''
+                END AS shipping_time_id
+          FROM  w2_ShopShippingCompany
+                INNER JOIN w2_DeliveryCompany ON
+                (
+                  w2_ShopShippingCompany.delivery_company_id = w2_DeliveryCompany.delivery_company_id
+                )
+         WHERE  w2_ShopShippingCompany.shipping_id = @shipping_id
+           AND  w2_ShopShippingCompany.shipping_kbn = @shipping_kbn
+           AND  w2_ShopShippingCompany.default_delivery_company = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_kbn" Type="nvarchar" Size="10" />
+      <Input Name="shipping_time_message" Type="nvarchar" Size="30" />
+    </Parameter>
+  </SearchShippingTimeId>
+
+  <!-- 配送希望時間帯取得（モール連携配送希望時間帯マッチング用） -->
+  <GetShippingTimeMatching>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_DeliveryCompany.*
+          FROM  w2_ShopShippingCompany
+                INNER JOIN w2_DeliveryCompany ON
+                (
+                  w2_ShopShippingCompany.delivery_company_id = w2_DeliveryCompany.delivery_company_id
+                )
+         WHERE  w2_ShopShippingCompany.shipping_id = @shipping_id
+           AND  w2_ShopShippingCompany.shipping_kbn = @shipping_kbn
+           AND  w2_ShopShippingCompany.default_delivery_company = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetShippingTimeMatching>
+
+  <!-- 注文IDをもとに配送会社取得 -->
+  <GetByOrderId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_DeliveryCompany.shipping_time_id1,
+                w2_DeliveryCompany.shipping_time_id2,
+                w2_DeliveryCompany.shipping_time_id3,
+                w2_DeliveryCompany.shipping_time_id4,
+                w2_DeliveryCompany.shipping_time_id5,
+                w2_DeliveryCompany.shipping_time_id6,
+                w2_DeliveryCompany.shipping_time_id7,
+                w2_DeliveryCompany.shipping_time_id8,
+                w2_DeliveryCompany.shipping_time_id9,
+                w2_DeliveryCompany.shipping_time_id10,
+                w2_DeliveryCompany.shipping_time_message1,
+                w2_DeliveryCompany.shipping_time_message2,
+                w2_DeliveryCompany.shipping_time_message3,
+                w2_DeliveryCompany.shipping_time_message4,
+                w2_DeliveryCompany.shipping_time_message5,
+                w2_DeliveryCompany.shipping_time_message6,
+                w2_DeliveryCompany.shipping_time_message7,
+                w2_DeliveryCompany.shipping_time_message8,
+                w2_DeliveryCompany.shipping_time_message9,
+                w2_DeliveryCompany.shipping_time_message10
+          FROM  w2_Order
+                INNER JOIN w2_OrderShipping ON
+                (
+                  w2_Order.order_id = w2_OrderShipping.order_id
+                )
+                LEFT JOIN	w2_DeliveryCompany ON
+                (
+                  w2_OrderShipping.delivery_company_id = w2_DeliveryCompany.delivery_company_id
+                )
+          WHERE w2_Order.shop_id = @shop_id
+            AND w2_Order.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetByOrderId>
+
+  <!-- 一覧取得 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_DeliveryCompany.delivery_company_id), 0)
+          FROM  w2_DeliveryCompany
+
+        -- 該当情報取得
+        SELECT  w2_DeliveryCompany.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_DeliveryCompany.delivery_company_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            ORDER BY w2_DeliveryCompany.display_order, w2_DeliveryCompany.delivery_company_id
+                          ) AS row_num
+                    FROM  w2_DeliveryCompany
+                ) AS RowIndex
+                INNER JOIN w2_DeliveryCompany ON
+                (
+                  RowIndex.delivery_company_id = w2_DeliveryCompany.delivery_company_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_DeliveryCompany
+                (
+                  delivery_company_id
+                  ,delivery_company_name
+                  ,delivery_company_type_creditcard
+                  ,display_order
+                  ,delivery_company_mail_size_limit
+                  ,shipping_time_set_flg
+                  ,shipping_time_id1
+                  ,shipping_time_message1
+                  ,shipping_time_matching1
+                  ,shipping_time_id2
+                  ,shipping_time_message2
+                  ,shipping_time_matching2
+                  ,shipping_time_id3
+                  ,shipping_time_message3
+                  ,shipping_time_matching3
+                  ,shipping_time_id4
+                  ,shipping_time_message4
+                  ,shipping_time_matching4
+                  ,shipping_time_id5
+                  ,shipping_time_message5
+                  ,shipping_time_matching5
+                  ,shipping_time_id6
+                  ,shipping_time_message6
+                  ,shipping_time_matching6
+                  ,shipping_time_id7
+                  ,shipping_time_message7
+                  ,shipping_time_matching7
+                  ,shipping_time_id8
+                  ,shipping_time_message8
+                  ,shipping_time_matching8
+                  ,shipping_time_id9
+                  ,shipping_time_message9
+                  ,shipping_time_matching9
+                  ,shipping_time_id10
+                  ,shipping_time_message10
+                  ,shipping_time_matching10
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,delivery_lead_time_set_flg
+                  ,shipping_lead_time_default
+                  ,delivery_company_type_post_payment
+                  ,delivery_company_type_post_np_payment
+                  ,delivery_company_type_gooddeal
+                  ,deadline_time
+                  ,delivery_company_type_gmo_atokara_payment
+                )
+        VALUES  (
+                  @delivery_company_id
+                  ,@delivery_company_name
+                  ,@delivery_company_type_creditcard
+                  ,@display_order
+                  ,@delivery_company_mail_size_limit
+                  ,@shipping_time_set_flg
+                  ,@shipping_time_id1
+                  ,@shipping_time_message1
+                  ,@shipping_time_matching1
+                  ,@shipping_time_id2
+                  ,@shipping_time_message2
+                  ,@shipping_time_matching2
+                  ,@shipping_time_id3
+                  ,@shipping_time_message3
+                  ,@shipping_time_matching3
+                  ,@shipping_time_id4
+                  ,@shipping_time_message4
+                  ,@shipping_time_matching4
+                  ,@shipping_time_id5
+                  ,@shipping_time_message5
+                  ,@shipping_time_matching5
+                  ,@shipping_time_id6
+                  ,@shipping_time_message6
+                  ,@shipping_time_matching6
+                  ,@shipping_time_id7
+                  ,@shipping_time_message7
+                  ,@shipping_time_matching7
+                  ,@shipping_time_id8
+                  ,@shipping_time_message8
+                  ,@shipping_time_matching8
+                  ,@shipping_time_id9
+                  ,@shipping_time_message9
+                  ,@shipping_time_matching9
+                  ,@shipping_time_id10
+                  ,@shipping_time_message10
+                  ,@shipping_time_matching10
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@delivery_lead_time_set_flg
+                  ,@shipping_lead_time_default
+                  ,@delivery_company_type_post_payment
+                  ,@delivery_company_type_post_np_payment
+                  ,@delivery_company_type_gooddeal
+                  ,@deadline_time
+                  ,@delivery_company_type_gmo_atokara_payment
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="delivery_company_id" Type="nvarchar" Size="10" />
+      <Input Name="delivery_company_name" Type="nvarchar" Size="30" />
+      <Input Name="delivery_company_type_creditcard" Type="nvarchar" Size="30" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="delivery_company_mail_size_limit" Type="int" />
+      <Input Name="shipping_time_set_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_time_id1" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message1" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching1" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id2" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message2" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching2" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id3" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message3" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching3" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id4" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message4" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching4" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id5" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message5" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching5" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id6" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message6" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching6" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id7" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message7" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching7" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id8" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message8" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching8" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id9" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message9" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching9" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id10" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message10" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching10" Type="nvarchar" Size="100" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="delivery_lead_time_set_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_lead_time_default" Type="int" />
+      <Input Name="delivery_company_type_post_payment" Type="nvarchar" Size="30" />
+      <Input Name="delivery_company_type_post_np_payment" Type="nvarchar" Size="30" />
+      <Input Name="delivery_company_type_gooddeal" Type="nvarchar" Size ="30" />
+      <Input Name="deadline_time" Type="datetime" />
+      <Input Name="delivery_company_type_gmo_atokara_payment" Type="nvarchar" Size ="3" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_DeliveryCompany
+           SET  w2_DeliveryCompany.delivery_company_name = @delivery_company_name
+                ,delivery_company_type_creditcard = @delivery_company_type_creditcard
+                ,w2_DeliveryCompany.display_order = @display_order
+                ,w2_DeliveryCompany.delivery_company_mail_size_limit = @delivery_company_mail_size_limit
+                ,shipping_time_set_flg = @shipping_time_set_flg
+                ,w2_DeliveryCompany.shipping_time_id1 = @shipping_time_id1
+                ,w2_DeliveryCompany.shipping_time_message1 = @shipping_time_message1
+                ,w2_DeliveryCompany.shipping_time_matching1 = @shipping_time_matching1
+                ,w2_DeliveryCompany.shipping_time_id2 = @shipping_time_id2
+                ,w2_DeliveryCompany.shipping_time_message2 = @shipping_time_message2
+                ,w2_DeliveryCompany.shipping_time_matching2 = @shipping_time_matching2
+                ,w2_DeliveryCompany.shipping_time_id3 = @shipping_time_id3
+                ,w2_DeliveryCompany.shipping_time_message3 = @shipping_time_message3
+                ,w2_DeliveryCompany.shipping_time_matching3 = @shipping_time_matching3
+                ,w2_DeliveryCompany.shipping_time_id4 = @shipping_time_id4
+                ,w2_DeliveryCompany.shipping_time_message4 = @shipping_time_message4
+                ,w2_DeliveryCompany.shipping_time_matching4 = @shipping_time_matching4
+                ,w2_DeliveryCompany.shipping_time_id5 = @shipping_time_id5
+                ,w2_DeliveryCompany.shipping_time_message5 = @shipping_time_message5
+                ,w2_DeliveryCompany.shipping_time_matching5 = @shipping_time_matching5
+                ,w2_DeliveryCompany.shipping_time_id6 = @shipping_time_id6
+                ,w2_DeliveryCompany.shipping_time_message6 = @shipping_time_message6
+                ,w2_DeliveryCompany.shipping_time_matching6 = @shipping_time_matching6
+                ,w2_DeliveryCompany.shipping_time_id7 = @shipping_time_id7
+                ,w2_DeliveryCompany.shipping_time_message7 = @shipping_time_message7
+                ,w2_DeliveryCompany.shipping_time_matching7 = @shipping_time_matching7
+                ,w2_DeliveryCompany.shipping_time_id8 = @shipping_time_id8
+                ,w2_DeliveryCompany.shipping_time_message8 = @shipping_time_message8
+                ,w2_DeliveryCompany.shipping_time_matching8 = @shipping_time_matching8
+                ,w2_DeliveryCompany.shipping_time_id9 = @shipping_time_id9
+                ,w2_DeliveryCompany.shipping_time_message9 = @shipping_time_message9
+                ,w2_DeliveryCompany.shipping_time_matching9 = @shipping_time_matching9
+                ,w2_DeliveryCompany.shipping_time_id10 = @shipping_time_id10
+                ,w2_DeliveryCompany.shipping_time_message10 = @shipping_time_message10
+                ,w2_DeliveryCompany.shipping_time_matching10 = @shipping_time_matching10
+                ,w2_DeliveryCompany.date_changed = GETDATE()
+                ,w2_DeliveryCompany.last_changed = @last_changed
+                ,w2_DeliveryCompany.delivery_lead_time_set_flg = @delivery_lead_time_set_flg
+                ,w2_DeliveryCompany.shipping_lead_time_default = @shipping_lead_time_default
+                ,delivery_company_type_post_payment = @delivery_company_type_post_payment
+                ,delivery_company_type_post_np_payment = @delivery_company_type_post_np_payment
+                ,delivery_company_type_gooddeal = @delivery_company_type_gooddeal
+                ,deadline_time = @deadline_time
+                ,delivery_company_type_gmo_atokara_payment = @delivery_company_type_gmo_atokara_payment
+         WHERE  w2_DeliveryCompany.delivery_company_id = @delivery_company_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="delivery_company_id" Type="nvarchar" Size="10" />
+      <Input Name="delivery_company_name" Type="nvarchar" Size="30" />
+      <Input Name="delivery_company_type_creditcard" Type="nvarchar" Size="30" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="delivery_company_mail_size_limit" Type="int" />
+      <Input Name="shipping_time_set_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_time_id1" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message1" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching1" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id2" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message2" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching2" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id3" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message3" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching3" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id4" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message4" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching4" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id5" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message5" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching5" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id6" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message6" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching6" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id7" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message7" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching7" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id8" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message8" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching8" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id9" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message9" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching9" Type="nvarchar" Size="100" />
+      <Input Name="shipping_time_id10" Type="nvarchar" Size="5" />
+      <Input Name="shipping_time_message10" Type="nvarchar" Size="30" />
+      <Input Name="shipping_time_matching10" Type="nvarchar" Size="100" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="delivery_lead_time_set_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_lead_time_default" Type="int" />
+      <Input Name="delivery_company_type_post_payment" Type="nvarchar" Size="30" />
+      <Input Name="delivery_company_type_post_np_payment" Type="nvarchar" Size="30" />
+      <Input Name="delivery_company_type_gooddeal" Type="nvarchar" Size="30" />
+      <Input Name="deadline_time" Type="datetime" />
+      <Input Name="delivery_company_type_gmo_atokara_payment" Type="nvarchar" Size="3" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_DeliveryCompany
+         WHERE  w2_DeliveryCompany.delivery_company_id = @delivery_company_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="delivery_company_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+
+  <!-- Get delivery company names by delivery company ids -->
+  <GetDeliveryCompanyNamesByDeliveryCompanyIds>
+    <Statement>
+      <![CDATA[
+        SELECT  delivery_company_name
+          FROM  w2_DeliveryCompany
+         WHERE  delivery_company_name <> ''
+           AND  delivery_company_id IN (@@ delivery_company_ids @@)
+      ]]>
+    </Statement>
+  </GetDeliveryCompanyNamesByDeliveryCompanyIds>
+
+</DeliveryCompany>

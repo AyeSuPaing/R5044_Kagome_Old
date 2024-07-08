@@ -1,0 +1,322 @@
+﻿@*
+=========================================================================================================
+  Module      : 商品グループ設定ページ(List.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.ProductGroup.ListViewModel
+@{
+	ViewBag.Title = "商品グループ設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+
+@helper TopButtomControls() {
+	using (Html.BeginForm("Edit", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_GROUP, FormMethod.Get)) {
+		<input type="hidden" name="actionStatus" value="@ActionStatus.Insert"/>
+		<input type="submit" value="  新規登録  " class="btn btn-main"/>
+	}
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+<!--▽ タイトル ▽-->
+<tr><td><h1 class="page-title">商品グループ設定</h1></td></tr>
+@LayoutHelper.PaddingTr(10)
+<tr><td><h2 class="cmn-hed-h2">商品グループ設定一覧</h2></td></tr>
+<!--△ タイトル △-->
+<!--▽ 検索 ▽-->
+<tr>
+	<td style="width: 792px">
+		<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+			<tr>
+				<td class="search_box_bg">
+					@using (Html.BeginForm("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_GROUP, FormMethod.Get)) {
+						<table cellspacing="0" cellpadding="0" width="100%" border="0">
+							<tr>
+								<td align="center">
+									<table cellspacing="0" cellpadding="0" border="0">
+										@LayoutHelper.PaddingTr(10)
+										<tr>
+											<td class="search_table">
+												<table cellspacing="1" cellpadding="2" width="758" border="0">
+													<tr>
+														<td class="search_title_bg" width="20%">
+															商品グループID
+														</td>
+														<td class="search_item_bg">
+															<input type="text" name="ProductGroupId" value="@Model.ParamModel.ProductGroupId" style="width: 100px"/>
+														</td>
+														<td class="search_title_bg" width="20%">
+															商品グループ名
+														</td>
+														<td class="search_item_bg">
+															<input type="text" name="ProductGroupName" value="@Model.ParamModel.ProductGroupName" style="width: 100px"/>
+														</td>
+														<td class="search_title_bg" width="10%">
+															商品ID
+														</td>
+														<td class="search_item_bg">
+															<input type="text" name="ProductId" value="@Model.ParamModel.ProductId" style="width: 200px"/>
+														</td>
+														<td class="search_btn_bg" width="83" rowspan="5">
+															<div class="search_btn_main">
+																<input type="submit" name="Search" value="  検索  " formmethod="post" class="btn btn-main"/>
+															</div>
+															<div class="search_btn_sub">
+																@Html.ActionLink("クリア", "List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_GROUP)
+															</div>
+														</td>
+													</tr>
+													<tr>
+														<td class="search_title_bg" width="95">
+															開始日
+														</td>
+														<td class="search_item_bg" width="130" colspan="5">
+															@Html.DropDownListFor(model => model.ParamModel.Dates.BeginYearFrom, new SelectList(Model.BeginYearFromItems, "Value", "Text"), "----", new {
+																Id = "BeginYearFrom",
+																Name = "Dates.BeginYearFrom"
+															})/
+															@Html.DropDownListFor(model => model.ParamModel.Dates.BeginMonthFrom, new SelectList(Model.BeginMonthFromItems, "Value", "Text"), "--", new {
+																Id = "BeginMonthFrom",
+																Name = "Dates.BeginMonthFrom"
+															})/
+															@Html.DropDownListFor(model => model.ParamModel.Dates.BeginDayFrom, new SelectList(Model.BeginDayFromItems, "Value", "Text"), "--", new {
+																Id = "BeginDayFrom",
+																Name = "Dates.BeginDayFrom"
+															})
+															～
+															@Html.DropDownListFor(model => model.ParamModel.Dates.BeginYearTo, new SelectList(Model.BeginYearToItems, "Value", "Text"), "----", new {
+																Id = "BeginYearTo",
+																Name = "Dates.BeginYearTo"
+															})/
+															@Html.DropDownListFor(model => model.ParamModel.Dates.BeginMonthTo, new SelectList(Model.BeginMonthToItems, "Value", "Text"), "--", new {
+																Id = "BeginMonthTo",
+																Name = "Dates.BeginMonthTo"
+															})/
+															@Html.DropDownListFor(model => model.ParamModel.Dates.BeginDayTo, new SelectList(Model.BeginDayToItems, "Value", "Text"), "--", new {
+																Id = "BeginDayTo",
+																Name = "Dates.BeginDayTo"
+															})
+															<span class="search_btn_sub">
+																(<a href="Javascript:SetToday('date_from');">今日</a>｜<a href="Javascript:SetThisMonth('date_from');">今月</a>)
+															</span>
+														</td>
+													</tr>
+													<tr>
+														<td class="search_title_bg" width="95">
+															終了日
+														</td>
+														<td class="search_item_bg" width="130" colspan="5">
+															@Html.DropDownListFor(model => model.ParamModel.Dates.EndYearFrom, new SelectList(Model.EndYearFromItems, "Value", "Text"), "----", new {
+																Id = "EndYearFrom",
+																Name = "Dates.EndYearFrom"
+															})/
+															@Html.DropDownListFor(model => model.ParamModel.Dates.EndMonthFrom, new SelectList(Model.EndMonthFromItems, "Value", "Text"), "--", new {
+																Id = "EndMonthFrom",
+																Name = "Dates.EndMonthFrom"
+															})/
+															@Html.DropDownListFor(model => model.ParamModel.Dates.EndDayFrom, new SelectList(Model.EndDayFromItems, "Value", "Text"), "--", new {
+																Id = "EndDayFrom",
+																Name = "Dates.EndDayFrom"
+															})
+															～
+															@Html.DropDownListFor(model => model.ParamModel.Dates.EndYearTo, new SelectList(Model.EndYearToItems, "Value", "Text"), "----", new {
+																Id = "EndYearTo",
+																Name = "Dates.EndYearTo"
+															})/
+															@Html.DropDownListFor(model => model.ParamModel.Dates.EndMonthTo, new SelectList(Model.EndMonthToItems, "Value", "Text"), "--", new {
+																Id = "EndMonthTo",
+																Name = "Dates.EndMonthTo"
+															})/
+															@Html.DropDownListFor(model => model.ParamModel.Dates.EndDayTo, new SelectList(Model.EndDayToItems, "Value", "Text"), "--", new {
+																Id = "EndDayTo",
+																Name = "Dates.EndDayTo"
+															})
+															<span class="search_btn_sub">
+																(<a href="Javascript:SetToday('date_to');">今日</a>｜<a href="Javascript:SetThisMonth('date_to');">今月</a>)
+															</span>
+														</td>
+													</tr>
+													<tr>
+														<td class="search_title_bg" width="95">
+															有効フラグ
+														</td>
+														<td class="search_item_bg" width="130" colspan="5">
+															@Html.DropDownListFor(model => model.ParamModel.ValidFlg, new SelectList(Model.ValidItems, "Value", "Text"), "", new {
+																Name = "ValidFlg"
+															})
+														</td>
+													</tr>
+												</table>
+											</td>
+										</tr>
+										@LayoutHelper.PaddingTr(10)
+									</table>
+								</td>
+							</tr>
+						</table>
+					}
+				</td>
+			</tr>
+		</table>
+	</td>
+</tr>
+<!--△ 検索 △-->
+@LayoutHelper.PaddingTr(10)
+<!--▽ 一覧 ▽-->
+<tr>
+	<td>
+		<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+			<tr>
+				<td>
+					<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+						<tr>
+							<td align="center">
+								<table cellspacing="0" cellpadding="0" border="0">
+									@LayoutHelper.PaddingTr(6)
+									<tr>
+										<td>
+											<div class="action_part_top">
+												<!--▽ ページング ▽-->
+												<table class="list_pager" cellspacing="0" cellpadding="0" width="758" border="0">
+													<tr>
+														<td width="675" style="height: 22px">
+															@Html.Raw(Model.PagerHtml)
+														</td>
+														<td width="83" class="action_list_sp" style="text-align: right">
+															@TopButtomControls()
+														</td>
+													</tr>
+												</table>
+												<!--△ ページング △-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td>
+											<table class="list_table" cellspacing="1" cellpadding="3" width="758" border="0">
+												<tr class="list_title_bg">
+													<td align="center" width="120">商品グループID</td>
+													<td align="center" width="250">商品グループ名</td>
+													<td align="center" width="150">開始日時</td>
+													<td align="center" width="150">終了日時</td>
+													<td align="center" width="50">有効フラグ</td>
+												</tr>
+												@{ var lineNo = 1; }
+												@for (var index = 0; index < Model.SearchResultListViewModel.Length; index++) {
+													lineNo = ((lineNo + 1) % 2);
+													var listItemBgClass = "list_item_bg" + (lineNo + 1);
+													var listSelectMoutClass = string.Format("listselect_mout{0}(this)", lineNo + 1);
+
+													<tr id="trItem" class="@listItemBgClass" onmouseover="listselect_mover(this)" onmouseout="@listSelectMoutClass" onmousedown="listselect_mdown(this)">
+														<td align="center" onclick="listselect_mclick(document.getElementById('trItem'), '@Model.SearchResultListViewModel[index].RegisterUrl')">
+															@Model.SearchResultListViewModel[index].ProductGroupId
+														</td>
+														<td align="left" onclick="listselect_mclick(document.getElementById('trItem'), '@Model.SearchResultListViewModel[index].RegisterUrl')">
+															@Model.SearchResultListViewModel[index].ProductGroupName
+														</td>
+														<td align="center" onclick="listselect_mclick(document.getElementById('trItem'), '@Model.SearchResultListViewModel[index].RegisterUrl')">
+															@Model.SearchResultListViewModel[index].BeginDate
+														</td>
+														<td align="center" onclick="listselect_mclick(document.getElementById('trItem'), '@Model.SearchResultListViewModel[index].RegisterUrl')">
+															@{
+																var endDate = string.IsNullOrEmpty(Model.SearchResultListViewModel[index].EndDate) ? "指定なし" : Model.SearchResultListViewModel[index].EndDate;
+															}
+															@endDate
+														</td>
+														<td align="center">
+															@Model.SearchResultListViewModel[index].ValidFlg
+														</td>
+													</tr>
+												}
+												@if (string.IsNullOrEmpty(Model.ErrorMessage) == false) {
+													<tr class="list_alert">
+														<td colspan="6">@Model.ErrorMessage</td>
+													</tr>
+												}
+											</table>
+											<table>
+												@LayoutHelper.PaddingTr(10)
+											</table>
+											<table class="info_table" cellspacing="1" cellpadding="3" width="758" border="0">
+												<tr class="info_item_bg">
+													<td align="left">備考
+														<br/>フロントで /Form/Product/ProductList.aspx?pgi=&lt;商品グループID&gt; とパラメータを指定することで表示されます。
+													</td>
+												</tr>
+											</table>
+										</td>
+									</tr>
+									<tr>
+										<td>
+											<div class="action_part_bottom">
+												@TopButtomControls()
+											</div>
+										</td>
+									</tr>
+									@LayoutHelper.PaddingTr(10)
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</td>
+</tr>
+<!--△ 一覧 △-->
+@LayoutHelper.PaddingTr(10)
+</table>
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		// 今日設定
+		function SetToday(set_date) {
+			// 開始日時
+			if (set_date === 'date_from') {
+				document.getElementById('BeginYearFrom').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('BeginMonthFrom').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('BeginDayFrom').value = '@DateTime.Now.ToString("dd")';
+				document.getElementById('BeginYearTo').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('BeginMonthTo').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('BeginDayTo').value = '@DateTime.Now.ToString("dd")';
+			}
+			// 終了日時
+			else if (set_date === 'date_to') {
+				document.getElementById('EndYearFrom').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('EndMonthFrom').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('EndDayFrom').value = '@DateTime.Now.ToString("dd")';
+				document.getElementById('EndYearTo').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('EndMonthTo').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('EndDayTo').value = '@DateTime.Now.ToString("dd")';
+			}
+		}
+
+		// 今月設定
+		function SetThisMonth(set_date) {
+			// 開始日時
+			if (set_date === 'date_from') {
+				document.getElementById('BeginYearFrom').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('BeginMonthFrom').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('BeginDayFrom').value = '01';
+				document.getElementById('BeginYearTo').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('BeginMonthTo').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('BeginDayTo').value =
+					'@DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month)';
+			}
+			// 終了日時
+			else if (set_date === 'date_to') {
+				document.getElementById('EndYearFrom').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('EndMonthFrom').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('EndDayFrom').value = '01';
+				document.getElementById('EndYearTo').value = '@DateTime.Now.ToString("yyyy")';
+				document.getElementById('EndMonthTo').value = '@DateTime.Now.ToString("MM")';
+				document.getElementById('EndDayTo').value =
+					'@DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month)';
+			}
+		}
+	</script>
+}

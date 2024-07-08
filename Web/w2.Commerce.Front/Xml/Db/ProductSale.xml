@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品セール系SQLステートメントXML(ProductSale.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductSale>
+  
+  <!-- 商品セール一覧取得 -->
+  <GetProductSaleList>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_ProductSaleView.variation_id), 0)
+          FROM  w2_ProductSaleView
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_ProductSaleView.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_ProductSaleView.product_id = w2_ProductView.product_id
+                  AND
+                  w2_ProductSaleView.variation_id = w2_ProductView.variation_id
+                )
+                [[ PRODUCTSALE_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_ProductView.*,
+                w2_ProductSaleView.sale_price AS real_sale_price,
+                (
+                  SELECT  TOP 1
+                          w2_ProductPrice.member_rank_price
+                    FROM  w2_ProductPrice
+                          LEFT JOIN w2_MemberRank ON
+                          (
+			                      w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                          )
+                   WHERE  w2_ProductPrice.shop_id = w2_ProductSaleView.shop_id
+                     AND  w2_ProductPrice.product_id = w2_ProductSaleView.product_id
+                     AND  w2_ProductPrice.variation_id = w2_ProductSaleView.variation_id
+                     AND  @member_rank_id <> ''
+                     AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = @member_rank_id AND valid_flg = 'ON')
+							       AND  w2_MemberRank.valid_flg = 'ON'
+                  ORDER BY w2_MemberRank.member_rank_order
+                ) AS member_rank_price_variation,
+                [[ PRODUCT_SOLD_OUT_SELECT ]] AS productsoldout,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ProductSaleView.shop_id,
+                          w2_ProductSaleView.productsale_id,
+                          w2_ProductSaleView.product_id,
+                          w2_ProductSaleView.variation_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCTSALE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductSaleView
+                          INNER JOIN w2_ProductView ON
+                          (
+                            w2_ProductSaleView.shop_id = w2_ProductView.shop_id
+                            AND
+                            w2_ProductSaleView.product_id = w2_ProductView.product_id
+                            AND
+                            w2_ProductSaleView.variation_id = w2_ProductView.variation_id
+                          )
+                          [[ PRODUCTSALE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductSaleView ON
+                (
+                  RowIndex.shop_id = w2_ProductSaleView.shop_id
+                  AND
+                  RowIndex.productsale_id = w2_ProductSaleView.productsale_id
+                  AND
+                  RowIndex.product_id = w2_ProductSaleView.product_id
+                  AND
+                  RowIndex.variation_id = w2_ProductSaleView.variation_id
+                )
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_ProductSaleView.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_ProductSaleView.product_id = w2_ProductView.product_id
+                  AND
+                  w2_ProductSaleView.variation_id = w2_ProductView.variation_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_id" Type="nvarchar" Size="30" />
+      <Input Name="productsale_kbn" Type="nvarchar" Size="10" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetProductSaleList>
+  
+  <!-- 闇市ログイン処理 -->
+  <LoginClosedMarketSaleList>
+    <Statement>
+      <![CDATA[
+        SELECT  date_bgn,
+                date_end,
+                valid_flg
+          FROM  w2_ProductSale
+         WHERE  w2_ProductSale.shop_id = @shop_id
+           AND  w2_ProductSale.productsale_id = @productsale_id
+           AND  w2_ProductSale.closedmarket_password = @closedmarket_password
+           AND  w2_ProductSale.productsale_kbn = 'CM'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_id" Type="nvarchar" Size="30" />
+      <Input Name="closedmarket_password" Type="nvarchar" Size="30" />
+    </Parameter>
+  </LoginClosedMarketSaleList>
+  
+  <!-- 商品セール価格取得 -->
+  <GetProductSalePrice>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductSaleView
+         WHERE  w2_ProductSaleView.shop_id = @shop_id
+           AND  w2_ProductSaleView.productsale_id = @productsale_id
+           AND  w2_ProductSaleView.product_id = @product_id
+           AND  w2_ProductSaleView.variation_id = @variation_id
+           AND  w2_ProductSaleView.validity = '1'             -- セール有効
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetProductSalePrice>
+  
+</ProductSale>

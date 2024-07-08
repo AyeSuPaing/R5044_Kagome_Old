@@ -1,0 +1,179 @@
+﻿@*
+=========================================================================================================
+  Module      : 特集エリアタイプ設定ページ(List.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+
+@model w2.Cms.Manager.ViewModels.FeatureAreaType.ListViewModel
+@{
+	ViewBag.Title = "特集エリアタイプ設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+@section JavaScript
+{
+	@* ACEコードエディタライブラリ *@
+	<script type="text/javascript" charset="UTF-8" src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.4/ace.js"></script>
+	<script type="text/javascript">
+		$(function () {
+			// 一覧読み込み
+			redraw();
+		});
+
+		$('#search_keyword').keypress(function (e) {
+			if (e.which === 13) {
+				redraw();
+			}
+		});
+
+		/**
+		 * 新規登録画面の表示
+		 */
+		function open_page(id, isUpdate) {
+			$("#main-content-detail").html(null);
+			$(".selected-low").removeClass("selected-low");
+			$('.main-content-detail-inner').hide();
+			list.open();
+			loading_animation.start();
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("FeatureAreaTypeDetail", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA_TYPE)",
+				data: {
+					'areaTypeId': id,
+					'isUpdate': isUpdate
+				}
+			}).done(function (viewHtml) {
+				$("#main-content-detail").html(viewHtml);
+				$("#" + id).addClass("selected-low");
+				$("#search_keyword").addClass("placeholder-display-none");
+				$('.main-content-detail-inner').show();
+			}).fail(function () {
+			}).always(function () {
+			});
+		}
+
+		/**
+		 * ACEコードエディタ設定
+		 * param {} editorId 対象エディタID
+		 * param {} editorHideId レスポンス用 隠しテキストエリアID
+		 */
+		function set_ace_code_editor(editorId, editorHideId) {
+			var editor = ace.edit(
+				editorId,
+				{
+					mode: "ace/mode/csharp",
+					selectionStyle: "text",
+					setTheme: "ace/theme/clouds"
+				});
+			editor.getSession().on("change",
+				function() {
+					$("#" + editorHideId).val(editor.getSession().getValue());
+				});
+			editor.setOptions({
+				fontSize: "13pt"
+			});
+		}
+
+		/**
+		 * 再描画
+		 */
+		function redraw() {
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("GetList", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_AREA_TYPE)",
+				data: $('#search_form').serializeArray(),
+				traditional: true
+			}).done(function (viewHtml) {
+				$("#list-content").html(viewHtml);
+			}).done(function () {
+				var urlHash = location.hash;
+				if (urlHash) {
+					$("#" + urlHash.replace("#page", "")).addClass("selected-low");
+					$("#search_keyword").addClass("placeholder-display-none");
+				}
+			}).fail(function () {
+			});
+		}
+	</script>
+}
+<h1 class="page-title">特集エリアタイプ設定</h1>
+<div class="main-content-frame">
+	<a href="javascript:void(0)" class="list-menu-btn"><span class="icon icon-menu"></span></a>
+	<div class="main-content-list">
+		@using (Html.BeginForm("", "", new
+		{
+		}, FormMethod.Post, new
+		{
+			Id = "search_form",
+			Onsubmit = "return false;"
+		}))
+		{
+			<div class="list-tools">
+				<div class="list-tools-row">
+					<div class="list-tools-col ta-left">
+						<div class="keyword-search">
+							@Html.TextBoxFor(model => model.ParamModel.FreeWord, new
+							{
+								Id = "search_keyword",
+								Name = "FreeWord",
+								Class = "keyword-search-input",
+								Placeholder = "特集エリアタイプ名, ID, 内部メモ"
+							})
+							<a href="javascript:redraw()" class="keyword-search-submit"><span class="icon-search"></span></a>
+						</div>
+						<a class="btn-toggle" data-toggle-content-selector=".list-tools-detailed-search"></a>
+					</div>
+					<div class="list-tools-col ta-right">
+						<button class="btn btn-main btn-size-m" type="button" onclick="open_page()"><span class="icon icon-plus"></span><span class="hide-list-detail">新規作成</span></button>
+					</div>
+				</div>
+				<div class="list-tools-detailed-search">
+					<div class="list-tools-row">
+					<div class="list-tools-col">
+					<div class="form-element-group form-element-group-horizontal">
+						<div class="form-element-group-title">
+							<label>更新日</label>
+						</div>
+						<div class="form-element-group form-element-group-horizontal">
+							<div class="form-element-group-content">
+								@Html.DropDownListFor(model => model.ParamModel.DateChanged, new SelectList(Model.DateChanged, "Value", "Text"), "", new
+								{
+									Name = "DateChanged",
+									onchange = "redraw()"
+								})
+							</div>
+						</div>
+					</div>
+					</div>
+					</div>
+				</div>
+			</div>
+		}
+		<div class="list">
+			<div class="list-head">
+			<div class="list-head-row">
+				<div class="list-head-col hide-list-detail w10">
+				</div>
+				<div class="list-head-col ta-left">
+					<p>特集エリアタイプ名</p>
+				</div>
+				<div class="list-head-col hide-list-detail w10">
+					<p>利用数</p>
+				</div>
+				<div class="list-head-col hide-list-detail w40">
+					<p>更新日時<span>▼</span>
+				</div>
+			</div>
+			</div>
+			@* 領域:ページ一覧表示 *@
+			<div id="list-content">
+			</div>
+		</div>
+	</div>
+	
+	@* 領域:詳細画面 *@
+	<div id="main-content-detail" class="main-content-detail"></div>
+
+</div>

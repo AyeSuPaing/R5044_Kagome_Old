@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : V5.14_002_CDM-2007_会員登録・変更時の携帯電話番号による本人認証機能 (V5.14_002_CDM-2007_会員登録・変更時の携帯電話番号による本人認証機能.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+-->
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        -- Create mail template id 10000110
+        IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'10000110')
+          BEGIN
+            INSERT [dbo].[w2_MailTemplate]
+            (
+              [shop_id],
+              [mail_id],
+              [mail_name],
+              [mail_from],
+              [mail_to],
+              [mail_cc],
+              [mail_bcc],
+              [mail_subject],
+              [mail_body],
+              [mail_subject_mobile],
+              [mail_body_mobile],
+              [mail_attachmentfile_path],
+              [del_flg],
+              [date_created],
+              [date_changed],
+              [last_changed],
+              [mail_from_name],
+              [mail_category],
+              [auto_send_flg],
+              [language_code],
+              [language_locale_id],
+              [sms_use_flg]
+            )
+            VALUES
+            (
+              N'0',
+              N'10000110',
+              N'認証コード通知メール',
+              N'bh@w2s.xyz',
+              N'',
+              N'',
+              N'',
+              N'',
+              N'認証コード：@@ auth_code @@
+上記の番号を画面へ入力してください。
+@@ ShopMessage.ShopName @@',
+              N'',
+              N'認証コード：@@ auth_code @@
+上記の番号を画面へ入力してください。
+@@ ShopMessage.ShopName @@',
+              N'',
+              N'0',
+              GETDATE(),
+              GETDATE(),
+              N'ｗ２ユーザー',
+              N'',
+              N'',
+              N'1',
+              N'',
+              N'',
+              N'1'
+            )
+          END
+        GO
+
+        -- Create global sms template id 10000110
+        IF NOT EXISTS (SELECT mail_id FROM [w2_GlobalSMSTemplate] WHERE shop_id = '0' AND mail_id = N'10000110')
+          BEGIN
+            INSERT [dbo].[w2_GlobalSMSTemplate]
+            (
+              [shop_id],
+              [mail_id],
+              [phone_carrier],
+              [sms_text],
+              [date_created],
+              [date_changed],
+              [last_changed]
+            )
+            VALUES
+            (
+              N'0',
+              N'10000110',
+              N'default',
+              N'認証コード：@@ auth_code @@
+上記の番号を画面へ入力してください。
+@@ ShopMessage.ShopName @@',
+              GETDATE(),
+              GETDATE(),
+              N'ｗ２ユーザー'
+            )
+          END
+        GO
+
+        -- Create new column personal_authentication_use_flg
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_LandingPageDesign' AND COLUMN_NAME = 'personal_authentication_use_flg')
+        BEGIN
+          ALTER TABLE [w2_LandingPageDesign] ADD [personal_authentication_use_flg] [nvarchar] (10) NOT NULL DEFAULT (N'OFF');
+        END
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

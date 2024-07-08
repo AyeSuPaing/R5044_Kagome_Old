@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 特集ページ系SQLステートメントXML (FeaturePage.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+-->
+<FeaturePage>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeaturePage
+         WHERE  feature_page_id = @feature_page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="feature_page_id" Type="bigint" />
+    </Parameter>
+  </Get>
+
+  <!-- 取得 -->
+  <GetByFileName>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeaturePage
+         WHERE  file_name = @file_name
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="file_name" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetByFileName>
+
+  <!-- 取得 -->
+  <GetAllPage>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeaturePage
+      ]]>
+    </Statement>
+  </GetAllPage>
+
+  <!-- 取得 -->
+  <GetContents>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeaturePageContents
+         WHERE  feature_page_id = @feature_page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="feature_page_id" Type="bigint" />
+    </Parameter>
+  </GetContents>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FeaturePage
+                (
+                  management_title
+                  ,page_type
+                  ,category_id
+                  ,permitted_brand_ids
+                  ,file_name
+                  ,file_dir_path
+                  ,use_type
+                  ,publish
+                  ,condition_publish_date_from
+                  ,condition_publish_date_to
+                  ,condition_member_only_type
+                  ,condition_member_rank_id
+                  ,condition_target_list_type
+                  ,condition_target_list_ids
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @management_title
+                  ,@page_type
+                  ,@category_id
+                  ,@permitted_brand_ids
+                  ,@file_name
+                  ,@file_dir_path
+                  ,@use_type
+                  ,@publish
+                  ,@condition_publish_date_from
+                  ,@condition_publish_date_to
+                  ,@condition_member_only_type
+                  ,@condition_member_rank_id
+                  ,@condition_target_list_type
+                  ,@condition_target_list_ids
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+        SELECT  SCOPE_IDENTITY()
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="management_title" Type="nvarchar" Size="100" />
+      <Input Name="page_type" Type="nvarchar" Size="30" />
+      <Input Name="category_id" Type="nvarchar" Size="300" />
+      <Input Name="permitted_brand_ids" Type="nvarchar" Size="300" />
+      <Input Name="file_name" Type="nvarchar" Size="60" />
+      <Input Name="file_dir_path" Type="nvarchar" Size="300" />
+      <Input Name="use_type" Type="nvarchar" Size="20" />
+      <Input Name="publish" Type="nvarchar" Size="20" />
+      <Input Name="condition_publish_date_from" Type="datetime" />
+      <Input Name="condition_publish_date_to" Type="datetime" />
+      <Input Name="condition_member_only_type" Type="nvarchar" Size="20" />
+      <Input Name="condition_member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="condition_target_list_type" Type="nvarchar" Size="20" />
+      <Input Name="condition_target_list_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 登録-->
+  <InsertContents>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FeaturePageContents
+                (
+                  feature_page_id
+                  ,contents_kbn
+                  ,contents_type
+                  ,contents_sort_number
+                  ,page_title
+                  ,alt_text
+                  ,product_group_id
+                  ,product_list_title
+                  ,display_number
+                  ,pagination_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @feature_page_id
+                  ,@contents_kbn
+                  ,@contents_type
+                  ,@contents_sort_number
+                  ,@page_title
+                  ,@alt_text
+                  ,@product_group_id
+                  ,@product_list_title
+                  ,@display_number
+                  ,@pagination_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="feature_page_id" Type="bigint" />
+      <Input Name="contents_kbn" Type="nvarchar" Size="1" />
+      <Input Name="contents_type" Type="nvarchar" Size="30" />
+      <Input Name="contents_sort_number" Type="int" />
+      <Input Name="page_title" Type="nvarchar" Size="200" />
+      <Input Name="alt_text" Type="nvarchar" Size="200" />
+      <Input Name="product_group_id" Type="nvarchar" Size="30" />
+      <Input Name="product_list_title" Type="nvarchar" Size="200" />
+      <Input Name="display_number" Type="int" />
+      <Input Name="pagination_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertContents>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FeaturePage
+           SET  management_title = @management_title
+                ,page_type = @page_type
+                ,file_name = @file_name
+                ,use_type = @use_type
+                ,publish = @publish
+                ,condition_publish_date_from = @condition_publish_date_from
+                ,condition_publish_date_to = @condition_publish_date_to
+                ,condition_member_only_type = @condition_member_only_type
+                ,condition_member_rank_id = @condition_member_rank_id
+                ,condition_target_list_type = @condition_target_list_type
+                ,condition_target_list_ids = @condition_target_list_ids
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,html_page_title = @html_page_title
+                ,metadata_desc = @metadata_desc
+                ,category_id = @category_id
+                ,permitted_brand_ids = @permitted_brand_ids
+         WHERE  feature_page_id = @feature_page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="feature_page_id" Type="bigint" />
+      <Input Name="management_title" Type="nvarchar" Size="100" />
+      <Input Name="page_type" Type="nvarchar" Size="20" />
+      <Input Name="file_name" Type="nvarchar" Size="60" />
+      <Input Name="use_type" Type="nvarchar" Size="20" />
+      <Input Name="publish" Type="nvarchar" Size="20" />
+      <Input Name="condition_publish_date_from" Type="datetime" />
+      <Input Name="condition_publish_date_to" Type="datetime" />
+      <Input Name="condition_member_only_type" Type="nvarchar" Size="20" />
+      <Input Name="condition_member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="condition_target_list_type" Type="nvarchar" Size="20" />
+      <Input Name="condition_target_list_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="html_page_title" Type="nvarchar" Size="100" />
+      <Input Name="metadata_desc" Type="nvarchar" Size="MAX" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="permitted_brand_ids" Type="nvarchar" Size="300" />
+    </Parameter>
+  </Update>
+
+  <!-- 更新 -->
+  <UpdatePageSort>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FeaturePage
+           SET  page_sort_number = @page_sort_number
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  feature_page_id = @feature_page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="feature_page_id" Type="bigint" />
+      <Input Name="page_sort_number" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdatePageSort>
+
+  <!-- 削除 -->
+  <DeleteContents>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FeaturePageContents
+         WHERE  feature_page_id = @feature_page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="feature_page_id" Type="bigint" />
+    </Parameter>
+  </DeleteContents>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FeaturePage
+         WHERE  feature_page_id = @feature_page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="feature_page_id" Type="bigint" />
+    </Parameter>
+  </Delete>
+
+  <!-- 全ての最上位カテゴリ取得 -->
+  <GetRootCategoryItem>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FeaturePageCategory.category_name, w2_FeaturePageCategory.category_id
+          FROM  w2_FeaturePageCategory
+         WHERE  parent_category_id = 'root'
+        ORDER BY display_order ASC
+      ]]>
+    </Statement>
+  </GetRootCategoryItem>
+
+  <!-- 子カテゴリ取得 -->
+  <GetChildCategoryItem>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FeaturePageCategory
+         WHERE  category_id LIKE CONCAT(@parent_category_id,'%')
+           AND  parent_category_id <> 'root'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="parent_category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetChildCategoryItem>
+
+  <!-- ブランド取得 -->
+  <GetBrand>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductBrand
+        ORDER BY  brand_name ASC
+      ]]>
+    </Statement>
+  </GetBrand>
+</FeaturePage>

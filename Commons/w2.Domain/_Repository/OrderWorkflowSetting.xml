@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文ワークフロー設定系SQLステートメントXML (OrderWorkflowSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderWorkflowSetting>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_OrderWorkflowSetting
+         WHERE  shop_id = @shop_id
+           AND  workflow_kbn = @workflow_kbn
+           AND  workflow_no = @workflow_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+    </Parameter>
+  </Get>
+
+  <!-- 定期ワークフロー取得 -->
+  <GetFixedPurcase>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseWorkflowSetting
+         WHERE  shop_id = @shop_id
+           AND  workflow_kbn = @workflow_kbn
+           AND  workflow_no = @workflow_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+    </Parameter>
+  </GetFixedPurcase>
+
+  <!-- シナリオ登録(編集)用のGet -->
+  <GetForScenarioRegistration>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_OrderWorkflowSetting
+         WHERE  display_kbn = 'LINE'
+           AND  shipping_date_action = '0'
+           AND  scheduled_shipping_date_action = '0'
+        Order by workflow_kbn, display_order ASC
+      ]]>
+    </Statement>
+  </GetForScenarioRegistration>
+
+  <!-- 注文ワークフロー設定情取得 -->
+  <GetOrderWorkflowSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_OrderWorkflowSetting.*, w2_MailTemplate.mail_name
+          FROM  w2_OrderWorkflowSetting
+                LEFT JOIN w2_MailTemplate ON
+                (
+                  w2_OrderWorkflowSetting.shop_id = w2_MailTemplate.shop_id
+                  AND
+                  w2_OrderWorkflowSetting.mail_id = w2_MailTemplate.mail_id
+                )
+         WHERE  w2_OrderWorkflowSetting.workflow_kbn = @workflow_kbn
+           AND  w2_OrderWorkflowSetting.workflow_no = @workflow_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+    </Parameter>
+  </GetOrderWorkflowSetting>
+
+  <!-- 注文ワークフロー設定総件数取得 -->
+  <GetTotalOrderWorkflowSettingCount>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(COUNT(Workflow.workflow_no), 0) AS row_count
+          FROM  (
+                  SELECT  workflow_no
+                    FROM  w2_OrderWorkflowSetting
+                  UNION ALL
+                  SELECT  workflow_no
+                    FROM  w2_FixedPurchaseWorkflowSetting
+                ) AS Workflow
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetTotalOrderWorkflowSettingCount>
+
+  <!-- 全取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_OrderWorkflowSetting
+      ]]>
+    </Statement>
+  </GetAll>
+
+  <!-- Get order workflow settings -->
+  <GetOrderWorkflowSettings>
+    <Statement>
+      <![CDATA[
+        SELECT  Workflow.*
+          FROM  (
+                  SELECT  'order' AS workflow_type,
+                          w2_OrderWorkflowSetting.workflow_kbn,
+                          w2_OrderWorkflowSetting.workflow_no,
+                          w2_OrderWorkflowSetting.workflow_name,
+                          w2_OrderWorkflowSetting.display_order,
+                          w2_OrderWorkflowSetting.desc1,
+                          w2_OrderWorkflowSetting.search_setting,
+                          w2_OrderWorkflowSetting.workflow_detail_kbn,
+                          w2_OrderWorkflowSetting.display_kbn
+                    FROM  w2_OrderWorkflowSetting
+                   WHERE  w2_OrderWorkflowSetting.workflow_kbn = @workflow_kbn
+                     AND  w2_OrderWorkflowSetting.workflow_name LIKE '%' + @workflow_name + '%' ESCAPE '#'
+                     AND  w2_OrderWorkflowSetting.valid_flg = '1' -- 有効
+                  UNION ALL
+                  SELECT  'fixed_purchase' AS workflow_type,
+                          w2_FixedPurchaseWorkflowSetting.workflow_kbn,
+                          w2_FixedPurchaseWorkflowSetting.workflow_no,
+                          w2_FixedPurchaseWorkflowSetting.workflow_name,
+                          w2_FixedPurchaseWorkflowSetting.display_order,
+                          w2_FixedPurchaseWorkflowSetting.desc1,
+                          w2_FixedPurchaseWorkflowSetting.search_setting,
+                          w2_FixedPurchaseWorkflowSetting.workflow_detail_kbn,
+                          w2_FixedPurchaseWorkflowSetting.display_kbn
+                    FROM  w2_FixedPurchaseWorkflowSetting
+                   WHERE  w2_FixedPurchaseWorkflowSetting.workflow_kbn = @workflow_kbn
+                     AND  w2_FixedPurchaseWorkflowSetting.workflow_name LIKE '%' + @workflow_name + '%' ESCAPE '#'
+                     AND  w2_FixedPurchaseWorkflowSetting.valid_flg = '1' -- 有効
+                ) AS Workflow
+        ORDER BY Workflow.workflow_kbn ASC, Workflow.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_name" Type="nvarchar" Size="50" />
+    </Parameter>
+  </GetOrderWorkflowSettings>
+
+</OrderWorkflowSetting>

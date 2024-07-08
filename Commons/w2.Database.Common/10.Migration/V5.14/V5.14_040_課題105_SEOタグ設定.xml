@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+	IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_LandingPageDesign' AND COLUMN_NAME = 'metadata_desc')
+		BEGIN
+			ALTER TABLE w2_LandingPageDesign ADD metadata_desc nvarchar(200) DEFAULT ('') NOT NULL
+			EXEC('UPDATE w2_LandingPageDesign SET metadata_desc = metadata_desc');
+		END
+	GO
+	IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_LandingPageDesign' AND COLUMN_NAME = 'management_title')
+		BEGIN
+			ALTER TABLE w2_LandingPageDesign ADD management_title nvarchar(256) DEFAULT ('') NOT NULL
+			EXEC('UPDATE w2_LandingPageDesign SET management_title = page_title');
+		END
+	GO
+
+  IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_PageDesign' AND COLUMN_NAME = 'metadata_desc')
+		BEGIN
+			ALTER TABLE w2_PageDesign ADD metadata_desc nvarchar(200) DEFAULT ('') NOT NULL
+			EXEC('UPDATE w2_PageDesign SET metadata_desc = metadata_desc');
+		END
+	GO
+
+  DECLARE @ConstraintName nvarchar(200)
+
+	SELECT @ConstraintName = obj.name FROM sys.objects AS obj
+	JOIN sys.columns AS clm ON obj.object_id = clm.default_object_id
+	WHERE obj.type = 'D' AND obj.parent_object_id = OBJECT_ID('w2_Coordinate') AND clm.name = 'metadata_keywords'
+	
+	IF @ConstraintName IS NOT NULL
+		EXEC('ALTER TABLE [w2_Coordinate] DROP CONSTRAINT ' + @ConstraintName)
+	GO
+
+	IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_Coordinate' AND COLUMN_NAME = 'metadata_keywords')
+		BEGIN
+			ALTER TABLE w2_Coordinate DROP COLUMN metadata_keywords;
+		END
+	GO
+
+	DECLARE @ConstraintName3 nvarchar(200)
+
+	SELECT @ConstraintName3 = obj.name FROM sys.objects AS obj
+	JOIN sys.columns AS clm ON obj.object_id = clm.default_object_id
+	WHERE obj.type = 'D' AND obj.parent_object_id = OBJECT_ID('w2_WorkCoordinate') AND clm.name = 'metadata_keywords'
+	
+	IF @ConstraintName3 IS NOT NULL
+		EXEC('ALTER TABLE [w2_WorkCoordinate] DROP CONSTRAINT ' + @ConstraintName3)
+	GO
+
+	IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_WorkCoordinate' AND COLUMN_NAME = 'metadata_keywords')
+		BEGIN
+			ALTER TABLE w2_WorkCoordinate DROP COLUMN metadata_keywords;
+		END
+	GO
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

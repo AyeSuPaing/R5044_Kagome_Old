@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 広告コード系SQLステートメントXML(AdvertisementCode.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<AdvertisementCode>
+
+  <!-- 広告コード一覧取得（マスタ出力用） -->
+  <GetAdvCodeMaster>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  @@ fields @@
+          FROM  (
+                  SELECT  w2_AdvCode.advcode_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ ADVCODE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_AdvCode
+                    LEFT JOIN w2_AdvCodeMediaType ON
+                    (
+                      w2_AdvCodeMediaType.advcode_media_type_id = w2_AdvCode.advcode_media_type_id
+                    )
+                    [[ ADVCODE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_AdvCode ON
+                (
+                  RowIndex.advcode_no = w2_AdvCode.advcode_no
+                )
+                LEFT JOIN w2_AdvCodeMediaType ON
+                (
+                  w2_AdvCodeMediaType.advcode_media_type_id = w2_AdvCode.advcode_media_type_id
+                )
+                [[ ADVCODE_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="advertisement_code_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="media_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="advcode_media_type_id" Type="nvarchar" Size="30" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetAdvCodeMaster>
+
+  <!-- Get Adv code media type master -->
+  <GetAdvCodeMediaTypeMaster>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  @@ fields @@
+          FROM  (
+                  SELECT  w2_AdvCodeMediaType.advcode_media_type_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ ADVCODEMEDIATYPE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_AdvCodeMediaType
+                          [[ ADVCODEMEDIATYPE_SEARCH_WHERE ]]
+                ) AS RowIndex
+    INNER JOIN  w2_AdvCodeMediaType ON
+                (
+                  RowIndex.advcode_media_type_id = w2_AdvCodeMediaType.advcode_media_type_id
+                )
+                [[ ADVCODEMEDIATYPE_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="advcode_media_type_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="advcode_media_type_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetAdvCodeMediaTypeMaster>
+
+  <!-- Check Duplication Adv Code Media Type Id -->
+  <CheckDuplicationAdvCodeMediaTypeId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(w2_AdvCodeMediaType.advcode_media_type_id) AS count
+          FROM  w2_AdvCodeMediaType
+         WHERE  w2_AdvCodeMediaType.advcode_media_type_id = @advcode_media_type_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="advcode_media_type_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationAdvCodeMediaTypeId>
+
+</AdvertisementCode>

@@ -1,0 +1,114 @@
+﻿<%--
+=========================================================================================================
+  Module      : スマートフォン用デフォルトページマスタ(DefaultPage.master)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2011 All Rights Reserved.
+=========================================================================================================
+--%>
+<%@ Register TagPrefix="uc" TagName="HeaderScriptDeclaration" Src="~/SmartPhone/Form/Common/HeaderScriptDeclaration.ascx" %>
+<%@ Register TagPrefix="uc" TagName="SmartPhoneHeaderMain" Src="~/SmartPhone/Form/Common/BodyHeaderMain.ascx" %>
+<%@ Register TagPrefix="uc" TagName="SmartPhoneFooterMain" Src="~/SmartPhone/Form/Common/BodyFooterMain.ascx" %>
+<%@ Register TagPrefix="uc" TagName="AffiliateTag" Src="~/Form/Common/AffiliateTag.ascx" %>
+<%@ Master Language="C#" AutoEventWireup="true" CodeFile="~/Form/Common/DefaultPage.master.cs" Inherits="Form_Common_DefaultPage" %>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" xmlns:og="http://ogp.me/ns#">
+<%-- ▽Header▽ --%>
+<head id="Head1" runat="server">
+	<%-- SmartPhone用にViewPortを最適化。--%>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<title>
+		<%-- ▽商品一覧ページ用▽ --%>
+		<% if (Request.Url.AbsolutePath.ToLower().Contains((Constants.PAGE_FRONT_PRODUCT_LIST).ToLower())){ %>
+		<%: (StringUtility.ToEmpty(Request[Constants.REQUEST_KEY_CATEGORY_ID]) == ""  ? "すべてのカテゴリ" + Page.Title : "")%>
+		<%: (StringUtility.ToEmpty(Request[Constants.REQUEST_KEY_CATEGORY_ID]) != ""  ? Page.Title : "")%>
+		<%-- その他 --%>
+		<% }else{ %>
+		<%: Page.Title %>
+		<% } %>
+	</title>
+	<meta http-equiv="Content-Script-Type" content="text/javascript" />
+	<%
+		SetCssLink("lTooltipCss", Constants.PATH_ROOT + "SmartPhone/Css/tooltip.css");
+	%>
+	<link id="lTooltipCss" rel="stylesheet" type="text/css"  media="all" />
+	<link href="<%: Constants.PATH_ROOT + "SmartPhone/Css/user.css" %>" rel="stylesheet" type="text/css" media="all" />
+	<link href="<%: Constants.PATH_ROOT + "SmartPhone/Css/coordinate.css" %>" rel="stylesheet" type="text/css" media="all" />
+	<link href="<%: Constants.PATH_ROOT + "SmartPhone/Css/parts.css" %>" rel="stylesheet" type="text/css" media="all" />
+	<%-- 各種Js読み込み --%>
+	<uc:HeaderScriptDeclaration id="HeaderScriptDeclaration" runat="server"></uc:HeaderScriptDeclaration>
+	<asp:ContentPlaceHolder id="head" runat="server">
+	</asp:ContentPlaceHolder>
+	
+	<%--▽CVタグ出力 head▽--%>
+	<uc:AffiliateTag ID="AffiliateTagHeadAll" Location="head" AllTag="true" runat="server"/>
+	<asp:contentplaceholder id="AffiliateTagHead" runat="server"></asp:contentplaceholder>
+	<%--△CVタグ出力 head△--%>
+	
+	<% if (this.IsDisplayedSeoTag) { %>
+		<meta name="description" content="<%#: new HtmlString((this.Seo != null) ? this.Seo.MetadataDesc : string.Empty) %>" />
+	<% }%>
+	<% if(this.IsDisplayedOgpTag) {%>
+		<%-- ▽Open Graph Protocol(ソーシャルログイン連携用)▽ --%>
+		<meta property="og:title" content="<%#: new HtmlString((this.Ogp != null) ? this.Ogp.PageTitle : string.Empty) %>"/>
+		<meta property="og:type" content="<%#: new HtmlString((this.Ogp != null) ? this.Ogp.Type : string.Empty) %>"/>
+		<meta property="og:url" content="<%#: new HtmlString((this.Ogp != null) ? this.Ogp.SiteUrl : string.Empty) %>"/>
+		<meta property="og:image" content="<%#: new HtmlString((this.Ogp != null) ? this.Ogp.ImageUrl : string.Empty) %>"/>
+		<meta property="og:site_name" content="<%#: new HtmlString((this.Ogp != null) ? this.Ogp.SiteTitle : string.Empty) %>"/>
+		<meta property="og:description" content="<%#: new HtmlString((this.Ogp != null) ? this.Ogp.Description : string.Empty) %>" />
+		<%-- △Open Graph Protocol(ソーシャルログイン連携用)△ --%>
+	<% } %>
+</head>
+<%-- △Header△ --%>
+
+<body>
+
+<%
+	// テキストボックスでEnterキー押下時、意図しないSubmitを防止する（Safari、Opera対策）
+	if (Regex.IsMatch(StringUtility.ToEmpty(Request.UserAgent), "safari|opera", RegexOptions.IgnoreCase))
+	{
+		form1.Attributes.Add("onkeypress", "return ((event.keyCode != 13) || (window.event.srcElement.type != 'text'));");
+	}
+%>
+<%--▽CVタグ出力 body上▽--%>
+<uc:AffiliateTag ID="AffiliateTagBodyTopAll" Location="body_top" AllTag="true" runat="server"/>
+<asp:contentplaceholder id="AffiliateTagBodyTop" runat="server"></asp:contentplaceholder>
+<%--△CVタグ出力 body上△--%>
+<form id="form1" onsubmit="return (document.getElementById('__EVENTVALIDATION') != null);" runat="server">
+
+<script type="text/javascript">
+<!--
+	// クリックジャック攻撃対策
+	CheckClickJack('<%= Constants.PATH_ROOT + Constants.PAGE_FRONT_BLANK %>');
+//-->
+</script>
+
+<%-- スクリプトマネージャ --%>
+<asp:ScriptManager ID="smScriptManager" runat="server" OnAsyncPostBackError="smScriptManager_AsyncPostBackError" ScriptMode="Release"></asp:ScriptManager>
+
+<%--▽ヘッダーエリア▽--%>
+<uc:SmartPhoneHeaderMain id="BodyHeaderMain" runat="server"></uc:SmartPhoneHeaderMain>
+<%--△ヘッダーエリア△--%>
+
+<div id="Contents">
+<%--▽コンテンツエリア▽--%>
+	<asp:contentplaceholder id="ContentPlaceHolder1" runat="server"></asp:contentplaceholder>
+<%--△コンテンツエリア△--%>
+</div>
+
+<%--▽フッターエリア▽--%>
+<uc:SmartPhoneFooterMain id="SmartPhoneFooterMain" runat="server"></uc:SmartPhoneFooterMain>
+	<%--下記のタグはファイル情報保持用です。削除しないでください--%>
+	<%--▽フッターコンテンツエリア▽--%>
+	<asp:contentplaceholder id="ContentPlaceHolderFooter" runat="server"></asp:contentplaceholder>
+	<%--△フッターコンテンツエリア△--%>
+<%--△フッターエリア△--%>
+
+</form>
+<%--▽CVタグ出力 body下▽--%>
+<uc:AffiliateTag ID="AffiliateTagBodyBottomAll" Location="body_bottom" AllTag="true" runat="server"/>
+<asp:contentplaceholder id="AffiliateTagBodyBottom" runat="server"></asp:contentplaceholder>
+<%--△CVタグ出力 body下△--%>
+</body>
+</html>

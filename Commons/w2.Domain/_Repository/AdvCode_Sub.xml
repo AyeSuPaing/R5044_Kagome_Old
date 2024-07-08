@@ -1,0 +1,145 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 広告コードマスタ系SQLサブステートメントXML (AdvCode_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<AdvCode_Sub>
+
+  <!-- 検索用WHERE文 -->
+  <ADVCODE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_AdvCode.dept_id = @dept_id
+           AND  (
+                  @advertisement_code_like_escaped = ''
+                  OR
+                  w2_AdvCode.advertisement_code LIKE '%' + @advertisement_code_like_escaped + '%'  ESCAPE '#'
+                )
+                @@ where_advertisement_code @@
+           AND  (
+                  @media_name_like_escaped = ''
+                  OR
+                  w2_AdvCode.media_name LIKE '%' + @media_name_like_escaped + '%'  ESCAPE '#'
+                )
+           AND  (
+                  @advcode_media_type_id = ''
+                  OR
+                  w2_AdvCode.advcode_media_type_id = @advcode_media_type_id
+                )
+           AND  (
+                  @valid_flg <> '1'
+                  OR
+                  (
+                    @valid_flg = '1'
+                    AND
+                    w2_AdvCode.valid_flg = @valid_flg
+                  )
+                )
+           <@@hasval:member_rank_id@@>
+           AND  w2_AdvCode.member_rank_id_granted_at_account_registration = @member_rank_id
+           </@@hasval:member_rank_id@@>
+           <@@hasval:user_management_level_id@@>
+           AND  w2_AdvCode.user_management_level_id_granted_at_account_registration = @user_management_level_id
+           </@@hasval:user_management_level_id@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="user_management_level_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </ADVCODE_SEARCH_WHERE>
+
+  <!-- 検索用ORDER BY -->
+  <ADVCODE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_AdvCode.date_created
+            WHEN  8 THEN w2_AdvCode.date_changed
+            ELSE NULL
+          END ASC,
+          CASE @sort_kbn
+            WHEN  2 THEN w2_AdvCode.advertisement_code
+            WHEN  4 THEN w2_AdvCode.advcode_media_type_id
+            ELSE  '1'
+          END ASC,
+          CASE @sort_kbn
+            WHEN  6 THEN w2_AdvCodeMediaType.display_order
+            ELSE  1
+          END ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_AdvCode.date_created
+            WHEN  9 THEN w2_AdvCode.date_changed
+            ELSE NULL
+          END DESC,
+          CASE @sort_kbn
+            WHEN  3 THEN w2_AdvCode.advertisement_code
+            WHEN  5 THEN w2_AdvCode.advcode_media_type_id
+            ELSE  '1'
+          END DESC,
+          CASE @sort_kbn
+            WHEN  7 THEN w2_AdvCodeMediaType.display_order
+            ELSE  1
+          END DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_AdvCode.advcode_no ASC
+        ]]>
+    </Statement>
+  </ADVCODE_SEARCH_ORDER_BY>
+
+  <!-- 検索用WHERE文 -->
+  <ADVCODEMEDIATYPE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  <@@hasval:advcode_media_type_id_like_escaped@@>
+                w2_AdvCodeMediaType.advcode_media_type_id LIKE @advcode_media_type_id_like_escaped + '%'  ESCAPE '#'
+                </@@hasval:advcode_media_type_id_like_escaped@@>
+                <@@hasnoval:advcode_media_type_id_like_escaped@@>
+                1 = 1
+                </@@hasnoval:advcode_media_type_id_like_escaped@@>
+
+           <@@hasval:advcode_media_type_name_like_escaped@@>
+           AND  w2_AdvCodeMediaType.advcode_media_type_name LIKE '%' + @advcode_media_type_name_like_escaped + '%'  ESCAPE '#'
+           </@@hasval:advcode_media_type_name_like_escaped@@>
+
+           <@@hasval:usable_media_type_ids@@>
+           AND  @@ where_usable_media_type_ids @@
+           </@@hasval:usable_media_type_ids@@>
+      ]]>
+    </Statement>
+  </ADVCODEMEDIATYPE_SEARCH_WHERE>
+
+  <!-- 検索用ORDER BY -->
+  <ADVCODEMEDIATYPE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_AdvCodeMediaType.date_created
+            ELSE NULL
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  2 THEN w2_AdvCodeMediaType.advcode_media_type_id
+            ELSE '1'
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_AdvCodeMediaType.date_created
+            ELSE NULL
+          END 
+          DESC,
+          CASE @sort_kbn
+            WHEN  3 THEN w2_AdvCodeMediaType.advcode_media_type_id
+            ELSE '1'
+          END 
+         DESC
+      ]]>
+    </Statement>
+  </ADVCODEMEDIATYPE_SEARCH_ORDER_BY>
+
+</AdvCode_Sub>

@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : タスクスケジュール履歴集計テーブル系SQLステートメントXML (TaskScheduleHistorySummary.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<TaskScheduleHistorySummary>
+
+  <!-- 登録 -->
+  <MergeFromHistoryData>
+    <Statement>
+      <![CDATA[
+        MERGE  w2_TaskScheduleHistorySummary
+        USING
+        (
+          SELECT  *,
+                  COUNT(1) as history_count
+            FROM  (
+                    SELECT  dept_id,
+                            action_kbn,
+                            action_master_id,
+                            action_no,
+                            action_result,
+                            action_kbn_detail,
+                            target_id
+                      FROM  w2_TaskScheduleHistory
+                     WHERE  schedule_date < @schedule_date
+                     ORDER BY history_no ASC
+                    OFFSET 0 ROWS
+                     FETCH NEXT @limit_count ROWS ONLY
+                  ) AS TargetHistoryData
+        GROUP BY  dept_id,
+                  action_kbn,
+                  action_master_id,
+                  action_no,
+                  action_result,
+                  action_kbn_detail,
+                  target_id
+        ) AS TargetHistoryDataSummary
+        ON
+        (
+          w2_TaskScheduleHistorySummary.dept_id = TargetHistoryDataSummary.dept_id
+          AND
+          w2_TaskScheduleHistorySummary.action_kbn = TargetHistoryDataSummary.action_kbn
+          AND
+          w2_TaskScheduleHistorySummary.action_master_id = TargetHistoryDataSummary.action_master_id
+          AND
+          w2_TaskScheduleHistorySummary.action_no = TargetHistoryDataSummary.action_no
+          AND
+          w2_TaskScheduleHistorySummary.action_result = TargetHistoryDataSummary.action_result
+          AND
+          w2_TaskScheduleHistorySummary.action_kbn_detail = TargetHistoryDataSummary.action_kbn_detail
+          AND
+          w2_TaskScheduleHistorySummary.target_id = TargetHistoryDataSummary.target_id
+        )
+        WHEN MATCHED THEN
+          UPDATE
+             SET w2_TaskScheduleHistorySummary.history_count = w2_TaskScheduleHistorySummary.history_count + TargetHistoryDataSummary.history_count
+        WHEN NOT MATCHED THEN
+          INSERT
+          (
+            dept_id,
+            action_kbn,
+            action_master_id,
+            action_no,
+            action_result,
+            action_kbn_detail,
+            target_id,
+            history_count
+          )
+          VALUES
+          (
+            TargetHistoryDataSummary.dept_id,
+            TargetHistoryDataSummary.action_kbn,
+            TargetHistoryDataSummary.action_master_id,
+            TargetHistoryDataSummary.action_no,
+            TargetHistoryDataSummary.action_result,
+            TargetHistoryDataSummary.action_kbn_detail,
+            TargetHistoryDataSummary.target_id,
+            TargetHistoryDataSummary.history_count
+          );
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="schedule_date" Type="datetime" />
+      <Input Name="limit_count" Type="int" />
+    </Parameter>
+  </MergeFromHistoryData>
+  
+</TaskScheduleHistorySummary>

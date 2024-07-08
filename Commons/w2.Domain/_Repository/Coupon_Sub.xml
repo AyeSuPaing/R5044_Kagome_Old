@@ -1,0 +1,416 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : クーポンテーブル系SQLサブステートメントXML (Coupon_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<Coupon_Sub>
+  <!-- クーポン情報一覧取得用WHERE文 -->
+  <COUPON_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (@coupon_code_like_escaped = '' OR w2_Coupon.coupon_code LIKE @coupon_code_like_escaped + '%'  ESCAPE '#')      -- クーポンコード
+                  AND
+                  (@coupon_type = '' OR w2_Coupon.coupon_type = @coupon_type)        -- クーポン種別
+                  AND
+                  (@coupon_name_like_escaped = '' OR w2_Coupon.coupon_name LIKE '%' + @coupon_name_like_escaped + '%' ESCAPE '#')        -- 管理用クーポン名
+                  AND
+                  (
+                    @publish_date = ''
+                    OR
+                    (
+                      -- 発行期間前
+                      (@publish_date = '0' AND w2_Coupon.publish_date_bgn > @current_date)
+                      OR
+                      -- 発行期間中
+                      (@publish_date = '1' AND (w2_Coupon.publish_date_bgn <= @current_date AND @current_date <= w2_Coupon.publish_date_end))
+                      OR
+                      -- 発行期間後
+                      (@publish_date = '2' AND w2_Coupon.publish_date_end < @current_date)
+                    )
+                  )
+                  AND
+                  (@valid_flg = '' OR w2_Coupon.valid_flg = @valid_flg)        -- 有効フラグ
+                )
+           AND  w2_Coupon.dept_id = @dept_id
+      ]]>
+    </Statement>
+  </COUPON_SEARCH_WHERE>
+
+  <!-- クーポン情報取得用WHERE文 -->
+  <USABLE_COUPON_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_Coupon.dept_id = @dept_id
+           AND  w2_Coupon.coupon_code LIKE @coupon_code_like_escaped + '%' ESCAPE '#'
+           AND  (
+                  w2_Coupon.coupon_name LIKE '%' + @coupon_name_like_escaped + '%' ESCAPE '#'
+                  OR
+                  w2_Coupon.coupon_disp_name LIKE '%' + @coupon_name_like_escaped + '%' ESCAPE '#'
+                )
+           AND  (
+                  -- 新規登録 OR 購入 OR 初回購入
+                  (w2_Coupon.coupon_type IN ('01','02','03','46','47') AND w2_UserCoupon.user_id IS NOT NULL)
+                  OR
+                  -- 回数制限有(会員)
+                  (w2_Coupon.coupon_type IN ('04','06') AND w2_UserCoupon.user_coupon_count > 0 AND w2_UserCoupon.user_id IS NOT NULL)
+                  OR
+                  -- 回数制限有(誕生日)
+                  (w2_Coupon.coupon_type IN ('07','08') AND w2_UserCoupon.user_coupon_count > 0 AND w2_UserCoupon.user_id IS NOT NULL)
+                  OR
+                  -- 回数制限無(会員)
+                  (w2_Coupon.coupon_type IN ('11') AND @user_coupon_only = '0' AND @user_id <> '')
+                  OR
+                  -- 回数制限無
+                  (w2_Coupon.coupon_type IN ('12') AND @user_coupon_only = '0')
+                  OR
+                  -- 回数指定制限 OR 利用回数制限付き配送無料
+                  (w2_Coupon.coupon_type IN ('21', '31') AND w2_Coupon.coupon_count > 0 AND @user_coupon_only = '0')
+                  -- ブラックリスト型クーポン
+                  OR
+                  (
+                    w2_Coupon.coupon_type IN ('41', '42', '43', '44', '45')
+                    AND
+                    (
+                      NOT EXISTS
+                      (
+                        SELECT  w2_CouponUseUser.coupon_id
+                          FROM  w2_CouponUseUser
+                          WHERE  w2_CouponUseUser.coupon_id = w2_Coupon.coupon_id
+                            AND  (
+                                  (@used_user_judge_type = 'UserId' AND @user_id <> '' AND w2_CouponUseUser.coupon_use_user = @user_id)
+                                  OR
+                                  (@used_user_judge_type = 'MailAddress' AND @mail_addr <> '' AND w2_CouponUseUser.coupon_use_user = @mail_addr)
+                                )
+                      )
+                    )
+                    AND
+                    @user_coupon_only = '0'
+                  )
+                )
+           AND  (w2_UserCoupon.user_id IS NULL OR w2_UserCoupon.user_id = @user_id)
+           AND  (
+                  COALESCE(w2_Coupon.expire_date_bgn, w2_UserCoupon.date_created, w2_Coupon.date_created) <= @current_date
+                  AND
+                  ISNULL(w2_Coupon.expire_date_end, DATEADD(day, w2_Coupon.expire_day, CONVERT(datetime, CONVERT(nvarchar(10), ISNULL(w2_UserCoupon.date_created, w2_Coupon.date_created), 111) + ' 23:59:59.997'))) >= @current_date
+                )
+           AND  w2_Coupon.valid_flg = '1'
+           AND  (w2_UserCoupon.use_flg IS NULL OR w2_UserCoupon.use_flg = '0')
+      ]]>
+    </Statement>
+  </USABLE_COUPON_SEARCH_WHERE>
+
+  <!-- クーポン情報一覧取得用ORDER_BY -->
+  <COUPON_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_Coupon.date_created
+            WHEN  2 THEN w2_Coupon.date_changed
+            ELSE NULL
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_Coupon.date_created
+            WHEN  3 THEN w2_Coupon.date_changed
+            ELSE NULL
+          END
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_Coupon.dept_id ASC, w2_Coupon.coupon_id ASC
+      ]]>
+    </Statement>
+  </COUPON_SEARCH_ORDER_BY>
+
+  <!-- ユーザ情報一覧取得用WHERE文 -->
+  <USER_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER','PC_GEST','SP_GEST','OFF_GEST')
+           AND  <@@hasnoval:srch_word_like_escaped@@>
+                  1 = 1
+                </@@hasnoval:srch_word_like_escaped@@>
+                <@@hasval:srch_word_like_escaped@@>
+                  <@@val:srch_key:0@@>
+                    w2_User.user_id LIKE @srch_word_like_escaped + '%'  ESCAPE '#'  -- ユーザーID
+                  </@@val:srch_key:0@@>
+                  <@@val:srch_key:1@@>
+                    w2_User.name LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'      -- 氏名
+                  </@@val:srch_key:1@@>
+                  <@@val:srch_key:2@@>
+                    w2_User.name_kana LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- フリガナ
+                  </@@val:srch_key:2@@>
+                  <@@val:srch_key:3@@>
+                    w2_User.tel1 LIKE @srch_word_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_User.tel1_1 + w2_User.tel1_2 + w2_User.tel1_3 LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'      -- 電話番号
+                    OR
+                    w2_User.tel2 LIKE @srch_word_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_User.tel2_1 + w2_User.tel2_2 + w2_User.tel2_3 LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'      -- tel2 number
+                  </@@val:srch_key:3@@>
+                  <@@val:srch_key:4@@>
+                    w2_User.mail_addr LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- メールアドレス
+                    OR
+                    w2_User.mail_addr2 LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- モバイルメールアドレス
+                  </@@val:srch_key:4@@>
+                  <@@val:srch_key:5@@>
+                    w2_User.zip LIKE @srch_word_like_escaped + '%' ESCAPE '#'
+                    OR
+                    w2_User.zip1 + w2_User.zip2 LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'      -- 郵便番号
+                  </@@val:srch_key:5@@>
+                  <@@val:srch_key:6@@>
+                    w2_User.addr LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'      -- 住所
+                  </@@val:srch_key:6@@>
+                  <@@val:srch_key:7@@>
+                    w2_User.company_name LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- 企業名
+                  </@@val:srch_key:7@@>
+                  <@@val:srch_key:8@@>
+                    w2_User.company_post_name LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- 部署名
+                  </@@val:srch_key:8@@>
+                  <@@val:srch_key:9@@>
+                    EXISTS
+                    (
+                      SELECT  *
+                        FROM  w2_UserCoupon
+                              INNER JOIN w2_Coupon ON
+                              (
+                                w2_UserCoupon.dept_id = w2_Coupon.dept_id
+                                AND
+                                w2_UserCoupon.coupon_id = w2_Coupon.coupon_id
+                              )
+                       WHERE  w2_User.user_id = w2_UserCoupon.user_id
+                         AND  w2_Coupon.coupon_code LIKE @srch_word_like_escaped + '%' ESCAPE '#'
+                    )  -- クーポンコード
+                  </@@val:srch_key:9@@>
+                </@@hasval:srch_word_like_escaped@@>
+      ]]>
+    </Statement>
+  </USER_SEARCH_WHERE>
+
+  <!-- ユーザ情報一覧取得用ORDER_BY -->
+  <USER_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_User.name
+            WHEN  2 THEN w2_User.name_kana
+            WHEN  8 THEN w2_User.user_id
+            ELSE '1'
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  4 THEN ISNULL(Unused_Coupon.unused_coupon,0)
+            WHEN  6 THEN ISNULL(Used_Coupon.used_coupon,0)
+            ELSE  1
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_User.name
+            WHEN  3 THEN w2_User.name_kana
+            WHEN  9 THEN w2_User.user_id
+            ELSE '1'
+          END
+          DESC,
+          CASE @sort_kbn
+            WHEN  5 THEN ISNULL(Unused_Coupon.unused_coupon,0)
+            WHEN  7 THEN ISNULL(Used_Coupon.used_coupon,0)
+            ELSE 1
+          END
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_User.user_id ASC
+      ]]>
+    </Statement>
+  </USER_SEARCH_ORDER_BY>
+
+  <!-- ユーザクーポン履歴情報一覧取得用WHERE文 -->
+  <USERCOUPONHISTORY_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_UserCouponHistory.dept_id = @dept_id
+           AND  w2_UserCouponHistory.user_id = @user_id
+           AND  w2_User.del_flg = '0' -- 退会ユーザは出力しない
+           AND  (
+                  @srch_key = 0 AND w2_UserCouponHistory.coupon_code like '%' + @srch_word_like_escaped + '%'  ESCAPE '#'     -- クーポンコード
+                  OR
+                  @srch_key = 1 AND w2_UserCouponHistory.order_id like '%' + @srch_word_like_escaped + '%' ESCAPE '#'          -- 注文ID
+                  OR
+                  @srch_word_like_escaped = ''
+                )
+      ]]>
+    </Statement>
+  </USERCOUPONHISTORY_SEARCH_WHERE>
+
+  <!-- ユーザクーポン履歴情報一覧取得用ORDER_BY -->
+  <USERCOUPONHISTORY_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_UserCouponHistory.coupon_code
+            ELSE '1'
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  2 THEN w2_UserCouponHistory.history_no  -- 敢えて枝番
+            ELSE NULL
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_UserCouponHistory.coupon_code
+            ELSE '1'
+          END
+          DESC,
+          CASE @sort_kbn
+            WHEN  3 THEN w2_UserCouponHistory.history_no
+            ELSE NULL
+          END
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_UserCouponHistory.user_id ASC, w2_UserCouponHistory.history_no ASC
+      ]]>
+    </Statement>
+  </USERCOUPONHISTORY_SEARCH_ORDER_BY>
+
+  <!-- クーポン利用ユーザー取得用WHERE文 -->
+  <COUPONUSEUSER_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE  (
+                 (
+                    @coupon_id = '' 
+                    OR
+                    w2_CouponUseUser.coupon_id = @coupon_id
+                 )
+                 AND
+                 (
+                    @user_id_like_escaped = '' 
+                    OR
+                    w2_User.user_id LIKE @user_id_like_escaped + '%' ESCAPE '#'
+                 )
+                 AND
+                 (
+                    @mail_addr_like_escaped = '' 
+                    OR
+                    w2_CouponUseUser.coupon_use_user LIKE @mail_addr_like_escaped + '%' ESCAPE '#'
+                 )
+                 AND
+                 (
+                    @name_like_escaped = '' 
+                    OR
+                    w2_User.name LIKE @name_like_escaped + '%' ESCAPE '#'
+                 )
+                 AND
+                 (
+                   (@date_created_from IS NULL OR w2_CouponUseUser.date_created >= @date_created_from)
+                   AND
+                   (@date_created_to IS NULL OR w2_CouponUseUser.date_created < DATEADD(day, 1, @date_created_to))
+                 )
+                 AND
+                 (
+                   @del_flg = '1' 
+                   OR 
+                   w2_User.del_flg = @del_flg
+                   OR
+                   w2_User.del_flg IS NULL  --利用ユーザー手動追加でユーザー情報と紐づかない場合対策
+                 )
+               )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="mail_addr_like_escaped" Type="nvarchar" Size="512" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="80" />
+      <Input Name="date_created_from" Type="datetime"/>
+      <Input Name="date_created_to" Type="datetime"/>
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="used_user_judge_type" Type="nvarchar" Size="15" />
+    </Parameter>
+  </COUPONUSEUSER_SEARCH_WHERE>
+
+  <!-- クーポン利用ユーザー取得用ORDER_BY -->
+  <COUPONUSEUSER_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY  w2_CouponUseUser.date_created DESC
+      ]]>
+    </Statement>
+  </COUPONUSEUSER_SEARCH_ORDER_BY>
+
+  <!-- 検索用WHERE文 -->
+  <COUPONSCHEDULE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE  (
+                 @coupon_schedule_id = ''
+                 AND
+                 @coupon_schedule_name = ''
+                 OR
+                 (
+                    w2_CouponSchedule.coupon_schedule_id LIKE + '%' + @coupon_schedule_id + '%' ESCAPE '#'
+                    AND
+                    w2_CouponSchedule.coupon_schedule_name LIKE + '%' + @coupon_schedule_name + '%' ESCAPE '#'
+                 )
+               )
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </COUPONSCHEDULE_SEARCH_WHERE>
+
+  <!-- 検索用ORDER BY -->
+  <COUPONSCHEDULE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_CouponSchedule.coupon_schedule_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </COUPONSCHEDULE_SEARCH_ORDER_BY>
+
+  <!-- クーポン推移レポート作成用の共通条件 -->
+  <COUPONTRANSITION_COMMON_CONDITION>
+    <Statement>
+      <![CDATA[
+        AND
+            DATEPART(year, w2_UserCouponHistory.date_created) = @tgt_year
+        AND
+            DATEPART(month, w2_UserCouponHistory.date_created) = @tgt_month
+        <@@val:report_type:Day@@>
+        AND
+            DATEPART(day, w2_UserCouponHistory.date_created) = @tgt_day
+        </@@val:report_type:Day@@>
+        AND
+            w2_UserCouponHistory.dept_id = @dept_id
+        AND
+            (
+                -- coupon_id、coupon_code のどちらも設定されていない場合
+                (@coupon_id = '' AND @coupon_code_like_escaped = '')
+              OR
+                (
+                  -- coupon_id が設定されている場合
+                  (@coupon_id = '' OR w2_UserCouponHistory.coupon_id = @coupon_id)
+                 AND
+                  -- coupon_code が設定されている場合、一時テーブルにあるcoupon_id と照合
+                  (
+                    @coupon_code_like_escaped = '' OR w2_UserCouponHistory.coupon_id IN ( SELECT coupon_id FROM @table_coupon_id )
+                  )
+                )
+            )
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </COUPONTRANSITION_COMMON_CONDITION>
+
+</Coupon_Sub>

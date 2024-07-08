@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+UPDATE targetDsa
+SET price_tax = newDsaData.price_tax
+FROM w2_DispSummaryAnalysis AS targetDsa
+INNER JOIN 
+(
+	SELECT w2_DispSummaryAnalysis.data_no, SUM(w2_OrderItem.item_price_tax) AS price_tax
+	FROM w2_DispSummaryAnalysis, w2_Order, w2_OrderItem
+	WHERE w2_Order.order_id = w2_OrderItem.order_id
+	AND	order_date BETWEEN  w2_DispSummaryAnalysis.tgt_year + '/' + w2_DispSummaryAnalysis.tgt_month + '/' + w2_DispSummaryAnalysis.tgt_day + ' 00:00:00' AND w2_DispSummaryAnalysis.tgt_year + '/' + w2_DispSummaryAnalysis.tgt_month + '/' + w2_DispSummaryAnalysis.tgt_day + ' 23:59:59.997'
+	AND	order_status NOT IN ('TMP','ODR_CNSL','TMP_CNSL')	-- 仮注文、キャンセル、仮注文キャンセルは除外
+	AND w2_OrderItem.product_id = w2_DispSummaryAnalysis.reserved6
+	AND w2_OrderItem.variation_id = w2_DispSummaryAnalysis.reserved7
+	group by w2_DispSummaryAnalysis.data_no
+) AS newDsaData
+ON targetDsa.data_no = newDsaData.data_no
+WHERE targetDsa.summary_kbn = 'pct_buyprice'
+
+UPDATE targetDsa
+SET price_tax = newDsaData.price_tax
+FROM w2_DispSummaryAnalysis AS targetDsa
+INNER JOIN 
+(
+	SELECT w2_DispSummaryAnalysis.data_no, SUM(w2_OrderItem.item_price_tax) AS price_tax
+	FROM w2_DispSummaryAnalysis, w2_Order, w2_OrderItem
+	WHERE w2_Order.order_id = w2_OrderItem.order_id
+	AND	order_date BETWEEN  w2_DispSummaryAnalysis.tgt_year + '/' + w2_DispSummaryAnalysis.tgt_month + '/' + w2_DispSummaryAnalysis.tgt_day + ' 00:00:00' AND w2_DispSummaryAnalysis.tgt_year + '/' + w2_DispSummaryAnalysis.tgt_month + '/' + w2_DispSummaryAnalysis.tgt_day + ' 23:59:59.997'
+	AND	order_status NOT IN ('TMP','ODR_CNSL','TMP_CNSL')	-- 仮注文、キャンセル、仮注文キャンセルは除外
+	AND	order_kbn = 'PC'					-- 注文区分がPC
+	AND w2_OrderItem.product_id = w2_DispSummaryAnalysis.reserved6
+	AND w2_OrderItem.variation_id = w2_DispSummaryAnalysis.reserved7
+	group by w2_DispSummaryAnalysis.data_no
+) AS newDsaData
+ON targetDsa.data_no = newDsaData.data_no
+WHERE targetDsa.summary_kbn = 'pct_buyprice_pc'
+
+UPDATE targetDsa
+SET price_tax = newDsaData.price_tax
+FROM w2_DispSummaryAnalysis AS targetDsa
+INNER JOIN 
+(
+	SELECT w2_DispSummaryAnalysis.data_no, SUM(w2_OrderItem.item_price_tax) AS price_tax
+	FROM w2_DispSummaryAnalysis, w2_Order, w2_OrderItem
+	WHERE w2_Order.order_id = w2_OrderItem.order_id
+	AND	order_date BETWEEN  w2_DispSummaryAnalysis.tgt_year + '/' + w2_DispSummaryAnalysis.tgt_month + '/' + w2_DispSummaryAnalysis.tgt_day + ' 00:00:00' AND w2_DispSummaryAnalysis.tgt_year + '/' + w2_DispSummaryAnalysis.tgt_month + '/' + w2_DispSummaryAnalysis.tgt_day + ' 23:59:59.997'
+	AND	order_status NOT IN ('TMP','ODR_CNSL','TMP_CNSL')	-- 仮注文、キャンセル、仮注文キャンセルは除外
+	AND	order_kbn = 'MB'					-- 注文区分がMB
+	AND w2_OrderItem.product_id = w2_DispSummaryAnalysis.reserved6
+	AND w2_OrderItem.variation_id = w2_DispSummaryAnalysis.reserved7
+	group by w2_DispSummaryAnalysis.data_no
+) AS newDsaData
+ON targetDsa.data_no = newDsaData.data_no
+WHERE targetDsa.summary_kbn = 'pct_buyprice_mob'
+
+UPDATE targetDsa
+SET price_tax = newDsaData.price_tax
+FROM w2_DispSummaryAnalysis AS targetDsa
+INNER JOIN 
+(
+	SELECT w2_DispSummaryAnalysis.data_no, SUM(w2_OrderItem.item_price_tax) AS price_tax
+	FROM w2_DispSummaryAnalysis, w2_Order, w2_OrderItem
+	WHERE w2_Order.order_id = w2_OrderItem.order_id
+	AND	order_date BETWEEN  w2_DispSummaryAnalysis.tgt_year + '/' + w2_DispSummaryAnalysis.tgt_month + '/' + w2_DispSummaryAnalysis.tgt_day + ' 00:00:00' AND w2_DispSummaryAnalysis.tgt_year + '/' + w2_DispSummaryAnalysis.tgt_month + '/' + w2_DispSummaryAnalysis.tgt_day + ' 23:59:59.997'
+	AND	order_status NOT IN ('TMP','ODR_CNSL','TMP_CNSL')	-- 仮注文、キャンセル、仮注文キャンセルは除外
+	AND	order_kbn = 'SP'					-- 注文区分がSP
+	AND w2_OrderItem.product_id = w2_DispSummaryAnalysis.reserved6
+	AND w2_OrderItem.variation_id = w2_DispSummaryAnalysis.reserved7
+	group by w2_DispSummaryAnalysis.data_no
+) AS newDsaData
+ON targetDsa.data_no = newDsaData.data_no
+WHERE targetDsa.summary_kbn = 'pct_buyprice_sp'
+
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : タスクスケジュール履歴マスタ系SQLステートメントXML (TaskScheduleHistory.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<TaskScheduleHistory>
+
+  <!-- 削除(削除バッチ実行時) -->
+  <DeleteByBatch>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_TaskScheduleHistory
+         WHERE  history_no IN (
+                                SELECT  history_no
+                                  FROM  w2_TaskScheduleHistory
+                                 WHERE  schedule_date < @schedule_date
+                                 ORDER BY history_no ASC
+                                OFFSET 0 ROWS
+                                 FETCH NEXT @limit_count ROWS ONLY
+                              )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="schedule_date" Type="datetime" />
+      <Input Name="limit_count" Type="int" />
+    </Parameter>
+  </DeleteByBatch>
+
+</TaskScheduleHistory>

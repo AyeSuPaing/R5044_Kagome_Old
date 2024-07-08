@@ -1,0 +1,148 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+      ---------------------------------------
+      -- 変数定義
+      ---------------------------------------
+      DECLARE @TMP_COUNT int
+      DECLARE @MAIL_BODY_FOR_ADDITIONAL nvarchar(MAX)
+
+      -- カーソルデータ格納用
+      DECLARE @VAL_SHOP_ID nvarchar(10)
+      DECLARE @VAL_MAIL_ID nvarchar(10)
+      DECLARE @VAL_MAIL_BODY nvarchar(MAX)
+
+      ---------------------------------------
+      -- カーソル定義
+      ---------------------------------------
+      DECLARE CUR_ACCESSLOG CURSOR FOR
+      SELECT  shop_id,
+              mail_id,
+              mail_body
+        FROM  w2_MailTemplate
+       WHERE  mail_id IN 
+              (
+                '10000010' --マスタ取込完了メール
+                ,'00000100' --ドコモケータイ払い - レポートメール
+                ,'10000015' --外部ファイル取込バッチ完了メール【管理者向け】
+                ,'10000020' --カート削除バッチエラーメール
+                ,'10000040' --コンビニ入金確認バッチメール
+                ,'10000051' --定期購入報告メール
+                ,'00000022' --問合せメール（管理者向け） 
+                ,'10000011' --在庫連携バッチ完了メール
+                ,'00000405' --注文同梱エラー通知メール【管理者向け】
+                ,'10000070' --再与信エラー【管理者向け】
+                ,'10000015' --外部ファイル取込バッチ完了メール【管理者向け】
+                ,'10000030' --発票番号アラート【管理者向け】 
+                ,'10000101' --電子発票発行失敗【管理者向け】
+                ,'10000093' --コンビニ変更通知【管理者向け】
+                ,'10000092' --ECPay受注情報連携【管理者向け】
+                ,'10000091' --NP決済システム通知【管理者向け】
+                ,'10000090' --レコメンド商品連携バッチメールテンプレート【管理者向け】
+                ,'10000012' --データ移行バッチ完了メール【管理者向け】
+                ,'10000072' --再与信バッチ完了メール【管理者向け】 
+                ,'10000082' --外部連携エラー
+              )
+
+      SET @MAIL_BODY_FOR_ADDITIONAL = N'
+
+下記管理画面にて確認してください
+@@ site_root_path_w2cManager @@'
+
+      ---------------------------------------
+      -- 開く
+      ---------------------------------------
+      OPEN CUR_ACCESSLOG
+
+      ---------------------------------------
+      -- 最終行までループ
+      ---------------------------------------
+      WHILE (1=1)
+      BEGIN
+          ---------------------------------------
+          -- ①一行を取り出して変数に代入する
+          ---------------------------------------
+          FETCH NEXT FROM CUR_ACCESSLOG
+              INTO  @VAL_SHOP_ID,
+                    @VAL_MAIL_ID,
+                    @VAL_MAIL_BODY
+
+          -- 終端なら抜ける
+          IF @@FETCH_STATUS != 0
+          BEGIN
+            BREAK
+          END
+
+          -- 更新判定
+          SELECT  @TMP_COUNT = COUNT(*)
+            FROM  w2_MailTemplate
+           WHERE  shop_id = @VAL_SHOP_ID
+             AND  mail_id = @VAL_MAIL_ID
+             AND  mail_body LIKE '%' + @MAIL_BODY_FOR_ADDITIONAL + '%'
+
+          IF @TMP_COUNT = 0
+          BEGIN
+              UPDATE  w2_MailTemplate
+                 SET  mail_body = @VAL_MAIL_BODY + @MAIL_BODY_FOR_ADDITIONAL
+               WHERE  shop_id = @VAL_SHOP_ID
+                 AND  mail_id = @VAL_MAIL_ID
+          END
+      END -- WHILE (1=1) 行ごと
+
+      ---------------------------------------
+      -- 閉じる
+      ---------------------------------------
+      CLOSE CUR_ACCESSLOG
+      DEALLOCATE CUR_ACCESSLOG
+
+      ---------------------------------------
+      -- CS系 更新
+      ---------------------------------------
+      -- CS系通知メール
+      UPDATE  w2_MailTemplate
+         SET  mail_body = N'@@ message @@
+
+下記管理画面にて確認してください
+@@ site_root_path_w2csManager @@'
+       WHERE  mail_id = '00000201' --CS系通知メール
+
+      -- CS系担当滞留警告メール
+      UPDATE  w2_MailTemplate
+         SET  mail_body = N'@@ to @@
+
+あなたが担当のメッセージ @@ count @@ 件が
+@@ days @@ 日を超えて、未対応のままになっています。
+
+こちらの URL から確認してください。
+@@ site_root_path_w2csManager @@Form/Top/TopPage.aspx?statusmode=None'
+       WHERE  mail_id = '00000202' --CS系担当滞留警告メール
+
+      -- CS系グループ滞留警告メール
+      UPDATE  w2_MailTemplate
+         SET  mail_body = N'@@ to @@
+
+あなたの所属グループのメッセージ @@ count @@ 件が
+@@ days @@ 日を超えて、、未対応のままになっています。
+
+こちらの URL から確認してください。
+@@ site_root_path_w2csManager @@Form/Top/TopPage.aspx?statusmode=None'
+       WHERE  mail_id = '00000203' --CS系グループ滞留警告メール
+
+      -- CS系担当未設定警告メール
+      UPDATE  w2_MailTemplate
+         SET  mail_body = N'@@ to @@
+
+未対応のメッセージ @@ count @@ 件が
+@@ days @@ 日を超えて、担当者が設定されないままになっています。
+
+こちらの URL から確認してください。
+@@ site_root_path_w2csManager @@Form/Top/TopPage.aspx?statusmode=None'
+       WHERE  mail_id = '00000204' --CS系担当未設定警告メール
+
+      GO
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

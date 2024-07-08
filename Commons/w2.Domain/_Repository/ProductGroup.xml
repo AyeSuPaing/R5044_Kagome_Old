@@ -1,0 +1,251 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品グループマスタ系SQLステートメントXML (ProductGroup.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductGroup>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_ProductGroup
+                [[ PRODUCTGROUP_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+  
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductGroup.*
+          FROM  (
+                  SELECT  w2_ProductGroup.product_group_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCTGROUP_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductGroup
+                          [[ PRODUCTGROUP_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductGroup ON
+                (
+                  RowIndex.product_group_id = w2_ProductGroup.product_group_id
+                )
+         WHERE  RowIndex.row_num >= @bgn_row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+  
+  <!-- 商品グループ取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductGroup
+         WHERE  w2_ProductGroup.product_group_id = @product_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_group_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- 商品グループ取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductGroup
+      ]]>
+    </Statement>
+  </GetAll>
+
+  <!-- 商品グループアイテム取得 -->
+  <GetProductGroupItem>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductGroupItem
+         WHERE  w2_ProductGroupItem.product_group_id = @product_group_id
+        ORDER BY w2_ProductGroupItem.item_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_group_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductGroupItem>  
+  
+  <!-- 商品グループ登録 -->
+  <InsertProductGroup>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductGroup
+                (
+                  product_group_id
+                  ,product_group_name
+                  ,begin_date
+                  ,end_date
+                  ,valid_flg
+                  ,product_group_page_contents_kbn
+                  ,product_group_page_contents
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @product_group_id
+                  ,@product_group_name
+                  ,@begin_date
+                  ,@end_date
+                  ,@valid_flg
+                  ,@product_group_page_contents_kbn
+                  ,@product_group_page_contents
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_group_id" Type="nvarchar" Size="30" />
+      <Input Name="product_group_name" Type="nvarchar" Size="100" />
+      <Input Name="begin_date" Type="datetime" />
+      <Input Name="end_date" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="product_group_page_contents_kbn" Type="nvarchar" Size="1" />
+      <Input Name="product_group_page_contents" Type="nvarchar" Size="max" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertProductGroup>
+
+  <!-- 商品グループ更新 -->
+  <UpdateProductGroup>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductGroup
+           SET  product_group_name = @product_group_name
+                ,begin_date = @begin_date
+                ,end_date = @end_date
+                ,valid_flg = @valid_flg
+                ,product_group_page_contents_kbn = @product_group_page_contents_kbn
+                ,product_group_page_contents = @product_group_page_contents
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  product_group_id = @product_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_group_id" Type="nvarchar" Size="30" />
+      <Input Name="product_group_name" Type="nvarchar" Size="100" />
+      <Input Name="begin_date" Type="datetime" />
+      <Input Name="end_date" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="product_group_page_contents_kbn" Type="nvarchar" Size="1" />
+      <Input Name="product_group_page_contents" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateProductGroup>  
+
+  <!-- 商品グループアイテム登録 -->
+  <InsertProductGroupItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductGroupItem
+                (
+                  product_group_id
+                  ,item_no
+                  ,item_type
+                  ,shop_id
+                  ,master_id
+                  ,date_created
+                  ,last_changed
+                )
+        VALUES  (
+                  @product_group_id
+                  ,@item_no
+                  ,@item_type
+                  ,@shop_id
+                  ,@master_id
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_group_id" Type="nvarchar" Size="30" />
+      <Input Name="item_no" Type="int" />
+      <Input Name="item_type" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="master_id" Type="nvarchar" Size="100" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertProductGroupItem>
+    
+  <!-- 商品グループ削除 -->
+  <DeleteProductGroup>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductGroup
+         WHERE  product_group_id = @product_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_group_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductGroup>
+
+  <!-- 商品グループアイテム削除 -->
+  <DeleteProductGroupItem>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductGroupItem
+         WHERE  product_group_id = @product_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_group_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductGroupItem>
+
+  <!-- 商品グループID重複チェック -->
+  <CheckDupulicationProductGroupId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductGroup
+         WHERE  product_group_id = @product_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_group_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDupulicationProductGroupId>
+
+  <!-- 紐づいた件数取得 -->
+  <GetUsedProductGroupCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_FeaturePageContents
+         WHERE  product_group_id = @product_group_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_group_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUsedProductGroupCount>
+
+</ProductGroup>

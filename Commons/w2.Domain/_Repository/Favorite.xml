@@ -1,0 +1,700 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : お気に入り系SQLステートメントXML(Favorite.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<Favorite>
+
+  <!-- お気に入り一覧を取得する -->
+  <GetFavoriteList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_Favorite.product_id), 0)
+          FROM  w2_Favorite
+                INNER JOIN w2_Product ON
+                (
+                  w2_Favorite.shop_id = w2_Product.shop_id
+                  AND
+                  w2_Favorite.product_id = w2_Product.product_id
+                )
+                LEFT JOIN w2_ProductVariation ON
+                (
+                  w2_Favorite.shop_id = w2_ProductVariation.shop_id
+                  AND
+                  w2_Favorite.product_id = w2_ProductVariation.product_id
+                  AND
+                  w2_Favorite.variation_id = w2_ProductVariation.variation_id
+                )
+                [[ FAVORITE_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_Favorite.*,
+                w2_Product.*,
+                w2_ProductVariation.*,
+                w2_ProductStock.stock,
+                w2_ShopShipping.fixed_purchase_flg AS shipping_fixed_purchase_flg,
+                productSale.sale_price,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_Favorite.user_id,
+                          w2_Favorite.shop_id,
+                          w2_Favorite.product_id,
+                          w2_Favorite.variation_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ FAVORITE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Favorite
+                          INNER JOIN w2_Product ON
+                          (
+                            w2_Favorite.shop_id = w2_Product.shop_id
+                            AND
+                            w2_Favorite.product_id = w2_Product.product_id
+                          )
+                          LEFT JOIN w2_ProductVariation ON
+                           (
+                             w2_Favorite.shop_id = w2_ProductVariation.shop_id
+                             AND
+                             w2_Favorite.product_id = w2_ProductVariation.product_id
+                             AND
+                             w2_Favorite.variation_id = w2_ProductVariation.variation_id
+                           )
+                          [[ FAVORITE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Favorite ON
+                (
+                  RowIndex.user_id = w2_Favorite.user_id
+                  AND
+                  RowIndex.shop_id = w2_Favorite.shop_id
+                  AND
+                  RowIndex.product_id = w2_Favorite.product_id
+                  AND
+                  RowIndex.variation_id = w2_Favorite.variation_id
+                )
+                LEFT JOIN w2_ProductVariation ON
+                (
+                  w2_Favorite.shop_id = w2_ProductVariation.shop_id
+                  AND
+                  w2_Favorite.product_id = w2_ProductVariation.product_id
+                  AND
+                  w2_Favorite.variation_id = w2_ProductVariation.variation_id
+                )
+                LEFT JOIN w2_ProductStock ON
+                (
+                  w2_Favorite.shop_id = w2_ProductStock.shop_id
+                  AND
+                  w2_Favorite.product_id = w2_ProductStock.product_id
+                  AND
+                  (
+                    w2_Favorite.variation_id = w2_ProductStock.variation_id
+                    OR
+                    w2_Favorite.product_id = w2_ProductStock.variation_id
+                  )
+                )
+                INNER JOIN w2_Product ON
+                (
+                  w2_Favorite.shop_id = w2_Product.shop_id
+                  AND
+                  w2_Favorite.product_id = w2_Product.product_id
+                )
+                INNER JOIN w2_ShopShipping ON
+                (
+                  w2_Product.shipping_type = w2_Shopshipping.shipping_id
+                )
+                [[ JOIN_PRODUCT_SALE_PRICE ]]
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="current_date" Type="datetime" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetFavoriteList>
+
+  <!-- お気に入りリストの商品画像を取得 -->
+  <GetFavoriteImage>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductVariation.variation_image_head
+          FROM  w2_ProductVariation
+         WHERE  w2_ProductVariation.shop_id = @shop_id
+           AND  w2_ProductVariation.product_id = @product_id
+           AND  w2_ProductVariation.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetFavoriteImage>
+
+  <!-- 商品のお気に入りの登録人数合計を取得 -->
+  <GetFavoriteTotalByProduct>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Favorite.product_id,
+                COUNT(w2_Favorite.product_id) favorite_count
+          FROM  w2_Favorite
+         WHERE  w2_Favorite.shop_id = @shop_id
+           AND  w2_Favorite.product_id IN (@@ product_ids @@)
+        GROUP BY w2_Favorite.product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetFavoriteTotalByProduct>
+
+  <!-- 商品ID単位のお気に入りデータ数を取得 -->
+  <GetFavoriteCountOfProduct>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_Favorite
+         WHERE  w2_Favorite.shop_id = @shop_id
+           AND  w2_Favorite.product_id = @product_id
+           AND  w2_Favorite.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetFavoriteCountOfProduct>
+
+  <!-- 商品(バリエーション含む)のお気に入り登録人数を取得 -->
+  <GetFavoriteCountByProduct>
+    <Statement>
+      <![CDATA[
+            IF  (
+                   (@variation_id = '') 
+                   OR
+                   (
+                     (
+                     SELECT  use_variation_flg
+                       FROM  w2_Product
+                      WHERE  shop_id = @shop_id
+                        AND  product_id = @product_id
+                      ) = '0'
+                    )
+                 )
+         BEGIN
+                SELECT  COUNT(*)
+                  FROM  w2_Favorite
+                 WHERE  w2_Favorite.shop_id = @shop_id
+                   AND  w2_Favorite.product_id = @product_id
+           END
+          ELSE
+         BEGIN
+                SELECT  COUNT(*)
+                  FROM  w2_Favorite
+                 WHERE  w2_Favorite.shop_id = @shop_id
+                   AND  w2_Favorite.product_id = @product_id
+                   AND  w2_Favorite.variation_id = @variation_id
+           END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetFavoriteCountByProduct>
+
+  <!-- 在庫アラートメール商品在庫情報取得 -->
+  <GetStockAlertProducts>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Favorite.user_id,
+                w2_Favorite.shop_id,
+                w2_Favorite.product_id,
+                w2_Favorite.variation_id,
+                w2_Productstock.stock
+          FROM  w2_Productstock
+                LEFT JOIN w2_Favorite ON
+                (
+                  w2_Productstock.shop_id = w2_Favorite.shop_id
+                  AND  w2_Productstock.product_id = w2_Favorite.product_id
+                  AND
+                  (
+                    w2_Productstock.variation_id = w2_Favorite.variation_id
+                    OR
+                    w2_Favorite.variation_id = ''
+                  )
+                )
+                LEFT JOIN w2_Product ON
+                (
+                  w2_Favorite.shop_id = w2_Product.shop_id
+                  AND
+                  w2_Favorite.product_id = w2_Product.product_id
+                )
+                LEFT JOIN w2_ProductVariation ON
+                (
+                  w2_Favorite.shop_id = w2_ProductVariation.shop_id
+                  AND
+                  w2_Favorite.product_id = w2_ProductVariation.product_id
+                  AND
+                  w2_Favorite.variation_id = w2_ProductVariation.variation_id
+                )
+        WHERE  w2_Favorite.stock_alert_mail_send_flg = '0'
+          AND  w2_Productstock.stock > 0
+          AND  w2_Productstock.stock < @stock
+          AND  w2_Product.stock_management_kbn != '0'
+          AND
+          (
+            (
+              w2_Favorite.variation_id = ''
+              AND  NOT EXISTS
+              (
+                SELECT  *
+                  FROM  w2_ProductVariation
+                 WHERE  w2_ProductVariation.product_id = w2_Favorite.product_id
+              )
+              OR
+              (
+                w2_Favorite.variation_id != ''
+                AND
+                w2_ProductVariation.variation_id IS NOT NULL
+              )
+            )
+          )
+     ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="stock" Type="int" />
+    </Parameter>
+  </GetStockAlertProducts>
+
+  <!-- 在庫減少アラートメール情報取得 -->
+  <GetSendTarget>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        -- 送信情報取得＆重複排除
+        SELECT  targetUser.user_id,
+                targetProduct.shop_id,
+                targetProduct.product_id,
+                targetProduct.variation_id,
+                targetProduct.name,
+                targetProduct.use_variation_flg,
+                targetProduct.display_price,
+                targetProduct.sell_from,
+                targetProduct.variation_name1,
+                targetProduct.variation_name2,
+                targetProduct.price,
+                targetProduct.image_head,
+                targetProduct.variation_image_head,
+                targetUser.name AS user_name,
+                targetUser.name1,
+                targetUser.name2,
+                targetUser.user_kbn,
+                targetUser.mail_addr,
+                targetUser.mail_addr2,
+                targetUser.mail_flg,
+                targetUser.del_flg,
+                targetUser.user_management_level_id,
+                targetUser.disp_language_code,
+                targetUser.disp_language_locale_id,
+                targetUser.advcode_first,
+                targetProduct.stock
+          FROM  (
+                  SELECT  w2_Favorite.user_id,
+                          w2_Favorite.shop_id,
+                          w2_Favorite.product_id,
+                          w2_Favorite.variation_id,
+                          w2_User.name,
+                          w2_User.name1,
+                          w2_User.name2,
+                          w2_User.user_kbn,
+                          w2_User.mail_addr,
+                          w2_User.mail_addr2,
+                          w2_User.mail_flg,
+                          w2_User.del_flg,
+                          w2_User.user_management_level_id,
+                          w2_User.disp_language_code,
+                          w2_User.disp_language_locale_id,
+                          w2_User.advcode_first,
+                          w2_User.integrated_flg
+                    FROM  w2_Favorite
+                          INNER JOIN w2_User ON
+                          (
+                           w2_Favorite.user_id = w2_User.user_id
+                          )
+                          INNER JOIN w2_UserExtend ON
+                          (
+                           w2_Favorite.user_id = w2_UserExtend.user_id
+                          )
+                   WHERE  w2_Favorite.stock_alert_mail_send_flg = '0'
+                     AND  w2_Favorite.user_id = @user_id
+                     AND  w2_Favorite.shop_id = @shop_id
+                     AND  w2_Favorite.product_id = @product_id
+                     AND  w2_Favorite.variation_id = @variation_id
+                     AND  w2_UserExtend.usrex_mail_send_flg = '1'
+                ) targetUser
+                INNER JOIN
+                (
+                  SELECT  w2_Product.shop_id,
+                          w2_Product.product_id,
+                          w2_Product.name,
+                          w2_Product.use_variation_flg,
+                          w2_Product.display_price,
+                          w2_Product.sell_from,
+                          w2_Product.image_head,
+                          w2_ProductVariation.variation_id,
+                          w2_ProductVariation.variation_name1,
+                          w2_ProductVariation.variation_name2,
+                          w2_ProductVariation.price,
+                          w2_ProductVariation.variation_image_head,
+                          w2_Productstock.stock
+                    FROM  w2_Product
+                          INNER JOIN w2_ProductVariation ON
+                          (
+                           w2_Product.shop_id = w2_ProductVariation.shop_id
+                           AND  w2_Product.product_id = w2_ProductVariation.product_id
+                          )
+                          INNER JOIN w2_Productstock ON
+                          (
+                           w2_Productstock.product_id = w2_ProductVariation.product_id
+                           AND  w2_Productstock.variation_id = w2_ProductVariation.variation_id
+                          )
+                   WHERE  w2_ProductVariation.shop_id = @shop_id
+                     AND  w2_ProductVariation.product_id = @product_id
+                     AND  w2_ProductVariation.variation_id = @variation_id
+                ) targetProduct ON
+                (
+                  targetProduct.shop_id = targetUser.shop_id
+                  AND  targetProduct.product_id = targetUser.product_id
+                  AND  targetProduct.variation_id = targetUser.variation_id
+                )
+         WHERE  targetUser.del_flg = '0' AND targetUser.integrated_flg = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="60" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetSendTarget>
+
+ <!-- 在庫減少アラートメール情報取得 -->
+ <GetSendNoVariationTarget>
+  <Statement>
+   <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        -- 送信情報取得＆重複排除
+        SELECT  targetUser.user_id,
+                targetProduct.shop_id,
+                targetProduct.product_id,
+                targetProduct.name,
+                targetProduct.use_variation_flg,
+                targetProduct.display_price,
+                targetProduct.sell_from,
+                targetProduct.image_head,
+                targetProduct.image_head AS variation_image_head,
+                targetUser.product_id AS variation_id,
+                targetUser.name AS user_name,
+                targetUser.name1,
+                targetUser.name2,
+                targetUser.user_kbn,
+                targetUser.mail_addr,
+                targetUser.mail_addr2,
+                targetUser.mail_flg,
+                targetUser.del_flg,
+                targetUser.user_management_level_id,
+                targetUser.disp_language_code,
+                targetUser.disp_language_locale_id,
+                targetUser.advcode_first,
+                targetProduct.stock
+          FROM  (
+                  SELECT  w2_Favorite.user_id,
+                          w2_Favorite.shop_id,
+                          w2_Favorite.product_id,
+                          w2_Favorite.variation_id,
+                          w2_User.name,
+                          w2_User.name1,
+                          w2_User.name2,
+                          w2_User.user_kbn,
+                          w2_User.mail_addr,
+                          w2_User.mail_addr2,
+                          w2_User.mail_flg,
+                          w2_User.del_flg,
+                          w2_User.user_management_level_id,
+                          w2_User.disp_language_code,
+                          w2_User.disp_language_locale_id,
+                          w2_User.advcode_first,
+                          w2_User.integrated_flg
+                    FROM  w2_Favorite
+                          INNER JOIN w2_User ON
+                          (
+                           w2_Favorite.user_id = w2_User.user_id
+                          )
+                          INNER JOIN w2_UserExtend ON
+                          (
+                           w2_Favorite.user_id = w2_UserExtend.user_id
+                          )
+                   WHERE  w2_Favorite.stock_alert_mail_send_flg = '0'
+                     AND  w2_Favorite.shop_id = @shop_id
+                     AND  w2_Favorite.product_id = @product_id
+                     AND  w2_UserExtend.usrex_mail_send_flg = '1'
+                ) targetUser
+                INNER JOIN
+                (
+                  SELECT  w2_Product.shop_id,
+                          w2_Product.product_id,
+                          w2_Product.name,
+                          w2_Product.use_variation_flg,
+                          w2_Product.display_price,
+                          w2_Product.sell_from,
+                          w2_Product.image_head,
+                          w2_Productstock.stock
+                    FROM  w2_Product
+                          INNER JOIN w2_Productstock ON
+                          (
+                           w2_Productstock.product_id = w2_Product.product_id
+                          )
+                   WHERE  w2_Product.shop_id = @shop_id
+                     AND  w2_Product.product_id = @product_id
+                ) targetProduct ON
+                (
+                  targetProduct.shop_id = targetUser.shop_id
+                  AND  targetProduct.product_id = targetUser.product_id
+                )
+         WHERE  targetUser.del_flg = '0' AND targetUser.integrated_flg = '0'
+      ]]>
+  </Statement>
+  <Parameter>
+   <Input Name="shop_id" Type="nvarchar" Size="10" />
+   <Input Name="product_id" Type="nvarchar" Size="30" />
+</Parameter>
+ </GetSendNoVariationTarget>
+
+  <!-- 既にお気に入りに登録してあるか -->
+  <GetFavorite>
+    <Statement>
+      <![CDATA[
+            IF  (
+                   SELECT  use_variation_flg
+                     FROM  w2_Product
+                    WHERE  w2_Product.shop_id = @shop_id
+                      AND  w2_Product.product_id = @product_id
+                )  =  '1'
+         BEGIN
+                SELECT  w2_Favorite.*
+                  FROM  w2_Favorite
+                 WHERE  w2_Favorite.user_id = @user_id
+                   AND  w2_Favorite.shop_id = @shop_id
+                   AND  w2_Favorite.product_id = @product_id
+                   AND  w2_Favorite.variation_id = @variation_id
+           END
+          ELSE
+         BEGIN
+                SELECT  w2_Favorite.*
+                  FROM  w2_Favorite
+                 WHERE  w2_Favorite.user_id = @user_id
+                   AND  w2_Favorite.shop_id = @shop_id
+                   AND  w2_Favorite.product_id = @product_id
+           END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetFavorite>
+
+  <!-- お気に入り投入処理 -->
+  <AddToFavorite>
+    <Statement>
+      <![CDATA[
+        DECLARE  @product_cnt int
+        DECLARE  @favorite_cnt int
+
+         -- 商品は投入条件なし
+         SELECT  @product_cnt = COUNT(product_id)
+           FROM  w2_Product
+          WHERE  w2_Product.shop_id = @shop_id
+            AND  w2_Product.product_id = @product_id
+
+         -- お気に入りに追加されているか
+            IF  (
+                   SELECT  use_variation_flg
+                     FROM  w2_Product
+                    WHERE  w2_Product.shop_id = @shop_id
+                      AND  w2_Product.product_id = @product_id
+                )  =  '1'
+         BEGIN
+                SELECT  @favorite_cnt = COUNT(w2_Favorite.variation_id)
+                  FROM  w2_Favorite
+                 WHERE  w2_Favorite.user_id = @user_id
+                   AND  w2_Favorite.shop_id = @shop_id
+                   AND  w2_Favorite.product_id = @product_id
+                   AND  w2_Favorite.variation_id = @variation_id
+           END
+          ELSE
+         BEGIN
+                SELECT  @favorite_cnt = COUNT(w2_Favorite.product_id)
+                  FROM  w2_Favorite
+                 WHERE  w2_Favorite.user_id = @user_id
+                   AND  w2_Favorite.shop_id = @shop_id
+                   AND  w2_Favorite.product_id = @product_id
+           END
+
+             IF  @product_cnt >= 1
+          BEGIN
+                 IF  @favorite_cnt = 0
+                 BEGIN
+                      IF  ((
+                            SELECT  use_variation_flg
+                              FROM  w2_Product
+                             WHERE  w2_Product.shop_id = @shop_id
+                               AND  w2_Product.product_id = @product_id
+                          )  =  '1')
+                      AND
+                          (@variation_id != '')
+                      BEGIN
+                             INSERT  w2_Favorite
+                                     (
+                                       user_id,
+                                       shop_id,
+                                       product_id,
+                                       date_created,
+                                       date_changed,
+                                       variation_id
+                                     )
+                             VALUES
+                                     (
+                                       @user_id,
+                                       @shop_id,
+                                       @product_id,
+                                       getdate(),
+                                       getdate(),
+                                       @variation_id
+                                     )
+                        END
+                       ELSE
+                      BEGIN
+                             INSERT  w2_Favorite
+                                     (
+                                       user_id,
+                                       shop_id,
+                                       product_id,
+                                       date_created,
+                                       date_changed
+                                     )
+                             VALUES
+                                     (
+                                       @user_id,
+                                       @shop_id,
+                                       @product_id,
+                                       getdate(),
+                                       getdate()
+                                     )
+                        END
+                   END
+                  ELSE
+                 BEGIN
+                        -- 商品が見つからないときは投入更新失敗としたいため、
+                        -- 存在した場合は更新(=成功)しておく
+                        UPDATE  w2_Favorite
+                           SET  date_changed = getdate()
+                         WHERE  user_id = @user_id
+                           AND  shop_id = @shop_id
+                           AND  product_id = @product_id
+                           AND  variation_id = @variation_id
+                   END
+            END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </AddToFavorite>
+
+  <!-- お気に入り削除処理 -->
+  <DeleteFromFavorite>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_Favorite
+         WHERE  w2_Favorite.user_id = @user_id
+           AND  w2_Favorite.shop_id = @shop_id
+           AND  w2_Favorite.product_id = @product_id
+           AND  w2_Favorite.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+    </Parameter>
+  </DeleteFromFavorite>
+
+  <!--在庫減少アラートフラグの一斉最新化 -->
+  <BulkUpdateAlertSendFlg>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Favorite
+           SET  stock_alert_mail_send_flg = @stock_alert_mail_send_flg,
+                date_changed = GETDATE()
+          FROM  w2_Favorite
+                INNER JOIN w2_ProductStock ON
+                (
+                  w2_Favorite.shop_id = w2_ProductStock.shop_id
+                  AND  w2_Favorite.product_id = w2_ProductStock.product_id
+                  AND  
+                  (
+                    w2_Productstock.variation_id = w2_Favorite.variation_id
+                    OR
+                    w2_Favorite.variation_id = ''
+                  )
+                )
+         WHERE  w2_ProductStock.stock >= @stock_alert_mail_threshold
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="stock_alert_mail_threshold" Type="int" />
+      <Input Name="stock_alert_mail_send_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </BulkUpdateAlertSendFlg>
+
+  <!--在庫減少アラートフラグの最新化 -->
+  <UpdateAlertSendFlg>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Favorite
+           SET  stock_alert_mail_send_flg = @stock_alert_mail_send_flg,
+                date_changed = GETDATE()
+         WHERE  user_id = @user_id
+           AND  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="stock_alert_mail_send_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </UpdateAlertSendFlg>
+
+</Favorite>

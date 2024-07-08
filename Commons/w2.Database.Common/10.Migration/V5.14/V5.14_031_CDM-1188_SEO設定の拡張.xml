@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+	<Up>
+		<Statement>
+			<![CDATA[
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'w2_OgpTagSetting')
+				BEGIN
+					CREATE TABLE [dbo].[w2_OgpTagSetting] (
+						[data_kbn] [nvarchar] (25) NOT NULL,
+						[site_title] [nvarchar] (50) NOT NULL DEFAULT (N''),
+						[page_title] [nvarchar] (30) NOT NULL DEFAULT (N''),
+						[description] [nvarchar] (120) NOT NULL DEFAULT (N''),
+						[image_url] [nvarchar] (200) NOT NULL DEFAULT (N''),
+						[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+						[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+						[last_changed] [nvarchar] (20) NOT NULL
+					) ON [PRIMARY]
+
+					ALTER TABLE [dbo].[w2_OgpTagSetting] WITH NOCHECK ADD
+						CONSTRAINT [PK_w2_OgpTagSetting] PRIMARY KEY  CLUSTERED
+						(
+							[data_kbn]
+						) ON [PRIMARY]
+				END
+				GO
+				
+				IF NOT EXISTS (SELECT * FROM w2_OgpTagSetting WHERE data_kbn = 'default_setting')
+				BEGIN
+					INSERT  w2_OgpTagSetting
+					        (
+							  data_kbn
+							  ,site_title
+							  ,last_changed
+							)
+					VALUES  (
+					          'default_setting'
+							  ,'ｗ２ソリューションデモサイト'
+							  ,'system'
+					        )
+				END
+			]]>
+		</Statement>
+	</Up>
+</Migration>

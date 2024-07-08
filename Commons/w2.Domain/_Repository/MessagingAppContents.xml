@@ -1,0 +1,153 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メッセージアプリ向けコンテンツ系SQLステートメントXML (MessagingAppContents.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<MessagingAppContents>
+  <!-- メッセージアプリ区分毎にコンテンツを全取得 -->
+  <GetAllContentsEachMessagingAppKbn>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MessagingAppContents
+         WHERE  dept_id = @dept_id
+           AND  master_kbn = @master_kbn
+           AND  master_id = @master_id
+           AND  messaging_app_kbn = @messaging_app_kbn
+         ORDER BY branch_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+      <Input Name="messaging_app_kbn" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetAllContentsEachMessagingAppKbn>
+
+  <!-- コンテンツのアップサート -->
+  <UpsertContents>
+    <Statement>
+      <![CDATA[
+         MERGE  w2_MessagingAppContents AS T
+         USING  (
+                  VALUES
+                    (
+                      @dept_id
+                      ,@master_kbn
+                      ,@master_id
+                      ,@messaging_app_kbn
+                      ,@branch_no
+                      ,@media_type
+                      ,@contents
+                      ,getdate()
+                      ,getdate()
+                      ,@last_changed
+                    )
+                )  AS TmpTable
+                (
+                  dept_id
+                  ,master_kbn
+                  ,master_id
+                  ,messaging_app_kbn
+                  ,branch_no
+                  ,media_type
+                  ,contents
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+                ON
+                (
+                  T.dept_id = TmpTable.dept_id
+                  AND  T.master_kbn = TmpTable.master_kbn
+                  AND  T.master_id = TmpTable.master_id
+                  AND  T.messaging_app_kbn = TmpTable.messaging_app_kbn
+                  AND  T.branch_no = TmpTable.branch_no
+                )
+                WHEN MATCHED THEN
+                  UPDATE
+                     SET  T.contents = TmpTable.contents
+                          ,T.media_type = TmpTable.media_type
+                          ,T.date_changed = TmpTable.date_changed
+                          ,T.last_changed = TmpTable.last_changed
+                WHEN NOT MATCHED THEN
+                  INSERT  (
+                            dept_id
+                            ,master_kbn
+                            ,master_id
+                            ,messaging_app_kbn
+                            ,branch_no
+                            ,media_type
+                            ,contents
+                            ,date_created
+                            ,date_changed
+                            ,last_changed
+                          )
+                  VALUES  (
+                            TmpTable.dept_id
+                            ,TmpTable.master_kbn
+                            ,TmpTable.master_id
+                            ,TmpTable.messaging_app_kbn
+                            ,TmpTable.branch_no
+                            ,TmpTable.media_type
+                            ,TmpTable.contents
+                            ,TmpTable.date_created
+                            ,TmpTable.date_changed
+                            ,TmpTable.last_changed
+                          );
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+      <Input Name="messaging_app_kbn" Type="nvarchar" Size="20" />
+      <Input Name="branch_no" Type="nvarchar" Size="10" />
+      <Input Name="media_type" Type="nvarchar" Size="20" />
+      <Input Name="contents" Type="nvarchar" Size="max" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpsertContents>
+
+  <!-- コンテンツ削除(マスタID毎) -->
+  <DeleteAllContentsEachMasterId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MessagingAppContents
+         WHERE  dept_id = @dept_id
+           AND  master_kbn = @master_kbn
+           AND  master_id = @master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteAllContentsEachMasterId>
+
+  <!-- コンテンツ削除(枝番毎) -->
+  <DeleteContentsEachBranchNo>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MessagingAppContents
+         WHERE  dept_id = @dept_id
+           AND  master_kbn = @master_kbn
+           AND  master_id = @master_id
+           AND  messaging_app_kbn = @messaging_app_kbn
+           AND  branch_no = @branch_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+      <Input Name="messaging_app_kbn" Type="nvarchar" Size="20" />
+      <Input Name="branch_no" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteContentsEachBranchNo>
+</MessagingAppContents>

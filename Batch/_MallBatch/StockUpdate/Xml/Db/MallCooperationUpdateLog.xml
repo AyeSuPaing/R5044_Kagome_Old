@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<MallCooperationUpdateLog>
+
+  <!-- 在庫連携処理対象取得 -->
+  <GetTargetStockUpdate>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MallCooperationUpdateLog.*,
+                w2_ProductStock.stock,
+                w2_ProductVariationView.use_variation_flg,
+                @@ amazon_product_sku_select @@
+                @@ fulfilmentlatency_select @@
+          FROM  w2_MallCooperationUpdateLog
+                INNER JOIN w2_ProductVariationView ON
+                (
+                  w2_ProductVariationView.product_id = w2_MallCooperationUpdateLog.product_id
+                  AND
+                  w2_ProductVariationView.variation_id = w2_MallCooperationUpdateLog.variation_id
+                )
+                INNER JOIN w2_ProductStock ON
+                (
+                  w2_ProductStock.shop_id = w2_ProductVariationView.shop_id
+                  AND
+                  w2_ProductStock.product_id = w2_ProductVariationView.product_id
+                  AND
+                  w2_ProductStock.variation_id = w2_ProductVariationView.variation_id
+                )
+         WHERE  w2_MallCooperationUpdateLog.shop_id = @shop_id
+           AND  w2_MallCooperationUpdateLog.mall_id = @mall_id
+           AND  w2_MallCooperationUpdateLog.action_status = '00'
+           AND  w2_MallCooperationUpdateLog.action_kbn = 'U'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetTargetStockUpdate>
+
+  <!-- Lohaco在庫連携処理対象取得 -->
+  <GetLohacoTargetStockUpdate>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MallCooperationUpdateLog.*,
+                w2_ProductStock.stock,
+                w2_ProductVariationView.use_variation_flg
+          FROM  w2_MallCooperationUpdateLog
+                INNER JOIN w2_ProductVariationView ON
+                (
+                  w2_ProductVariationView.product_id = w2_MallCooperationUpdateLog.product_id
+                  AND
+                  w2_ProductVariationView.variation_id = w2_MallCooperationUpdateLog.variation_id
+                )
+                INNER JOIN w2_ProductStock ON
+                (
+                  w2_ProductStock.shop_id = w2_ProductVariationView.shop_id
+                  AND
+                  w2_ProductStock.product_id = w2_ProductVariationView.product_id
+                  AND
+                  w2_ProductStock.variation_id = w2_ProductVariationView.variation_id
+                )
+         WHERE  w2_MallCooperationUpdateLog.shop_id = @shop_id
+           AND  w2_MallCooperationUpdateLog.mall_id = @mall_id
+           AND  (w2_MallCooperationUpdateLog.action_status = '00' OR w2_MallCooperationUpdateLog.action_status = '10')
+           AND  w2_MallCooperationUpdateLog.action_kbn = 'U'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetLohacoTargetStockUpdate>
+
+  <!-- 処理ステータス更新 -->
+  <UpdateActionStatus>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallCooperationUpdateLog
+           SET  action_status = @action_status
+         WHERE  @@ log_no_where @@
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="action_status" Type="nvarchar" Size="2" />
+    </Parameter>
+  </UpdateActionStatus>
+
+</MallCooperationUpdateLog>

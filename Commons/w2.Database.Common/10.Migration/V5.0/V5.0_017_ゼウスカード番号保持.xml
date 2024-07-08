@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement> 
+      <![CDATA[
+        -- 注文情報(w2_Order) カラム追加
+        ALTER TABLE  w2_Order ADD
+          [credit_branch_no] [int]
+
+        -- 定期購入情報(w2_FixedPurchase) カラム追加
+        ALTER TABLE w2_FixedPurchase ADD 
+          [credit_branch_no] [int]
+
+        -- 決済カード連携マスタ(w2_UserCreditCard) テーブル追加
+        if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_UserCreditCard]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+        drop table [dbo].[w2_UserCreditCard]
+        GO
+
+        CREATE TABLE [dbo].[w2_UserCreditCard] (
+         [user_id] [nvarchar] (30) NOT NULL,
+         [branch_no] [int] NOT NULL DEFAULT (1),
+         [cooperation_id] [nvarchar] (100) NOT NULL DEFAULT (N''),
+         [card_disp_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+         [last_four_digit] [nvarchar] (10) NOT NULL DEFAULT (N''),
+         [expiration_month] [nvarchar] (2) NOT NULL DEFAULT (N''),
+         [expiration_year] [nvarchar] (4) NOT NULL DEFAULT (N''),
+         [author_name] [nvarchar] (50) NOT NULL DEFAULT (N''),
+         [disp_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+         [date_created] [datetime] NOT NULL DEFAULT (getdate()),
+         [date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+         [last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+        ) ON [PRIMARY]
+        GO
+
+        ALTER TABLE [dbo].[w2_UserCreditCard] WITH NOCHECK ADD
+         CONSTRAINT [PK_w2_CardCooperation] PRIMARY KEY  CLUSTERED
+         (
+          [user_id],
+          [branch_no]
+         ) ON [PRIMARY]
+        GO
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

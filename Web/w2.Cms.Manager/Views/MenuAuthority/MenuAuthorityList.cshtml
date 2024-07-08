@@ -1,0 +1,99 @@
+﻿@*
+=========================================================================================================
+  Module      : メニュー権限設定一覧画面(List.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+
+@model w2.Cms.Manager.ViewModels.MenuAuthority.ListViewModel
+@{
+	ViewBag.Title = "メニュー権限設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+
+@helper TopButtomControls()
+{
+	using (Html.BeginForm("Register", Constants.CONTROLLER_W2CMS_MANAGER_MENU_AUTHORITY, FormMethod.Get))
+	{
+		<input type="hidden" name="actionStatus" value="@ActionStatus.Insert"/>
+		<input type="submit" value="  新規登録  " class="btn btn-main"/>
+	}
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr><td><h1 class="page-title">メニュー権限設定</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	<tr><td><h2 class="cmn-hed-h2">メニュー権限設定一覧</h2></td></tr>
+	<!--▽ 一覧 ▽-->
+	<tr>
+	<td>
+		<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+		<tr>
+		<td>
+		<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+		<tr>
+		<td align="center">
+			<table cellspacing="0" cellpadding="0" border="0">
+				@LayoutHelper.PaddingTr(6)
+				<tr>
+					<td>
+						<div class="action_part_top">
+						<table class="list_pager" cellspacing="1" cellpadding="0" width="758" border="0">
+							<tr>
+								<td width="83" class="action_list_sp" style="text-align: right">
+									@TopButtomControls()
+								</td>
+							</tr>
+						</table>
+						</div>
+					</td>
+				</tr>
+				<tr>
+				<td>
+					<table cellspacing="1" cellpadding="3" width="758" class="list_table" border="0">
+						<tr class="list_title_bg">
+							<td align="center" width="50%">メニュー権限名</td>
+							<td align="center" width="50%">許可メニュー数</td>
+						</tr>
+						@{ var lineNo = 1; }
+						@foreach (var ma in this.Model.List)
+						{
+							lineNo = ((lineNo + 1) % 2);
+							var listItemBgClass = "list_item_bg" + (lineNo + 1);
+							var listSelectMoutClass = string.Format("listselect_mout{0}(this)", +lineNo + 1);
+
+							<tr class="@listItemBgClass" onmouseover="listselect_mover(this)" onmouseout="@listSelectMoutClass" onmousedown="listselect_mdown(this)" onclick="listselect_mclick(this, '@Url.Action("Confirm", new { ActionStatus = ActionStatus.Detail, menuLevel = ma.Level})')">
+								<td align="center">@ma.Name</td>
+								<td align="center">@ma.Count</td>
+							</tr>
+						}
+						@if (string.IsNullOrEmpty(this.Model.ErrorMessage) == false)
+						{
+							<tr class="list_alert"><td colspan="4">@this.Model.ErrorMessage</td></tr>
+						}
+					</table>
+				</td>
+				</tr>
+				<tr>
+					<td>
+						<div class="action_part_bottom">
+						@TopButtomControls()
+						</div>
+					</td>
+				</tr>
+				@LayoutHelper.PaddingTr(10)
+			</table>
+		</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+	</td>
+	</tr>
+	<!--△ 一覧 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+

@@ -1,0 +1,170 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 更新履歴情報系SQLステートメントXML (UpdateHistory.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<UpdateHistory>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  COUNT(*)
+          FROM  w2_UpdateHistory
+                [[ UPDATEHISTORY_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  w2_UpdateHistory.update_history_no,
+                w2_UpdateHistory.update_history_kbn,
+                w2_UpdateHistory.user_id,
+                w2_UpdateHistory.master_id,
+                w2_UpdateHistory.update_history_action,
+                w2_UpdateHistory.date_created,
+                w2_UpdateHistory.last_changed
+          FROM  (
+                  SELECT  w2_UpdateHistory.update_history_no,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ UPDATEHISTORY_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_UpdateHistory
+                          [[ UPDATEHISTORY_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_UpdateHistory ON
+                (
+                  RowIndex.update_history_no = w2_UpdateHistory.update_history_no
+                )
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- 検索（変更前後） -->
+  <BeforeAfterSearch>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  TOP 2 *
+          FROM  w2_UpdateHistory
+         WHERE  update_history_no <= @update_history_no
+           AND  update_history_kbn = @update_history_kbn
+           AND  user_id = @user_id
+           AND  master_id = @master_id
+        ORDER BY w2_UpdateHistory.update_history_no DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="update_history_no" Type="bigint" />
+      <Input Name="update_history_kbn" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="100" />
+    </Parameter>
+  </BeforeAfterSearch>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  *
+          FROM  w2_UpdateHistory
+         WHERE  update_history_no = @update_history_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="update_history_no" Type="bigint" />
+    </Parameter>
+  </Get>
+
+  <!-- 同じものが登録されていなければ登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        DECLARE @last_update_data_hash nvarchar(100)
+        
+        SET @last_update_data_hash = (
+          SELECT  TOP 1 update_data_hash
+            FROM  w2_UpdateHistory
+           WHERE  update_history_kbn = @update_history_kbn
+             AND  user_id = @user_id
+             AND  master_id = @master_id
+          ORDER BY update_history_no DESC
+        )
+
+        IF (@last_update_data_hash IS NULL OR @last_update_data_hash <> @update_data_hash)
+        BEGIN
+          INSERT  w2_UpdateHistory
+                  (
+                    update_history_kbn
+                    ,user_id
+                    ,master_id
+                    ,update_history_action
+                    ,update_data
+                    ,update_data_hash
+                    ,date_created
+                    ,last_changed
+                  )
+          VALUES  (
+                    @update_history_kbn
+                    ,@user_id
+                    ,@master_id
+                    ,@update_history_action
+                    ,@update_data
+                    ,@update_data_hash
+                    ,GETDATE()
+                    ,@last_changed
+                  )
+
+          SELECT SCOPE_IDENTITY() AS update_history_no
+        END
+        ELSE
+        BEGIN
+          SELECT 0.0
+        END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="update_history_kbn" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="100" />
+      <Input Name="update_history_action" Type="nvarchar" Size="100" />
+      <Input Name="update_data" Type="varbinary" Size="MAX" />
+      <Input Name="update_data_hash" Type="nvarchar" Size="100" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+  <!-- 指定日以前を削除 -->
+  <DeleteByDate>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UpdateHistory
+         WHERE  date_created < @date
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="date" Type="datetime" />
+    </Parameter>
+  </DeleteByDate>
+
+</UpdateHistory>

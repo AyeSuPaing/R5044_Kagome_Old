@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 顧客区分分析セッティングXML１(UserKbnAnalysisHead.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<UserKbnAnalysisHead>
+  <!--
+    構成分析のStatementへはname、count、total（各レコード共通）が取得できるSQLを記述する。
+
+    （例）
+
+    ========================================
+    [name]         [count]         [total]
+    ========================================
+    男             35              68
+    女             32              68
+    不明           1               68
+    ========================================
+  -->
+  <UserKbnOverviewAnalysis>
+    <Title>顧客区分(概要)</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- 分析データ集計
+
+      SELECT  datas.name,
+          SUM(datas.count) AS count,
+          (
+          SELECT  COUNT(user_id)
+            FROM  w2_User
+           WHERE  (
+                    @mall_id = ''
+                    OR
+                    w2_User.mall_id = @mall_id -- モールID（サイト）
+                  )
+             AND  (del_flg = '0' AND integrated_flg = '0')
+          ) AS total
+        FROM  (
+            (
+            SELECT  1 AS no,
+                '全ての会員' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  user_kbn LIKE '%USER%' ESCAPE '#'
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  2 AS no,
+                '全てのゲスト' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  user_kbn LIKE '%GEST%' ESCAPE '#'
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+          ) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UserKbnOverviewAnalysis>
+
+  <UserKbnDetailAnalysis>
+    <Title>顧客区分(詳細)</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- 分析データ集計
+
+      SELECT  datas.name,
+          SUM(datas.count) AS count,
+          (
+          SELECT  COUNT(user_id)
+            FROM  w2_User
+           WHERE  (
+                    @mall_id = ''
+                    OR
+                    w2_User.mall_id = @mall_id -- モールID（サイト）
+                  )
+             AND  (del_flg = '0' AND integrated_flg = '0')
+          ) AS total
+        FROM  (
+            (
+            SELECT  1 AS no,
+                @@ValueText:user_kbn:PC_USER@@ AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  user_kbn = 'PC_USER'
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  2 AS no,
+                @@ValueText:user_kbn:PC_GEST@@ AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  user_kbn = 'PC_GEST'
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  3 AS no,
+                @@ValueText:user_kbn:SP_USER@@ AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  user_kbn = 'SP_USER'
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  4 AS no,
+                @@ValueText:user_kbn:SP_GEST@@ AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  user_kbn = 'SP_GEST'
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  5 AS no,
+                @@ValueText:user_kbn:MB_USER@@ AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  user_kbn = 'MB_USER'
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  6 AS no,
+                @@ValueText:user_kbn:MB_GEST@@ AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  user_kbn = 'MB_GEST'
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  7 AS no,
+                @@ValueText:user_kbn:OFF_USER@@ AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  user_kbn = 'OFF_USER'
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  8 AS no,
+                @@ValueText:user_kbn:OFF_GEST@@ AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  user_kbn = 'OFF_GEST'
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  9 AS no,
+                @@ValueText:user_kbn:MAIL@@ AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  user_kbn = 'MAIL'
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+          ) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UserKbnDetailAnalysis>
+</UserKbnAnalysisHead>

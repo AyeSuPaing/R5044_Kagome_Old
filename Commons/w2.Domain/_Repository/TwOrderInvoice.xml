@@ -1,0 +1,156 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文電子発票情報系SQLステートメントXML (TwOrderInvoice.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<TwOrderInvoice>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_TwOrderInvoice
+                (
+                  order_id
+                  ,order_shipping_no
+                  ,tw_uniform_invoice
+                  ,tw_uniform_invoice_option1
+                  ,tw_uniform_invoice_option2
+                  ,tw_carry_type
+                  ,tw_carry_type_option
+                  ,tw_invoice_no
+                  ,tw_invoice_date
+                  ,tw_invoice_status
+                  ,date_created
+                  ,date_changed
+                )
+        VALUES  (
+                  @order_id
+                  ,@order_shipping_no
+                  ,@tw_uniform_invoice
+                  ,@tw_uniform_invoice_option1
+                  ,@tw_uniform_invoice_option2
+                  ,@tw_carry_type
+                  ,@tw_carry_type_option
+                  ,@tw_invoice_no
+                  ,@tw_invoice_date
+                  ,@tw_invoice_status
+                  ,GETDATE()
+                  ,GETDATE()
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_shipping_no" Type="int" />
+      <Input Name="tw_uniform_invoice" Type="nvarchar" Size="10" />
+      <Input Name="tw_uniform_invoice_option1" Type="nvarchar" Size="10" />
+      <Input Name="tw_uniform_invoice_option2" Type="nvarchar" Size="20" />
+      <Input Name="tw_carry_type" Type="nvarchar" Size="16" />
+      <Input Name="tw_carry_type_option" Type="nvarchar" Size="16" />
+      <Input Name="tw_invoice_no" Type="nvarchar" Size="16" />
+      <Input Name="tw_invoice_date" Type="datetime" />
+      <Input Name="tw_invoice_status" Type="nvarchar" Size="2"/>
+    </Parameter>
+  </Insert>
+
+  <!-- Get Order Invoice -->
+  <GetOrderInvoice>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_TwOrderInvoice.*
+          FROM  w2_TwOrderInvoice
+         WHERE  w2_TwOrderInvoice.order_id = @order_id
+           AND  w2_TwOrderInvoice.order_shipping_no = @order_shipping_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_shipping_no" Type="int" />
+    </Parameter>
+  </GetOrderInvoice>
+
+  <!-- UPDATE -->
+  <UpdateTwOrderInvoice>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_TwOrderInvoice
+           SET  tw_uniform_invoice = @tw_uniform_invoice
+                ,tw_carry_type_option = @tw_carry_type_option
+                ,tw_uniform_invoice_option1 = @tw_uniform_invoice_option1
+                ,tw_uniform_invoice_option2 = @tw_uniform_invoice_option2
+                ,tw_carry_type = @tw_carry_type
+                ,tw_invoice_no = @tw_invoice_no
+                ,tw_invoice_status = @tw_invoice_status
+                ,tw_invoice_date = @tw_invoice_date
+         WHERE  order_id = @order_id
+           AND  order_shipping_no = @order_shipping_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="tw_uniform_invoice" Type="nvarchar" Size="10" />
+      <Input Name="tw_uniform_invoice_option1" Type="nvarchar" Size="10" />
+      <Input Name="tw_uniform_invoice_option2" Type="nvarchar" Size="20" />
+      <Input Name="tw_carry_type_option" Type="nvarchar" Size="16" />
+      <Input Name="tw_carry_type" Type="nvarchar" Size="16" />
+      <Input Name="tw_invoice_status" Type="nvarchar" size="2"/>
+      <Input Name="tw_invoice_no" Type="nvarchar" Size="16" />
+      <Input Name="tw_invoice_date" Type="datetime" />
+      <Input Name="order_shipping_no" Type="int" />
+    </Parameter>
+  </UpdateTwOrderInvoice>
+
+  <!-- Update Invoice Status -->
+  <UpdateInvoiceStatus>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_TwOrderInvoice
+           SET  tw_invoice_no = @tw_invoice_no
+                ,tw_invoice_status = @tw_invoice_status
+         WHERE  order_id = @order_id
+                AND
+                order_shipping_no = @order_shipping_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_shipping_no" Type="int" />
+      <Input Name="tw_invoice_no" Type="nvarchar" Size="16" />
+      <Input Name="tw_invoice_status" Type="nvarchar" size="2"/>
+    </Parameter>
+  </UpdateInvoiceStatus>
+
+  <!-- Update Invoice No By Order id -->
+  <UpdateInvoiceNoByOrderId>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_TwOrderInvoice
+           SET  w2_TwOrderInvoice.tw_invoice_no = @tw_invoice_no,
+                w2_TwOrderInvoice.tw_invoice_status = '02'
+         WHERE  w2_TwOrderInvoice.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="tw_invoice_no" Type="nvarchar" Size="16" />
+    </Parameter>
+  </UpdateInvoiceNoByOrderId>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_TwOrderInvoice
+         WHERE  w2_TwOrderInvoice.order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+</TwOrderInvoice>

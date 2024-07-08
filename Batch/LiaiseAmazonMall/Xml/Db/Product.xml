@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品マスタ系SQLステートメントXML (Product.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<Product>
+
+  <!-- 商品情報取得(Amazon) -->
+  <GetProductByAmazonSKU>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductVariationView.product_id,
+                w2_ProductVariationView.variation_id,
+                w2_ProductVariationView.use_variation_flg,
+                w2_Product.stock_management_kbn,
+                w2_Product.tax_category_id
+          FROM  w2_ProductVariationView
+                INNER JOIN w2_Product ON
+                (
+                  w2_Product.product_id = w2_ProductVariationView.product_id
+                )
+         WHERE  w2_ProductVariationView.shop_id = @shop_id
+           AND  @@ amazon_product_where @@
+           AND  w2_ProductVariationView.valid_flg = 1
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductByAmazonSKU>
+
+</Product>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        IF NOT EXISTS( SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_ShopOperator' AND COLUMN_NAME = 'date_last_loggedin')
+        BEGIN
+          ALTER TABLE [dbo].[w2_ShopOperator] ADD [date_last_loggedin] [datetime] NOT NULL DEFAULT ('1753/01/01 00:00:00');
+        END
+        IF NOT EXISTS( SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_ShopOperator' AND COLUMN_NAME = 'remote_addr')
+        BEGIN
+          ALTER TABLE [dbo].[w2_ShopOperator] ADD [remote_addr] [nvarchar] (20) NOT NULL DEFAULT (N'');
+        END
+        IF NOT EXISTS( SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_ShopOperator' AND COLUMN_NAME = 'authentication_code')
+        BEGIN
+          ALTER TABLE [dbo].[w2_ShopOperator] ADD [authentication_code] [nvarchar] (8) NOT NULL DEFAULT (N'');
+        END
+        IF NOT EXISTS( SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_ShopOperator' AND COLUMN_NAME = 'date_code_send')
+        BEGIN
+          ALTER TABLE [dbo].[w2_ShopOperator] ADD [date_code_send] [datetime];
+        END
+
+        IF NOT EXISTS (SELECT mail_id FROM [w2_MailTemplate] WHERE shop_id = '0' AND mail_id = N'10000111')
+        BEGIN
+	        INSERT INTO [w2_MailTemplate]
+	        (
+		        shop_id,
+	          mail_id,
+	          mail_name,
+	          mail_subject,
+	          mail_body,
+	          mail_from,
+	          mail_to,
+	          del_flg,
+	          date_created,
+	          date_changed,
+	          last_changed,
+	          auto_send_flg
+        	)
+        	VALUES
+	        (
+	        	N'0',
+	        	N'10000111',
+        		N'管理画面2段階認証コード通知メール【管理者向け】',
+        		N'認証コード通知',
+        		N'認証コード：@@ auth_code @@
+上記の番号を画面へ入力してください。
+尚、上記認証コードの有効期限は@@ authentication_deadline @@分となっております。',
+        		N'bh@w2s.xyz',
+        		N'bh@w2s.xyz',
+        		'0',
+        		GETDATE(),
+	        	GETDATE(),
+        		'w2',
+        		N'1'
+        	)
+        END
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

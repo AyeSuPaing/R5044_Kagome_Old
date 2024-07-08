@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ポイント基本ルール系SQLステートメントXML(PointRule.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<PointRule>
+
+  <!-- 
+    ポイント基本ルール重複チェック
+    ポイント加算区分、有効期間が重複しているかチェックを行う｡（登録時）
+   -->
+  <CheckDuplicationInsertPointIncKbn>
+    <Statement>
+      <![CDATA[
+      SELECT 
+          COUNT(w2_PointRule.point_rule_id) AS point_rule_count 
+      FROM 
+          w2_PointRule 
+      WHERE 
+          w2_PointRule.dept_id = @dept_id 
+      AND           
+          w2_PointRule.point_inc_kbn = @point_inc_kbn 
+      AND  
+          w2_PointRule.point_rule_kbn = '01'  -- 基本
+      AND 
+          (
+            @exp_bgn_chk IS NOT NULL
+            AND
+            @exp_end_chk IS NOT NULL
+            AND
+            (
+              w2_PointRule.exp_bgn <= CONVERT(datetime, @exp_bgn_chk + ' 00:00:00') AND CONVERT(datetime, @exp_bgn_chk + ' 00:00:00') <= w2_PointRule.exp_end 
+              OR 
+              w2_PointRule.exp_bgn <= CONVERT(datetime, @exp_end_chk + ' 23:59:59.997') AND CONVERT(datetime, @exp_end_chk + ' 23:59:59.997') <= w2_PointRule.exp_end 
+              OR 
+              CONVERT(datetime, @exp_bgn_chk + ' 00:00:00') <= w2_PointRule.exp_bgn AND w2_PointRule.exp_bgn <= w2_PointRule.exp_end AND w2_PointRule.exp_bgn <= CONVERT(datetime, @exp_end_chk + ' 23:59:59.997')
+            )
+          )
+          
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_inc_kbn" Type="nvarchar" Size="10" />
+      <Input Name="exp_bgn_chk" Type="datetime" />
+      <Input Name="exp_end_chk" Type="datetime" />
+    </Parameter>
+  </CheckDuplicationInsertPointIncKbn>
+
+  <!-- 
+    ポイント基本ルール重複チェック
+    ポイント加算区分、有効期間が重複しているかチェックを行う｡（更新時）
+   -->
+  <CheckDuplicationModifyPointIncKbn>
+    <Statement>
+      <![CDATA[
+      SELECT 
+          COUNT(w2_PointRule.point_rule_id) AS point_rule_count 
+      FROM 
+          w2_PointRule 
+      WHERE 
+          w2_PointRule.dept_id = @dept_id 
+      AND           
+          w2_PointRule.point_rule_id != @point_rule_id 
+      AND 
+          w2_PointRule.point_inc_kbn = @point_inc_kbn 
+      AND  
+          w2_PointRule.point_rule_kbn = '01'  -- 基本
+      AND 
+          (
+            @exp_bgn_chk IS NOT NULL
+            AND
+            @exp_end_chk IS NOT NULL
+            AND
+            (
+              w2_PointRule.exp_bgn <= CONVERT(datetime, @exp_bgn_chk + ' 00:00:00') AND CONVERT(datetime, @exp_bgn_chk + ' 00:00:00') <= w2_PointRule.exp_end 
+              OR 
+              w2_PointRule.exp_bgn <= CONVERT(datetime, @exp_end_chk + ' 23:59:59.997') AND CONVERT(datetime, @exp_end_chk + ' 23:59:59.997') <= w2_PointRule.exp_end 
+              OR 
+              CONVERT(datetime, @exp_bgn_chk + ' 00:00:00') <= w2_PointRule.exp_bgn AND w2_PointRule.exp_bgn <= w2_PointRule.exp_end AND w2_PointRule.exp_bgn <= CONVERT(datetime, @exp_end_chk + ' 23:59:59.997')
+            )
+          )
+          
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+      <Input Name="point_inc_kbn" Type="nvarchar" Size="10" />
+      <Input Name="exp_bgn_chk" Type="datetime" />
+      <Input Name="exp_end_chk" Type="datetime" />
+    </Parameter>
+  </CheckDuplicationModifyPointIncKbn>
+</PointRule>

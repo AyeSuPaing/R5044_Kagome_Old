@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+		DECLARE @ConstraintName nvarchar(200)
+
+		SELECT @ConstraintName = obj.name FROM sys.objects AS obj
+		JOIN sys.columns AS clm ON obj.object_id = clm.default_object_id
+		WHERE obj.type = 'D' AND obj.parent_object_id = OBJECT_ID('w2_Order') AND clm.name = 'order_price_tax_subtotal'
+
+		IF @ConstraintName IS NOT NULL
+			EXEC('ALTER TABLE [w2_Order] DROP CONSTRAINT ' + @ConstraintName)
+		GO
+		IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_Order' AND COLUMN_NAME = 'order_price_tax_subtotal')
+			ALTER TABLE [w2_Order] DROP COLUMN [order_price_tax_subtotal];
+		GO
+
+		DECLARE @ConstraintName nvarchar(200)
+
+		SELECT @ConstraintName = obj.name FROM sys.objects AS obj
+		JOIN sys.columns AS clm ON obj.object_id = clm.default_object_id
+		WHERE obj.type = 'D' AND obj.parent_object_id = OBJECT_ID('w2_Order') AND clm.name = 'order_price_tax_service'
+
+		IF @ConstraintName IS NOT NULL
+			EXEC('ALTER TABLE [w2_Order] DROP CONSTRAINT ' + @ConstraintName)
+		GO
+		IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_Order' AND COLUMN_NAME = 'order_price_tax_service')
+			ALTER TABLE [w2_Order] DROP COLUMN [order_price_tax_service];
+		GO
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

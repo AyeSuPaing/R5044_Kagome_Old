@@ -1,0 +1,200 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文メモ設定系SQLステートメントXML(OrderMemoSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderMemoSetting>
+  
+  <!-- 注文メモ設定一覧取得 -->
+  <GetOrderMemoSettingList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_OrderMemoSetting.order_memo_id), 0)
+          FROM  w2_OrderMemoSetting
+                [[ ORDERMEMOSETTING_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_OrderMemoSetting.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_OrderMemoSetting.order_memo_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            ORDER BY  display_order ASC, order_memo_id DESC
+                          ) AS row_num
+                    FROM  w2_OrderMemoSetting
+                          [[ ORDERMEMOSETTING_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_OrderMemoSetting ON
+                (
+                  RowIndex.order_memo_id = w2_OrderMemoSetting.order_memo_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_memo_id_like_escaped" Type="nvarchar" Size="20" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetOrderMemoSettingList>
+
+  <!-- 注文メモ設定取得 -->
+  <GetOrderMemoSettingFromId>
+    <Statement>
+      <![CDATA[			
+				SELECT  w2_OrderMemoSetting.*
+				  FROM  w2_OrderMemoSetting
+				 WHERE  w2_OrderMemoSetting.order_memo_id = @order_memo_id
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_memo_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetOrderMemoSettingFromId>
+
+  <!-- 注文メモ情報取得 -->
+  <GetOrderMemoSettingAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_OrderMemoSetting.*
+          FROM  w2_OrderMemoSetting
+         WHERE  w2_OrderMemoSetting.valid_flg = @valid_flg
+           AND  w2_OrderMemoSetting.term_bgn < getdate()
+           AND  w2_OrderMemoSetting.term_end > getdate()
+     ORDER  BY  w2_OrderMemoSetting.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetOrderMemoSettingAll>
+
+  <!-- 注文メモ設定登録 -->
+  <InsertOrderMemoSetting>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_OrderMemoSetting
+                (
+                  order_memo_id,
+                  order_memo_name,
+                  height,
+                  width,
+                  css_class,
+                  max_length,
+                  default_text,
+                  display_order,
+                  term_bgn,
+                  term_end,
+                  valid_flg,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @order_memo_id,
+                  @order_memo_name,
+                  @height,
+                  @width,
+                  @css_class,
+                  @max_length,
+                  @default_text,
+                  @display_order,
+                  @term_bgn,
+                  @term_end,
+                  @valid_flg,
+                  getdate(),
+                  getdate(),
+                  @last_changed
+                )
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_memo_id" Type="nvarchar" Size="10" />
+      <Input Name="order_memo_name" Type="nvarchar" Size="100" />
+      <Input Name="height" Type="int" />
+      <Input Name="width" Type="int" />
+      <Input Name="css_class" Type="nvarchar" Size="100" />
+      <Input Name="max_length" Type="int" />
+      <Input Name="default_text" Type="nvarchar" Size="max" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="term_bgn" Type="datetime" />
+      <Input Name="term_end" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertOrderMemoSetting>
+
+  <!-- 注文メモ設定更新 -->
+  <UpdateOrderMemoSetting>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_OrderMemoSetting
+           SET  w2_OrderMemoSetting.order_memo_name = @order_memo_name,
+                w2_OrderMemoSetting.height = @height,
+                w2_OrderMemoSetting.width = @width,
+                w2_OrderMemoSetting.css_class = @css_class,
+                w2_OrderMemoSetting.max_length = @max_length,
+                w2_OrderMemoSetting.default_text = @default_text,
+                w2_OrderMemoSetting.display_order = @display_order,
+                w2_OrderMemoSetting.term_bgn = @term_bgn,
+                w2_OrderMemoSetting.term_end = @term_end,
+                w2_OrderMemoSetting.valid_flg = @valid_flg,
+                w2_OrderMemoSetting.date_changed = getdate(),
+                w2_OrderMemoSetting.last_changed = @last_changed
+         WHERE  w2_OrderMemoSetting.order_memo_id = @order_memo_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_memo_id" Type="nvarchar" Size="10" />
+      <Input Name="order_memo_name" Type="nvarchar" Size="100" />
+      <Input Name="height" Type="int" />
+      <Input Name="width" Type="int" />
+      <Input Name="css_class" Type="nvarchar" Size="100" />
+      <Input Name="max_length" Type="int" />
+      <Input Name="default_text" Type="nvarchar" Size="max" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="term_bgn" Type="datetime" />
+      <Input Name="term_end" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateOrderMemoSetting>
+
+  <!-- 注文メモ設定削除 -->
+  <DeleteOrderMemoSetting>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_OrderMemoSetting
+         WHERE  w2_OrderMemoSetting.order_memo_id = @order_memo_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_memo_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteOrderMemoSetting>
+
+  <!-- 注文メモID重複チェック(登録) -->
+  <CheckDuplicationRegistOrderMemoId>
+    <Statement>
+      <![CDATA[
+			SELECT	count(order_memo_id) AS count
+			  FROM  w2_OrderMemoSetting
+			 WHERE	w2_OrderMemoSetting.order_memo_id = @order_memo_id
+			]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_memo_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckDuplicationRegistOrderMemoId>
+
+</OrderMemoSetting>

@@ -1,0 +1,380 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : コーディネートカテゴリ系SQLステートメントXML (CoordinateCategory.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<CoordinateCategory>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_CoordinateCategory
+                [[ COORDINATECATEGORY_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+
+  <!-- 
+    コーディネートカテゴリ情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetCoordinateCategoryMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_CoordinateCategory
+                [[ COORDINATECATEGORY_MASTER_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetCoordinateCategoryMaster>
+
+  <!-- コーディネートカテゴリマスタフィールドチェック -->
+  <CheckCoordinateCategoryFields>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  w2_CoordinateCategory
+      ]]>
+    </Statement>
+  </CheckCoordinateCategoryFields>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CoordinateCategory.*
+          FROM  (
+                  SELECT  w2_CoordinateCategory.coordinate_category_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ COORDINATECATEGORY_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_CoordinateCategory
+                          [[ COORDINATECATEGORY_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_CoordinateCategory ON
+                (
+                  RowIndex.coordinate_category_id = w2_CoordinateCategory.coordinate_category_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CoordinateCategory
+         WHERE  coordinate_category_id = @coordinate_category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- 名前で取得 -->
+  <GetByName>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CoordinateCategory
+         WHERE  coordinate_category_name = @coordinate_category_name
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_category_name" Type="nvarchar" Size="40" />
+    </Parameter>
+  </GetByName>
+
+  <!-- 全てのカテゴリ情報取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CoordinateCategory
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetAll>
+
+  <!-- トップカテゴリ情報取得 -->
+  <GetTopCoordinateCategory>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CoordinateCategory
+         WHERE  LEN(w2_CoordinateCategory.coordinate_category_id) = 3
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetTopCoordinateCategory>
+
+  <!-- コーディネートカテゴリー情報取得(直下の子カテゴリー) -->
+  <GetCoordinateCategoryFamily>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CoordinateCategory.*
+          FROM  w2_CoordinateCategory
+         WHERE  w2_CoordinateCategory.valid_flg = '1'
+           AND  w2_CoordinateCategory.coordinate_parent_category_id IN ('ROOT', @coordinate_category_id)
+        ORDER BY w2_CoordinateCategory.coordinate_category_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCoordinateCategoryFamily>
+  
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CoordinateCategory
+                (
+                  coordinate_category_id
+                  ,coordinate_parent_category_id
+                  ,coordinate_category_name
+                  ,seo_keywords
+                  ,display_order
+                  ,valid_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @coordinate_category_id
+                  ,@coordinate_parent_category_id
+                  ,@coordinate_category_name
+                  ,@seo_keywords
+                  ,@display_order
+                  ,@valid_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_category_id" Type="nvarchar" Size="30" />
+      <Input Name="coordinate_parent_category_id" Type="nvarchar" Size="30" />
+      <Input Name="coordinate_category_name" Type="nvarchar" Size="40" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="seo_keywords" Type="nvarchar" Size="200" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+  
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CoordinateCategory
+           SET  coordinate_category_id = @coordinate_category_id
+                ,coordinate_parent_category_id = @coordinate_parent_category_id
+                ,coordinate_category_name = @coordinate_category_name
+                ,seo_keywords = @seo_keywords
+                ,display_order = @display_order
+                ,valid_flg = @valid_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  coordinate_category_id = @coordinate_category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_category_id" Type="nvarchar" Size="30" />
+      <Input Name="coordinate_parent_category_id" Type="nvarchar" Size="30" />
+      <Input Name="coordinate_category_name" Type="nvarchar" Size="40" />
+      <Input Name="seo_keywords" Type="nvarchar" Size="200" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="display_order" Type="int" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CoordinateCategory
+         WHERE  coordinate_category_id like @coordinate_category_id + '%'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- カテゴリツリー用のデータを取得する -->
+  <GetCategoryTree>
+    <Statement>
+      <![CDATA[
+         ;WITH  sort
+            AS  (
+                  SELECT  first_cat.coordinate_category_id,
+                          CAST(RIGHT('000' + CAST(RANK() OVER (ORDER BY
+                          first_cat.coordinate_category_id ASC,
+                          first_cat.display_order ASC,
+                          first_cat.coordinate_category_id ASC) as nvarchar(3)), 3) as nvarchar(30)) as sort_id
+                    FROM  w2_CoordinateCategory as first_cat
+                   WHERE  first_cat.coordinate_parent_category_id = 'ROOT'
+                     AND  (
+                            first_cat.coordinate_category_id like '___' 
+                            <@@hasval:coordinate_category_id_like_escaped_1@@>
+                            OR first_cat.coordinate_category_id like @coordinate_category_id_like_escaped_1 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_1@@>
+                            <@@hasval:coordinate_category_id_like_escaped_2@@>
+                            OR first_cat.coordinate_category_id like @coordinate_category_id_like_escaped_2 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_2@@>
+                            <@@hasval:coordinate_category_id_like_escaped_3@@>
+                            OR first_cat.coordinate_category_id like @coordinate_category_id_like_escaped_3 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_3@@>
+                            <@@hasval:coordinate_category_id_like_escaped_4@@>
+                            OR first_cat.coordinate_category_id like @coordinate_category_id_like_escaped_4 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_4@@>
+                            <@@hasval:coordinate_category_id_like_escaped_5@@>
+                            OR first_cat.coordinate_category_id like @coordinate_category_id_like_escaped_5 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_5@@>
+                            <@@hasval:coordinate_category_id_like_escaped_6@@>
+                            OR first_cat.coordinate_category_id like @coordinate_category_id_like_escaped_6 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_6@@>
+                            <@@hasval:coordinate_category_id_like_escaped_7@@>
+                            OR first_cat.coordinate_category_id like @coordinate_category_id_like_escaped_7 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_7@@>
+                            <@@hasval:coordinate_category_id_like_escaped_8@@>
+                            OR first_cat.coordinate_category_id like @coordinate_category_id_like_escaped_8 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_8@@>
+                            <@@hasval:coordinate_category_id_like_escaped_9@@>
+                            OR first_cat.coordinate_category_id like @coordinate_category_id_like_escaped_9 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_9@@>
+                            <@@hasval:coordinate_category_id_like_escaped_10@@>
+                            OR first_cat.coordinate_category_id like @coordinate_category_id_like_escaped_10 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_10@@>
+                          )
+                     AND  first_cat.valid_flg = '1'
+               UNION ALL
+                  SELECT  rec_cat.coordinate_category_id,
+                          CAST(sort.sort_id + RIGHT('000' + CAST(RANK() OVER (ORDER BY
+                          rec_cat.coordinate_category_id ASC,
+                          rec_cat.display_order ASC,
+                          rec_cat.coordinate_category_id ASC) as nvarchar(3)), 3) as nvarchar(30)) as sort_id
+                    FROM  w2_CoordinateCategory as rec_cat
+                          INNER JOIN sort ON
+                          (
+                            sort.coordinate_category_id = rec_cat.coordinate_parent_category_id
+                          )
+                   WHERE  
+                          (
+                            rec_cat.coordinate_category_id like '___' 
+                            <@@hasval:coordinate_category_id_like_escaped_1@@>
+                            OR rec_cat.coordinate_category_id like @coordinate_category_id_like_escaped_1 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_1@@>
+                            <@@hasval:coordinate_category_id_like_escaped_2@@>
+                            OR rec_cat.coordinate_category_id like @coordinate_category_id_like_escaped_2 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_2@@>
+                            <@@hasval:coordinate_category_id_like_escaped_3@@>
+                            OR rec_cat.coordinate_category_id like @coordinate_category_id_like_escaped_3 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_3@@>
+                            <@@hasval:coordinate_category_id_like_escaped_4@@>
+                            OR rec_cat.coordinate_category_id like @coordinate_category_id_like_escaped_4 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_4@@>
+                            <@@hasval:coordinate_category_id_like_escaped_5@@>
+                            OR rec_cat.coordinate_category_id like @coordinate_category_id_like_escaped_5 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_5@@>
+                            <@@hasval:coordinate_category_id_like_escaped_6@@>
+                            OR rec_cat.coordinate_category_id like @coordinate_category_id_like_escaped_6 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_6@@>
+                            <@@hasval:coordinate_category_id_like_escaped_7@@>
+                            OR rec_cat.coordinate_category_id like @coordinate_category_id_like_escaped_7 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_7@@>
+                            <@@hasval:coordinate_category_id_like_escaped_8@@>
+                            OR rec_cat.coordinate_category_id like @coordinate_category_id_like_escaped_8 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_8@@>
+                            <@@hasval:coordinate_category_id_like_escaped_9@@>
+                            OR rec_cat.coordinate_category_id like @coordinate_category_id_like_escaped_9 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_9@@>
+                            <@@hasval:coordinate_category_id_like_escaped_10@@>
+                            OR rec_cat.coordinate_category_id like @coordinate_category_id_like_escaped_10 + '___' ESCAPE '#'
+                            </@@hasval:coordinate_category_id_like_escaped_10@@>
+                          )
+                     AND  rec_cat.valid_flg = '1'
+                )
+
+        SELECT  w2_CoordinateCategory.*
+          FROM  w2_CoordinateCategory
+                INNER JOIN sort ON
+                (
+                  w2_CoordinateCategory.coordinate_category_id = sort.coordinate_category_id
+                )
+        ORDER BY sort.sort_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_category_id_like_escaped_1" Type="nvarchar" Size="60" />
+      <Input Name="coordinate_category_id_like_escaped_2" Type="nvarchar" Size="60" />
+      <Input Name="coordinate_category_id_like_escaped_3" Type="nvarchar" Size="60" />
+      <Input Name="coordinate_category_id_like_escaped_4" Type="nvarchar" Size="60" />
+      <Input Name="coordinate_category_id_like_escaped_5" Type="nvarchar" Size="60" />
+      <Input Name="coordinate_category_id_like_escaped_6" Type="nvarchar" Size="60" />
+      <Input Name="coordinate_category_id_like_escaped_7" Type="nvarchar" Size="60" />
+      <Input Name="coordinate_category_id_like_escaped_8" Type="nvarchar" Size="60" />
+      <Input Name="coordinate_category_id_like_escaped_9" Type="nvarchar" Size="60" />
+      <Input Name="coordinate_category_id_like_escaped_10" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetCategoryTree>
+
+  <!-- 指定カテゴリIDと、その上位のカテゴリ(TOPカテゴリまで)のリストを取得する -->
+  <GetParentCategories>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CoordinateCategory.*
+          FROM  w2_CoordinateCategory
+         WHERE  w2_CoordinateCategory.valid_flg = '1'
+           AND  (
+                  w2_CoordinateCategory.coordinate_category_id = @coordinate_category_id
+                  OR
+                  w2_CoordinateCategory.coordinate_category_id = LEFT(@coordinate_category_id, 27)
+                  OR
+                  w2_CoordinateCategory.coordinate_category_id = LEFT(@coordinate_category_id, 24)
+                  OR
+                  w2_CoordinateCategory.coordinate_category_id = LEFT(@coordinate_category_id, 21)
+                  OR
+                  w2_CoordinateCategory.coordinate_category_id = LEFT(@coordinate_category_id, 18)
+                  OR
+                  w2_CoordinateCategory.coordinate_category_id = LEFT(@coordinate_category_id, 15)
+                  OR
+                  w2_CoordinateCategory.coordinate_category_id = LEFT(@coordinate_category_id, 12)
+                  OR
+                  w2_CoordinateCategory.coordinate_category_id = LEFT(@coordinate_category_id,  9)
+                  OR
+                  w2_CoordinateCategory.coordinate_category_id = LEFT(@coordinate_category_id,  6)
+                  OR
+                  w2_CoordinateCategory.coordinate_category_id = LEFT(@coordinate_category_id,  3)
+                )
+        ORDER BY w2_CoordinateCategory.coordinate_category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="coordinate_category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetParentCategories>
+
+</CoordinateCategory>

@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      :納品書設定 (InvoiceSetting.xml)
+･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+-->
+<!--
+  納品書の文言やロゴを設定をできます。
+
+■フォーマット
+<InvoiceBlock>
+  納品書の編集する場所をtypeで選択します。
+  typeは2回以上使用することはできません。
+  サイト基本情報設定にあるメール用のタグを使用することができます。
+
+  <MaxDisplayItems value="[数字]" />
+    納品書に商品を何個まで表示するかを設定できます。
+    設定した工数を超えた場合次のページに表示されます。
+
+  <LogoImage path="@@ IMAGE_PATH @@/○○" />
+    ROOT/Contents/Setting/Images/にある画像をロゴとして設定することができます。
+
+  <PriceText displayName="○○" displayFreeAmountFlg="[true or false]">
+    納品書の金額部分の表示を設定できます。
+    displayName：納品書に表示する文言を設定できます。
+      使用できる場所は明細部分と金額部分となります。
+    displayFreeAmountFlg：trueかfalseから選択でき、falseの場合は出力するデータが0円の時に表示されなくなります。
+
+  <Text text-align"○○"  parts-align="□□" displayName="▽▽" width= "△△" margin="☆☆" text-color="××" >
+    文言を表示することができ、属性として下記の5種類を設定することができます。
+    ※文書中の空白は削除されます。
+
+■Textの属性について
+text-align
+  文章の位置を変更することができます。
+  選択肢は left(左寄せ), center(中央寄せ), right(右寄せ)です。
+  設定を行わない場合、文章の位置は左寄せとなります。
+parts-align
+  文章が納品書に対してどの位置に表示されるかを設定できます。
+  選択肢は left(左側), center(中央), right(右側)です。
+  設定を行わない場合、文章の位置は左寄せとなります。
+width
+  文章幅の上限を設定できます。
+  文字が設定した幅を超える場合は自動的に改行されます。
+margin
+  納品書に対しての文章の余白を設定できます。
+  設定方法はHTMLのmarginと同じになります。
+text-color
+  文章の色を変更することができます。
+  指定できる色は「#000000～#FFFFFF」です。
+  設定を行わない場合、色は黒色となります。
+
+■挿入できるデータについて
+<Text>○○</Text>にはデータを挿入することができます。
+よく使うタグは以下のようになっています。
+  @@ shipping_time @@          : 配送希望時間帯
+  @@ next_shipping_date @@     : 次回配送日
+  @@ shop_shipping_name @@     : 配送種別名
+  @@ shipping_date @@          : 配送希望日
+  @@ order_payment_kbn @@      : 支払い区分
+  @@ setpromotion_disp_name @@ : 表示用セットプロモーション名
+  @@ shipping_check_no @@      : 配送伝票番号
+-->
+<InvoiceSetting>
+  <!--タイトル部分-->
+  <InvoiceBlock type="title">
+    <Text parts-align="center" text-align="center">
+      <![CDATA[
+        @@ ShopMessage.ShopName @@お買い上げ明細書
+      ]]>
+    </Text>
+  </InvoiceBlock>
+  <InvoiceBlock type="title" languageLocaleId="en-US">
+    <Text parts-align="center" text-align="center">
+      <![CDATA[
+        @@ ShopMessage.ShopName @@Purchase statement
+      ]]>
+    </Text>
+  </InvoiceBlock>
+
+  <!--本文部分-->
+  <InvoiceBlock type="body">
+    <Text text-align="left" parts-align="left" margin-left="5pt">
+      <![CDATA[
+        このたびはお買い上げいただきまして、誠にありがとうございました。
+        お客様のお買い上げ明細書を送付いたしますので、
+        ご確認いただきますよう、お願いしたします。
+      ]]>
+    </Text>
+    <Text text-align="left" parts-align="right">
+      <![CDATA[
+        @@ ShopMessage.ShopName @@
+        http://example.com
+        @@ ShopMessage.CompanyAddress @@
+        TEL：@@ ShopMessage.Tell @@
+        FAX：@@ ShopMessage.Fax @@
+        e-mail：@@ ShopMessage.ContactMail @@
+        登録番号：XXXXXXXXXXXX
+      ]]>
+    </Text>
+    <Text text-align="center" parts-align="center">
+      <![CDATA[
+        明細内容に関してご不明な点は、下記のページアドレス(URL)を
+        ご確認の上、当店「@@ ShopMessage.ShopName @@」までお問合せください。
+
+        「 @@ ShopMessage.ShopName @@ 」：http://example.com
+      ]]>
+    </Text>
+  </InvoiceBlock>
+
+  <!--明細部分-->
+  <InvoiceBlock type="detail">
+    <Text parts-align="left" margin-left="3pt">
+      <![CDATA[
+        ■配送種別名：@@ shop_shipping_name @@
+        ■表示用セットプロモーション名：@@ setpromotion_disp_name @@
+        ■配送伝票番号：@@ shipping_check_no @@
+      ]]>
+    </Text>
+    <Text parts-align="right" margin-left="7pt">
+      <![CDATA[
+        ■決済方法：@@ order_payment_kbn @@
+      ]]>
+    </Text>
+    <Text parts-align="right" margin-left="7pt">
+      <![CDATA[
+        ■配送希望時間帯：@@ shipping_time @@
+      ]]>
+    </Text>
+    <Text parts-align="right" margin-left="7pt">
+      <![CDATA[
+        ■次回配送日：@@ next_shipping_date @@
+      ]]>
+    </Text>
+    <Text parts-align="right" margin-left="7pt">
+      <![CDATA[
+        ■配送希望日：@@ shipping_date @@
+      ]]>
+    </Text>
+  </InvoiceBlock>
+
+  <!--商品部分-->
+  <InvoiceBlock type="product">
+    <MaxDisplayItems value="8" />
+  </InvoiceBlock>
+
+  <!--金額部分 -->
+  <InvoiceBlock type="price">
+  </InvoiceBlock>
+
+  <!--備考部分-->
+  <InvoiceBlock type="footer">
+    <LogoImage path="@@ ROOT_PATH @@/Contents/Setting/Invoice/Images/logo.png" />
+    <Text parts-align="center">
+      <![CDATA[
+        @@ ShopMessage.ShopName @@からのおしらせ
+        このお買い上げ明細書は、@@ ShopMessage.ShopName @@より、お買い上げいただいたお客様にお送りしているものです。
+        ご注文に関してのお問い合わせは、上記の連絡先までお願いいたします。
+      ]]>
+    </Text>
+  </InvoiceBlock>
+</InvoiceSetting>

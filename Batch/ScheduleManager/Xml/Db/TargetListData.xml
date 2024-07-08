@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ターゲットリストデータSQLステートメントXML(TargetListData.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<TargetListData>
+
+  <!-- ターゲットリストデータ作成 -->
+  <CreateTargetListData>
+    <Statement>
+      <![CDATA[
+          /* ダーティリードを許可して共有ロックを掛けなくする */
+          SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+          -- ターゲットリスト抽出
+          WITH  TargetData AS
+          (
+            -- 条件に合うユーザーの抽出
+            -- 優先度：PCアドレス > MBアドレス > アドレス無し
+            SELECT  w2_User.user_id,
+                    CASE
+                      WHEN w2_User.mail_addr <> ''  THEN w2_User.mail_addr
+                      WHEN w2_User.mail_addr2 <> '' THEN w2_User.mail_addr2
+                      ELSE '' END AS mail_addr,
+                    CASE
+                      WHEN w2_User.mail_addr <> ''  THEN 'PC'
+                      WHEN w2_User.mail_addr2 <> '' THEN 'MB'
+                      ELSE '' END AS mail_addr_kbn
+              FROM  w2_User WITH (NOLOCK)
+             WHERE  (w2_User.del_flg = '0' AND  w2_User.integrated_flg = '0')
+               AND  (
+                      @@ param @@
+                    )
+          )
+          -- ターゲットリスト作成
+          INSERT  w2_TargetListData
+          (
+                  dept_id,
+                  target_kbn,
+                  master_id,
+                  user_id,
+                  mail_addr,
+                  mail_addr_kbn
+          )
+          SELECT  @dept_id,
+                  @target_kbn,
+                  @master_id,
+                  TargetData.user_id,
+                  TargetData.mail_addr,
+                  TargetData.mail_addr_kbn
+            FROM  TargetData
+                  
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CreateTargetListData>
+
+  <!-- ターゲットリストデータ作成(双方送信用) -->
+  <CreateTargetListDataBothPcAndMobile>
+    <Statement>
+      <![CDATA[
+          /* ダーティリードを許可して共有ロックを掛けなくする */
+          SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+          -- ターゲットリスト抽出
+          WITH  TargetDataMain AS
+          (
+            -- 条件に合うユーザーの抽出
+            -- 優先度：PCアドレス > MBアドレス > アドレス無し
+            SELECT  w2_User.user_id,
+                    CASE
+                      WHEN w2_User.mail_addr <> ''  THEN w2_User.mail_addr
+                      WHEN w2_User.mail_addr2 <> '' THEN w2_User.mail_addr2
+                      ELSE '' END AS mail_addr,
+                    CASE
+                      WHEN w2_User.mail_addr <> ''  THEN 'PC'
+                      WHEN w2_User.mail_addr2 <> '' THEN 'MB'
+                      ELSE '' END AS mail_addr_kbn
+              FROM  w2_User WITH (NOLOCK)
+             WHERE  (w2_User.del_flg = '0' AND  w2_User.integrated_flg = '0')
+               AND  (
+                      @@ param @@
+                    )
+          ), TargetDataAppend AS
+          (
+            -- PC,MB両アドレスがあるユーザーのMBアドレス抽出
+            SELECT  w2_User.user_id,
+                    w2_User.mail_addr2 AS mail_addr,
+                    'MB' AS mail_addr_kbn
+              FROM  w2_User WITH (NOLOCK)
+             WHERE  ((w2_User.del_flg = '0' AND  w2_User.integrated_flg = '0')
+               AND  w2_User.mail_addr <> ''
+               AND  w2_User.mail_addr2 <> '')
+               AND  (
+                      @@ param @@
+                    )
+          ), TargetData AS
+          (
+            SELECT  TargetDataMain.*
+              FROM  TargetDataMain
+            UNION ALL
+            SELECT  TargetDataAppend.*
+              FROM  TargetDataAppend
+          )
+          -- ターゲットリスト作成
+          INSERT  w2_TargetListData
+          (
+                  dept_id,
+                  target_kbn,
+                  master_id,
+                  user_id,
+                  mail_addr,
+                  mail_addr_kbn
+          )
+          SELECT  @dept_id,
+                  @target_kbn,
+                  @master_id,
+                  TargetData.user_id,
+                  TargetData.mail_addr,
+                  TargetData.mail_addr_kbn
+            FROM  TargetData
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CreateTargetListDataBothPcAndMobile>
+
+  <!--ターゲットリストデータを削除 -->
+  <DeleteTargetListData>
+    <Statement>
+      <![CDATA[
+        -- ターゲットリストデータを削除
+        DELETE  w2_TargetListData
+         WHERE  dept_id = @dept_id
+           AND  target_kbn = @target_kbn
+           AND  master_id = @master_id
+        
+        UPDATE w2_TargetList
+        SET data_count = 0,
+            data_count_date = GETDATE()
+         WHERE dept_id = @dept_id
+           AND target_id = @master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteTargetListData>
+
+</TargetListData>

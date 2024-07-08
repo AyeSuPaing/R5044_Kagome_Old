@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+	<Up>
+		<Statement>
+			<![CDATA[
+				-- パスワード
+				DECLARE @CONSTRAINT_NAME nvarchar (255)
+				DECLARE @script VARCHAR(2000)
+				SET @script = 'ALTER TABLE w2_User DROP CONSTRAINT ' + 
+					(
+					SELECT sysobjects.name
+						FROM sysobjects, syscolumns
+					 WHERE syscolumns.id = object_id('w2_User')
+						 AND sysobjects.id = syscolumns.cdefault
+						 AND syscolumns.name = 'password'
+					)
+				EXEC(@script)
+				ALTER TABLE [w2_User] ALTER COLUMN [password] [nvarchar] (100) COLLATE Japanese_CS_AS_KS_WS NOT NULL
+				ALTER TABLE [w2_User] ADD DEFAULT (N'') for [password];
+			]]>
+		</Statement>
+	</Up>
+</Migration>

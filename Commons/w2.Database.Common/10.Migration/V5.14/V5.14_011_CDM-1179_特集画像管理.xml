@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+      
+      if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_FeatureImageGroup]'))
+        BEGIN
+			CREATE TABLE [dbo].[w2_FeatureImageGroup] (
+				[feature_image_group_id] [bigint] IDENTITY(1, 1) NOT NULL,
+				[group_name] [nvarchar] (60) NOT NULL DEFAULT (N''),
+				[group_sort_number] [int] NOT NULL DEFAULT (0),
+				[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+				[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+				[last_changed] [nvarchar] (20) NOT NULL DEFAULT (0)
+			) ON [PRIMARY]
+
+			ALTER TABLE [dbo].[w2_FeatureImageGroup] WITH NOCHECK ADD
+				CONSTRAINT [PK_w2_FeatureImageGroup] PRIMARY KEY  CLUSTERED
+				(
+					[feature_image_group_id]
+				) ON [PRIMARY]
+
+			CREATE INDEX [IX_w2_FeatureImageGroup_1] ON [dbo].[w2_FeatureImageGroup]([group_name]) ON [PRIMARY]
+        END
+        
+        if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_FeatureImage]'))
+        BEGIN
+			CREATE TABLE [dbo].[w2_FeatureImage] (
+				[image_id] [bigint] IDENTITY(1, 1) NOT NULL,
+				[file_name] [nvarchar] (60) NOT NULL DEFAULT (N''),
+				[file_dir_path] [nvarchar] (300) NOT NULL DEFAULT (N''),
+				[feature_image_group_id] [bigint] NOT NULL DEFAULT (0),
+				[image_sort_number] [int] NOT NULL DEFAULT (0),
+				[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+				[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+				[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+			) ON [PRIMARY]
+
+			ALTER TABLE [dbo].[w2_FeatureImage] WITH NOCHECK ADD
+				CONSTRAINT [PK_w2_FeatureImage] PRIMARY KEY  CLUSTERED
+				(
+					[image_id]
+				) ON [PRIMARY]
+
+			CREATE INDEX [IX_w2_FeatureImage_1] ON [dbo].[w2_FeatureImage]([file_name]) ON [PRIMARY]
+        END
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

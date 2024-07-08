@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[	
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_WorkCoordinate]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+BEGIN
+
+/*
+=========================================================================================================
+  Module      : ワークコーディネートマスタ (w2_WorkCoordinate.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_WorkCoordinate] (
+	[coordinate_id] [nvarchar] (30) NOT NULL,
+	[coordinate_title] [nvarchar] (200) NOT NULL DEFAULT (N''),
+	[coordinate_url] [nvarchar] (2000) NOT NULL DEFAULT (N''),
+	[coordinate_summary] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[internal_memo] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[staff_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[real_shop_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[html_title] [nvarchar] (200) NOT NULL DEFAULT (N''),
+	[metadata_keywords] [nvarchar] (200) NOT NULL DEFAULT (N''),
+	[metadata_desc] [nvarchar] (200) NOT NULL DEFAULT (N''),
+	[display_kbn] [nvarchar] (20) NOT NULL DEFAULT (N'DRAFT'),
+	[display_date] [datetime],
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_WorkCoordinate] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkCoordinate] PRIMARY KEY  CLUSTERED
+	(
+		[coordinate_id]
+	) ON [PRIMARY]
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_WorkCoordinateCategory]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+BEGIN
+
+/*
+=========================================================================================================
+  Module      : ワークコーディネートカテゴリ (w2_WorkCoordinateCategory.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_WorkCoordinateCategory] (
+	[coordinate_category_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[coordinate_parent_category_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[coordinate_category_name] [nvarchar] (40) NOT NULL DEFAULT (N''),
+	[seo_keywords] [nvarchar] (200) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (0),
+	[valid_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_WorkCoordinateCategory] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkCoordinateCategory] PRIMARY KEY  CLUSTERED
+	(
+		[coordinate_category_id]
+	) ON [PRIMARY]
+
+END
+
+if not exists  (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_WorkCoordinateItem]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+BEGIN
+
+/*
+=========================================================================================================
+  Module      : ワークコーディネートアイテム (w2_WorkCoordinateItem.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_WorkCoordinateItem] (
+	[coordinate_id] [nvarchar] (30) NOT NULL,
+	[item_no] [int] IDENTITY (1, 1) NOT NULL,
+	[item_kbn] [nvarchar] (15) NOT NULL DEFAULT (N''),
+	[item_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[item_id2] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[item_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] DEFAULT (getdate()),
+	[date_changed] [datetime] DEFAULT (getdate()),
+	[last_changed] [nvarchar](20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_WorkCoordinateItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkCoordinateItem] PRIMARY KEY  CLUSTERED
+	(
+		[coordinate_id],
+		[item_no]
+	) ON [PRIMARY]
+
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_WorkStaff]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+BEGIN
+
+/*
+=========================================================================================================
+  Module      : ワークスタッフ (w2_WorkStaff.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_WorkStaff] (
+	[staff_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[staff_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[staff_profile] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[staff_height] [int] NOT NULL DEFAULT (0),
+	[staff_instagram_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[staff_sex] [nvarchar] (10) NOT NULL DEFAULT (N'UNKNOWN'),
+	[model_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[real_shop_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[valid_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_WorkStaff] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_WorkStaff] PRIMARY KEY  CLUSTERED
+	(
+		[staff_id]
+	) ON [PRIMARY]
+
+CREATE INDEX [IX_w2_WorkStaff_1] ON [dbo].[w2_WorkStaff]([staff_height]) ON [PRIMARY]
+
+END
+		]]>
+    </Statement>
+  </Up>
+</Migration>

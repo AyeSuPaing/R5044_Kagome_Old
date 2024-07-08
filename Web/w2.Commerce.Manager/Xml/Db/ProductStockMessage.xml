@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品在庫文言系SQLステートメントXML(ProductStockMessage.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductStockMessage>
+
+  <!-- 商品在庫文言情報一覧取得 -->
+  <GetProductStockMessageList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_ProductStockMessage.stock_message_id), 0)
+          FROM  w2_ProductStockMessage
+                [[ PRODUCTSTOCKMESSAGE_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_ProductStockMessage.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ProductStockMessage.shop_id,
+                          w2_ProductStockMessage.stock_message_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCTSTOCKMESSAGE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductStockMessage
+                          [[ PRODUCTSTOCKMESSAGE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductStockMessage ON
+                (
+                  RowIndex.shop_id = w2_ProductStockMessage.shop_id
+                  AND
+                  RowIndex.stock_message_id = w2_ProductStockMessage.stock_message_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetProductStockMessageList>
+
+  <!-- 商品在庫文言情報取得 -->
+  <GetProductStockMessageAllList>
+    <Statement>
+      <![CDATA[
+      SELECT
+          w2_ProductStockMessage.*      
+      FROM 
+          w2_ProductStockMessage 
+      WHERE 
+          w2_ProductStockMessage.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductStockMessageAllList>
+
+  <!-- 商品在庫文言情報取得 -->
+  <GetProductStockMessage>
+    <Statement>
+      <![CDATA[      
+      SELECT
+          w2_ProductStockMessage.* 
+      FROM 
+          w2_ProductStockMessage 
+      WHERE 
+          w2_ProductStockMessage.shop_id = @shop_id 
+      AND 
+          w2_ProductStockMessage.stock_message_id = @stock_message_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_message_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductStockMessage>
+
+  <!-- 商品在庫文言情報削除 -->
+  <DeleteProductStockMessage>
+    <Statement>
+      <![CDATA[
+      DELETE 
+      FROM  
+          w2_ProductStockMessage
+      WHERE 
+          w2_ProductStockMessage.shop_id = @shop_id 
+      AND
+          w2_ProductStockMessage.stock_message_id = @stock_message_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_message_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductStockMessage>
+
+  <!-- 商品在庫文言情報追加 -->
+  <UpdateProductStockMessage>
+    <Statement>
+      <![CDATA[
+        UPDATE 
+            w2_ProductStockMessage
+        SET 
+            w2_ProductStockMessage.stock_message_name = @stock_message_name, 
+            w2_ProductStockMessage.stock_message_def = @stock_message_def, 
+            w2_ProductStockMessage.stock_message1 = @stock_message1, 
+            w2_ProductStockMessage.stock_datum1 = @stock_datum1, 
+            w2_ProductStockMessage.stock_message2 = @stock_message2, 
+            w2_ProductStockMessage.stock_datum2 = @stock_datum2, 
+            w2_ProductStockMessage.stock_message3 = @stock_message3, 
+            w2_ProductStockMessage.stock_datum3 = @stock_datum3,             
+            w2_ProductStockMessage.stock_message4 = @stock_message4, 
+            w2_ProductStockMessage.stock_datum4 = @stock_datum4, 
+            w2_ProductStockMessage.stock_message5 = @stock_message5, 
+            w2_ProductStockMessage.stock_datum5 = @stock_datum5, 
+            w2_ProductStockMessage.stock_message6 = @stock_message6, 
+            w2_ProductStockMessage.stock_datum6 = @stock_datum6, 
+            w2_ProductStockMessage.stock_message7 = @stock_message7, 
+            w2_ProductStockMessage.stock_datum7 = @stock_datum7, 
+            w2_ProductStockMessage.date_changed = getdate(), 
+            w2_ProductStockMessage.last_changed = @last_changed,
+            w2_ProductStockMessage.stock_message_def_mobile = '',
+            w2_ProductStockMessage.stock_message_mobile1 = '',
+            w2_ProductStockMessage.stock_message_mobile2 = '',
+            w2_ProductStockMessage.stock_message_mobile3 = '',
+            w2_ProductStockMessage.stock_message_mobile4 = '',
+            w2_ProductStockMessage.stock_message_mobile5 = '',
+            w2_ProductStockMessage.stock_message_mobile6 = '',
+            w2_ProductStockMessage.stock_message_mobile7 = ''
+        WHERE 
+            w2_ProductStockMessage.shop_id = @shop_id 
+        AND
+            w2_ProductStockMessage.stock_message_id = @stock_message_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_message_id" Type="nvarchar" Size="30" />
+      <Input Name="stock_message_name" Type="nvarchar" Size="30" />
+      <Input Name="stock_message_def" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum1" Type="int" />
+      <Input Name="stock_message1" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum2" Type="int" />
+      <Input Name="stock_message2" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum3" Type="int" />
+      <Input Name="stock_message3" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum4" Type="int" />
+      <Input Name="stock_message4" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum5" Type="int" />
+      <Input Name="stock_message5" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum6" Type="int" />
+      <Input Name="stock_message6" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum7" Type="int" />
+      <Input Name="stock_message7" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateProductStockMessage>
+
+  <!-- 商品在庫文言情報追加 -->
+  <InsertProductStockMessage>
+    <Statement>
+      <![CDATA[
+        INSERT 
+            w2_ProductStockMessage
+            (
+            w2_ProductStockMessage.shop_id, 
+            w2_ProductStockMessage.stock_message_id, 
+            w2_ProductStockMessage.stock_message_name, 
+            w2_ProductStockMessage.stock_message_def,
+            w2_ProductStockMessage.stock_message1, 
+            w2_ProductStockMessage.stock_datum1, 
+            w2_ProductStockMessage.stock_message2, 
+            w2_ProductStockMessage.stock_datum2,            
+            w2_ProductStockMessage.stock_message3, 
+            w2_ProductStockMessage.stock_datum3, 
+            w2_ProductStockMessage.stock_message4, 
+            w2_ProductStockMessage.stock_datum4, 
+            w2_ProductStockMessage.stock_message5, 
+            w2_ProductStockMessage.stock_datum5, 
+            w2_ProductStockMessage.stock_message6, 
+            w2_ProductStockMessage.stock_datum6, 
+            w2_ProductStockMessage.stock_message7, 
+            w2_ProductStockMessage.stock_datum7, 
+            w2_ProductStockMessage.date_created, 
+            w2_ProductStockMessage.date_changed, 
+            w2_ProductStockMessage.last_changed,
+            w2_ProductStockMessage.language_code,
+            w2_ProductStockMessage.language_locale_id
+            ) 
+          VALUES
+          (
+            @shop_id, 
+            @stock_message_id, 
+            @stock_message_name, 
+            @stock_message_def,
+            @stock_message1, 
+            @stock_datum1, 
+            @stock_message2, 
+            @stock_datum2, 
+            @stock_message3, 
+            @stock_datum3, 
+            @stock_message4, 
+            @stock_datum4, 
+            @stock_message5, 
+            @stock_datum5, 
+            @stock_message6, 
+            @stock_datum6, 
+            @stock_message7, 
+            @stock_datum7, 
+            getdate(),
+            getdate(), 
+            @last_changed,
+            @language_code,
+            @language_locale_id
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_message_id" Type="nvarchar" Size="30" />
+      <Input Name="stock_message_name" Type="nvarchar" Size="30" />
+      <Input Name="stock_message_def" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum1" Type="int" />
+      <Input Name="stock_message1" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum2" Type="int" />
+      <Input Name="stock_message2" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum3" Type="int" />
+      <Input Name="stock_message3" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum4" Type="int" />
+      <Input Name="stock_message4" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum5" Type="int" />
+      <Input Name="stock_message5" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum6" Type="int" />
+      <Input Name="stock_message6" Type="nvarchar" Size="30" />
+      <Input Name="stock_datum7" Type="int" />
+      <Input Name="stock_message7" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </InsertProductStockMessage>
+
+  <!-- 在庫文言ID重複チェック -->
+  <CheckDuplicationProductStockMessageId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductStockMessage.stock_message_id
+          FROM  w2_ProductStockMessage
+         WHERE  w2_ProductStockMessage.shop_id = @shop_id
+           AND  w2_ProductStockMessage.stock_message_id = @stock_message_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="stock_message_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckDuplicationProductStockMessageId>
+</ProductStockMessage>

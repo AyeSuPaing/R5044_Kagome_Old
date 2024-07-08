@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ポイント現状構成セッティングXML(PointAnalysis.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<PointAnalysis>
+  <!--
+    構成分析のStatementへはname、count、total（各レコード共通）が取得できるSQLを記述する。
+
+    （例）
+
+    ========================================
+    [name]         [count]         [total]
+    ========================================
+    男             35              68
+    女             32              68
+    不明           1               68
+    ========================================
+  -->
+  <!-- ポイントルール区分 -->
+  <PointRuleKbnAnalysis>
+    <Title>発行累積ポイント　ポイントルール区分　分布レポート</Title>
+    <Unit>pt</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- totalデータ作成
+      DECLARE @total_point decimal
+      SELECT  @total_point = ISNULL(SUM(w2_UserPointHistory.point_inc),0)
+        FROM  w2_UserPointHistory
+       WHERE  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+         AND  w2_UserPointHistory.point_type = '01'          -- 本ポイント
+         AND  w2_UserPointHistory.point_inc >= 0            -- 0ポイント以上
+
+      -- 分析データ集計
+
+      SELECT  datas.name,
+              SUM(datas.sum) AS count,
+              @total_point AS total
+        FROM  (
+                (
+                  SELECT  1 AS no,
+                          @@ValueText:point_rule_kbn:01@@ AS name,
+                          ISNULL(SUM(w2_UserPointHistory.point_inc),0) AS sum
+                    FROM  w2_UserPointHistory
+                   WHERE  w2_UserPointHistory.point_rule_kbn = '01'        -- 基本
+                     AND  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+                     AND  w2_UserPointHistory.point_type = '01'          -- 本ポイント
+                     AND  w2_UserPointHistory.point_inc >= 0            -- 0ポイント以上
+
+                )
+                UNION ALL
+                (
+                  SELECT  2 AS no,
+                          @@ValueText:point_rule_kbn:02@@ AS name,
+                          ISNULL(SUM(w2_UserPointHistory.point_inc),0) AS sum
+                    FROM  w2_UserPointHistory
+                   WHERE  w2_UserPointHistory.point_rule_kbn = '02'        -- キャンペーン
+                     AND  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+                     AND  w2_UserPointHistory.point_type = '01'          -- 本ポイント
+                     AND  w2_UserPointHistory.point_inc >= 0            -- 0ポイント以上
+                )
+              ) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </PointRuleKbnAnalysis>
+  <!-- ポイント加算区分 -->
+  <PointIncKbnAnalysis>
+    <Title>発行累積ポイント　ポイント加算区分　分布レポート</Title>
+    <Unit>pt</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- totalデータ作成
+      DECLARE @total_point decimal
+      SELECT  @total_point = ISNULL(SUM(w2_UserPointHistory.point_inc),0)
+        FROM  w2_UserPointHistory
+       WHERE  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+         AND  w2_UserPointHistory.point_type = '01'          -- 本ポイント
+         AND  w2_UserPointHistory.point_inc >= 0            -- 0ポイント以上
+
+      -- 分析データ集計
+
+      SELECT  datas.name,
+              SUM(datas.sum) AS count,
+              @total_point AS total
+        FROM  (
+                (
+                SELECT  1 AS no,
+                        @@ValueText:point_inc_kbn:01@@ AS name,
+                        ISNULL(SUM(w2_UserPointHistory.point_inc),0) AS sum
+                  FROM  w2_UserPointHistory
+                 WHERE  w2_UserPointHistory.point_inc_kbn = '01'        -- 購入時ポイント発行
+                   AND  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+                   AND  w2_UserPointHistory.point_type = '01'          -- 本ポイント
+                   AND  w2_UserPointHistory.point_inc >= 0            -- 0ポイント以上
+
+                )
+                UNION ALL
+                (
+                SELECT  2 AS no,
+                        @@ValueText:point_inc_kbn:02@@ AS name,
+                        ISNULL(SUM(w2_UserPointHistory.point_inc),0) AS sum
+                  FROM  w2_UserPointHistory
+                 WHERE  w2_UserPointHistory.point_inc_kbn = '02'        -- 新規登録ポイント発行
+                   AND  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+                   AND  w2_UserPointHistory.point_type = '01'          -- 本ポイント
+                   AND  w2_UserPointHistory.point_inc >= 0            -- 0ポイント以上
+
+                )
+                UNION ALL
+                (
+                SELECT  3 AS no,
+                        @@ValueText:point_inc_kbn:03@@ AS name,
+                        ISNULL(SUM(w2_UserPointHistory.point_inc),0) AS sum
+                  FROM  w2_UserPointHistory
+                 WHERE  w2_UserPointHistory.point_inc_kbn = '03'        -- ログイン毎ポイント発行
+                   AND  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+                   AND  w2_UserPointHistory.point_type = '01'          -- 本ポイント
+                   AND  w2_UserPointHistory.point_inc >= 0            -- 0ポイント以上
+                )
+                UNION ALL
+                (
+                SELECT  4 AS no,
+                        @@ValueText:point_inc_kbn:04@@ AS name,
+                        ISNULL(SUM(w2_UserPointHistory.point_inc),0) AS sum
+                  FROM  w2_UserPointHistory
+                 WHERE  w2_UserPointHistory.point_inc_kbn = '04'        -- 初回購入ポイント発行
+                   AND  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+                   AND  w2_UserPointHistory.point_type = '01'          -- 本ポイント
+                   AND  w2_UserPointHistory.point_inc >= 0            -- 0ポイント以上
+                )
+                UNION ALL
+                (
+                SELECT  5 AS no,
+                        @@ValueText:point_inc_kbn:05@@ AS name,
+                        ISNULL(SUM(w2_UserPointHistory.point_inc),0) AS sum
+                  FROM  w2_UserPointHistory
+                 WHERE  w2_UserPointHistory.point_inc_kbn = '05'        -- クリックポイント発行
+                   AND  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+                   AND  w2_UserPointHistory.point_type = '01'          -- 本ポイント
+                   AND  w2_UserPointHistory.point_inc >= 0            -- 0ポイント以上
+                )UNION ALL
+                (
+                SELECT  6 AS no,
+                        @@ValueText:point_inc_kbn:92@@ AS name,
+                        ISNULL(SUM(w2_UserPointHistory.point_inc),0) AS sum
+                  FROM  w2_UserPointHistory
+                 WHERE  w2_UserPointHistory.point_inc_kbn = '92'        -- レビュー投稿時ポイント発行
+                   AND  (@point_kbn = 'ALL' OR w2_UserPointHistory.point_kbn = @point_kbn)
+                   AND  w2_UserPointHistory.point_type = '01'          -- 本ポイント
+                   AND  w2_UserPointHistory.point_inc >= 0            -- 0ポイント以上
+                )
+              ) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </PointIncKbnAnalysis>
+  <!-- 有効期限/ポイント -->
+  <PointExpPointAnalysis>
+    <Title>有効期限前　分布レポート/ポイント</Title>
+    <Unit>pt</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- 現在日付取得
+
+      DECLARE @current_date datetime
+      SET @current_date = getdate()
+      
+      -- totalデータ作成
+      DECLARE @total_point decimal
+      
+      SELECT  @total_point = ISNULL(SUM(w2_UserPoint.point),0)
+        FROM  w2_UserPoint
+       WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+         AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+         AND  (
+                @current_date <= w2_UserPoint.point_exp    -- 現在日付 <= 有効期限
+              )
+
+      -- 分析データ集計
+
+      SELECT  datas.name,
+              SUM(datas.sum) AS count,
+              @total_point AS total
+        FROM  (
+                (
+                  SELECT  1 AS no,
+                          '期限まで6ヶ月以上' AS name,
+                          ISNULL(SUM(w2_UserPoint.point),0) AS sum
+                    FROM  w2_UserPoint
+                   WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+                     AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+                     AND  (
+                            DATEADD(month,6,@current_date) <= w2_UserPoint.point_exp  -- 6ヶ月以上
+                          )
+                 )
+                 UNION ALL
+                 (
+                   SELECT  2 AS no,
+                           '3ヶ月以上～6ヶ月未満' AS name,
+                           ISNULL(SUM(w2_UserPoint.point),0) AS sum
+                     FROM  w2_UserPoint
+                    WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+                      AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+                      AND  (
+                             DATEADD(month,3,@current_date) <= w2_UserPoint.point_exp   -- 3ヶ月以上～6ヶ月未満
+                             AND 
+                             w2_UserPoint.point_exp < DATEADD(month,6,@current_date)
+                           )
+                  )
+                  UNION ALL
+                  (
+                    -- 1～3ヶ月以内
+                    SELECT  3 AS no,
+                            '1ヶ月以上～3ヶ月未満' AS name,
+                            ISNULL(SUM(w2_UserPoint.point),0) AS sum
+                      FROM  w2_UserPoint
+                     WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+                     AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+                     AND  (
+                            DATEADD(month,1,@current_date) <= w2_UserPoint.point_exp   -- 1ヶ月以上～3ヶ月未満
+                            AND
+                            w2_UserPoint.point_exp < DATEADD(month,3,@current_date)
+                          )
+                  )
+                  UNION ALL
+                  (
+                    -- 11日～1ヶ月以内
+                    SELECT  4 AS no,
+                            '11日以上～1ヶ月未満' AS name,
+                            ISNULL(SUM(w2_UserPoint.point),0) AS sum
+                      FROM  w2_UserPoint
+                     WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+                       AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+                       AND  (
+                              DATEADD(day,11,@current_date) <= w2_UserPoint.point_exp   -- 11日～1ヶ月未満
+                              AND 
+                              w2_UserPoint.point_exp < DATEADD(month,1,@current_date)
+                            )
+                   )
+                   UNION ALL
+                   (
+                     -- 10日以内
+                     SELECT  5 AS no,
+                             '10日以内' AS name,
+                             ISNULL(SUM(w2_UserPoint.point),0) AS sum
+                       FROM  w2_UserPoint
+                      WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+                        AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+                        AND  (
+                               w2_UserPoint.point_exp <= DATEADD(day,10,@current_date)  -- 10日以内
+                               AND
+                               @current_date <= w2_UserPoint.point_exp 
+                             )
+                   )
+                ) AS datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </PointExpPointAnalysis>
+  <!-- 有効期限/人 -->
+  <PointExpPersonAnalysis>
+    <Title>有効期限前　分布レポート/件</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- 現在日付取得
+
+      DECLARE @current_date datetime
+      SET @current_date = getdate()
+      
+      -- totalデータ作成
+      DECLARE @total_point decimal
+      SELECT  @total_point = ISNULL(COUNT(w2_UserPoint.user_id),0)
+        FROM  w2_UserPoint
+       WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+         AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+         AND  (
+                @current_date <= w2_UserPoint.point_exp    -- 現在日付 <= 有効期限
+              )
+
+      -- 分析データ集計
+
+      SELECT  datas.name,
+              SUM(datas.count) AS count,
+              @total_point AS total
+        FROM  (
+                (
+                  SELECT  1 AS no,
+                          '期限まで6ヶ月以上' AS name,
+                          ISNULL(COUNT(w2_UserPoint.user_id),0) AS count
+                    FROM  w2_UserPoint
+                   WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+                     AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+                     AND  (
+                            DATEADD(month,6,@current_date) <= w2_UserPoint.point_exp  -- 6ヶ月以上
+                          )
+                )
+                UNION ALL
+                (
+                  SELECT  2 AS no,
+                          '3ヶ月以上～6ヶ月未満' AS name,
+                          ISNULL(COUNT(w2_UserPoint.user_id),0) AS count
+                    FROM  w2_UserPoint
+                   WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+                     AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+                     AND  (
+                            DATEADD(month,3,@current_date) <= w2_UserPoint.point_exp   -- 3ヶ月以上～6ヶ月未満
+                            AND 
+                            w2_UserPoint.point_exp < DATEADD(month,6,@current_date)
+                          )
+                )
+                UNION ALL
+                (
+                  SELECT  3 AS no,
+                          '1ヶ月以上～3ヶ月未満' AS name,
+                          ISNULL(COUNT(w2_UserPoint.user_id),0) AS count
+                    FROM  w2_UserPoint
+                   WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+                     AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+                     AND  (
+                            DATEADD(month,1,@current_date) <= w2_UserPoint.point_exp   -- 1ヶ月以上～3ヶ月未満
+                            AND 
+                            w2_UserPoint.point_exp < DATEADD(month,3,@current_date)
+                          )
+                )
+                UNION ALL
+                (
+                  SELECT  4 AS no,
+                          '11日以上～1ヶ月未満' AS name,
+                          ISNULL(COUNT(w2_UserPoint.user_id),0) AS count
+                    FROM  w2_UserPoint
+                   WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+                     AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+                     AND  (
+                            DATEADD(day,11,@current_date) <= w2_UserPoint.point_exp   -- 11日～1ヶ月未満
+                            AND 
+                            w2_UserPoint.point_exp < DATEADD(month,1,@current_date)
+                          )
+                )
+                UNION ALL
+                (
+                  SELECT  5 AS no,
+                          '10日以内' AS NAME,
+                          ISNULL(COUNT(w2_UserPoint.user_id),0) AS count
+                    FROM  w2_UserPoint
+                   WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+                     AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+                     AND  (
+                            w2_UserPoint.point_exp <= DATEADD(day,10,@current_date)  -- 10日以内
+                            AND 
+                            @current_date <= w2_UserPoint.point_exp 
+                          )
+                )
+              ) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </PointExpPersonAnalysis>
+  <!-- 現在付与ポイント   -->
+  <AddPointAnalysis>
+    <Title>現在付与ポイント　分布レポート</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+      -- ユーザー毎に有効な保有ポイントを計算する
+      SELECT  user_id, sum(point) as point
+        INTO  #UserPointAggregate
+        FROM  w2_UserPoint
+       WHERE  (@point_kbn = 'ALL' OR w2_UserPoint.point_kbn = @point_kbn)
+         AND  w2_UserPoint.point_type = '01'          -- 本ポイント
+         AND  getdate() <= w2_UserPoint.point_exp    -- 現在日付 <= 有効期限)
+     GROUP BY user_id
+
+      -- totalデータ作成     
+      DECLARE @total_point decimal
+      SELECT  @total_point = ISNULL(COUNT(user_id), 0)
+        FROM  #UserPointAggregate
+      
+      -- 保有ポイント別集計
+      SELECT  datas.name,
+              SUM(datas.count) AS count,
+              @total_point AS total
+        FROM  (
+                (
+                  SELECT  1 AS no,
+                          '10000pt以上' AS name,
+                          ISNULL(COUNT(user_id),0) AS count
+                    FROM  #UserPointAggregate
+                   WHERE  point >= 100000
+                )
+                UNION ALL
+                (
+                  SELECT  2 AS no,
+                          '5000pt以上' AS name,
+                          ISNULL(COUNT(user_id),0) AS count
+                    FROM  #UserPointAggregate
+                   WHERE  point BETWEEN 5000 AND 9999
+                )
+                UNION ALL
+                (
+                  SELECT  3 AS no,
+                          '3000pt以上' AS name,
+                          ISNULL(COUNT(user_id),0) AS count
+                    FROM  #UserPointAggregate
+                   WHERE  point BETWEEN 3000 AND 4999
+                )
+                UNION ALL
+                (
+                  SELECT  4 AS no,
+                          '2000pt以上' AS name,
+                          ISNULL(COUNT(user_id),0) AS count
+                    FROM  #UserPointAggregate
+                   WHERE  point BETWEEN 2000 AND 2999
+                )
+                UNION ALL
+                (
+                  SELECT  5 AS no,
+                          '1000pt以上' AS name,
+                          ISNULL(COUNT(user_id),0) AS count
+                    FROM  #UserPointAggregate
+                   WHERE  point BETWEEN 1000 AND 1999
+                )
+                UNION ALL
+                (
+                  SELECT  6 AS no,
+                          '1000pt未満' AS name,
+                          ISNULL(COUNT(user_id),0) AS count
+                    FROM  #UserPointAggregate
+                   WHERE  point < 1000
+                )
+          ) datas
+      GROUP BY datas.name, datas.no
+
+	    DROP TABLE #UserPointAggregate;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </AddPointAnalysis>
+</PointAnalysis>

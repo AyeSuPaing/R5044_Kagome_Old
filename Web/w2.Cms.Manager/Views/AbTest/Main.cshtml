@@ -1,0 +1,51 @@
+﻿@*
+=========================================================================================================
+  Module      :ABテスト(Main.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.AbTest.AbTestListViewModel
+@{
+	ViewBag.Title = "ABテスト";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+@Html.Hidden("controller", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_AB_TEST)
+
+<h1 class="page-title">ABテスト</h1>
+<div class="main-content-frame" id="list-content">
+</div>
+<br />
+<table class="info_table" cellspacing="1" cellpadding="3" width="758" border="0">
+	<tr class="info_item_bg">
+		<td align="left">備考<br />
+			・「ABテストID」を押下するとそのABテストの編集画面を開きます。<br />
+			・「振り分け実行回数」は、そのABテストに設定されたすべてのLPページのPV数の合計です。また、押下するとそのABテストの分析レポート画面を開きます。
+		</td>
+	</tr>
+</table>
+
+@* モーダルウィンドウ: 拡大画像 *@
+@Html.Partial("_EnlargedImageModal")
+@section JavaScript
+{
+	<script type="text/javascript">
+		list_redraw();
+
+		// リストを取得
+		function list_redraw() {
+			loading_animation.start();
+			$.ajax({
+				type: "POST",
+				url: "@Url.Action("List", Constants.CONTROLLER_W2CMS_MANAGER_AB_TEST)",
+				traditional: true
+			}).done(function (viewHtml) {
+				$("#list-content").html(viewHtml);
+			}).done(function () {
+				loading_animation.end();
+			}).fail(function () {
+			});
+		}
+	</script>
+}

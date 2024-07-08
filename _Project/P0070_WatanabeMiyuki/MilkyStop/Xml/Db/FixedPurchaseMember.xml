@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期会員系SQLステートメントXML(FixedPurchaseMember.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchaseMember>
+
+  <!-- キャンセルにする対象のキャリア決済の定期台帳情報取得 -->
+  <GetFixedPurchaseCancelTarget>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_FixedPurchase.*
+          FROM  w2_FixedPurchase
+         WHERE  next_shipping_date <= @target_date
+           AND  order_payment_kbn IN ('K60','K61','K62','K63','K64','K65','K66')
+           AND  fixed_purchase_status <> '30' --キャンセル以外
+        ORDER BY  fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="target_date" Type="datetime" />
+    </Parameter>
+  </GetFixedPurchaseCancelTarget>
+
+  <!--定期会員フラグOFFにする対象のユーザーID取得-->
+  <GetTargetUserIds>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  user_id
+          FROM  w2_User
+         WHERE  fixed_purchase_member_flg = '1'
+           AND  del_flg = '0'
+           AND NOT EXISTS
+           (
+             SELECT  TOP 1 order_id
+               FROM  w2_Order
+              WHERE  w2_Order.user_id = w2_User.user_id
+                AND  fixed_purchase_id <> ''
+                AND  order_payment_status = '1' --入金済
+                AND  CASE order_payment_kbn WHEN 'K90' THEN order_date ELSE order_payment_date END > @target_date
+           )
+        ORDER BY user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="target_date" Type="datetime" />
+    </Parameter>
+  </GetTargetUserIds>
+</FixedPurchaseMember>

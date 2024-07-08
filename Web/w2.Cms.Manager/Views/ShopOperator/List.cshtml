@@ -1,0 +1,202 @@
+﻿@*
+=========================================================================================================
+  Module      : オペレータ情報ページ(Confirm.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@using w2.Common.Util
+@using w2.Domain.MenuAuthority.Helper
+
+@model w2.Cms.Manager.ViewModels.ShopOperator.ListViewModel
+@{
+	ViewBag.Title = "オペレータ情報";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+
+@helper CreateConfirmUrl(string operatorId)
+{
+	@Url.Action("Confirm", new { actionStatus = ActionStatus.Detail, operatorId = operatorId })
+}
+
+@helper TopButtomControls()
+{
+	using (Html.BeginForm("Register", Constants.CONTROLLER_W2CMS_MANAGER_OPERATOR, FormMethod.Get))
+	{
+		<input type="hidden" name="actionStatus" value="@ActionStatus.Insert"/>
+		<input type="submit" value="  新規登録  " class="btn btn-main"/>
+	}
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr><td><h1 class="page-title">オペレータ情報</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	<!--▽ 検索 ▽-->
+	<tr>
+	<td>
+	<table class="box_border cmn-section" cellspacing="1" cellpadding="3" width="784" border="0">
+	<tr>
+	<td class="search_box_bg">
+	<table cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+	<table cellspacing="0" cellpadding="0" border="0" class="wide-content">
+	@LayoutHelper.PaddingTr(10)
+	<tr>
+		<td class="search_box_bg">
+			@using (Html.BeginForm("List", Constants.CONTROLLER_W2CMS_MANAGER_OPERATOR, FormMethod.Get, new
+			{
+				name = "searchForm",
+				Id = "input_form",
+			}))
+			{
+				<table class="search_table cmn-form" cellspacing="1" cellpadding="2" width="758" border="0">
+					<tr>
+						<td class="search_title_bg" width="95">
+							オペレータID
+						</td>
+						<td class="search_item_bg" width="130">
+							<input type="text" name="operatorId" value="@this.Model.ParamModel.OperatorId" width="125"/>
+						</td>
+						<td class="search_title_bg" width="95">
+							オペレータ名
+						</td>
+						<td class="search_item_bg" width="130">
+							<input type="text" name="operatorName" value="@this.Model.ParamModel.OperatorName" width="350"/>
+						</td>
+						<td class="search_title_bg" width="95">
+							並び順
+						</td>
+						<td class="search_item_bg" width="130">
+							@Html.DropDownListFor(model => model.ParamModel.SortKbn, new SelectList(Model.SortKbnItems, "Value", "Text", "Selected"), new
+							{
+								Name = "SortKbn",
+							})
+						</td>
+						<td class="search_btn_bg" width="83" rowspan="2">
+							<div class="search_btn_main">
+								<input type="submit" name="search" value="  検索  " class="btn btn-main"/>
+							</div>
+							<div class="search_btn_sub">
+								@Html.ActionLink("クリア", "List", Constants.CONTROLLER_W2CMS_MANAGER_OPERATOR)&nbsp;
+								<a href="javascript:document.searchForm.reset();">リセット</a>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td class="search_title_bg" width="95">
+							メニュー権限
+						</td>
+						<td class="search_item_bg" width="355" colspan="3">
+							@Html.DropDownListFor(model => model.ParamModel.ConditionMenuAccessLevel, new SelectList(Model.MenuAccessLevelItem, "Value", "Text"), new
+							{
+								Name = "ConditionMenuAccessLevel",
+							})
+						</td>
+						<td class="search_title_bg" width="95">
+							有効フラグ
+						</td>
+						<td class="search_item_bg" width="130">
+							@Html.DropDownListFor(model => model.ParamModel.ValidFlg, new SelectList(Model.ValidItems, "Value", "Text"), "", new
+							{
+								Name = "ValidFlg"
+							})
+						</tr>
+				</table>
+			}
+		</td>
+	</tr>
+	@LayoutHelper.PaddingTr(5)
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 検索 △-->
+	<!--▽ 一覧 ▽-->
+	<tr>
+		<td><h2 class="cmn-operator-hed-h2">オペレータ情報一覧</h2></td>
+	</tr>
+	<tr>
+	<td>
+		<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+		<tr>
+		<td>
+		<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+		<tr>
+		<td align="center">
+			<table cellspacing="0" cellpadding="0" border="0">
+				@LayoutHelper.PaddingTr(6)
+				<tr>
+					<td>
+						<div class="action_part_top">
+						<table class="list_pager" cellspacing="1" cellpadding="0" width="758" border="0">
+							<tr>
+								<!-- ページング -->
+								<td width="675">
+									@Html.Raw(this.Model.PagerHtml)
+								</td>
+								<td width="83" class="action_list_sp" style="text-align: right">
+									@TopButtomControls()
+								</td>
+							</tr>
+						</table>
+						</div>
+					</td>
+				</tr>
+				<tr>
+				<td>
+					<table cellspacing="1" cellpadding="3" width="758" class="list_table" border="0">
+						<tr class="list_title_bg">
+							<td align="center" width="15%">オペレータID</td>
+							<td align="center" width="50%">オペレータ名</td>
+							<td align="center">メニュー権限</td>
+							<td align="center">有効フラグ</td>
+						</tr>
+						@{ var lineNo = 1; }
+						@foreach (var op in this.Model.List)
+						{
+							lineNo = ((lineNo + 1) % 2);
+							var listItemBgClass = "list_item_bg" + (lineNo + 1);
+							var listSelectMoutClass = string.Format("listselect_mout{0}(this)", +lineNo + 1);
+
+							<tr class="@listItemBgClass" onmouseover="listselect_mover(this)" onmouseout="@listSelectMoutClass" onmousedown="listselect_mdown(this)" onclick="listselect_mclick(this, '@Url.Action("Confirm", new { ActionStatus = ActionStatus.Detail, operatorId = op.OperatorId })')">
+								<td align="center">@op.OperatorId</td>
+								<td align="left">&nbsp;@op.Name</td>
+								<td align="left">&nbsp;@(op.IsSuperUser(MenuAuthorityHelper.ManagerSiteType.Cms) ? Constants.STRING_SUPERUSER_NAME : op.IsInaccessibleUser(MenuAuthorityHelper.ManagerSiteType.Cms) ? Constants.STRING_UNACCESSABLEUSER_NAME : op.MenuAuthorityName)</td>
+								<td align="center">@ValueText.GetValueText(Constants.TABLE_SHOPOPERATOR, Constants.FIELD_SHOPOPERATOR_VALID_FLG, op.ValidFlg)</td>
+							</tr>
+						}
+						@if (string.IsNullOrEmpty(this.Model.ErrorMessage) == false)
+						{
+							<tr class="list_alert"><td colspan="4">@this.Model.ErrorMessage</td></tr>
+						}
+					</table>
+				</td>
+				</tr>
+				<tr>
+					<td>
+						<div class="action_part_bottom">
+						@TopButtomControls()
+						</div>
+					</td>
+				</tr>
+				@LayoutHelper.PaddingTr(10)
+			</table>
+		</td>
+		</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+	</td>
+	</tr>
+	<!--△ 一覧 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+

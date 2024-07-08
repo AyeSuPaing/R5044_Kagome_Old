@@ -1,0 +1,296 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+--Frontサイト注文完了メールの管理者向け配信可否設定
+INSERT w2_ConfigurationSetting
+(
+setting_key,
+read_kbn,
+setting_value,
+manageable_flg,
+last_changed 
+)
+VALUES
+(
+'ThanksMail_For_Operator_Enabled',
+'C200_CommonFront',
+'FALSE',
+'0',
+'w2abe'
+)
+
+--管理者向け注文完了メール配信メールテンプレート追加
+INSERT w2_MailTemplate
+(
+shop_id,
+mail_id,
+mail_name,
+mail_from,
+mail_to,
+mail_cc,
+mail_bcc,
+mail_subject,
+mail_body,
+mail_subject_mobile,
+mail_body_mobile,
+del_flg,
+last_changed
+)
+VALUES
+(
+'0',
+'00000051',
+'管理者向け注文完了通知メール',
+'pkg_mail@w2solution.co.jp',
+'pkg_mail@w2solution.co.jp',
+'',
+'',
+'【●●●●】[注文No.@@ order_id @@]御注文ありがとうございます。',
+'@@ owner_name @@ 様
+
+この度は、「●●●●」でお買い上げ頂き、誠にありがとうございます。
+下記にご注文内容をご連絡致します。ご確認くださいますようお願い致します。
+
+<@@OrderPaymentKbn:K10@@>
+カードでお支払い済みです。
+</@@OrderPaymentKbn:K10@@>
+<@@OrderPaymentKbn:K20@@>
+代金引換です。
+</@@OrderPaymentKbn:K20@@>
+<@@OrderPaymentKbn:K31@@>
+以下の情報からコンビニで前払いしてください。
+@@ payment_message_text @@
+</@@OrderPaymentKbn:K31@@>
+<@@OrderPaymentKbn:K41@@>
+以下のページから銀行振り込みしてください。
+@@ payment_message_text @@
+</@@OrderPaymentKbn:K41@@>
+
+お客様のご注文内容は以下のとおりです。
+
+■注文情報
+注文番号 : @@ order_id @@
+ご注文日時 : @@ order_date @@
+お支払方法 : @@ payment_name @@
+<@@UseShippingDate@@>
+配送希望日 : @@ shipping_date @@
+</@@UseShippingDate@@>
+<@@UseShippingTime@@>
+配送希望時間帯: @@ shipping_time @@
+</@@UseShippingTime@@>
+
+■注文メモ
+@@ memo @@
+
+■のしメモ
+@@ wrapping_memo @@
+
+■配送先
+〒@@ shipping_zip @@
+@@ shipping_addr1 @@@@ shipping_addr2 @@
+@@ shipping_addr3 @@@@ shipping_addr4 @@
+@@ shipping_name @@
+@@ shipping_name_kana @@
+@@ shipping_tel1 @@
+
+■商品明細
+@@ order_items @@
+────────────────────────
+小計 : \@@ order_price_subtotal @@
+配送料 : \@@ order_price_shipping @@
+決済手数料 : \@@ order_price_exchange @@
+注文合計 : \@@ order_price_total @@(税込み)
+
+─ 会員ランク Option ─
+会員ランク割引額 : \@@ member_rank_discount_price @@
+
+─ w2MarketingPlanner Point Option ─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント : @@ order_point_add @@ ポイント
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント : @@ order_point_use @@ ポイント
+ポイント利用額 : \@@ order_point_use_yen @@
+</@@UsePoint@@>
+
+※当サイトの会員のお客様は、サイト上から購入履歴を確認できます。
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─ w2MarketingPlanner Coupon Option ─
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード : @@ coupon_code @@
+クーポン名 : @@ coupon_disp_name @@
+クーポン割引額 : \@@ order_coupon_use @@
+</@@UseCoupon@@>
+
+またのご利用をお待ちしております。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは、配信専用のアドレスで配信されています。
+このメールに返信されても、返信内容の確認およびご返答ができません。
+あらかじめご了承下さい。
+このメールの内容についてのお問い合わせ、及び
+このメール内容に心あたりのない場合は、お手数ですが、
+下記の連絡先までメール、または電話でお願いします。
+
+●●●● 問い合わせ窓口
+Email: info@xxxxxx.xxx
+電 話: 03-3333-3333 ( 平日 10:00～20:00 )
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+'【●●●●】注文完了',
+'@@ owner_name @@ 様
+
+この度は、「●●●●」でお買い上げ頂き、誠にありがとうございます。
+
+<@@OrderPaymentKbn:K10@@>
+カードでお支払い済みです。
+</@@OrderPaymentKbn:K10@@>
+<@@OrderPaymentKbn:K20@@>
+代金引換です。
+</@@OrderPaymentKbn:K20@@>
+<@@OrderPaymentKbn:K31@@>
+コンビニで前払いしてください。
+@@ payment_message_text @@
+</@@OrderPaymentKbn:K31@@>
+<@@OrderPaymentKbn:K41@@>
+以下のページから銀行振り込みしてください。
+@@ payment_message_text @@
+</@@OrderPaymentKbn:K41@@>
+
+■注文番号
+@@ order_id @@
+
+■ご注文日時
+@@ order_date @@
+
+■お支払方法
+@@ payment_name @@
+
+<@@UseShippingDate@@>
+■配送希望日
+@@ shipping_date @@
+
+</@@UseShippingDate@@>
+<@@UseShippingTime@@>
+■配送希望時間帯
+@@ shipping_time @@
+
+</@@UseShippingTime@@>
+■配送先
+〒@@ shipping_zip @@
+@@ shipping_addr1 @@@@ shipping_addr2 @@
+@@ shipping_addr3 @@@@ shipping_addr4 @@
+@@ shipping_name @@
+@@ shipping_name_kana @@
+@@ shipping_tel1 @@
+
+■商品明細
+@@ order_items @@
+────────
+■小計
+\@@ order_price_subtotal @@
+■配送料
+\@@ order_price_shipping @@
+■決済手数料
+\@@ order_price_exchange @@
+■注文合計
+\@@ order_price_total @@
+
+※全て税込み金額
+
+─ 会員ランク Option ─
+会員ランク割引額 : \@@ member_rank_discount_price @@
+
+─w2MP PointOption─
+<@@OwnerKbnUser@@>
+<@@PublishPoint@@>
+取得ポイント: @@ order_point_add @@pt
+</@@PublishPoint@@>
+<@@UsePoint@@>
+利用ポイント: @@ order_point_use @@pt
+ポイント利用額: \@@ order_point_use_yen @@
+</@@UsePoint@@>
+</@@OwnerKbnUser@@>
+<@@OwnerKbnGuest@@>
+会員登録することでお得なポイントが発行されます。
+</@@OwnerKbnGuest@@>
+
+─w2MP CouponOption─
+<@@PublishCoupon@@>
+■クーポン発行
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseCoupon@@>
+■クーポン利用
+クーポンコード: @@ coupon_code @@
+クーポン名: @@ coupon_disp_name @@
+クーポン割引額: \@@ order_coupon_use @@
+</@@UseCoupon@@>
+
+今後とも「●●●●」をよろしくお願い致します。
+--------
+●●●● 問い合わせ窓口
+info@xxxxxx.xxx
+03-3333-3333
+(平日 10:00～20:00)
+--------',
+'0',
+'w2'
+)
+
+--在庫連携自動取り込み結果通知メール
+INSERT w2_MailTemplate
+(
+shop_id,
+mail_id,
+mail_name,
+mail_from,
+mail_to,
+mail_cc,
+mail_bcc,
+mail_subject,
+mail_body,
+mail_subject_mobile,
+mail_body_mobile,
+del_flg,
+last_changed
+)
+VALUES
+(
+'0',
+'10000011',
+'在庫連携バッチ完了メール',
+'pkg_mail@w2solution.co.jp',
+'pkg_mail@w2solution.co.jp',
+'',
+'',
+'【在庫連携バッチ】[@@ result @@]@@ master_name @@取込処理完了',
+'マスタ種別「@@ master_name @@」の 取込に@@ result @@しました。
+
+ファイル：@@ file_name @@
+
+@@ message @@',
+'',
+'',
+'0',
+'w2'
+)
+
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

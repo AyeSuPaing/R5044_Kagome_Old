@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+-- w2_OrderItem.item_price_tax 明細金額（税金額)
+-- 更新
+UPDATE w2_OrderItem SET w2_OrderItem.item_price_tax = [dbo].[w2_GetTaxPrice](product_price, product_tax_rate, product_tax_round_type, product_tax_included_flg) * item_quantity;
+
+--受注情報の価格と税率から、税率毎価格情報テーブルデータを作成してINSERT
+DELETE w2_OrderPriceByTaxRate
+INSERT INTO w2_OrderPriceByTaxRate
+SELECT 
+	priceInfoAfterDiscount.orderId, 
+	orderItem.product_tax_rate,
+	priceInfoAfterDiscount.[priceSubtotal], 
+	priceInfoAfterDiscount.[priceShipping], 
+	priceInfoAfterDiscount.[pricePayment],
+	(priceInfoAfterDiscount.[priceSubtotal] + priceInfoAfterDiscount.[priceShipping] + priceInfoAfterDiscount.[pricePayment]) ,
+	[dbo].[w2_GetTaxPrice](
+		(priceInfoAfterDiscount.[priceSubtotal] + priceInfoAfterDiscount.[priceShipping] + priceInfoAfterDiscount.[pricePayment]) ,
+		orderItem.product_tax_rate, 
+		orderItem.product_tax_round_type, 
+		orderItem.product_tax_included_flg
+	),
+	GetDate(),
+	GetDate()
+FROM 
+(
+	SELECT 
+		priceInfoByPriceTypeForCalcRegulationFraction.orderId,
+		priceInfoByPriceTypeForCalcRegulationFraction.priceType,
+		priceInfoByPriceTypeForCalcRegulationFraction.value +
+			CASE 
+				WHEN rowNum = 1 
+					THEN ISNULL(priceInfoByPriceTypeForCalcRegulationFraction.regulationPrice, 0)
+						+ (priceInfoByPriceTypeForCalcRegulationFraction.totalRegulation - SUM(ISNULL(priceInfoByPriceTypeForCalcRegulationFraction.regulationPrice, 0)) OVER(partition by priceInfoByPriceTypeForCalcRegulationFraction.orderId))
+				ELSE 
+						ISNULL(priceInfoByPriceTypeForCalcRegulationFraction.regulationPrice, 0)
+			END AS priceAfterDiscount	--割引按分適用後の商品価格・配送料・決済手数料(端数処理後)
+	FROM
+	(
+		SELECT 
+			priceInfoByPriceType.orderId,
+			priceType priceType,
+			value,
+			priceInfoByPriceType.priceRegulation AS totalRegulation,
+			SUM(value) over (partition by priceInfoByPriceType.orderId) AS discountedPriceTotal, 
+			ROW_NUMBER() OVER(PARTITION BY priceInfoByPriceType.orderId ORDER BY value desc) AS rowNum,	--商品小計・配送料・決済手数料の価格順位
+			CEILING(priceInfoByPriceType.priceRegulation * value / NULLIF(SUM(value) over (partition by priceInfoByPriceType.orderId), 0)) AS regulationPrice	--商品小計・配送料・決済手数料にかかる調整金額(端数処理前)
+		FROM 
+		(
+			SELECT
+			w2_Order.order_id AS orderId,
+			CONvert(decimal(18,3), w2_Order.order_price_subtotal - 
+				(
+				order_point_use_yen 
+					+ (CASE WHEN w2_OrderCoupon.coupon_type IN('06', '08', '31', '42', '44') THEN 0 ELSE w2_Order.order_coupon_use END)
+					+ member_rank_discount_price
+					+ setpromotion_product_discount_amount
+					+ fixed_purchase_discount_price
+					+ fixed_purchase_member_discount_amount
+				))AS priceSubtotal,								--調整金額以外の割引を適用した商品小計
+			CONvert(decimal(18,3), w2_Order.order_price_shipping - 
+				(
+				setpromotion_shipping_charge_discount_amount
+					+ (CASE WHEN w2_OrderCoupon.coupon_type IN('06', '08', '31', '42', '44') THEN w2_Order.order_coupon_use ELSE 0 END)
+				))AS priceShipping,								--調整金額以外の割引を適用した配送料
+			CONvert(decimal(18,3), w2_Order.order_price_exchange -
+				setpromotion_payment_charge_discount_amount
+				) AS pricePayment,								--調整金額以外の割引を適用した決済手数料
+			w2_Order.order_price_regulation AS priceRegulation	--調整金額
+			FROM w2_Order
+			LEFT JOIN w2_OrderCoupon
+			ON w2_Order.order_id = w2_OrderCoupon.order_id
+		) priceInfoWithDiscount
+		UNPIVOT 
+		(
+			value for priceType IN 
+			(
+				priceSubtotal
+				,priceShipping
+				,pricePayment
+			)
+		) priceInfoByPriceType
+	) priceInfoByPriceTypeForCalcRegulationFraction
+) priceInfoByPriceTypeAfterDiscount
+PIVOT (SUM(priceAfterDiscount) for priceType IN ([priceSubtotal], [priceShipping], [pricePayment])) AS priceInfoAfterDiscount
+INNER JOIN
+(
+	SELECT 
+	*,
+	ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY date_created) AS rowId
+	FROM w2_OrderItem 
+	WHERE product_bundle_id = ''
+) AS orderItem
+ON priceInfoAfterDiscount.orderId = orderItem.order_id
+WHERE orderItem.rowId = 1
+
+--受注商品情報の税率から、配送料税率と決済手数料税率を更新
+UPDATE w2_Order set shipping_tax_rate = orderItem.product_tax_rate, payment_tax_rate = orderItem.product_tax_rate
+FROM w2_Order
+INNER JOIN
+(
+	SELECT 
+	*,
+	ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY date_created) AS rowId
+	FROM w2_OrderItem 
+	WHERE product_bundle_id = ''
+) AS orderItem
+ON w2_Order.order_id = orderItem.order_id
+WHERE orderItem.rowId = 1
+
+
+--税率毎価格情報の税額から、受注消費税額を更新
+UPDATE w2_Order set order_price_tax = w2_OrderPriceByTaxRate.tax_price_by_rate
+FROM w2_Order
+INNER JOIN w2_OrderPriceByTaxRate
+on w2_Order.order_id = w2_OrderPriceByTaxRate.order_id
+
+
+--受注商品情報の税額の合計から、商品小計税額を更新
+UPDATE w2_Order set order_price_subtotal_tax = itemPriceTaxSubtotal.taxPrice
+FROM w2_Order
+INNER JOIN 
+(
+	SELECT order_id, SUM(item_price_tax) taxPrice
+	FROM w2_OrderItem
+	group by order_id
+) AS itemPriceTaxSubtotal
+on w2_Order.order_id = itemPriceTaxSubtotal.order_id
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

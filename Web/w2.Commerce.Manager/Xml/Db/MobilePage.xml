@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モバイルページ系SQLステートメントXML(MobilePage.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MobilePage>
+
+  <!-- モバイルページ一覧取得 -->
+  <GetMobilePageList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_MobilePage.page_id), 0)
+          FROM  w2_MobilePage
+                [[ MOBILEPAGE_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_MobilePage.dept_id,
+                w2_MobilePage.page_id,
+                w2_MobilePage.career_id,
+                w2_MobilePage.mobile_group_id,
+                w2_MobilePage.brand_id,
+                ISNULL(MobileGroup.mobile_group_name, '') AS mobile_group_name,
+                w2_MobilePage.page_name,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_MobilePage.dept_id,
+                          w2_MobilePage.page_id,
+                          w2_MobilePage.career_id,
+                          w2_MobilePage.mobile_group_id,
+                          w2_MobilePage.brand_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MOBILEPAGE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MobilePage
+                          [[ MOBILEPAGE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_MobilePage ON
+                (
+                  RowIndex.dept_id = w2_MobilePage.dept_id
+                  AND
+                  RowIndex.page_id = w2_MobilePage.page_id
+                  AND
+                  RowIndex.career_id = w2_MobilePage.career_id
+                  AND
+                  RowIndex.mobile_group_id = w2_MobilePage.mobile_group_id
+                  AND
+                  RowIndex.brand_id = w2_MobilePage.brand_id
+                )
+                LEFT JOIN
+                (
+                  SELECT  w2_MobileGroup.dept_id, w2_MobileGroup.career_id, w2_MobileGroup.mobile_group_id, w2_MobileGroup.mobile_group_name 
+                    FROM  w2_MobileGroup 
+                    GROUP BY  w2_MobileGroup.dept_id, w2_MobileGroup.career_id, w2_MobileGroup.mobile_group_id, w2_MobileGroup.mobile_group_name
+                ) AS MobileGroup
+                ON
+                (
+                  w2_MobilePage.dept_id = MobileGroup.dept_id
+                  AND
+                  w2_MobilePage.career_id = MobileGroup.career_id
+                  AND
+                  w2_MobilePage.mobile_group_id = MobileGroup.mobile_group_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="page_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="page_name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetMobilePageList>
+
+  <!-- モバイルページ全一覧取得(XML作成用) -->
+  <GetMobilePageAllList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MobilePage.*
+          FROM  w2_MobilePage
+                [[ MOBILEPAGE_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="page_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="page_name_like_escaped" Type="nvarchar" Size="60" />
+    </Parameter>
+  </GetMobilePageAllList>
+  
+  <!-- モバイルページ設定取得 -->
+  <GetMobilePage>
+    <Statement>
+      <![CDATA[      
+        SELECT  *
+          FROM  w2_MobilePage
+         WHERE  dept_id = @dept_id
+           AND  page_id = @page_id
+           AND  career_id = @career_id
+           AND  mobile_group_id = @mobile_group_id
+           AND  brand_id = @brand_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="page_id" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_group_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMobilePage>
+
+  <!-- モバイルページ挿入 -->
+  <InsertMobilePage>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_MobilePage
+                (
+                  dept_id,
+                  page_id,
+                  page_name,
+                  career_id,
+                  mobile_group_id,
+                  brand_id,
+                  html,
+                  last_changed
+                )
+        VALUES  (
+                  @dept_id,
+                  @page_id,
+                  @page_name,
+                  @career_id,
+                  @mobile_group_id,
+                  @brand_id,
+                  @html,
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="page_id" Type="nvarchar" Size="30" />
+      <Input Name="page_name" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_group_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="html" Type="ntext" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertMobilePage>
+
+  <!-- モバイルページ更新 -->
+  <UpdateMobilePage>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MobilePage
+           SET  page_id = @page_id,
+                page_name = @page_name,
+                career_id = @career_id,
+                mobile_group_id = @mobile_group_id,
+                brand_id = @brand_id,
+                html = @html,
+                date_changed = getdate(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  page_id = @page_id_old
+           AND  career_id = @career_id_old
+           AND  mobile_group_id = @mobile_group_id_old
+           AND  brand_id = @brand_id_old
+      ]]>
+      </Statement>
+      <Parameter>
+        <Input Name="dept_id" Type="nvarchar" Size="30" />
+        <Input Name="page_id" Type="nvarchar" Size="30" />
+        <Input Name="html" Type="ntext" />
+        <Input Name="career_id" Type="nvarchar" Size="10" />
+        <Input Name="mobile_group_id" Type="nvarchar" Size="30" />
+        <Input Name="brand_id" Type="nvarchar" Size="30" />
+        <Input Name="page_name" Type="nvarchar" Size="30" />
+        <Input Name="last_changed" Type="nvarchar" Size="20" />
+        <Input Name="page_id_old" Type="nvarchar" Size="30" />
+        <Input Name="career_id_old" Type="nvarchar" Size="30" />
+        <Input Name="mobile_group_id_old" Type="nvarchar" Size="30" />
+        <Input Name="brand_id_old" Type="nvarchar" Size="30" />
+      </Parameter>
+    </UpdateMobilePage>
+
+    <!-- モバイルページ削除 -->
+    <DeleteMobilePage>
+      <Statement>
+        <![CDATA[      
+        DELETE
+          FROM  w2_MobilePage
+         WHERE  dept_id = @dept_id
+           AND  page_id = @page_id
+           AND  career_id = @career_id
+           AND  mobile_group_id = @mobile_group_id
+           AND  brand_id = @brand_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="page_id" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_group_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteMobilePage>
+
+  <!-- モバイルページ挿入/更新 (XML反映用) -->
+  <InsertUpdateMobilePage>
+    <Statement>
+      <![CDATA[
+        DECLARE @counts int
+        SELECT  @counts = COUNT(mobile_group_id)
+          FROM  w2_MobilePage
+         WHERE  dept_id = @dept_id
+           AND  page_id = @page_id
+           AND  career_id = @career_id
+           AND  mobile_group_id = @mobile_group_id
+           AND  brand_id = @brand_id
+      
+        IF @counts = 0  
+        BEGIN
+          INSERT  w2_MobilePage
+                  (
+                    dept_id,
+                    page_id,
+                    page_name,
+                    career_id,
+                    mobile_group_id,
+                    brand_id,
+                    html,
+                    last_changed
+                  )
+          VALUES  (
+                    @dept_id,
+                    @page_id,
+                    @page_name,
+                    @career_id,
+                    @mobile_group_id,
+                    @brand_id,
+                    @html,
+                    @last_changed
+                  )
+        END
+        ELSE
+        BEGIN
+          UPDATE  w2_MobilePage
+             SET  page_name = @page_name,
+                  career_id = @career_id,
+                  mobile_group_id = @mobile_group_id,
+                  brand_id = @brand_id,
+                  html = @html,
+                  date_changed = getdate(),
+                  last_changed = @last_changed
+           WHERE  dept_id = @dept_id
+             AND  page_id = @page_id
+             AND  career_id = @career_id
+             AND  mobile_group_id = @mobile_group_id
+             AND  brand_id = @brand_id
+        END
+
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="page_id" Type="nvarchar" Size="30" />
+      <Input Name="html" Type="ntext" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_group_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="page_name" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertUpdateMobilePage>
+
+  <!-- 重複チェック（モバイルページ登録時） -->
+  <CheckDuplicationInsertPageId>
+    <Statement>
+      <![CDATA[
+          SELECT 
+              COUNT(page_id) AS page_count 
+          FROM 
+              w2_MobilePage 
+          WHERE 
+              w2_MobilePage.dept_id = @dept_id 
+          AND 
+              w2_MobilePage.page_id = @page_id 
+          AND 
+              w2_MobilePage.career_id = @career_id
+          AND 
+              w2_MobilePage.mobile_group_id = @mobile_group_id
+          AND 
+              w2_MobilePage.brand_id = @brand_id
+              ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="page_id" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_group_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationInsertPageId>
+
+  <!-- 重複チェック（モバイルページ更新時） -->
+  <CheckDuplicationUpdatePageId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(page_id) AS page_count 
+          FROM  w2_MobilePage 
+         WHERE  w2_MobilePage.dept_id = @dept_id 
+           AND  w2_MobilePage.page_id = @page_id 
+           AND  w2_MobilePage.career_id = @career_id
+           AND  w2_MobilePage.mobile_group_id = @mobile_group_id
+           AND  w2_MobilePage.brand_id = @brand_id
+           AND
+             (
+               w2_MobilePage.page_id != @page_id_old
+               OR
+               w2_MobilePage.career_id != @career_id_old
+               OR
+               w2_MobilePage.mobile_group_id != @mobile_group_id_old
+               OR
+               w2_MobilePage.brand_id != @brand_id_old
+              )    
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="page_id" Type="nvarchar" Size="30" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_group_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="page_id_old" Type="nvarchar" Size="30" />
+      <Input Name="career_id_old" Type="nvarchar" Size="10" />
+      <Input Name="mobile_group_id_old" Type="nvarchar" Size="30" />
+      <Input Name="brand_id_old" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationUpdatePageId>
+
+</MobilePage>

@@ -1,0 +1,119 @@
+﻿@*
+=========================================================================================================
+  Module      : レイアウト編集 共通JS(パーシャルビュー)(_LayoutEditCommonJs.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using w2.Cms.Manager.Codes
+<script type="text/javascript">
+	/**
+	* 入力データにパーツ配置情報を追加
+	* param {} requestDate 入力データ
+	* param {} pushName 対象レイアウト位置
+	* param {} pushPartsIdList 対象のパーツ一覧
+	*/
+	function set_layout_parts_request_data(formData, pushName, pushPartsIdList) {
+		for (var i = 0; i < pushPartsIdList.length; i++) {
+			if (pushPartsIdList[i] != "") {
+				formData.append(pushName + "[" + i + "]", pushPartsIdList[i]);
+			}
+		}
+	}
+
+	var partsTimer;
+	/**
+	* パーツIDを指定してパーツ表示
+	* param {} partsId  
+	*/
+	function open_parts(partsId) {
+		clearInterval(partsTimer);
+
+		var defaultDisplayDevice = "PC";
+		if ($('.tab.is-active').data('tab-content-selector').indexOf("#tab-sp") !== -1) {
+			defaultDisplayDevice = "SP"
+		}
+
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("ModalPartsEdit", Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)",
+			data: {
+				'partsId': partsId,
+				'defaultDisplayDevice': defaultDisplayDevice
+			}
+		}).done(function (viewHTML) {
+			checkOtherOperatorFileOpening('partsId' + partsId).done(function(result) {
+				$('#partsContentDetailUpdateButton').attr('disabled', false);
+				if (result !== "") {
+					notification.show(result, 'warning', 'fixed');
+					$('#partsContentDetailUpdateButton').attr('disabled', true);
+				} else {
+					sendOpeningFileName('partsId' + partsId);
+					partsTimer = setInterval(function () { sendOpeningFileName('partsId' + partsId) }, 50 * 1000);
+				}
+			});
+			$("#parts_modal_content_detail").html(viewHTML);
+			setTimeout(function() {
+				modal.open('#modal-parts-edit', 'modal-size-l modal-parts-edit', 'console.log(0)');
+				},
+				500);
+			setTimeout(function() {
+					$('.js-modal-close-btn').each(function() {
+						$(this).on('click',
+							function() {
+								clearInterval(partsTimer);
+							});
+					});
+				},
+				550);
+		}).fail(function() {
+		});
+	}
+
+	/**
+	* パーツのプレビュー表示
+	* param {} partsId  
+	*/
+	function previewParts(partsId) {
+		loading_animation.start();
+		var url = "";
+		var windowSize = "";
+
+		if ($('.tab.is-active').data('tab-content-selector').indexOf("#tab-pc") !== -1) {
+			url = "@Url.Action("PreviewPartsPcByPartsId", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)";
+			windowSize = "";
+		} else {
+			url = "@Url.Action("PreviewPartsSpByPartsId", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)";
+			windowSize = "width=450,height=800";
+		}
+		$.ajax({
+			type: "POST",
+			url: url,
+			data: { 'partsId': partsId }
+		}).done(function(url) {
+			setTimeout(function() {
+					loading_animation.end();
+					open_window(url, 'preview', windowSize);
+				},
+				1500);
+		}).fail(function() {
+		});
+	}
+
+	/**
+	 * 配置パーツの削除
+	 * param {} self 配置パーツ
+	 */
+	function placement_parts_remove(self) {
+		$(self).closest('.dd-parts-list-item').remove();
+	}
+
+	/**
+	* リセット
+	* param {} partsId 対象パーツID
+	*/
+	function parts_main_content_detail_reset(partsId) {
+		open_parts(partsId);
+	}
+</script>

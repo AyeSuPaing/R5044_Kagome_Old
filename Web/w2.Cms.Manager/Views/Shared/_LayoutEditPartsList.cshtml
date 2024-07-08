@@ -1,0 +1,60 @@
+﻿@*
+=========================================================================================================
+  Module      : レイアウト編集 パーツ一覧(パーシャルビュー)(_LayoutEditPartsList.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common
+@using w2.Common.Util
+@model w2.Cms.Manager.ViewModels.PartsDesign.GroupListViewModel
+<div class="layout-edit-parts-list custom-scroll-area">
+	<div class="dd-parts-list">
+		@foreach (var groupModel in Model.GroupPartsViewModels)
+		{
+			<div class="dd-parts-list-group-title">
+				@groupModel.GroupName
+			</div>
+			foreach (var partsModel in groupModel.ListPartsViewModels)
+			{
+				if ((partsModel.IsCustomParts == false)
+					&& (partsModel.PcRealParts.StandardPartsSetting != null)
+					&& (partsModel.PcRealParts.StandardPartsSetting.LayoutAble == false))
+				{
+					continue;
+				}
+				<div class="dd-parts-list-item" data-parts-id="@partsModel.PartsId">
+					<div class="dd-parts-list-item-inner">
+						<div class="dd-parts-list-item-handle">
+							<span class="icon icon-drag"></span>
+						</div>
+						<div class="dd-parts-list-item-name">@partsModel.ManagementTitle</div>
+						<div class="dd-parts-list-item-btns">
+							<div class="dd-parts-list-item-preview-btn">
+								<a href="javascript:void(0);" onclick="previewParts(@partsModel.PartsId);">
+									<span class="icon icon-preview"></span>
+								</a>
+							</div>
+							<div class="dd-parts-list-item-edit-btn">
+								<a href="javascript:void(0);" onclick="open_parts(@partsModel.PartsId);">
+									<span class="icon icon-pencil"></span>
+								</a>
+							</div>
+							<div class="dd-parts-list-item-edit-btn dd-parts-list-item-close-btn" style="display: none;">
+								<a href="javascript:void(0);" onclick="placement_parts_remove(this);">
+									<span class="icon icon-close"></span>
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			}
+		}
+	</div>
+</div>
+<script type="text/javascript">
+	$(function() {
+		parts.ini();
+		custom_scroll.ini();
+	});
+</script>

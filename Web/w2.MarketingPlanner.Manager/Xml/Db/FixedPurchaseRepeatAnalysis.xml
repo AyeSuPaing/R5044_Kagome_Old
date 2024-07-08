@@ -1,0 +1,707 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期継続分析系SQLステートメントXML (FixedPurchaseRepeatAnalysis.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchaseRepeatAnalysis>
+
+  <!-- 定期継続分析レポートデータ取得 -->
+  <GetReportData>
+    <Statement>
+      <![CDATA[
+        ;WITH target_data AS
+        (
+          SELECT
+                  w2_FixedPurchaseRepeatAnalysis.user_id,
+                  w2_FixedPurchaseRepeatAnalysis.product_id,
+                  w2_FixedPurchaseRepeatAnalysis.variation_id,
+                  w2_FixedPurchaseRepeatAnalysis.count,
+                  w2_FixedPurchaseRepeatAnalysis.status
+            FROM
+                  w2_FixedPurchaseRepeatAnalysis
+                  LEFT JOIN w2_FixedPurchaseRepeatAnalysis AS copyTable ON
+                  (
+                    w2_FixedPurchaseRepeatAnalysis.product_id = copyTable.product_id
+                    AND
+                    w2_FixedPurchaseRepeatAnalysis.variation_id = copyTable.variation_id
+                    AND
+                    w2_FixedPurchaseRepeatAnalysis.count = copyTable.count
+                    AND
+                    w2_FixedPurchaseRepeatAnalysis.user_id = copyTable.user_id
+                    AND
+                    w2_FixedPurchaseRepeatAnalysis.data_no <> copyTable.data_no
+                  )
+                  LEFT JOIN w2_Order ON
+                  (
+                    IIF(w2_FixedPurchaseRepeatAnalysis.order_id = '', copyTable.order_id, w2_FixedPurchaseRepeatAnalysis.order_id) = w2_Order.order_id
+                  )
+           WHERE
+                  ( @product_id_like_escaped = '' OR w2_FixedPurchaseRepeatAnalysis.product_id LIKE @product_id_like_escaped + '%' ESCAPE '#' )
+             AND  ( @variation_id_like_escaped = '' OR w2_FixedPurchaseRepeatAnalysis.variation_id LIKE @variation_id_like_escaped + '%' ESCAPE '#' )
+             AND  ( w2_Order.subscription_box_course_id = '' )
+        ), target_data_plan AS
+        (
+          SELECT
+                  target_data.user_id,
+                  target_data.product_id,
+                  target_data.variation_id
+            FROM
+                  target_data
+           WHERE
+                  target_data.status = '00'
+             AND  NOT EXISTS ( SELECT * FROM target_data tmp WHERE tmp.user_id = target_data.user_id AND tmp.product_id = target_data.product_id AND tmp.variation_id = target_data.variation_id AND tmp.status = '10' )
+        GROUP BY
+                  target_data.user_id,
+                  target_data.product_id,
+                  target_data.variation_id
+        ), target_data_other AS
+        (
+          SELECT
+                  target_data.user_id,
+                  target_data.product_id,
+                  target_data.variation_id,
+                  target_data.count,
+                  target_data.status,
+                  MAX(target_data.count) OVER (PARTITION BY  target_data.user_id, target_data.product_id, target_data.variation_id) AS max_count
+            FROM
+                  target_data
+           WHERE
+                  target_data.status <> '00'
+        ), contents_data AS
+        (
+          SELECT
+                  target_data_other.product_id,
+                  target_data_other.variation_id,
+                  target_data_other.count,
+                  target_data_other.status,
+                  COUNT(target_data_other.user_id) AS user_count
+            FROM
+                  target_data_other
+        GROUP BY
+                  target_data_other.product_id,
+                  target_data_other.variation_id,
+                  target_data_other.count,
+                  target_data_other.status
+         UNION ALL
+          SELECT
+                  target_data_plan.product_id,
+                  target_data_plan.variation_id,
+                  ISNULL(target_data_other.max_count, 0) + 1 AS count,
+                  '00' AS status,
+                  COUNT(DISTINCT target_data_plan.user_id) AS user_count
+            FROM
+                  target_data_plan
+       LEFT JOIN
+                  target_data_other ON ( target_data_other.user_id = target_data_plan.user_id AND target_data_other.product_id = target_data_plan.product_id AND target_data_other.variation_id = target_data_plan.variation_id )
+        GROUP BY
+                  target_data_plan.product_id,
+                  target_data_plan.variation_id,
+                  ISNULL(target_data_other.max_count, 0) + 1
+        )
+
+        SELECT
+                contents_data.product_id,
+                contents_data.variation_id,
+                ISNULL(w2_Product.name, '') AS name,
+                ISNULL(w2_ProductVariation.variation_name1, '') AS variation_name1,
+                ISNULL(w2_ProductVariation.variation_name2, '') AS variation_name2,
+                contents_data.count,
+                contents_data.status,
+                contents_data.user_count
+          FROM
+                contents_data
+     LEFT JOIN
+                w2_Product
+                ON (w2_Product.shop_id = '0' AND w2_Product.product_id = contents_data.product_id )
+     LEFT JOIN
+                w2_ProductVariation
+                ON (w2_ProductVariation.shop_id = '0' AND w2_ProductVariation.product_id = contents_data.product_id AND w2_ProductVariation.variation_id = contents_data.variation_id )
+      ORDER BY
+                contents_data.product_id,
+                contents_data.variation_id,
+                contents_data.count
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="variation_id_like_escaped" Type="nvarchar" Size="120" />
+    </Parameter>
+  </GetReportData>
+
+  <!-- データ取得 (LTVレポート) -->
+  <GetLtvReportData>
+    <Statement>
+      <![CDATA[
+        -- ダーティリードを許可して共有ロックを掛けなくする
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        ;WITH TargetData AS
+        (
+          SELECT  DATEPART(YEAR, w2_FixedPurchase.fixed_purchase_date_bgn) AS tgt_year,
+                  DATEPART(MONTH, w2_FixedPurchase.fixed_purchase_date_bgn) AS tgt_month,
+                  w2_FixedPurchase.fixed_purchase_id,
+                  w2_FixedPurchase.fixed_purchase_date_bgn,
+                  w2_OrderItem.shop_id,
+                  w2_OrderItem.product_id,
+                  w2_OrderItem.variation_id,
+                  w2_Order.order_id,
+                  @date_from AS target_date_from
+            FROM  w2_FixedPurchase
+                  INNER JOIN w2_Order ON
+                  (
+                    w2_Order.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                  )
+                  INNER JOIN w2_OrderItem ON
+                  (
+                    w2_OrderItem.order_id = w2_Order.order_id
+                  )
+                  INNER JOIN w2_User ON
+                  (
+                    w2_User.user_id = w2_FixedPurchase.user_id
+                  )
+                  LEFT JOIN w2_UserExtend ON
+                  (
+                    w2_UserExtend.user_id = w2_User.user_id
+                  )
+                  INNER JOIN w2_ProductView ON
+                  (
+                    w2_ProductView.shop_id = w2_OrderItem.shop_id
+                    AND
+                    w2_ProductView.product_id = w2_OrderItem.product_id
+                    AND
+                    w2_ProductView.variation_id = w2_OrderItem.variation_id
+                  )
+           WHERE  w2_FixedPurchase.fixed_purchase_status NOT IN ('31','01')  -- 定期購入ステータス（仮登録キャンセル、仮登録）
+             AND  w2_FixedPurchase.fixed_purchase_date_bgn >= @date_from
+             AND  w2_FixedPurchase.fixed_purchase_date_bgn <= @date_to
+             AND  w2_FixedPurchase.subscription_box_course_id = ''
+             <@@hasval:order_payment_kbn@@>
+             -- 決済種別
+             AND  w2_Order.order_payment_kbn = @order_payment_kbn
+             </@@hasval:order_payment_kbn@@>
+             <@@hasval:advcode_like_escaped@@>
+             -- 広告コード
+             AND  (
+                    (
+                      w2_Order.advcode_new <> ''
+                      AND
+                      w2_Order.advcode_new LIKE '%' + @advcode_like_escaped + '%' ESCAPE '#'
+                    )
+                    OR
+                    (
+                      w2_Order.advcode_first <> ''
+                      AND
+                      w2_Order.advcode_first LIKE '%' + @advcode_like_escaped + '%' ESCAPE '#'
+                    )
+                  )
+             </@@hasval:advcode_like_escaped@@>
+             <@@hasval:advcode_media_type_id@@>
+             -- 広告媒体区分
+             AND  EXISTS
+                  (
+                    SELECT  w2_AdvCode.advertisement_code
+                      FROM  w2_AdvCode
+                            INNER JOIN w2_AdvCodeMediaType ON
+                            (
+                              w2_AdvCodeMediaType.advcode_media_type_id = w2_AdvCode.advcode_media_type_id
+                            )
+                     WHERE  w2_AdvCode.advcode_media_type_id = @advcode_media_type_id
+                       AND  (
+                              w2_AdvCode.advertisement_code = w2_Order.advcode_first
+                              OR
+                              w2_AdvCode.advertisement_code = w2_Order.advcode_new
+                            )
+                  )
+             </@@hasval:advcode_media_type_id@@>
+             <@@hasval:user_extend_flg@@>
+             -- ユーザー拡張項目
+             AND  (
+                    <@@val:user_extend_flg:1@@>
+                      <@@hasnoval:user_extend_like_escaped@@>
+                        (
+                          @@ user_extend_field_name @@ <> ''
+                          AND
+                          @@ user_extend_field_name @@ IS NOT NULL
+                        )
+                      </@@hasnoval:user_extend_like_escaped@@>
+                      <@@hasval:user_extend_like_escaped@@>
+                        <@@val:user_extend_type:TB@@>
+                          @@ user_extend_field_name @@ LIKE '%' + @user_extend_like_escaped + '%' ESCAPE '#'
+                        </@@val:user_extend_type:TB@@>
+                        <@@val:user_extend_type:CB@@>
+                          (
+                            -- 1カラムに複数の値が格納されている場合にもマッチングさせる
+                            @@ user_extend_field_name @@ = @user_extend_like_escaped
+                            OR
+                            @@ user_extend_field_name @@ LIKE '%,' + @user_extend_like_escaped + ',%' ESCAPE '#'
+                            OR
+                            @@ user_extend_field_name @@ LIKE + @user_extend_like_escaped + ',%' ESCAPE '#'
+                            OR
+                            @@ user_extend_field_name @@ LIKE '%,' + @user_extend_like_escaped ESCAPE '#'
+                          )
+                        </@@val:user_extend_type:CB@@>
+                        <@@val:user_extend_type:DDL,RB@@>
+                          (
+                            @@ user_extend_field_name @@ = @user_extend_like_escaped
+                          )
+                        </@@val:user_extend_type:DDL,RB@@>
+                      </@@hasval:user_extend_like_escaped@@>
+                    </@@val:user_extend_flg:1@@>
+                    <@@val:user_extend_flg:0@@>
+                      (
+                        @@ user_extend_field_name @@ = ''
+                        OR
+                        @@ user_extend_field_name @@ IS NULL
+                      )
+                    </@@val:user_extend_flg:0@@>
+                  )
+             </@@hasval:user_extend_flg@@>
+             <@@hasval:product_id_flg@@>
+             -- 商品ID
+               <@@val:product_id_flg:0@@>
+                 <@@hasval:product_id_like_escaped@@>
+                   AND w2_ProductView.product_id LIKE @product_id_like_escaped + '%' ESCAPE '#'
+                 </@@hasval:product_id_like_escaped@@>
+               </@@val:product_id_flg:0@@>
+               <@@val:product_id_flg:1@@>
+                 AND w2_ProductView.product_id IN (@@ multi_product_ids @@)
+               </@@val:product_id_flg:1@@>
+             </@@hasval:product_id_flg@@>
+             <@@hasval:variation_id_like_escaped@@>
+             -- バリエーションID
+             AND  w2_ProductView.variation_id LIKE @variation_id_like_escaped + '%' ESCAPE '#'
+             </@@hasval:variation_id_like_escaped@@>
+        ), TargetDetailData AS
+        (
+          SELECT  tgt_year,
+                  tgt_month,
+                  shop_id,
+                  product_id,
+                  variation_id,
+                  SUM(order_count) AS order_count,
+                  SUM(fixed_purchase_cancel) AS fixed_purchase_cancel,
+                  SUM(fixed_purchase_count) AS fixed_purchase_count,
+                  CAST(SUM(order_price_subtotal) AS DECIMAL(18,3)) AS order_price_subtotal,
+                  order_date
+            FROM  (
+                    (
+                      -- For order fixed purchase
+                      SELECT  TargetData.tgt_year,
+                              TargetData.tgt_month,
+                              TargetData.shop_id,
+                              TargetData.product_id,
+                              TargetData.variation_id,
+                              COUNT(DISTINCT(w2_Order.order_id)) AS order_count,
+                              0 AS fixed_purchase_cancel,
+                              COUNT(DISTINCT(w2_Order.fixed_purchase_id)) AS fixed_purchase_count,
+                              CAST(SUM(w2_Order.order_price_subtotal) AS DECIMAL(18,3)) AS order_price_subtotal,
+                              EOMONTH(w2_Order.order_date, 0) AS order_date
+                        FROM  w2_Order
+                              INNER JOIN TargetData ON
+                              (
+                                w2_Order.fixed_purchase_id = TargetData.fixed_purchase_id
+                                AND
+                                w2_Order.order_id = TargetData.order_id
+                              )
+                       WHERE  w2_Order.return_exchange_kbn = '00' -- 交換・返品以外
+                         AND  w2_Order.order_status NOT IN ('TMP', 'TMP_CNSL', 'ODR_CNSL')  -- 注文ステータス（仮注文、仮注文キャンセル、キャンセル以外）
+                         AND  w2_Order.subscription_box_course_id = ''
+                      GROUP BY TargetData.tgt_year,
+                               TargetData.tgt_month,
+                               TargetData.shop_id,
+                               TargetData.product_id,
+                               TargetData.variation_id,
+                               EOMONTH(w2_Order.order_date, 0)
+                    )
+                    UNION ALL
+                    (
+                      -- For fixed purchase cancel
+                      SELECT  TargetData.tgt_year,
+                              TargetData.tgt_month,
+                              TargetData.shop_id,
+                              TargetData.product_id,
+                              TargetData.variation_id,
+                              0 AS order_count,
+                              COUNT(DISTINCT(w2_FixedPurchase.fixed_purchase_id)) AS fixed_purchase_cancel,
+                              0 AS fixed_purchase_count,
+                              CAST(0 AS DECIMAL(18,3)) AS order_price_subtotal,
+                              EOMONTH(w2_FixedPurchase.cancel_date, 0) AS order_date
+                        FROM  w2_FixedPurchase
+                              INNER JOIN w2_FixedPurchaseItem ON
+                              (
+                                w2_FixedPurchaseItem.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                              )
+                              INNER JOIN TargetData ON
+                              (
+                                TargetData.shop_id = w2_FixedPurchaseItem.shop_id
+                                AND
+                                TargetData.product_id = w2_FixedPurchaseItem.product_id
+                                AND
+                                TargetData.variation_id = w2_FixedPurchaseItem.variation_id
+                                AND
+                                w2_FixedPurchaseItem.fixed_purchase_id = TargetData.fixed_purchase_id
+                              )
+                       WHERE  w2_FixedPurchase.fixed_purchase_status = '30'  -- 定期購入ステータス（仮登録キャンセル）
+                         AND  w2_FixedPurchase.cancel_date IS NOT NULL
+                         AND  w2_FixedPurchase.subscription_box_course_id = ''
+                         AND  CAST(w2_FixedPurchase.cancel_date AS DATE) >= CAST(TargetData.fixed_purchase_date_bgn AS DATE)
+                      GROUP BY TargetData.tgt_year,
+                               TargetData.tgt_month,
+                               TargetData.shop_id,
+                               TargetData.product_id,
+                               TargetData.variation_id,
+                               EOMONTH(w2_FixedPurchase.cancel_date, 0)
+                    )
+                    UNION ALL
+                    (
+                      SELECT  TargetData.tgt_year,
+                              TargetData.tgt_month,
+                              TargetData.shop_id,
+                              TargetData.product_id,
+                              TargetData.variation_id,
+                              0 AS order_count,
+                              0 AS fixed_purchase_cancel,
+                              0 AS fixed_purchase_count,
+                              CAST(0 AS DECIMAL(18,3)) AS order_price_subtotal,
+                              EOMONTH(TargetData.target_date_from, 0) AS order_date
+                        FROM  TargetData
+                      GROUP BY TargetData.tgt_year,
+                               TargetData.tgt_month,
+                               TargetData.shop_id,
+                               TargetData.product_id,
+                               TargetData.variation_id,
+                               EOMONTH(TargetData.target_date_from, 0)
+                    )
+                  ) detail
+           WHERE  order_date IS NOT NULL
+          GROUP BY tgt_year,
+                   tgt_month,
+                   shop_id,
+                   product_id,
+                   variation_id,
+                   order_date
+        ), TargetReport AS
+        (
+          (
+            SELECT  TargetDetailData.tgt_year,
+                    TargetDetailData.tgt_month,
+                    TargetDetailData.shop_id,
+                    TargetDetailData.product_id,
+                    TargetDetailData.variation_id,
+                    TargetDetailData.order_price_subtotal,
+                    TargetDetailData.order_count,
+                    TargetDetailData.fixed_purchase_cancel,
+                    TargetDetailData.fixed_purchase_count,
+                    TargetDetailData.order_date,
+                    LEAD(TargetDetailData.order_date)
+                      OVER
+                      (
+                        PARTITION BY TargetDetailData.tgt_year,
+                                     TargetDetailData.tgt_month,
+                                     TargetDetailData.shop_id,
+                                     TargetDetailData.product_id,
+                                     TargetDetailData.variation_id
+                            ORDER BY TargetDetailData.order_date
+                      ) AS next_date
+              FROM  TargetDetailData
+            GROUP BY TargetDetailData.tgt_year,
+                     TargetDetailData.tgt_month,
+                     TargetDetailData.shop_id,
+                     TargetDetailData.product_id,
+                     TargetDetailData.variation_id,
+                     TargetDetailData.order_price_subtotal,
+                     TargetDetailData.order_count,
+                     TargetDetailData.fixed_purchase_cancel,
+                     TargetDetailData.fixed_purchase_count,
+                     TargetDetailData.order_date
+          )
+          UNION ALL
+          (
+            SELECT  tgt_year,
+                    tgt_month,
+                    shop_id,
+                    product_id,
+                    variation_id,
+                    CAST(0 AS DECIMAL(18,3)) AS order_price_subtotal,
+                    0 AS order_count,
+                    0 AS fixed_purchase_cancel,
+                    0 AS fixed_purchase_count,
+                    EOMONTH(order_date, 1) AS order_date,
+                    next_date
+              FROM  TargetReport
+             WHERE  EOMONTH(order_date, 1) < DATEADD(day, -1, next_date)
+          )
+        )
+
+        SELECT  *
+          INTO  #TmpReportWithAllMonth
+          FROM  (
+                  SELECT  TargetReport.*,
+                          ROW_NUMBER()
+                            OVER
+                            (
+                              PARTITION BY tgt_year,
+                                           tgt_month,
+                                           product_id,
+                                           variation_id
+                                  ORDER BY product_id,
+                                           variation_id
+                            ) AS count
+                    FROM  TargetReport
+                ) main
+        GROUP BY tgt_year,
+                 tgt_month,
+                 shop_id,
+                 product_id,
+                 variation_id,
+                 order_price_subtotal,
+                 order_count,
+                 fixed_purchase_cancel,
+                 fixed_purchase_count,
+                 order_date,
+                 next_date,
+                 count
+        ORDER BY product_id,
+                 variation_id,
+                 tgt_year,
+                 tgt_month,
+                 shop_id,
+                 order_date
+          OPTION (MAXRECURSION 0)
+
+        DECLARE @row_count INT = (SELECT MAX(count) AS max_count FROM #TmpReportWithAllMonth)
+        DECLARE @month_count INT
+        SELECT  @month_count = COUNT(*)
+          FROM  (
+                  SELECT  DISTINCT
+                          ReportWithAllMonth.product_id,
+                          ReportWithAllMonth.variation_id,
+                          ReportWithAllMonth.tgt_year,
+                          ReportWithAllMonth.tgt_month
+                    FROM  #TmpReportWithAllMonth AS ReportWithAllMonth
+                   WHERE  @begin_max_count <= CASE WHEN @begin_max_count = 1 THEN count ELSE count - 1 END
+                     AND  @end_max_count >= count
+                ) month_count
+
+        SELECT  ReportWithAllMonth.tgt_year,
+                ReportWithAllMonth.tgt_month,
+                ReportWithAllMonth.shop_id,
+                ReportWithAllMonth.product_id,
+                ReportWithAllMonth.variation_id,
+                ReportWithAllMonth.order_price_subtotal,
+                ReportWithAllMonth.order_count,
+                ReportWithAllMonth.fixed_purchase_cancel,
+                ReportWithAllMonth.fixed_purchase_count,
+                ReportWithAllMonth.order_date,
+                ReportWithAllMonth.next_date,
+                ReportWithAllMonth.count,
+                ISNULL(w2_ProductView.name, '') AS name,
+                ISNULL(w2_ProductView.variation_name1, '') AS variation_name1,
+                ISNULL(w2_ProductView.variation_name2, '') AS variation_name2,
+                ISNULL(w2_ProductView.image_head, '') AS image_head,
+                @row_count AS row_count,
+                (
+                  SELECT  SUM(#TmpReportWithAllMonth.order_price_subtotal)
+                    FROM  #TmpReportWithAllMonth
+                   WHERE  @begin_max_count <= CASE WHEN @begin_max_count = 1 THEN count ELSE count - 1 END
+                     AND  @end_max_count >= count
+                ) AS amount_subtotal,
+                (
+                  SELECT  SUM(#TmpReportWithAllMonth.order_count)
+                    FROM  #TmpReportWithAllMonth
+                   WHERE  @begin_max_count <= CASE WHEN @begin_max_count = 1 THEN count ELSE count - 1 END
+                     AND  @end_max_count >= count
+                ) AS order_count_total,
+                @month_count AS month_count,
+                (
+                  SELECT  SUM(#TmpReportWithAllMonth.fixed_purchase_cancel)
+                    FROM  #TmpReportWithAllMonth
+                   WHERE  @begin_max_count <= CASE WHEN @begin_max_count = 1 THEN count ELSE count - 1 END
+                     AND  @end_max_count >= count
+                ) AS fixed_purchase_cancel_count,
+                (
+                  SELECT  SUM(#TmpReportWithAllMonth.fixed_purchase_count)
+                    FROM  #TmpReportWithAllMonth
+                   WHERE  @begin_max_count <= CASE WHEN @begin_max_count = 1 THEN count ELSE count - 1 END
+                     AND  @end_max_count >= count
+                ) AS fixed_purchase_count_total,
+                (
+                  SELECT  COUNT(CASE #TmpReportWithAllMonth.order_count WHEN '0' THEN NULL ELSE #TmpReportWithAllMonth.product_id END)
+                    FROM  #TmpReportWithAllMonth
+                   WHERE  @begin_max_count <= CASE WHEN @begin_max_count = 1 THEN count ELSE count - 1 END
+                     AND  @end_max_count >= count
+                ) AS consecutive_purchase_month
+          FROM  #TmpReportWithAllMonth AS ReportWithAllMonth
+                LEFT JOIN w2_ProductView ON
+                (
+                  w2_ProductView.shop_id = ReportWithAllMonth.shop_id
+                  AND
+                  w2_ProductView.product_id = ReportWithAllMonth.product_id
+                  AND
+                  w2_ProductView.variation_id = ReportWithAllMonth.variation_id
+                )
+         WHERE  @begin_max_count <= count
+           AND  @end_max_count >= count
+        GROUP BY ReportWithAllMonth.tgt_year,
+                 ReportWithAllMonth.tgt_month,
+                 ReportWithAllMonth.shop_id,
+                 ReportWithAllMonth.product_id,
+                 ReportWithAllMonth.variation_id,
+                 ReportWithAllMonth.order_price_subtotal,
+                 ReportWithAllMonth.order_count,
+                 ReportWithAllMonth.fixed_purchase_cancel,
+                 ReportWithAllMonth.fixed_purchase_count,
+                 ReportWithAllMonth.order_date,
+                 ReportWithAllMonth.next_date,
+                 ReportWithAllMonth.count,
+                 w2_ProductView.name,
+                 w2_ProductView.variation_name1,
+                 w2_ProductView.variation_name2,
+                 w2_ProductView.image_head
+        ORDER BY ReportWithAllMonth.shop_id,
+                 ReportWithAllMonth.product_id,
+                 ReportWithAllMonth.variation_id,
+                 ReportWithAllMonth.tgt_year,
+                 ReportWithAllMonth.tgt_month,
+                 ReportWithAllMonth.order_date
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_id_flg" Type="nvarchar" Size="60" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="variation_id_like_escaped" Type="nvarchar" Size="120" />
+      <Input Name="order_payment_kbn" Type="nvarchar" Size="10" />
+      <Input Name="advcode_like_escaped" Type="nvarchar" Size="60"/>
+      <Input Name="advcode_media_type_id" Type="nvarchar" Size="30" />
+      <Input Name="user_extend_type" Type="nvarchar" Size="3" />
+      <Input Name="user_extend_like_escaped" Type="nvarchar" Size="MAX" />
+      <Input Name="user_extend_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_from" Type="datetime" />
+      <Input Name="date_to" Type="datetime" />
+      <Input Name="begin_max_count" Type="int" />
+      <Input Name="end_max_count" Type="int" />
+    </Parameter>
+  </GetLtvReportData>
+
+  <!-- Get fixed purchase repeat analysis master -->
+  <GetFixedPurchaseRepeatAnalysisMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@,
+                w2_FixedPurchase.fixed_purchase_id
+          INTO  #TempTargetData
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_Order ON
+                (
+                  w2_Order.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN w2_OrderItem ON
+                (
+                  w2_OrderItem.order_id = w2_Order.order_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_User.user_id = w2_FixedPurchase.user_id
+                )
+                LEFT JOIN w2_UserExtend ON
+                (
+                  w2_UserExtend.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchaseItem.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                [[ FIXEDPURCHASEREPEATANALYSISLTVREPORT_TARGETLIST_SEARCH_WHERE ]]
+
+        SELECT  #TempTargetData.*
+          FROM  #TempTargetData
+      ]]>
+    </Statement>
+  </GetFixedPurchaseRepeatAnalysisMaster>
+
+  <!-- Get fixed purchase repeat analysis master count -->
+  <GetFixedPurchaseRepeatAnalysisMasterCount>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        CREATE TABLE #TempTable
+        (
+          fixed_purchase_id nvarchar(30)
+        )
+
+        SELECT  w2_FixedPurchase.fixed_purchase_id
+          INTO  #TempTargetData
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_Order ON
+                (
+                  w2_Order.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN w2_OrderItem ON
+                (
+                  w2_OrderItem.order_id = w2_Order.order_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_User.user_id = w2_FixedPurchase.user_id
+                )
+                LEFT JOIN w2_UserExtend ON
+                (
+                  w2_UserExtend.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchaseItem.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                [[ FIXEDPURCHASEREPEATANALYSISLTVREPORT_TARGETLIST_SEARCH_WHERE ]]
+        INSERT  #TempTable
+        SELECT  *
+          FROM  #TempTargetData
+
+        ;WITH UserList AS
+        (
+          SELECT  DISTINCT @@ fields @@
+            FROM  #TempTable
+                  INNER JOIN w2_FixedPurchase ON
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = #TempTable.fixed_purchase_id
+                  )
+                  INNER JOIN w2_User ON
+                  (
+                    w2_FixedPurchase.user_id = w2_User.user_id
+                  )
+        ),
+        TempTL AS
+        (
+          SELECT  *
+            FROM  UserList
+           WHERE  UserList.del_flg = '0'
+        ),
+        TempTLAC AS
+        (
+          SELECT  COUNT(*) AS count
+            FROM  TempTL
+        ),
+        TempTLMC AS
+        (
+          SELECT  COUNT(*) AS count
+            FROM  TempTL
+           WHERE  @mail_send_both_pc_and_mobile_enabled = 'True'
+             AND  TempTL.mail_addr <> ''
+             AND  TempTL.mail_addr2 <> ''
+        )
+
+        SELECT  TempTLAC.count + TempTLMC.count
+          FROM  TempTLAC,
+                TempTLMC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_send_both_pc_and_mobile_enabled" Type="nvarchar" Size="5" />
+    </Parameter>
+  </GetFixedPurchaseRepeatAnalysisMasterCount>
+
+</FixedPurchaseRepeatAnalysis>

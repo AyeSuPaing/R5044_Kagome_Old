@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品タグ系SQLステートメントXML(ProductTag.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2011 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductTag>
+  
+  <!-- 商品タグ情報取得 -->
+  <GetProductTag>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductTag.*
+          FROM  w2_ProductTag
+       WHERE  w2_ProductTag.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductTag>
+	
+  <!-- 商品タグ設定取得 -->
+  <GetProductTagSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductTagSetting
+          WHERE tag_valid_flg = '1'
+      ]]>
+    </Statement>
+  </GetProductTagSetting>
+
+  <!-- 商品タグ設定取得 -->
+  <GetTagSettingList>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductTagSetting
+      ORDER BY  tag_no
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetTagSettingList>
+
+  <!-- Insert -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductTag
+                (
+                  product_id,
+                  @@ TagIds @@
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @product_id,
+                  @@ TagValues @@
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- Delete -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductTag
+         WHERE  product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+</ProductTag>

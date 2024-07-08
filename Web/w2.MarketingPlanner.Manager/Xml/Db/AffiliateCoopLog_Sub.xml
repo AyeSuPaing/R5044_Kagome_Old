@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : アフィリエイト連携ログ系SQLサブステートメントステートメントXML(AffiliateCoopLog_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2011 All Rights Reserved.
+=========================================================================================================
+-->
+<AffiliateCoopLog_Sub>
+
+  <!-- アフィリエイト連携ログ一覧取得用WHERE文 -->
+  <AFFILIATEREPORT_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  (
+                    @affiliate_kbn = '' 
+                    OR 
+                    w2_AffiliateCoopLog.affiliate_kbn = @affiliate_kbn
+                  )    -- アフィリエイト区分
+                  AND
+                  (
+                    @master_id_like_escaped = '' 
+                    OR
+                    w2_AffiliateCoopLog.master_id LIKE @master_id_like_escaped + '%' ESCAPE '#'
+                  )    -- マスタID
+                  AND
+                  (
+                    @date_created_from IS NULL 
+                    OR
+                    w2_AffiliateCoopLog.date_created >= @date_created_from
+                  )            
+                  AND 
+                  (
+                    @date_created_to IS NULL 
+                    OR
+                    w2_AffiliateCoopLog.date_created < @date_created_to
+                  )
+                  AND
+                  (
+                    @coop_data11 = '' 
+                    OR
+                    w2_AffiliateCoopLog.coop_data11 = @coop_data11
+                  )    -- タグID
+                  @@ where @@
+                )
+      ]]>
+    </Statement>
+  </AFFILIATEREPORT_SEARCH_WHERE>
+
+  <!-- アフィリエイト連携ログ一覧取得用ORDER_BY -->
+  <AFFILIATEREPORT_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          w2_AffiliateCoopLog.log_no DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_AffiliateCoopLog.log_no ASC
+      ]]>
+    </Statement>
+  </AFFILIATEREPORT_SEARCH_ORDER_BY>
+  
+</AffiliateCoopLog_Sub>

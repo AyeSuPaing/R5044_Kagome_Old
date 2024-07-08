@@ -1,0 +1,143 @@
+﻿@*
+	=========================================================================================================
+	  Module      : WYSIWYG HTML編集画面(Register.cshtml)
+	 ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+	  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+	=========================================================================================================
+*@
+
+@using w2.Cms.Manager.Codes
+@{
+	ViewBag.Title = "WYSIWYG HTML編集画面";
+	Layout = Constants.POPUP_LAYOUT_PATH_DEFAULT;
+}
+<table cellspacing="0" cellpadding="0" width="98%" border="0">
+	<tbody>
+		@LayoutHelper.PaddingTr(10)
+		<tr>
+			<td align="left">
+				<h2 class="cmn-hed-h2">WYSIWYGエディタ</h2>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<table class="box_border" cellspacing="1" cellpadding="3" width="100%" border="0">
+					<tr>
+						<td>
+							<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+								<tr>
+									<td align="center">
+										<table cellspacing="0" cellpadding="0" width="98%" border="0">
+											@LayoutHelper.PaddingTr(10)
+											<tr>
+												<td>
+													<textarea cols="80" name="editor1" id="editor1" rows="24" style="height: 100%"></textarea>
+												</td>
+											</tr>
+											@LayoutHelper.PaddingTr(10)
+											<tr valign="bottom" height="30">
+												<td align="right">
+													<input type="button" id="btnFlush" value="　編集内容を反映します　" onclick="flushTextareaBinded();" class="btn btn-main" />
+												</td>
+											</tr>
+											@LayoutHelper.PaddingTr(10)
+										</table>
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		@LayoutHelper.PaddingTr(10)
+	</tbody>
+</table>
+
+@section JavaScript
+{
+	<script src="https://cdn.ckeditor.com/4.11.4/full/ckeditor.js"></script>
+	<script type="text/javascript">
+		window.addEventListener('DOMContentLoaded', function () {
+			OnLoadEvent();
+		});
+		// エディタと紐づけされた親ウィンドウのtextarea
+		var textAreaWysiwygBinded;
+
+		// ウィンドウロード時実行イベント処理
+		OnLoadEvent = function () {
+			// 親ウィンドウの変数は変化する可能性があるので、openerとは別に、このエディタと紐づけされたtextareaを保持しておく
+			textAreaWysiwygBinded = window.opener.textAreaWysiwygBinded;
+			
+			new Promise((resolve) => {
+				// 初期化
+				$('#editor1').val(textAreaWysiwygBinded.value.replace(new RegExp("</@@", "gm"), '&lt;/@@'));
+				resolve();
+			}).then(replaceTextArea);
+
+			// Setting auto paragraph off to avoid add tag <p> automaticaly
+			CKEDITOR.config.autoParagraph = false;
+
+			setTimeout(function () {
+				if (CKEDITOR.instances.editor1) {
+					//閉じるボタンのイベントを書き換える
+					document.getElementById('btnClose').onclick = function () {
+						if (CKEDITOR.instances.editor1.checkDirty()) {
+							if (confirm('編集内容を反映しますか？')) {
+								flushTextareaBinded();
+							} else if (confirm('エディタを閉じてもよろしいですか？') === false) {
+								return;
+							}
+						}
+						window.close();
+					}
+				} else {
+					setTimeout(arguments.callee, 100);
+				}
+			},
+			100);
+
+			// ウィンドウが閉じる時、バインドされたtextareaを有効にする。
+			window.onunload = function () {
+				textAreaWysiwygBinded.removeAttribute('disabled');
+			};
+		}
+
+		// 親ウィンドウのtextareaを更新。
+		flushTextareaBinded = function () {
+			textAreaWysiwygBinded.value = CKEDITOR.instances.editor1.getData().replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+			CKEDITOR.instances.editor1.resetDirty();
+		}
+	</script>
+
+	<script>
+		replaceTextArea = function() {
+			CKEDITOR.replace('editor1',
+			{
+				resize_enabled: true,
+				//removePlugins: 'elementspath',
+				customConfig: '@Constants.PATH_ROOT_CMS' + 'Js/ckeditor-config.js',
+				toolbarGroups: [
+					{ name: 'document', groups: ['mode', 'document', 'doctools'] },
+					{ name: 'clipboard', groups: ['clipboard', 'undo'] },
+					{ name: 'editing', groups: ['find', 'selection'] },
+					'/',
+					{ name: 'styles' },
+					{ name: 'colors' },
+					{
+						name: 'basicstyles',
+						groups: ['basicstyles', 'cleanup', 'list', 'indent', 'blocks', 'align', 'paragraph']
+					},
+					{ name: 'links', groups: ['links', 'insert'] },
+					{ name: 'tools' }
+				],
+				removePlugins: 'save, print, pagebreak, templates, smiley, specialchar, flash, iframe', // 要素パスを非表示
+				height: 370,
+				width: "100%"
+			});
+		}
+	</script>
+
+	@* セッションタイムアウト防止 *@
+	<script type="text/javascript" src="~/Js/UpdateSessionTimeout.aspx?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED"></script>
+}

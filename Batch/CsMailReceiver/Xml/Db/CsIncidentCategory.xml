@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : インシデントカテゴリ系SQLステートメントXML(CsIncidentCategory.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsIncidentCategory>
+  
+  <!-- 全件取得（ドロップダウン等で利用、有効フラグは階層考慮） -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+          -- カテゴリ階層データを取得(再帰クエリ)
+          WITH  categories
+            AS  (
+                  SELECT  cat1.category_id,
+                          cast(1 as int) as rank_no,
+                          cast('' as varchar(30)) as parent_category_path,
+                          cast(RIGHT('00' + CONVERT(nvarchar, cat1.display_order), 3) + cat1.category_id as varchar(60)) as ranked_display_order,
+                          cast(cat1.valid_flg as int) AS ranked_valid_flg
+                    FROM  w2_CsIncidentCategory as cat1
+                   WHERE  parent_category_id = ''
+               UNION ALL
+                  SELECT  cat2.category_id,
+                          categories.rank_no + 1,
+                          CASE categories.parent_category_path when '' THEN cast(cat2.parent_category_id as varchar(30)) ELSE cast(categories.parent_category_path + '/' + cat2.parent_category_id as varchar(30)) END,
+                          cast(categories.ranked_display_order + RIGHT('00' + CONVERT(nvarchar, cat2.display_order), 3) + cat2.category_id as  varchar(60)),
+                          categories.ranked_valid_flg & cast(valid_flg as int)
+                    FROM  w2_CsIncidentCategory as cat2
+                          INNER JOIN categories ON
+                          (
+                            categories.category_id = cat2.parent_category_id
+                          )
+                )
+                
+        SELECT	w2_CsIncidentCategory.category_id,
+                w2_CsIncidentCategory.category_name,
+                rank_no,
+                parent_category_path,
+                cast(categories.ranked_valid_flg as nvarchar(1)) AS ranked_valid_flg
+          FROM	w2_CsIncidentCategory 
+                INNER JOIN categories ON
+                (
+                  w2_CsIncidentCategory.category_id = categories.category_id
+                )
+         WHERE	w2_CsIncidentCategory.dept_id = @dept_id 
+      ORDER BY  categories.ranked_display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAll>
+
+</CsIncidentCategory>

@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文情報商品選択系SQLサブステートメントXML(OrderProductList_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderProductList_Sub>
+
+  <!-- 会員ランク価格取得SQL（バリエーション単位） -->
+  <MEMBER_RANK_PRICE_PRODUCTVARIATION>
+    <Statement>
+      <![CDATA[
+        (
+          SELECT  TOP 1
+                  w2_ProductPrice.member_rank_price
+            FROM  w2_ProductPrice
+                  LEFT JOIN w2_MemberRank ON
+								  (
+										  w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+								  )
+						WHERE  w2_ProductPrice.shop_id = w2_ProductView.shop_id
+							AND  w2_ProductPrice.product_id = w2_ProductView.product_id
+							AND  (w2_ProductPrice.variation_id = w2_ProductView.variation_id OR ((w2_ProductView.use_variation_flg = '0') AND (w2_ProductPrice.variation_id = '')))
+							AND  @member_rank_id <> ''
+							AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = @member_rank_id AND valid_flg = 'ON')
+							AND  w2_MemberRank.valid_flg = 'ON'
+					ORDER BY w2_MemberRank.member_rank_order
+        ) AS member_rank_price_variation
+      ]]>
+    </Statement>
+  </MEMBER_RANK_PRICE_PRODUCTVARIATION>
+
+  <!-- 商品情報一覧取得用WHERE文 -->
+  <PRODUCT_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.sell_from <= @current_date
+           AND ((w2_ProductView.sell_to IS NULL) OR (w2_ProductView.sell_to >= @current_date))
+           AND  (
+                    w2_ProductView.stock_management_kbn = '0'    -- 在庫管理をしない
+                    OR
+                    w2_ProductView.stock_management_kbn = '1'    -- 在庫０以下の場合でも表示する（購入可）
+                    OR
+                    w2_ProductView.stock_management_kbn = '2'    -- 在庫０以下の場合でも表示する（購入不可）
+                  )
+             AND  w2_ProductView.valid_flg = '1'
+             AND  
+                  (@product_id_like_escaped = '' OR w2_ProductView.variation_id LIKE @product_id_like_escaped + '%' ESCAPE '#')      -- 商品ID
+                  AND 
+                  (@name_like_escaped = '' OR w2_ProductView.name LIKE '%' + @name_like_escaped + '%' ESCAPE '#')            -- 商品名
+      ]]>
+    </Statement>
+  </PRODUCT_SEARCH_WHERE>
+
+  <!-- 商品情報一覧取得用ORDER_BY -->
+  <PRODUCT_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          w2_ProductView.product_id ASC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_ProductView.shop_id ASC, w2_ProductView.product_id ASC, w2_ProductView.variation_id ASC
+      ]]>
+    </Statement>
+  </PRODUCT_SEARCH_ORDER_BY>
+
+</OrderProductList_Sub>

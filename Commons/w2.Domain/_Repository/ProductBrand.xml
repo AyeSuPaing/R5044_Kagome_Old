@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品ブランドマスタ系SQLステートメントXML (ProductBrand.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductBrand>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_ProductBrand
+                [[ PRODUCTBRAND_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="brand_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="brand_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>    
+  </GetSearchHitCount>
+
+  <!-- 取得 -->
+  <GetByBrandIds>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductBrand
+         WHERE  brand_id IN (@@ ids @@)
+      ]]>
+    </Statement>
+  </GetByBrandIds>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductBrand.*
+          FROM  (
+                  SELECT  w2_ProductBrand.brand_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCTBRAND_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductBrand
+                          [[ PRODUCTBRAND_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductBrand ON
+                (
+                  RowIndex.brand_id = w2_ProductBrand.brand_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="brand_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="brand_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+
+  <!-- Get valid brand list -->
+  <GetValidBrandList>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductBrand
+         WHERE  valid_flg = '1'
+      ]]>
+    </Statement>
+  </GetValidBrandList>
+
+  <!-- ブランド情報リスト取得-->
+  <GetProductBrands>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductBrand.*
+          FROM  w2_ProductBrand
+      ]]>
+    </Statement>
+  </GetProductBrands>
+
+</ProductBrand>

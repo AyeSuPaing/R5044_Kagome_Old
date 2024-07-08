@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モバイルページ系SQLサブステートメントXML(MobilePage_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MobilePage_Sub>
+
+  <!-- モバイルページ情報一覧取得用WHERE文 -->
+  <MOBILEPAGE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_MobilePage.dept_id = @dept_id
+           AND  (
+                  (@page_id_like_escaped = '' OR w2_MobilePage.page_id LIKE @page_id_like_escaped + '%' ESCAPE '#')      -- ページID
+                  AND 
+                  (@page_name_like_escaped = '' OR w2_MobilePage.page_name LIKE '%' + @page_name_like_escaped + '%' ESCAPE '#')          -- ページ名
+                )
+      ]]>
+    </Statement>
+  </MOBILEPAGE_SEARCH_WHERE>
+
+  <!-- モバイルページ情報一覧取得用ORDER_BY -->
+  <MOBILEPAGE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_MobilePage.page_id
+            WHEN  2 THEN w2_MobilePage.page_name
+            ELSE '1'
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_MobilePage.page_id
+            WHEN  3 THEN w2_MobilePage.page_name
+            ELSE '1'
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_MobilePage.dept_id ASC, w2_MobilePage.page_id ASC, w2_MobilePage.career_id ASC, w2_MobilePage.mobile_group_id ASC
+      ]]>
+    </Statement>
+  </MOBILEPAGE_SEARCH_ORDER_BY>
+
+</MobilePage_Sub>

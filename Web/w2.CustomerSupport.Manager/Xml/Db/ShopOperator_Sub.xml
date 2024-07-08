@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : オペレータ系SQLサブステートメントXML(ShopOperator_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<ShopOperator_Sub>
+
+  <!-- オペレータ情報一覧取得用WHERE文 -->
+  <SHOPOPERATOR_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+           -- スーパーユーザ以外はスーパーユーザを表示しない
+           AND  (
+                  @menu_access_level3 = 0
+                  OR
+                  w2_ShopOperator.menu_access_level3 IS NULL
+                  OR
+                  w2_ShopOperator.menu_access_level3 <> 0
+                )
+                /* ここから検索条件 */
+           AND  (
+                  /* オペレータID */
+                  (@operator_id_like_escaped = '' OR w2_ShopOperator.operator_id LIKE @operator_id_like_escaped + '%'  ESCAPE '#')
+                  /* オペレータ名 */
+                  AND
+                  (@name_like_escaped = '' OR w2_ShopOperator.name LIKE + '%' + @name_like_escaped + '%'  ESCAPE '#')
+                  AND
+                  /* メールアドレス */
+                  (@mail_addr_like_escaped = '' OR w2_CsOperator.mail_addr LIKE @mail_addr_like_escaped + '%'  ESCAPE '#')
+                  /* 有効フラグ */
+                  AND
+                  (@valid_flg = '' OR w2_ShopOperator.valid_flg = @valid_flg)
+                  /* CSオペレータか否か */
+                  AND
+                  (
+                    @is_cs_operator = ''
+                    OR
+                    (@is_cs_operator = '1' AND w2_CsOperator.operator_id IS NOT NULL)
+                    OR
+                    (@is_cs_operator = '0' AND w2_CsOperator.operator_id IS NULL)
+                  )
+                  /* メニューアクセス権限 */
+                  AND
+                  /* NULL（権限なし）の場合は条件合致のためにNULL変換して999999として取り扱う。 */
+                  (@condition_menu_access_level IS NULL OR ISNULL(w2_ShopOperator.menu_access_level3,'999999') = Convert(int,@condition_menu_access_level))
+                 )
+      ]]>
+    </Statement>
+  </SHOPOPERATOR_SEARCH_WHERE>
+
+  <!-- オペレータ情報一覧取得用ORDER_BY -->
+  <SHOPOPERATOR_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_ShopOperator.name
+            WHEN  8 THEN w2_ShopOperator.operator_id
+            WHEN  2 THEN RIGHT('000' + CONVERT(nvarchar, ISNULL(w2_CsOperator.display_order, 999)), 3) -- 表示順MAX100なのでそれより大きい値
+            ELSE '1'
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_ShopOperator.name
+            WHEN  9 THEN w2_ShopOperator.operator_id
+            WHEN  3 THEN RIGHT('000' + CONVERT(nvarchar, ISNULL(w2_CsOperator.display_order, 999)), 3) -- 表示順MAX100なのでそれより大きい値
+            ELSE '1'
+          END 
+          DESC,
+          w2_ShopOperator.operator_id DESC,
+          w2_ShopOperator.shop_id ASC
+      ]]>
+    </Statement>
+  </SHOPOPERATOR_SEARCH_ORDER_BY>
+
+</ShopOperator_Sub>

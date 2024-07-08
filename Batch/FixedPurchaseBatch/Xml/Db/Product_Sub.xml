@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品系SQLサブステートメントXML(Product_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2011 All Rights Reserved.
+=========================================================================================================
+-->
+<Product_Sub>
+
+  <!-- 会員ランク価格取得SQL（商品単位） -->
+  <MEMBER_RANK_PRICE_PRODUCT>
+    <Statement>
+      <![CDATA[
+        (
+          SELECT  TOP 1
+                  w2_ProductPrice.member_rank_price
+            FROM  w2_ProductPrice
+                  LEFT JOIN w2_MemberRank ON
+								  (
+										  w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+								  )
+						WHERE  w2_ProductPrice.shop_id = w2_Product.shop_id
+							AND  w2_ProductPrice.product_id = w2_Product.product_id
+							AND  w2_ProductPrice.variation_id = ''
+							AND  @member_rank_id <> ''
+							AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = @member_rank_id AND valid_flg = 'ON')
+              AND  w2_MemberRank.valid_flg = 'ON'
+					ORDER BY w2_MemberRank.member_rank_order
+        ) AS member_rank_price
+      ]]>
+    </Statement>
+  </MEMBER_RANK_PRICE_PRODUCT>
+
+  <!-- 会員ランク価格取得SQL（バリエーション単位） -->
+  <MEMBER_RANK_PRICE_PRODUCTVARIATION>
+    <Statement>
+      <![CDATA[
+        (
+          SELECT  TOP 1
+                  w2_ProductPrice.member_rank_price
+            FROM  w2_ProductPrice
+                  LEFT JOIN w2_MemberRank ON
+								  (
+										  w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+								  )
+						WHERE  w2_ProductPrice.shop_id = w2_ProductView.shop_id
+							AND  w2_ProductPrice.product_id = w2_ProductView.product_id
+							AND  (w2_ProductPrice.variation_id = w2_ProductView.variation_id OR ((w2_ProductView.use_variation_flg = '0') AND (w2_ProductPrice.variation_id = '')))
+							AND  @member_rank_id <> ''
+							AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = @member_rank_id AND valid_flg = 'ON')
+              AND  w2_MemberRank.valid_flg = 'ON'
+					ORDER BY w2_MemberRank.member_rank_order
+        ) AS member_rank_price_variation
+      ]]>
+    </Statement>
+  </MEMBER_RANK_PRICE_PRODUCTVARIATION>
+
+</Product_Sub>

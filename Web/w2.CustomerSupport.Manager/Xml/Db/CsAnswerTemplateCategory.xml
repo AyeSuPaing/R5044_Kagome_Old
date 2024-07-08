@@ -1,0 +1,230 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 回答例カテゴリ系SQLステートメントXML(CsAnswerTemplateCategory.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsAnswerTemplateCategory>
+  
+  <!-- カテゴリID指定サーチ（指定がなければ全件） -->
+  <SearchByCategoryId>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT	@row_count = COUNT(*)
+          FROM	w2_CsAnswerTemplateCategory 
+         WHERE  w2_CsAnswerTemplateCategory.dept_id = @dept_id 
+           AND  (
+                  @category_id = ''
+                  OR 
+                  w2_CsAnswerTemplateCategory.category_id = @category_id
+                );
+                
+        -- カテゴリ階層データを取得(再帰クエリ)
+          WITH  categories
+            AS  (
+                  SELECT  cat1.category_id,
+                          cast(1 as int) as rank_no,
+                          cast(cat1.category_id as varchar(30)) as ranked_category_id,
+                          cast(RIGHT('00' + CONVERT(nvarchar, cat1.display_order), 3) + cat1.category_id as varchar(60)) as ranked_display_order,
+                          cast(cat1.valid_flg as nvarchar(10)) as ranked_valid_flg
+                    FROM  w2_CsAnswerTemplateCategory as cat1
+                   WHERE  parent_category_id = ''
+               UNION ALL
+                  SELECT  cat2.category_id,
+                          categories.rank_no + 1,
+                          cast(categories.ranked_category_id + cat2.category_id as varchar(30)),
+                          cast(categories.ranked_display_order + RIGHT('00' + CONVERT(nvarchar, cat2.display_order), 3) + cat2.category_id as  varchar(60)),
+                          CASE ranked_valid_flg WHEN '1' THEN cast(cat2.valid_flg as nvarchar(10)) ELSE '0' END
+                    FROM  w2_CsAnswerTemplateCategory as cat2
+                          INNER JOIN categories ON
+                          (
+                            categories.category_id = cat2.parent_category_id
+                          )
+                )
+                
+        SELECT	@row_count as 'row_count',
+                REPLICATE('　　', categories.rank_no - 1) + w2_CsAnswerTemplateCategory.category_name as 'ranked_category_name',
+                categories.ranked_category_id,
+                w2_CsAnswerTemplateCategory.*,
+                categories.ranked_valid_flg
+          FROM	dbo.w2_CsAnswerTemplateCategory 
+                INNER JOIN categories ON
+                (
+                  w2_CsAnswerTemplateCategory.category_id = categories.category_id
+                )
+         WHERE  w2_CsAnswerTemplateCategory.dept_id = @dept_id 
+           AND  (
+                  @category_id = ''
+                  OR 
+                  w2_CsAnswerTemplateCategory.category_id = @category_id
+                )
+      ORDER BY  categories.ranked_display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </SearchByCategoryId>
+  
+  <!-- 全件取得（ドロップダウンリスト用、有効フラグは階層考慮) -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+          -- カテゴリ階層データを取得(再帰クエリ)
+          WITH  categories
+            AS  (
+                  SELECT  cat1.category_id,
+                          cast(1 as int) as rank_no,
+                          cast(RIGHT('00' + CONVERT(nvarchar, cat1.display_order), 3) + cat1.category_id as varchar(60)) as ranked_display_order,
+                          cast(cat1.valid_flg as nvarchar(10)) as ranked_valid_flg
+                    FROM  w2_CsAnswerTemplateCategory as cat1
+                   WHERE  parent_category_id = ''
+               UNION ALL
+                  SELECT  cat2.category_id,
+                          categories.rank_no + 1,
+                          cast(categories.ranked_display_order + RIGHT('00' + CONVERT(nvarchar, cat2.display_order), 3) + cat2.category_id as  varchar(60)),
+                          CASE ranked_valid_flg WHEN '1' THEN cast(cat2.valid_flg as nvarchar(10)) ELSE '0' END
+                    FROM  w2_CsAnswerTemplateCategory as cat2
+                          INNER JOIN categories ON
+                          (
+                            categories.category_id = cat2.parent_category_id
+                          )
+                )
+                
+        SELECT	w2_CsAnswerTemplateCategory.category_id,
+                RIGHT('　　　　　　　　　　', categories.rank_no-1) + w2_CsAnswerTemplateCategory.category_name  as 'ranked_category_name',
+                categories.ranked_valid_flg
+          FROM	w2_CsAnswerTemplateCategory 
+                INNER JOIN categories ON
+                (
+                  w2_CsAnswerTemplateCategory.category_id = categories.category_id
+                )
+         WHERE	w2_CsAnswerTemplateCategory.dept_id = @dept_id 
+      ORDER BY  categories.ranked_display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAll>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT	*
+          FROM	w2_CsAnswerTemplateCategory 
+         WHERE	w2_CsAnswerTemplateCategory.dept_id = @dept_id 
+           AND	w2_CsAnswerTemplateCategory.category_id = @category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[				
+        INSERT	w2_CsAnswerTemplateCategory
+            (
+            dept_id,
+            category_id,
+            parent_category_id,
+            category_name,
+            display_order,
+            valid_flg,
+            date_created, 
+            date_changed, 
+            last_changed
+            )
+         VALUES	(
+            @dept_id, 
+            @category_id, 
+            @parent_category_id, 
+            @category_name, 
+            @display_order, 
+            @valid_flg, 
+            getdate(), 
+            getdate(), 
+            @last_changed 
+            )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="parent_category_id" Type="nvarchar" Size="30" />
+      <Input Name="category_name" Type="nvarchar" Size="30" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+  
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsAnswerTemplateCategory 
+           SET  w2_CsAnswerTemplateCategory.parent_category_id = @parent_category_id, 
+                w2_CsAnswerTemplateCategory.category_name = @category_name, 
+                w2_CsAnswerTemplateCategory.display_order = @display_order, 
+                w2_CsAnswerTemplateCategory.valid_flg = @valid_flg, 					
+                w2_CsAnswerTemplateCategory.date_changed = getdate(), 
+                w2_CsAnswerTemplateCategory.last_changed = @last_changed 
+         WHERE  w2_CsAnswerTemplateCategory.dept_id = @dept_id 
+           AND  w2_CsAnswerTemplateCategory.category_id = @category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+      <Input Name="parent_category_id" Type="nvarchar" Size="30" />
+      <Input Name="category_name" Type="nvarchar" Size="30" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!--  子カテゴリ取得（削除チェック用） -->
+  <GetChildCategories>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CsAnswerTemplateCategory 
+         WHERE  w2_CsAnswerTemplateCategory.dept_id = @dept_id 
+           AND	w2_CsAnswerTemplateCategory.parent_category_id = @category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="category_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetChildCategories>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE	
+          FROM	w2_CsAnswerTemplateCategory 
+         WHERE	w2_CsAnswerTemplateCategory.dept_id = @dept_id 
+           AND	w2_CsAnswerTemplateCategory.category_id = @category_id
+       ]]>
+      </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+  
+</CsAnswerTemplateCategory>

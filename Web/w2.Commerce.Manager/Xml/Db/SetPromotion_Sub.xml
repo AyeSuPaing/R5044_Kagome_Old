@@ -1,0 +1,199 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : セットプロモーション系SQLサブステートメントXML(SetPromotion_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2012 All Rights Reserved.
+=========================================================================================================
+-->
+<SetPromotion_Sub>
+  <!-- セットプロモーション情報一覧取得用WHERE文 -->
+  <SETPROMOTION_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE w2_SetPromotion.setpromotion_id LIKE @setpromotion_id_like_escaped + '%' ESCAPE '#'
+              AND
+              (
+                w2_SetPromotion.setpromotion_name LIKE '%' + @setpromotion_name_like_escaped + '%' ESCAPE '#'
+                OR
+                w2_SetPromotion.setpromotion_disp_name LIKE '%' + @setpromotion_name_like_escaped + '%' ESCAPE '#'
+                OR
+                w2_SetPromotion.setpromotion_disp_name_mobile LIKE '%' + @setpromotion_name_like_escaped + '%' ESCAPE '#'
+              )
+              AND
+              (
+                @product_id_like_escaped = ''
+                OR
+                (
+                  w2_SetPromotion.setpromotion_id IN
+                  (
+                    SELECT  w2_SetPromotionItem.setpromotion_id
+                      FROM  w2_SetPromotionItem
+                     WHERE  (
+                              (
+                                w2_SetPromotionItem.setpromotion_item_kbn = 'PRODUCT'
+                                OR
+                                w2_SetPromotionItem.setpromotion_item_kbn = 'VARIATION'
+                              )
+                              AND
+                              NCHAR(13) + NCHAR(10) + w2_SetPromotionItem.setpromotion_items LIKE '%' + NCHAR(13) + NCHAR(10) + @product_id_like_escaped + '%' ESCAPE '#'
+                            )
+                    GROUP BY w2_SetPromotionItem.setpromotion_id
+                  )
+                )
+              )
+              AND
+              (
+                @category_id_like_escaped = ''
+                OR
+                (
+                  w2_SetPromotion.setpromotion_id IN
+                  (
+                    SELECT  w2_SetPromotionItem.setpromotion_id
+                      FROM  w2_SetPromotionItem
+                     WHERE  (
+                              w2_SetPromotionItem.setpromotion_item_kbn = 'CATEGORY'
+                              AND
+                              NCHAR(13) + NCHAR(10) + w2_SetPromotionItem.setpromotion_items LIKE '%' + NCHAR(13) + NCHAR(10) + @category_id_like_escaped + '%' ESCAPE '#'
+                            )
+                    GROUP BY w2_SetPromotionItem.setpromotion_id
+                  )
+                )
+              )
+              AND
+              (
+                @status = ''
+                OR
+                (
+                  @status = '0'
+                  AND
+                  w2_SetPromotion.begin_date > GETDATE()
+                )
+                OR
+                (
+                  @status = '1'
+                  AND
+                  w2_SetPromotion.valid_flg = '1'
+                  AND
+                  w2_SetPromotion.begin_date <= GETDATE()
+                  AND
+                  (
+                    w2_SetPromotion.end_date >= GETDATE()
+                    OR
+                    w2_SetPromotion.end_date IS NULL
+                  )
+                )
+                OR
+                (
+                  @status = '2'
+                  AND
+                  w2_SetPromotion.valid_flg = '0'
+                  AND
+                  w2_SetPromotion.begin_date <= GETDATE()
+                  AND
+                  (
+                    w2_SetPromotion.end_date >= GETDATE()
+                    OR
+                    w2_SetPromotion.end_date IS NULL
+                  )
+                )
+                OR
+                (
+                  @status = '3'
+                  AND
+                  w2_SetPromotion.end_date < GETDATE()
+                )
+              )
+              AND
+              (
+                @begin_date_from IS NULL
+                OR
+                w2_SetPromotion.begin_date >= @begin_date_from
+              )
+              AND
+              (
+                @begin_date_to IS NULL
+                OR
+                w2_SetPromotion.begin_date < DATEADD(day, 1, @begin_date_to)
+              )
+              AND
+              (
+                @end_date_from IS NULL
+                OR
+                w2_SetPromotion.end_date >= @end_date_from
+              )
+              AND
+              (
+                @end_date_to IS NULL
+                OR
+                w2_SetPromotion.end_date < DATEADD(day, 1, @end_date_to)
+              )
+      ]]>
+    </Statement>
+  </SETPROMOTION_SEARCH_WHERE>
+
+  <!-- セットプロモーション情報一覧取得用ORDER BY -->
+  <SETPROMOTION_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN '0' THEN
+              CASE
+                WHEN  (
+                        w2_SetPromotion.begin_date > GETDATE()
+                      ) THEN '0'  -- 準備中
+                WHEN  (
+                        w2_SetPromotion.valid_flg = '1'
+                        AND
+                        w2_SetPromotion.begin_date <= GETDATE()
+                        AND
+                        (
+                          w2_SetPromotion.end_date >= GETDATE()
+                          OR
+                          w2_SetPromotion.end_date IS NULL
+                        )
+                      ) THEN '1' -- 開催中
+                WHEN  (
+                        w2_SetPromotion.valid_flg = '0'
+                        AND
+                        w2_SetPromotion.begin_date <= GETDATE()
+                        AND
+                        (
+                          w2_SetPromotion.end_date >= GETDATE()
+                          OR
+                          w2_SetPromotion.end_date IS NULL
+                        )
+                      ) THEN '2'  -- 一時停止
+                WHEN  (
+                        w2_SetPromotion.end_date < GETDATE()
+                      ) THEN '3'   -- 終了
+              END
+            WHEN '1' THEN w2_SetPromotion.setpromotion_id
+            WHEN '3' THEN w2_SetPromotion.setpromotion_name
+            ELSE '1'
+            END
+            ASC,
+          CASE @sort_kbn
+            WHEN '2' THEN w2_SetPromotion.setpromotion_id
+            WHEN '4' THEN w2_SetPromotion.setpromotion_name
+            ELSE '1'
+            END
+            DESC,
+          CASE @sort_kbn
+            WHEN '5' THEN w2_SetPromotion.begin_date
+            WHEN '7' THEN ISNULL(w2_SetPromotion.end_date, '9999/12/31')
+            ELSE NULL
+            END
+            ASC,
+          CASE @sort_kbn
+            WHEN '6' THEN w2_SetPromotion.begin_date
+            WHEN '8' THEN w2_SetPromotion.end_date
+            ELSE NULL
+            END
+            DESC,
+          w2_SetPromotion.setpromotion_id ASC
+      ]]>
+    </Statement>
+  </SETPROMOTION_SEARCH_ORDER_BY>
+</SetPromotion_Sub>

@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<OrderDataExportSetting>
+
+	<!-- 出力ファイルの設定 -->
+	<ExportSetting>
+		<!-- 受注一覧・ワークフロー一覧画面に表示する送り状ダウンロードリンクの文言 -->
+		<DisplayName><![CDATA[宅配通返品指示データ出力]]></DisplayName>
+		<!-- 出力ファイルの種類（設定可能値：csv） -->
+		<FormatType>csv</FormatType>
+		<!-- 出力単位（設定可能値：Order） -->
+		<UnitType>Order</UnitType>
+		<!-- 出力ファイル名 -->
+		<FileName>
+			<Value Type="string"><![CDATA[CollectionOrder_]]></Value>
+			<Value Type="dateString" Format="yyyyMMddHHmmss">Now</Value>
+			<Value Type="string">.csv</Value>
+		</FileName>
+		<!-- ヘッダ行出力有無（設定可能値：true, false） -->
+		<ExportHeader>false</ExportHeader>
+		<!-- 引用符常時出力有無（設定可能値：true, false） -->
+		<!--
+         例：引用符が「"」、1列目の値は「123」、2列目の値は「abc」、3列目の値は「1,2」の場合、
+             ・true の場合、"123","abc","1,2"を出力しますが、
+             ・false の場合、123,abc,"1,2"を出力します。（値にカンマ(,)があるときは強制エスケープ）
+    -->
+		<AlwaysExportQuotation>true</AlwaysExportQuotation>
+		<!-- 列の引用符 -->
+		<StringQuotationMark><![CDATA["]]></StringQuotationMark>
+		<!-- 区切り文字（設定可能値：COMMA, TAB） -->
+		<Separator>COMMA</Separator>
+		<!-- 文字コード（設定可能値：Shift_JIS, UTF-8, Big5） -->
+		<Encoding>Big5</Encoding>
+	</ExportSetting>
+
+	<!-- 出力項目・内容の設定 -->
+	<FieldsSetting>
+		<!-- 1. 回収先名前 -->
+		<Field Name="寄件人">
+			<Switch>
+				<Case>
+					<Condition><![CDATA[w2_OrderShipping.shipping_receiving_store_flg = '1']]></Condition>
+					<Value Type="field">w2_OrderOwner.owner_name</Value>
+				</Case>
+				<Else>
+					<Value Type="field">w2_OrderShipping.shipping_name</Value>
+				</Else>
+			</Switch>
+		</Field>
+
+		<!-- 2. 回収先電話番号 -->
+		<Field Name="電話">
+			<Switch>
+				<Case>
+					<Condition><![CDATA[w2_OrderShipping.shipping_receiving_store_flg = '1']]></Condition>
+					<Value Type="field">w2_OrderOwner.owner_tel1</Value>
+				</Case>
+				<Else>
+					<Value Type="field">w2_OrderShipping.shipping_tel1</Value>
+				</Else>
+			</Switch>
+		</Field>
+
+		<!-- 3. 回収先郵便番号 -->
+		<Field Name="郵遞區號">
+			<Switch>
+				<Case>
+					<Condition><![CDATA[w2_OrderShipping.shipping_receiving_store_flg = '1']]></Condition>
+					<Value Type="field"><![CDATA[LEFT(w2_OrderOwner.owner_zip, 3)]]></Value>
+				</Case>
+				<Else>
+					<Value Type="field"><![CDATA[LEFT(w2_OrderShipping.shipping_zip, 3)]]></Value>
+				</Else>
+			</Switch>
+		</Field>
+
+		<!-- 4. 回収先住所 -->
+		<Field Name="地址">
+			<Switch>
+				<Case>
+					<Condition><![CDATA[w2_OrderShipping.shipping_receiving_store_flg = '1']]></Condition>
+					<Value Type="field"><![CDATA[w2_OrderOwner.owner_addr2 + w2_OrderOwner.owner_addr3 + w2_OrderOwner.owner_addr4 + w2_OrderOwner.owner_addr5]]></Value>
+				</Case>
+				<Else>
+					<Value Type="field"><![CDATA[w2_OrderShipping.shipping_addr2 + w2_OrderShipping.shipping_addr3 + w2_OrderShipping.shipping_addr4 + w2_OrderShipping.shipping_addr5]]></Value>
+				</Else>
+			</Switch>
+		</Field>
+
+		<!-- 5. 備考 -->
+		<Field Name="備註">
+			<Value Type="field">w2_Order.shipping_memo</Value>
+		</Field>
+
+		<!-- 6. クライアント出荷番号 -->
+		<Field Name="出貨單號">
+			<Value Type="field">w2_Order.order_id</Value>
+		</Field>
+	</FieldsSetting>
+
+</OrderDataExportSetting>

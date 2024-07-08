@@ -1,0 +1,364 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : SMS系SQLステートメントXML (GlobalSMS.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<GlobalSMS>
+
+  <!-- テンプレートアップサート -->
+  <UpsertSMSTemplate>
+    <Statement>
+      <![CDATA[
+         MERGE  w2_GlobalSMSTemplate AS T
+         USING  (
+                  VALUES  
+                    (
+                      @shop_id
+                      ,@mail_id
+                      ,@phone_carrier
+                      ,@sms_text
+                      ,getdate()
+                      ,getdate()
+                      ,@last_changed
+                    )
+                )  AS TmpTable
+                (
+                  shop_id
+                  ,mail_id
+                  ,phone_carrier
+                  ,sms_text
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+                ON (T.shop_id = TmpTable.shop_id AND T.mail_id = TmpTable.mail_id AND T.phone_carrier = TmpTable.phone_carrier)
+                WHEN MATCHED THEN
+                  UPDATE SET
+                    T.sms_text = TmpTable.sms_text
+                    ,T.date_changed = TmpTable.date_changed
+                    ,T.last_changed = TmpTable.last_changed
+                WHEN NOT MATCHED THEN
+                  INSERT (
+                    shop_id
+                    ,mail_id
+                    ,phone_carrier
+                    ,sms_text
+                    ,date_created
+                    ,date_changed
+                    ,last_changed )
+                  VALUES  (
+                    TmpTable.shop_id
+                    ,TmpTable.mail_id
+                    ,TmpTable.phone_carrier
+                    ,TmpTable.sms_text
+                    ,TmpTable.date_created
+                    ,TmpTable.date_changed
+                    ,TmpTable.last_changed );
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="phone_carrier" Type="nvarchar" Size="30" />
+      <Input Name="sms_text" Type="nvarchar" Size="max" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpsertSMSTemplate>
+
+  <!-- テンプレート取得 -->
+  <GetSmsTemplates>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_GlobalSMSTemplate
+         WHERE  shop_id = @shop_id
+           AND  mail_id = @mail_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetSmsTemplates>
+
+  <!-- テンプレート取得 -->
+  <GetSmsTemplate>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_GlobalSMSTemplate
+         WHERE  shop_id = @shop_id
+           AND  mail_id = @mail_id
+           AND  phone_carrier = @phone_carrier
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="phone_carrier" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetSmsTemplate>
+
+  <!-- ステータス登録 -->
+  <RegisterState>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_GlobalSMSStatus
+                (
+                  message_id
+                  ,global_tel_no
+                  ,sms_status
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @message_id
+                  ,@global_tel_no
+                  ,@sms_status
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="message_id" Type="nvarchar" Size="30" />
+      <Input Name="global_tel_no" Type="nvarchar" Size="30" />
+      <Input Name="sms_status" Type="nvarchar" Size="20" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </RegisterState>
+
+  <!-- ステータス更新 -->
+  <UpdateState>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_GlobalSMSStatus
+           SET  sms_status = @sms_status
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  message_id = @message_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="message_id" Type="nvarchar" Size="30" />
+      <Input Name="sms_status" Type="nvarchar" Size="20" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateState>
+
+  <!-- ステータスクリーニング -->
+  <CleaningStatusData>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_GlobalSMSStatus
+         WHERE  date_changed < DATEADD(day,-1 * @cleaning_days,GETDATE())
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cleaning_days" Type="int" />
+    </Parameter>
+  </CleaningStatusData>
+
+  <!-- 時間超過したステータス取得 -->
+  <GetTimeOverStatus>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_GlobalSMSStatus WITH(nolock)
+         WHERE  sms_status != 'DELIVERED'
+           AND  date_changed < DATEADD(hh,-1 * @time_limit_hours,GETDATE())
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="time_limit_hours" Type="int" />
+    </Parameter>
+  </GetTimeOverStatus>
+
+  <!-- エラーポイントインクリメント -->
+  <IncrementSmsErrorPoint>
+    <Statement>
+      <![CDATA[
+         MERGE  w2_SMSErrorPointGlobalTelNo AS T
+         USING  (
+                  VALUES  
+                    (
+                      @global_tel_no
+                      ,1
+                      ,getdate()
+                      ,getdate()
+                      ,@last_changed
+                    )
+                )  AS TmpTable
+                (
+                  global_tel_no
+                  ,error_point
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+                ON (T.global_tel_no = TmpTable.global_tel_no )
+                WHEN MATCHED THEN
+                  UPDATE SET
+                    T.error_point = T.error_point + 1
+                    ,T.date_changed = TmpTable.date_changed
+                    ,T.last_changed = TmpTable.last_changed
+                WHEN NOT MATCHED THEN
+                  INSERT (
+                    global_tel_no
+                    ,error_point
+                    ,date_created
+                    ,date_changed
+                    ,last_changed )
+                  VALUES  (
+                    TmpTable.global_tel_no
+                    ,TmpTable.error_point
+                    ,TmpTable.date_created
+                    ,TmpTable.date_changed
+                    ,TmpTable.last_changed );
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="global_tel_no" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </IncrementSmsErrorPoint>
+
+  <!-- ステータス削除 -->
+  <DeleteStatus>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_GlobalSMSStatus
+         WHERE  message_id = @message_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="message_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteStatus>
+
+  <!-- エラーポイント取得 -->
+  <GetErrorPoint>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_SMSErrorPointGlobalTelNo WITH(nolock)
+         WHERE  global_tel_no = @global_tel_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="global_tel_no" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetErrorPoint>
+
+  <!-- 配信文章アップサート -->
+  <UpsertSMSDistText>
+    <Statement>
+      <![CDATA[
+         MERGE  w2_GlobalSMSDistText AS T
+         USING  (
+                  VALUES  
+                    (
+                      @dept_id
+                      ,@mailtext_id
+                      ,@phone_carrier
+                      ,@sms_text
+                      ,getdate()
+                      ,getdate()
+                      ,@last_changed
+                    )
+                )  AS TmpTable
+                (
+                  dept_id
+                  ,mailtext_id
+                  ,phone_carrier
+                  ,sms_text
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+                ON (T.dept_id = TmpTable.dept_id AND T.mailtext_id = TmpTable.mailtext_id AND T.phone_carrier = TmpTable.phone_carrier)
+                WHEN MATCHED THEN
+                  UPDATE SET
+                    T.sms_text = TmpTable.sms_text
+                    ,T.date_changed = TmpTable.date_changed
+                    ,T.last_changed = TmpTable.last_changed
+                WHEN NOT MATCHED THEN
+                  INSERT (
+                    dept_id
+                    ,mailtext_id
+                    ,phone_carrier
+                    ,sms_text
+                    ,date_created
+                    ,date_changed
+                    ,last_changed )
+                  VALUES  (
+                    TmpTable.dept_id
+                    ,TmpTable.mailtext_id
+                    ,TmpTable.phone_carrier
+                    ,TmpTable.sms_text
+                    ,TmpTable.date_created
+                    ,TmpTable.date_changed
+                    ,TmpTable.last_changed );
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="phone_carrier" Type="nvarchar" Size="30" />
+      <Input Name="sms_text" Type="nvarchar" Size="max" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpsertSMSDistText>
+
+  <!-- 配信文章取得 -->
+  <GetSmsDistTexts>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_GlobalSMSDistText
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetSmsDistTexts>
+
+  <!-- テンプレート削除 -->
+  <DeleteSmsTemplates>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_GlobalSmsTemplate
+         WHERE  shop_id = @shop_id
+           AND  mail_id = @mail_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteSmsTemplates>
+
+  <!-- 配信文章削除 -->
+  <DeleteSmsDistTexts>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_GlobalSMSDistText
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteSmsDistTexts>
+
+</GlobalSMS>

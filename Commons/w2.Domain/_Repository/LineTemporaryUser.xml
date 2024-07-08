@@ -1,0 +1,133 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : LINE仮会員テーブル系SQLステートメントXML (LineTemporaryUser.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+-->
+<LineTemporaryUser>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_LineTemporaryUser
+         WHERE  line_user_id = @line_user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="line_user_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </Get>
+
+  <!-- ユーザーIDから取得 -->
+  <GetByUserId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_LineTemporaryUser
+         WHERE  temporary_user_id = @temporary_user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="temporary_user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetByUserId>
+  
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+       DECLARE  @count int
+
+        SELECT  @count = COUNT(line_user_id)
+          FROM  w2_LineTemporaryUser
+         WHERE  w2_LineTemporaryUser.line_user_id = @line_user_id
+
+        IF (@count = 0)
+          BEGIN
+            INSERT  w2_LineTemporaryUser
+                    (
+                      line_user_id,
+                      temporary_user_id,
+                      temporary_user_registration_date,
+                      regular_user_registration_flag,
+                      regular_user_registration_date,
+                      date_created,
+                      date_changed,
+                      last_changed
+                    )
+            VALUES  (
+                      @line_user_id,
+                      @temporary_user_id,
+                      @temporary_user_registration_date,
+                      @regular_user_registration_flag,
+                      @regular_user_registration_date,
+                      GETDATE(),
+                      GETDATE(),
+                      @last_changed
+                    )
+          END
+        ELSE
+          BEGIN
+            UPDATE  w2_LineTemporaryUser
+               SET  temporary_user_id = @temporary_user_id,
+                    temporary_user_registration_date = @temporary_user_registration_date,
+                    regular_user_registration_flag = @regular_user_registration_flag,
+                    regular_user_registration_date = @regular_user_registration_date,
+                    date_changed = GETDATE(),
+                    last_changed = @last_changed
+             WHERE  line_user_id = @line_user_id
+          END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="line_user_id" Type="nvarchar" Size="50" />
+      <Input Name="temporary_user_id" Type="nvarchar" Size="30" />
+      <Input Name="temporary_user_registration_date" Type="datetime" />
+      <Input Name="regular_user_registration_flag" Type="nvarchar" Size="1" />
+      <Input Name="regular_user_registration_date" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+  
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_LineTemporaryUser
+           SET  temporary_user_id = @temporary_user_id,
+                temporary_user_registration_date = @temporary_user_registration_date,
+                regular_user_registration_flag = @regular_user_registration_flag,
+                regular_user_registration_date = @regular_user_registration_date,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  line_user_id = @line_user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="line_user_id" Type="nvarchar" Size="50" />
+      <Input Name="temporary_user_id" Type="nvarchar" Size="30" />
+      <Input Name="temporary_user_registration_date" Type="datetime" />
+      <Input Name="regular_user_registration_flag" Type="nvarchar" Size="1" />
+      <Input Name="regular_user_registration_date" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_LineTemporaryUser
+         WHERE  line_user_id = @line_user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="line_user_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </Delete>
+
+</LineTemporaryUser>

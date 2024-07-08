@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メール配信文章系SQLステートメントXML(MailDistText.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MailDistText>
+
+  <!-- メール配信文章全件取得 -->
+  <GetMailDistTextAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailDistText
+         WHERE  dept_id = @dept_id
+           AND  del_flg = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMailDistTextAll>
+  
+  <!-- メール配信文章一覧取得 -->
+  <GetMailDistTextList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_MailDistText.mailtext_id), 0)
+          FROM  w2_MailDistText
+                [[ MAILDISTTEXT_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_MailDistText.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_MailDistText.dept_id,
+                          w2_MailDistText.mailtext_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MAILDISTTEXT_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MailDistText
+                          [[ MAILDISTTEXT_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_MailDistText ON
+                (
+                  RowIndex.dept_id = w2_MailDistText.dept_id
+                  AND
+                  RowIndex.mailtext_id = w2_MailDistText.mailtext_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetMailDistTextList>
+
+  <!-- メール配信文章取得 -->
+  <GetMailDistText>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailDistText
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  del_flg = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMailDistText>
+
+  <!-- メール配信文章インサート -->
+  <InsertMailDistText>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_MailDistText
+                (
+                dept_id,
+                mailtext_id,
+                mailtext_name,
+                mailtext_subject,
+                mailtext_subject_mobile,
+                mailtext_body,
+                mailtext_html,
+                mailtext_body_mobile,
+                sendhtml_flg,
+                mail_from_name,
+                mail_from,
+                last_changed,
+                language_code,
+                language_locale_id,
+                sms_use_flg,
+                line_use_flg
+                )
+        VALUES  (
+                @dept_id,
+                @mailtext_id,
+                @mailtext_name,
+                @mailtext_subject,
+                @mailtext_subject_mobile,
+                @mailtext_body,
+                @mailtext_html,
+                @mailtext_body_mobile,
+                @sendhtml_flg,
+                @mail_from_name,
+                @mail_from,
+                @last_changed,
+                @language_code,
+                @language_locale_id,
+                @sms_use_flg,
+                @line_use_flg
+              )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_name" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_subject" Type="nvarchar" Size="50" />
+      <Input Name="mailtext_subject_mobile" Type="nvarchar" Size="50" />
+      <Input Name="mailtext_body" Type="ntext" />
+      <Input Name="mailtext_html" Type="ntext" />
+      <Input Name="mailtext_body_mobile" Type="ntext" />
+      <Input Name="sendhtml_flg" Type="nvarchar" Size="10" />
+      <Input Name="mail_from_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_from" Type="nvarchar" Size="500" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="sms_use_flg" Type="nvarchar" Size="1" />
+      <Input Name="line_use_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </InsertMailDistText>
+
+  <!-- メール配信文章アップデート -->
+  <UpdateMailDistText>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MailDistText
+           SET  mailtext_name = @mailtext_name,
+                mailtext_subject = @mailtext_subject,
+                mailtext_subject_mobile = @mailtext_subject_mobile,
+                mailtext_body = @mailtext_body,
+                mailtext_html = @mailtext_html,
+                mailtext_body_mobile = @mailtext_body_mobile,
+                mailtext_decome = '',
+                sendhtml_flg = @sendhtml_flg,
+                mail_from_name = @mail_from_name,
+                mail_from = @mail_from,
+                date_changed = getdate(),
+                last_changed = @last_changed,
+                sms_use_flg = @sms_use_flg,
+                line_use_flg = @line_use_flg
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+        UPDATE  w2_MailDistTextGlobal
+           SET  mailtext_name = @mailtext_name,
+                date_changed = getdate(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_name" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_subject" Type="nvarchar" Size="50" />
+      <Input Name="mailtext_subject_mobile" Type="nvarchar" Size="500" />
+      <Input Name="mailtext_body" Type="ntext" />
+      <Input Name="mailtext_html" Type="ntext" />
+      <Input Name="mailtext_body_mobile" Type="ntext" />
+      <Input Name="sendhtml_flg" Type="nvarchar" Size="10" />
+      <Input Name="mail_from_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_from" Type="nvarchar" Size="500" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="sms_use_flg" Type="nvarchar" Size="1" />
+      <Input Name="line_use_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </UpdateMailDistText>
+
+  <!-- メール配信文章削除フラグ更新 -->
+  <UpdateMailDistTextDelFlg>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MailDistText
+           SET  del_flg = '1'
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UpdateMailDistTextDelFlg>
+
+</MailDistText>

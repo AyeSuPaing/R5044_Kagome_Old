@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メール配信文章系SQLサブステートメントXML(MailDistText_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MailDistText_Sub>
+
+  <!-- メール配信文章情報一覧取得用WHERE文 -->
+  <MAILDISTTEXT_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_MailDistText.dept_id = @dept_id
+           AND  (
+                @srch_key = ''
+                OR
+                @srch_key = '1' AND w2_MailDistText.mailtext_name LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'
+                OR
+                @srch_key = '2' AND w2_MailDistText.mailtext_subject LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'
+                )
+           AND  del_flg = '0'
+      ]]>
+    </Statement>
+  </MAILDISTTEXT_SEARCH_WHERE>
+
+  <!-- メール配信文章情報一覧取得用ORDER_BY -->
+  <MAILDISTTEXT_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN 1 THEN w2_MailDistText.mailtext_id
+            ELSE '1'
+          END ASC,
+          CASE @sort_kbn
+            WHEN 2 THEN w2_MailDistText.mailtext_id
+            ELSE '1'
+          END DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_MailDistText.dept_id ASC, w2_MailDistText.mailtext_id ASC
+      ]]>
+    </Statement>
+  </MAILDISTTEXT_SEARCH_ORDER_BY>
+
+</MailDistText_Sub>

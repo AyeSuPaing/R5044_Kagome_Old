@@ -1,0 +1,214 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : インシデント系SQLステートメントXML(CsIncident.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsIncident>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsIncident.*,
+                w2_CsIncidentCategory.category_name
+          FROM  w2_CsIncident
+                LEFT JOIN w2_CsIncidentCategory ON
+                (
+                  w2_CsIncident.dept_id = w2_CsIncidentCategory.dept_id
+                  AND
+                  w2_CsIncident.incident_category_id = w2_CsIncidentCategory.category_id
+                )
+         WHERE  w2_CsIncident.dept_id = @dept_id
+           AND  w2_CsIncident.incident_id = @incident_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- メール識別IDを指定して取得 -->
+  <GetByMessageId>
+    <Statement>
+      <![CDATA[
+      ;WITH _mail AS (
+        SELECT  *
+          FROM  w2_CsMessageMail
+         WHERE  w2_CsMessageMail.dept_id = @dept_id
+           AND  w2_CsMessageMail.message_id = @message_id
+      ), _send AS (
+        SELECT  *
+          FROM  w2_CsMessage
+         WHERE  w2_CsMessage.dept_id = @dept_id
+           AND  w2_CsMessage.send_mail_id <> ''
+      ), _receive AS (
+        SELECT  *
+          FROM  w2_CsMessage
+         WHERE  w2_CsMessage.dept_id = @dept_id
+           AND  w2_CsMessage.receive_mail_id <> ''
+      ), _message AS (
+        SELECT  *
+          FROM  _send
+         WHERE  EXISTS ( SELECT * FROM _mail WHERE _mail.dept_id = _send.dept_id AND _mail.mail_id = _send.send_mail_id )
+        UNION ALL
+        SELECT  *
+          FROM  _receive
+         WHERE  EXISTS ( SELECT * FROM _mail WHERE _mail.dept_id = _receive.dept_id AND _mail.mail_id = _receive.receive_mail_id )
+      )
+      
+        SELECT  w2_CsIncident.*
+          FROM  w2_CsIncident
+         WHERE  EXISTS ( SELECT * FROM _message WHERE w2_CsIncident.dept_id = _message.dept_id AND w2_CsIncident.incident_id = _message.incident_id )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="message_id" Type="varchar" Size="900" />
+    </Parameter>
+  </GetByMessageId>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CsIncident
+                (
+                  dept_id,
+                  incident_id,
+                  user_id,
+                  incident_category_id,
+                  incident_title,
+                  status,
+                  voc_id,
+                  voc_memo,
+                  comment,
+                  importance,
+                  user_name,
+                  user_contact,
+                  cs_group_id,
+                  operator_id,
+                  valid_flg,
+                  date_last_received,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @dept_id,
+                  @incident_id,
+                  @user_id,
+                  @incident_category_id,
+                  @incident_title,
+                  @status,
+                  @voc_id,
+                  @voc_memo,
+                  @comment,
+                  @importance,
+                  ISNULL(@user_name, ''),
+                  ISNULL(@user_contact, ''),
+                  @cs_group_id,
+                  @operator_id,
+                  @valid_flg,
+                  GETDATE(),
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_category_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_title" Type="nvarchar" Size="50" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="voc_id" Type="nvarchar" Size="10" />
+      <Input Name="voc_memo" Type="nvarchar" Size="max" />
+      <Input Name="comment" Type="nvarchar" Size="max" />
+      <Input Name="importance" Type="nvarchar" Size="10" />
+      <Input Name="user_name" Type="nvarchar" Size="100" />
+      <Input Name="user_contact" Type="nvarchar" Size="256" />
+      <Input Name="cs_group_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsIncident
+           SET  w2_CsIncident.user_id = @user_id,
+                w2_CsIncident.incident_category_id = @incident_category_id,
+                w2_CsIncident.status = @status,
+                w2_CsIncident.importance = @importance,
+                w2_CsIncident.cs_group_id = @cs_group_id,
+                w2_CsIncident.operator_id = @operator_id,
+                w2_CsIncident.valid_flg = @valid_flg,
+                w2_CsIncident.date_changed = GETDATE(),
+                w2_CsIncident.last_changed = @last_changed
+         WHERE  w2_CsIncident.dept_id = @dept_id
+           AND  w2_CsIncident.incident_id = @incident_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_category_id" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="importance" Type="nvarchar" Size="10" />
+      <Input Name="cs_group_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+  
+  <!-- 最終受信日時更新 -->
+  <UpdateLastReceivedDate>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsIncident
+           SET  date_last_received = GETDATE(),
+                date_message_last_send_received = GETDATE(),
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateLastReceivedDate>
+  
+  <!-- 完了日更新 -->
+  <UpdateCompleteDate>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsIncident
+           SET  w2_CsIncident.date_completed = GETDATE(),
+                w2_CsIncident.date_changed = GETDATE(),
+                w2_CsIncident.last_changed = @last_changed
+         WHERE  w2_CsIncident.dept_id = @dept_id
+           AND  w2_CsIncident.incident_id = @incident_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateCompleteDate>
+
+</CsIncident>

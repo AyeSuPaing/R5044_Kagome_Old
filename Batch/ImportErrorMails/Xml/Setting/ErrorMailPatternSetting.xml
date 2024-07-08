@@ -1,0 +1,579 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : エラーメールパターンXML(ErrorMailPatternSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<!--
+・Patternは正規表現で記述
+・「メールアドレス」部分を取得してエラーメールアドレスとします。
+・メールアドレス、ホストの正規表現はそれぞれ  [0-9a-zA-Z~_\.\-\?\/\+\]*@[0-9a-zA-Z\.]*   [0-9a-zA-Z\.]*  とします。
+・[]内は情報をどこから取得したか
+  [WEB]→ネット情報
+  [TEST]→テスト実績からの情報
+  それ以外は実際のドメインより
+・76文字目で=\nにて改行される可能性を考慮する事
+-->
+<ErrorMailPatternSetting>
+
+  <!--===============================================================================-->
+  <!-- リレー拒否 -->
+  <!--===============================================================================-->
+  <Error type="RelayDenied" Point="1" >
+    <Pattern target="body"><![CDATA[550 5\.7\.1 <メールアドレス>\.\.\. Relaying denied]]></Pattern>
+    <Pattern target="body"><![CDATA[<メールアドレス>.*(#5\.7\.1)]]></Pattern>
+    <Pattern target="body"><![CDATA[Unable to relay for メールアドレス]]></Pattern>
+    <Pattern target="body"><![CDATA[<xxxxxxxx@xxxxxxxxxxxxxx>.*\r\n.*550 unrouteable recipient address.*(\r\n|.)*To: メールアドレス]]></Pattern>
+    <Pattern target="body"><![CDATA[<メールアドレス>.*relaying denied]]></Pattern>
+    
+  </Error>
+
+  <!--===============================================================================-->
+  <!-- ユーザ不明 -->
+  <!--===============================================================================-->
+  <Error type="UserUnknown" Point="5" >
+    <!-- ユーザ不明 [TEST] -->
+    <Pattern target="body"><![CDATA[553 5\.3\.0 <メールアドレス>\.\.\. Recipient is not local]]></Pattern>
+    <Pattern target="body">
+      <![CDATA[Final-Recipient:.* メールアドレス
+Action: failed
+Status: (511|5\.3\.0)]]></Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>:
+[0-9]*.[0-9]*.[0-9]*.[0-9]* does not like recipient\.
+Remote host said: 553 Sorry, no mailbox here by that name\.]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Final-Recipient: メールアドレス
+Action: failed
+Status: 553]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[The user\(s\) account is disabled.*(\r\n|.)*<メールアドレス>]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス.*
+.*
+.*
+.*no mailbox]]>
+    </Pattern>
+    <!-- ユーザ不明 [WEB]* -->
+    <Pattern target="body"><![CDATA[<メールアドレス>.*[\r\n]*.*(Unknown user|User unknown)]]></Pattern>
+    <Pattern target="body"><![CDATA[(Unknown user|User unknown).*メールアドレス]]></Pattern>
+    <Pattern target="body">
+      <![CDATA[User unknown\.
+The following recipients did not receive this message.
+
+<メールアドレス>]]></Pattern>
+    <Pattern target="body">
+      <![CDATA[This user doesn't have a [0-9a-zA-Z\.]* account
+    (メールアドレス)]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[(Delivery to the following recipients failed\.|--- the following addresses may have permanent fatal errors ---)
+[\r\n]*メールアドレス]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*[\r\n]*(This user doesn't have|Address rejected|no user here by that name|5\.3\.0)]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[No such user <メールアドレス>]]>
+    </Pattern>
+    <Pattern target="body"><![CDATA[Invalid recipient: <メールアドレス>]]></Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス> was undeliverable.
+The reason for the problem:
+5\.1\.0 - Unknown address error]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス
+Action: .*
+Status: .*
+.*
+.* User unknown]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Final-Recipient: メールアドレス
+Action: failed
+Status: 550]]>
+    </Pattern>
+    <!-- たぶんユーザー不明 [TEST] -->
+    <Pattern target="body"><![CDATA[<メールアドレス>: host [0-9a-zA-Z\.]*\[[0-9]*.[0-9]*.[0-9]*.[0-9]*\] said]]></Pattern>
+    <Pattern target="body"><![CDATA[unknown or illegal alias: メールアドレス]]></Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス
+.*RecipNotFound]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[This user doesn't have a .* account \(メールアドレス\)]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*domain or user isn't in my list]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>
+
+送信先.*が見つからないか、
+送信先メールサーバの事由により送信できませんでした。]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Final-Recipient: rfc822;メールアドレス
+Action: failed
+Status: 5\.1\.1]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>: -5\.1\.1]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*
+.*5\.1\.1]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*5\.1\.1]]>
+    </Pattern>
+   
+    <Pattern target="body">
+      <![CDATA[送信先アドレス：\[メールアドレス\] は無効です]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*The email account that you tried to reach is disabled]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Your message to メールアドレス .*
+.*
+.*wasn't found]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*5\.2\.1]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*User.*unknown]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*not found]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*5\.7\.0]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*5\.7\.1]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<mailto:メールアドレス>.*
+.*wasn't found.*]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*unknown]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*Unrouteable address]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*Mail content denied]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス.* not listed in Domino Directory]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス.*
+.*Illegal host/domain name found]]>
+    </Pattern>
+    <!-- ベアメール：500番台は恒久的な理由（アカウントが存在しない等）がほとんど -->
+    <Pattern target="header">
+      <![CDATA[X-SE-BounceInfo:\s[0-9]{1,2}\s5[0-9]{2}_.*<メールアドレス>:]]>
+    </Pattern>
+    <!-- ベアメールは710、720、730 も名前解決ができない際に発生します -->
+    <Pattern target="header">
+      <![CDATA[X-SE-BounceInfo:\s[0-9]{1,2}\s7[1-3]0_.*<メールアドレス>:]]>
+    </Pattern>
+
+  </Error>
+
+  <!--===============================================================================-->
+  <!-- ホスト不明 -->
+  <!--===============================================================================-->
+  <Error type="HostUnknown" Point="1" >
+    <!-- ホスト不明 [TEST][loveboat.cx] -->
+    <Pattern target="body"><![CDATA[550 5\.1\.2.*<メールアドレス>]]></Pattern>
+    <!-- ホスト不明 [WEB] -->
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>: Unknown host ]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*
+.*Host unknown.*]]>
+    </Pattern>
+    <!-- ホスト不明やスパムブロック [WEB] -->
+    <Pattern target="body"><![CDATA[553 5\.3\.0 <メールアドレス>\.\.\. Domain of sender address [0-9a-zA-Z~_\.\-\?\/\+]*@[0-9a-zA-Z\.]* does not exist]]></Pattern>
+    <!-- ホスト不明 [WEB]*) -->
+    <Pattern target="body">
+      <![CDATA[Host [0-9a-zA-Z\.]* not found
+The following recipients did not receive this message:
+メールアドレス]]>
+    </Pattern>
+    <!-- ホスト名・サービス不明 [TEST]) -->>: Unknown host
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>:
+    \[[0-9a-zA-Z\.]*\]: Name or service not known]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>: \[[0-9a-zA-Z\.]*\]: Name or service]]>
+    </Pattern>
+    <!-- たぶんホスト不明 [TEST] -->
+    <Pattern target="body"><![CDATA[<メールアドレス>\): delivery temporarily suspended]]></Pattern>
+    <!-- ホスト不明 [TEST] -->
+    <Pattern target="body"><![CDATA[<メールアドレス>: Unknown host]]></Pattern>
+    <Pattern target="body">
+      <![CDATA[@以後.*
+.*
+.*
+The following recipients did not receive this message:
+
+<メールアドレス>]]></Pattern>
+  </Error>
+
+  <!--===============================================================================-->
+  <!-- その他のエラー(1ポイント) -->
+  <!--===============================================================================-->
+  <Error type="OtherError1" Point="1">
+    <!-- メール遅延の再送信をしたにもかかわらず接続できなかった場合 [TEST][WEB] -->
+    <Pattern target="body">
+      <![CDATA[Your message was not delivered within [0-9]+ days\.
+Host [0-9a-zA-Z\.]* is not responding\.
+
+The following recipients did not receive this message:
+<メールアドレス>]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[This is a permanent error; I've given up. Sorry it didn't work out.
+
+<メールアドレス>]]>
+    </Pattern>
+    <!-- 容量一杯 [WEBより]**-->
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*(User disk quota|Too much mail data|Can't create output|user exceeded quota|5\.2\.2)]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[The user\(s\) account is temporarily over quota\.[\r\n]*<メールアドレス>]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Quota exceeded(.|\r\n)*Delivered-To: メールアドレス(.|\r\n)*To: メールアドレス]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Could not be delivered to: <メールアドレス> 
+     As their mailbox is full]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Delivered-To: メールアドレス.*To: メールアドレス]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*
+.*(MAILBOX FULL|552 5\.2\.2|Disc quota exceeded|diskspace quota)]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[QUOTA exceed メールアドレス]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[User has exceeded quota, bouncing mail.
+To:<メールアドレス>]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Final-Recipient: RFC822; メールアドレス
+.*
+Action: failed
+Status: 5.2.2]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス
+
+   ----- Non-delivered information -----
+.*recipient's mailbox exceeded]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[: メールアドレス[\r\n]*As their mailbox is full]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>\): can't create
+.*user output file]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス.* Disc quota exceeded]]>
+    </Pattern>
+    <!-- メールボックスが利用できない [TEST] -->
+    <Pattern target="body">
+      <![CDATA[550.*<メールアドレス>]]>
+    </Pattern>
+    <!-- ドメイン指定拒否 [TEST] -->
+    <Pattern target="body">
+      <![CDATA[Final-Recipient:[ ]*rfc822;[ ]*メールアドレス
+Action:[ ]*failed
+Status:[ ]*5.2.0]]>
+    </Pattern>
+    <!-- サーバーアクセス拒否 [TEST] -->
+    <Pattern target="body">
+      <![CDATA[Final-Recipient:[ ]*rfc822;[ ]*メールアドレス
+Action:[ ]*failed
+Status:[ ]*5\.0\.0]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>: permission denied]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[421 Service not available.*(\r\n|.)*X-Loop: メールアドレス]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス
+.*Spam.*]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス.*Access denied.*]]>
+    </Pattern>
+
+    <!-- 送受信制限 [TEST] -->
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>: 4\.7\.1]]>
+    </Pattern>
+    <!-- 存在するが何らかの理由により利用不可 [TEST] -->
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.* mailbox unavailable]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Sorry your message to メールアドレス cannot be delivered. This account has been disabled or discontinued]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>: Too much mail data]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス
+Action: .*
+Status: .*
+.*
+.* Over quota]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス
+Action: .*
+Status: .*
+.*
+.*
+.*File too large]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス
+Action: .*
+Status: .*Mail is rejected by recipients
+.*
+.*
+.*output error]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>: Mail is rejected by recipients.]]>
+    </Pattern>
+    <!-- 空き容量なし[TEST] -->
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*
+    Disk quota exceeded]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[exceeded storage allocation
+
+     <メールアドレス>]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[  Recipient address: メールアドレス
+  Reason: Over quota]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*over quota]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*
+.*over quota]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*
+Not enough disk space]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*Disk quota]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*
+.*
+.*quota exceeded]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>: can't create user output file]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[User mailbox exceeds.*メールアドレス]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*
+.*quota]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[exceeded storage allocation.*<メールアドレス>]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*full]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[full.*
+.*
+.*
+<メールアドレス>]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス.*
+.*
+.*
+.*
+.*Quota exceeded]]>
+    </Pattern>
+  </Error>
+
+  <!--===============================================================================-->
+  <!-- その他のエラー(0ポイント) -->
+  <!--===============================================================================-->
+  <Error type="OtherError0" Point="0">
+    <!-- POP bedore SMTP なのに POP認証しないで送信しようとした [WEB] -->
+    <Pattern target="body"><![CDATA[553 5\.3\.0 <メールアドレス>\.\.\. Please receive your mail before sending]]></Pattern>
+    <!-- 一度に送る容量オーバー [WEB] -->
+    <Pattern target="body"><![CDATA[552 <メールアドレス>\.\.\. Message is too large]]></Pattern>
+    <!-- 一度に送る容量オーバー [WEB]* -->
+    <Pattern target="body"><![CDATA[552 <メールアドレス>\.\.\. Message size exceeds fixed maximum message size]]></Pattern>
+    <!-- サイズ制限・ウィルス検知など [WEB] -->
+    <Pattern target="body"><![CDATA[554 <メールアドレス>\.\.\. Service unavailable]]></Pattern>
+    <Pattern target="body">
+      <![CDATA[Final-Recipient: メールアドレス
+Action: failed
+Status: 554]]></Pattern>
+    <!-- 記憶装置の空き領域が不十分なため、要求された処理は実行不能。-->
+    <Pattern target="body">
+      <![CDATA[Final-Recipient: メールアドレス
+Action: failed
+Status: 452]]>
+    </Pattern>
+    <!-- メール遅延の警告(エラーではない。再び再送信を行う) [TEST][WEB]* -->
+    <Pattern target="body">
+      <![CDATA[THIS IS A WARNING MESSAGE ONLY .* 
+.*YOU DO NOT NEED TO RESEND YOUR MESSAGE.*
+.*
+
+.*
+.*
+
+----- The following addresses had transient non-fatal errors ----- 
+
+メールアドレス]]>
+    </Pattern>
+    <!-- メーラの設定エラー [WEB]* -->
+    <Pattern target="body">
+      <![CDATA[501 <メールアドレス>\.\.\. Data format error]]>
+    </Pattern>
+    <!-- メール遅延の警告 [TEST] -->
+    <Pattern target="body">
+      <![CDATA[Delivery to the following recipients has been delayed.
+
+       メールアドレス]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Final-Recipient: RFC822; メールアドレス
+Action: delayed
+Status: 4.4.1]]>
+    </Pattern>
+    <!-- 料金未払いにより止められている [TEST] -->
+    <Pattern target="body">
+      <![CDATA[The user\(s\) account is disabled.
+
+
+<メールアドレス>]]>
+    </Pattern>
+    <!-- 再試行せよ(450)のとき [TEST] -->
+    <Pattern target="body">
+      <![CDATA[Final-Recipient: メールアドレス
+Action: failed
+Status: 450]]>
+    </Pattern>
+    <!-- 不明 [TEST] -->
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>: exception opening socket]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*5\.4\.0]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*
+.*not deliverable]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*not.*
+.*deliverable]]>
+    </Pattern>
+
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>:(.|\r\n)*Please contact your Internet service provider since part of their network is on our block list]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[メールアドレス.*
+.*
+.*blocked]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>: socket read or accept timed out]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Delivery to the following recipients failed..*
+.*
+.*メールアドレス]]>
+    </Pattern>
+    <!-- テンポラリシステムエラー。メールアドレスはPOSTMASTERアドレスのため0ポイント設定 [TEST] -->
+    <Pattern target="body">
+      <![CDATA[The message could not be delivered due to a temporary system problem.
+Please try again later.
+
+Please reply to <メールアドレス>]]>
+    </Pattern>
+    <!-- POP before SMTPエラー？ [TEST] -->
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>: sorry, that domain or user isn't in my list of allowed rcpthosts (#5.7.1)]]>
+    </Pattern>
+    <!-- 1行が長すぎる -->
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>: Line Too Long]]>
+    </Pattern>
+    <!-- 再送信を求められる場合 -->
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*try again later]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*The user you are trying to contact is receiving mail at a rate that]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*The user you are trying to contact is receiving mail at a rate that]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[<メールアドレス>.*Deferred]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Deferred.*
+.*<メールアドレス>]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[The following recipients did not receive this message:
+.*
+<メールアドレス>]]>
+    </Pattern>
+    <Pattern target="body">
+      <![CDATA[Each of the following recipients was rejected by a remote
+mail server\.
+.*
+.*<メールアドレス>
+]]>
+    </Pattern>
+  </Error>
+
+</ErrorMailPatternSetting>

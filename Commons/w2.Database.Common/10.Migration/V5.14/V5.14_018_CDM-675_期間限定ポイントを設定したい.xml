@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+	<Up>
+		<Statement>
+			<![CDATA[
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_PointRule' AND COLUMN_NAME = 'effective_offset')
+				ALTER TABLE w2_PointRule ADD effective_offset INT NULL
+				GO
+
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_PointRule' AND COLUMN_NAME = 'effective_offset_type')
+				ALTER TABLE w2_PointRule ADD effective_offset_type NVARCHAR(2) NULL
+				GO
+
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_PointRule' AND COLUMN_NAME = 'term')
+				ALTER TABLE w2_PointRule ADD term INT NULL
+				GO
+
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_PointRule' AND COLUMN_NAME = 'term_type')
+				ALTER TABLE w2_PointRule ADD term_type NVARCHAR(2) NULL
+				GO
+
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_PointRule' AND COLUMN_NAME = 'period_begin')
+				ALTER TABLE w2_PointRule ADD period_begin DATETIME NULL
+				GO
+
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_PointRule' AND COLUMN_NAME = 'period_end')
+				ALTER TABLE w2_PointRule ADD period_end DATETIME NULL
+				GO
+
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_PointRule' AND COLUMN_NAME = 'allow_duplicate_apply_flg')
+				ALTER TABLE w2_PointRule ADD allow_duplicate_apply_flg NVARCHAR(2) NOT NULL DEFAULT N'0'
+				GO
+
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_UserPoint' AND COLUMN_NAME = 'effective_date')
+				ALTER TABLE w2_UserPoint ADD effective_date DATETIME NULL
+				GO
+
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_UserPointHistory' AND COLUMN_NAME = 'effective_date')
+				ALTER TABLE w2_UserPointHistory ADD effective_date DATETIME NULL
+				GO
+
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_UserPointHistory' AND COLUMN_NAME = 'restored_flg')
+				ALTER TABLE w2_UserPointHistory ADD restored_flg NVARCHAR(2) NOT NULL DEFAULT N'2'
+				GO
+
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_WorkUserPoint' AND COLUMN_NAME = 'effective_date')
+				ALTER TABLE w2_WorkUserPoint ADD effective_date DATETIME NULL
+				GO
+
+				-- ポイントマスタに期間限定ポイントを追加
+				-- 換算レートなどは通常ポイントからコピーしておく
+                IF NOT EXISTS (SELECT * FROM w2_Point WHERE (point_kbn = '02'))
+                INSERT  w2_Point
+                        (
+                          dept_id
+                          ,point_kbn
+                          ,point_exp_kbn
+                          ,usable_unit
+                          ,exchange_rate
+                        )
+                SELECT  dept_id,
+                        '02',
+                        '01',
+                        usable_unit,
+                        exchange_rate
+                  FROM  w2_Point
+                 WHERE  point_kbn = '01'
+                GO
+
+			]]>
+		</Statement>
+	</Up>
+</Migration>

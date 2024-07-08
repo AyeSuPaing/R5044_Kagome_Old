@@ -1,0 +1,195 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : インシデントマスタ系SQLステートメントXML (CsIncident.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<CsIncident>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CsIncident
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- ユーザーIDからインシデント情報取得 -->
+  <GetCsIncidentByUserId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CsIncident
+         WHERE  dept_id = @dept_id
+           AND  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCsIncidentByUserId>
+
+  <!--インシデントIDから担当グループID取得 -->
+  <GetCsGroupIdByIncidentId>
+    <Statement>
+      <![CDATA[
+        SELECT  cs_group_id
+          FROM  w2_CsIncident
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCsGroupIdByIncidentId>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsIncident
+           SET  user_id = @user_id
+                ,incident_category_id = @incident_category_id
+                ,incident_title = @incident_title
+                ,status = @status
+                ,voc_id = @voc_id
+                ,voc_memo = @voc_memo
+                ,comment = @comment
+                ,importance = @importance
+                ,user_name = @user_name
+                ,user_contact = @user_contact
+                ,cs_group_id = @cs_group_id
+                ,operator_id = @operator_id
+                ,lock_status = @lock_status
+                ,lock_operator_id = @lock_operator_id
+                ,valid_flg = @valid_flg
+                ,date_last_received = @date_last_received
+                ,date_completed = @date_completed
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  incident_id = @incident_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_category_id" Type="nvarchar" Size="30" />
+      <Input Name="incident_title" Type="nvarchar" Size="50" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="voc_id" Type="nvarchar" Size="10" />
+      <Input Name="voc_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="comment" Type="nvarchar" Size="MAX" />
+      <Input Name="importance" Type="nvarchar" Size="10" />
+      <Input Name="user_name" Type="nvarchar" Size="100" />
+      <Input Name="user_contact" Type="nvarchar" Size="256" />
+      <Input Name="cs_group_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="lock_status" Type="nvarchar" Size="30" />
+      <Input Name="lock_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="date_last_received" Type="datetime" />
+      <Input Name="date_completed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+   <UpdateIncidentByIncidentIds>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsIncident
+           SET  incident_category_id =
+                  CASE
+                    WHEN @incident_category_id = 'notupdate' THEN incident_category_id
+                    ELSE @incident_category_id
+                   END,
+                status =
+                  CASE
+                    WHEN @status = 'notupdate' THEN status
+                    ELSE @status
+                   END,
+                cs_group_id =
+                  CASE
+                    WHEN @cs_group_id = 'notupdate' THEN cs_group_id
+                    ELSE @cs_group_id
+                   END,
+                operator_id =
+                  CASE
+                    WHEN @operator_id = 'notupdate' THEN operator_id
+                    ELSE @operator_id
+                   END,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  w2_CsIncident.incident_id IN (@@incident_ids@@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="incident_category_id" Type="nvarchar" Size="30" />
+      <Input Name="cs_group_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateIncidentByIncidentIds>
+
+  <!-- 個人/グループタスクの件数集計 -->
+  <CountTask>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CsIncident.status,
+                w2_CsIncident.operator_id,
+                w2_CsIncident.valid_flg,
+                COUNT(w2_CsIncident.incident_id) AS row_count
+          FROM  w2_CsIncident
+         WHERE  w2_CsIncident.dept_id = @dept_id
+           AND  w2_CsIncident.operator_id = @operator_id
+           AND  w2_CsIncident.valid_flg = '1'
+        GROUP BY w2_CsIncident.status,
+                w2_CsIncident.operator_id,
+                w2_CsIncident.valid_flg
+
+        SELECT  w2_CsIncident.status,
+                @operator_id AS operator_id,
+                w2_CsIncident.valid_flg,
+                COUNT(w2_CsIncident.incident_id) AS row_count
+          FROM  w2_CsIncident
+         WHERE  w2_CsIncident.dept_id = @dept_id
+           AND  (
+                  w2_CsIncident.operator_id = @operator_id
+                  OR
+                  (
+                    @include_unassigned_group_task = '1'
+                    AND
+                    w2_CsIncident.cs_group_id = ''
+                  )
+                  @@ cs_group_ids_condition @@
+                )
+           AND  w2_CsIncident.valid_flg = '1'
+        GROUP BY w2_CsIncident.status,
+                w2_CsIncident.valid_flg
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="include_unassigned_group_task" Type="nvarchar" Size="1" />
+    </Parameter>
+  </CountTask>
+
+</CsIncident>

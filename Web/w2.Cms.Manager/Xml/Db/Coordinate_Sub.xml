@@ -1,0 +1,139 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : コーディネート系SQLサブステートメントXML(Coorinate_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2020 All Rights Reserved.
+=========================================================================================================
+-->
+<Coorinate_Sub>
+
+  <!-- コーディネート情報一覧取得用WHERE文 -->
+  <COORDINATE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  1=1
+           <@@hasval:display_kbn_like_escaped@@>
+           AND  w2_Coordinate.display_kbn LIKE '%' + @display_kbn_like_escaped + '%' ESCAPE '#'
+           </@@hasval:display_kbn_like_escaped@@>
+           <@@notval:display_date_kbn:UNSELECTED@@>
+           AND  (
+                  <@@val:display_date_kbn:DAY@@>
+                  CAST(display_date AS DATE) >= DATEADD(DAY,-1,CAST(getdate() AS DATE))
+                  </@@val:display_date_kbn:DAY@@>
+                  <@@val:display_date_kbn:WEEK@@>
+                  CAST(display_date AS DATE) >= DATEADD(DAY,-7,CAST(getdate() AS DATE))
+                  </@@val:display_date_kbn:WEEK@@>
+                  <@@val:display_date_kbn:MONTH@@>
+                  CAST(display_date AS DATE) >= DATEADD(Month,-1,CAST(getdate() AS DATE))
+                  </@@val:display_date_kbn:MONTH@@>
+                  <@@val:display_date_kbn:THREEMONTH@@>
+                  CAST(display_date AS DATE) >= DATEADD(Month,-3,CAST(getdate() AS DATE))
+                  </@@val:display_date_kbn:THREEMONTH@@>
+                  <@@val:display_date_kbn:AFTERTHREEMONTH@@>
+                  CAST(display_date AS DATE) <= DATEADD(Month,-3,CAST(getdate() AS DATE))
+                  </@@val:display_date_kbn:AFTERTHREEMONTH@@>
+                )
+           </@@notval:display_date_kbn:UNSELECTED@@>
+           <@@hasval:consider_display_date@@>
+           AND  (
+                  w2_Coordinate.display_date < GETDATE()
+                )
+           </@@hasval:consider_display_date@@>
+           <@@hasval:real_shop_like_escaped@@>
+           AND  (
+                  w2_Coordinate.real_shop_id LIKE '%' + @real_shop_like_escaped + '%' ESCAPE '#'
+                  OR
+                  w2_RealShop.name LIKE '%' + @real_shop_like_escaped + '%' ESCAPE '#'
+                )
+           </@@hasval:real_shop_like_escaped@@>
+           <@@hasval:staff_like_escaped@@>
+           AND  
+                  w2_Coordinate.staff_id LIKE '%' + @staff_like_escaped + '%' ESCAPE '#'
+                  OR
+                  staff_name LIKE '%' + @staff_like_escaped + '%' ESCAPE '#'
+           </@@hasval:staff_like_escaped@@>
+           <@@hasval:category_like_escaped@@>
+           AND  item_id like @category_like_escaped + '%' ESCAPE '#'
+           </@@hasval:category_like_escaped@@>
+           <@@hasval:keyword0_like_escaped@@>
+           AND  search_word like  '%' + @keyword0_like_escaped + '%' ESCAPE '#'
+           </@@hasval:keyword0_like_escaped@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="staff_like_escaped" Type="nvarchar" Size="30" />
+      <Input Name="real_shop_like_escaped" Type="nvarchar" Size="30" />
+      <Input Name="display_kbn_like_escaped" Type="nvarchar" Size="20"/>
+      <Input Name="category_like_escaped" Type="nvarchar" type="30" />
+      <Input Name="keyword0_like_escaped" Type="nvarchar" Size="100" />
+    </Parameter>
+  </COORDINATE_SEARCH_WHERE>
+
+  <!-- 検索用ORDER BY -->
+  <COORDINATE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          w2_Coordinate.display_date DESC,
+          w2_Coordinate.coordinate_id DESC
+      ]]>
+    </Statement>
+  </COORDINATE_SEARCH_ORDER_BY>
+
+  <!-- 検索用JOIN -->
+  <COORDINATE_SEARCH_JOIN>
+    <Statement>
+      <![CDATA[
+        <@@hasval:keyword0_like_escaped@@>
+        INNER JOIN
+        (
+          SELECT  *
+            FROM  (
+                    SELECT  *,
+                            (
+                              SELECT  item_name + ','
+                                FROM  (
+                                        SELECT  w2_CoordinateItem.coordinate_id,
+                                                w2_CoordinateItem.item_name
+                                          FROM  w2_CoordinateItem
+                                                UNION ALL
+                                        SELECT  w2_Coordinate.coordinate_id,
+                                                w2_Staff.staff_name
+                                          FROM  w2_Coordinate
+                                                INNER JOIN w2_Staff ON
+                                                (
+                                                  w2_Coordinate.staff_id = w2_Staff.staff_id
+                                                )
+                                                UNION ALL
+                                        SELECT  w2_Coordinate.coordinate_id,
+                                                w2_Coordinate.coordinate_title
+                                          FROM  w2_Coordinate
+                                      ) item
+                               WHERE  item.coordinate_id = w2_Coordinate.coordinate_id FOR XML PATH ('')
+                            ) AS search_word
+                      FROM  w2_Coordinate
+                  ) AS temp
+        ) AS searchtable ON searchtable.coordinate_id = w2_Coordinate.coordinate_id
+        </@@hasval:keyword0_like_escaped@@>
+        <@@hasval:category_like_escaped@@>
+        LEFT JOIN w2_CoordinateItem ON
+        (
+          w2_CoordinateItem.item_kbn = 'CTG'
+          AND
+          w2_Coordinate.coordinate_id = w2_CoordinateItem.coordinate_id
+        )
+        </@@hasval:category_like_escaped@@>
+        LEFT JOIN w2_Staff ON
+        (
+          w2_Coordinate.staff_id =  w2_Staff.staff_id
+        )
+        LEFT JOIN w2_RealShop ON
+        (
+          w2_Coordinate.real_shop_id =  w2_RealShop.real_shop_id
+        )
+      ]]>
+    </Statement>
+  </COORDINATE_SEARCH_JOIN>
+
+</Coorinate_Sub>

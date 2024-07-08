@@ -1,0 +1,341 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 会員ランク付与ルール系SQLステートメントXML(MemberRankRule.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<MemberRankRule>
+
+  <!-- 会員ランク付与ルール取得 -->
+  <GetMemberRankRule>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM	w2_MemberRankRule
+         WHERE	member_rank_rule_id = @member_rank_rule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_rule_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMemberRankRule>
+
+  <!-- 会員ランク付与ルール取得 -->
+  <GetMemberRankRuleAndChangeStatus>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM	w2_MemberRankRule
+         WHERE	member_rank_rule_id = @member_rank_rule_id
+           
+        UPDATE  w2_MemberRankRule
+           SET  status = @status
+         WHERE	member_rank_rule_id = @member_rank_rule_id
+           -- AND  status = '00'   -- 通常状態のものを更新
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_rule_id" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMemberRankRuleAndChangeStatus>
+
+  <!-- ターゲットリストデータ削除 -->
+  <DeleteTargetListData>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_TargetListData
+         WHERE  dept_id = @dept_id
+           AND  target_kbn = @target_kbn
+           AND  master_id = @master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteTargetListData>
+
+  <!-- ターゲットリストデータ作成 -->
+  <CreateTargetListData>
+    <Statement>
+      <![CDATA[
+        -- 指定付与ランク順位取得
+        DECLARE @change_rank_order int
+        SELECT  @change_rank_order = w2_MemberRank.member_rank_order
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.member_rank_id = @rank_change_rank_id
+         
+        ;WITH MemberList
+        AS (
+          SELECT  w2_User.user_id,
+                  w2_User.mail_addr,
+                  w2_User.mail_addr2,
+                  w2_User.member_rank_id,
+                  ISNULL(w2_MemberRank.member_rank_order, 999) AS member_rank_order
+            FROM  w2_User
+       LEFT JOIN  w2_MemberRank ON w2_User.member_rank_id = w2_MemberRank.member_rank_id
+           WHERE  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0') -- 退会ユーザ AND 統合済みユーザーは出力しない
+             AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+             AND  w2_User.mall_id = 'OWN_SITE'
+        ), OrderOrg
+        AS (  
+          SELECT  w2_Order.order_id,
+                  w2_Order.order_id AS order_id_org,
+                  w2_Order.user_id,
+                  w2_Order.order_price_total
+            FROM  w2_Order
+       LEFT JOIN  MemberList ON
+                  (
+                    w2_Order.user_id = MemberList.user_id
+                  )
+           WHERE  (
+                    order_shipped_date BETWEEN @target_extract_from AND @target_extract_to
+                    OR
+                    (
+                      order_shipped_date IS NULL
+                      AND
+                      order_delivering_date BETWEEN @target_extract_from AND @target_extract_to
+                    )
+                  )
+             AND  w2_Order.mall_id = 'OWN_SITE'
+             AND  w2_Order.order_id_org = '' -- 返品・交換注文ではないこと
+             AND  (
+                    @target_extract_old_rank_flg = 'ON'  -- 旧ランク情報を含むUNION ALL
+                    OR
+                    (
+                      @target_extract_old_rank_flg = 'OFF'  -- 旧ランク情報を含まない
+                      AND
+                      MemberList.member_rank_id = w2_Order.member_rank_id
+                    )
+                  )
+             AND  EXISTS ( SELECT * FROM MemberList WHERE MemberList.user_id = w2_Order.user_id )
+        ), OrderEx
+        AS (
+        -- 注文に紐付く返品交換
+          SELECT  order_ex.order_id,
+                  order_ex.order_id_org,
+                  order_ex.user_id,
+                  order_ex.order_price_total
+            FROM  w2_Order order_ex
+           WHERE  EXISTS ( SELECT * FROM OrderOrg WHERE order_ex.order_id_org = OrderOrg.order_id )
+        ), OrderAll
+        AS (
+          SELECT * FROM OrderOrg
+          UNION ALL
+          SELECT * FROM OrderEx
+        ), OrderPrice
+        AS (
+        -- ユーザーごとの購入金額合計
+          SELECT  OrderAll.user_id,
+                  SUM(OrderAll.order_price_total) AS order_price_total
+            FROM  OrderAll
+        GROUP BY  OrderAll.user_id
+        ), OrderCount
+        AS (
+        -- ユーザーごとの購入回数合計
+          SELECT  user_id,
+                  SUM(order_count) AS order_count
+            FROM  (
+                    SELECT  OrderAll.user_id,
+                            CASE WHEN SUM(w2_OrderItem.item_quantity) > 0 THEN 1 ELSE 0 END AS order_count  -- 注文数が1以上なら1注文としてカウント
+                      FROM  OrderAll
+                            LEFT JOIN w2_OrderItem ON
+                            (
+                              OrderAll.order_id = w2_OrderItem.order_id
+                            )
+                    GROUP BY OrderAll.user_id, CASE WHEN OrderAll.order_id_org = '' THEN OrderAll.order_id ELSE OrderAll.order_id_org END
+                  ) AS order_count
+        GROUP BY  user_id
+        ), TargetWork
+        AS (
+          SELECT
+                  MemberList.*,
+                  CASE
+                    WHEN member_rank_order > @change_rank_order THEN 'UP'
+                    WHEN member_rank_order < @change_rank_order THEN 'DOWN'
+                    ELSE '' END AS rank_change_type,
+                  OrderCount.order_count,
+                  OrderPrice.order_price_total
+            FROM  MemberList
+       LEFT JOIN  OrderCount ON OrderCount.user_id = MemberList.user_id
+       LEFT JOIN  OrderPrice ON OrderPrice.user_id = MemberList.user_id
+           WHERE
+                  ISNULL(OrderPrice.order_price_total, 0) BETWEEN @target_extract_total_price_from AND @target_extract_total_price_to
+             AND  ISNULL(OrderCount.order_count, 0) BETWEEN @target_extract_total_count_from AND @target_extract_total_count_to
+        ), TargetData
+        AS (
+          SELECT
+                  user_id,
+                  CASE
+                    WHEN mail_addr <> ''  THEN mail_addr
+                    WHEN mail_addr2 <> '' THEN mail_addr2
+                    ELSE '' END AS mail_addr,
+                  CASE
+                    WHEN mail_addr <> ''  THEN 'PC'
+                    WHEN mail_addr2 <> '' THEN 'MB'
+                    ELSE '' END AS mail_addr_kbn
+            FROM  TargetWork
+           WHERE  rank_change_type = @rank_change_type
+        )
+        
+        -------------------------------------------
+        -- ターゲットリストデータ作成
+        -------------------------------------------
+        -- メールが有効なユーザ
+        INSERT  w2_TargetListData
+                (
+                dept_id,
+                target_kbn,
+                master_id,
+                user_id,
+                mail_addr,
+                mail_addr_kbn
+                )
+        SELECT  @dept_id AS dept_id,
+                @target_kbn AS target_kbn,
+                @master_id AS master_id,
+                user_id,
+                mail_addr,
+                mail_addr_kbn
+          FROM  TargetData
+        <@@val:intersect_target_list_flg:1@@>
+        INTERSECT
+        SELECT  @dept_id AS dept_id,
+                @target_kbn AS target_kbn,
+                @master_id AS master_id,
+                user_id,
+                mail_addr,
+                mail_addr_kbn
+          FROM  w2_TargetListData
+         WHERE  target_kbn = 'TargetList'
+           AND  master_id IN (@@ intersect_target_list @@)
+        </@@val:intersect_target_list_flg:1@@>
+          
+        SELECT  ISNULL(COUNT(*), 0) AS row_count
+          FROM  w2_TargetListData
+         WHERE  dept_id = @dept_id
+           AND  target_kbn = @target_kbn
+           AND  master_id = @master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+      <Input Name="target_extract_from" Type="datetime" />
+      <Input Name="target_extract_to" Type="datetime" />
+      <Input Name="target_extract_total_price_from" Type="decimal" Size="18,3" />
+      <Input Name="target_extract_total_price_to" Type="decimal" Size="18,3" />
+      <Input Name="target_extract_total_count_from" Type="int" />
+      <Input Name="target_extract_total_count_to" Type="int" />
+      <Input Name="target_extract_old_rank_flg" Type="nvarchar" Size="10" />
+      <Input Name="rank_change_type" Type="nvarchar" Size="10" />
+      <Input Name="rank_change_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="intersect_target_list_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </CreateTargetListData>
+
+  <!-- 会員ランク付与ルールのステータス更新 -->
+  <UpdateMemberRankRuleStatus>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MemberRankRule
+           SET  status = @status,
+                last_count = @last_count,
+                last_exec_date = @last_exec_date
+         WHERE  member_rank_rule_id = @member_rank_rule_id
+           AND  (
+                  (@status_target IS NULL)
+                  OR
+                  (status = @status_target)
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_rule_id" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="status_target" Type="nvarchar" Size="10" />
+      <Input Name="last_count" Type="nvarchar" Size="30" />
+      <Input Name="last_exec_date" Type="datetime" />
+    </Parameter>
+  </UpdateMemberRankRuleStatus>
+
+  <!-- 会員ランク付与ルールのステータス更新(カウント数更新しない) -->
+  <UpdateMemberRankRuleStatusNonCount>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MemberRankRule
+           SET  status = @status
+         WHERE  member_rank_rule_id = @member_rank_rule_id
+           AND  (
+                  (@status_target IS NULL)
+                  OR
+                  (status = @status_target)
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_rule_id" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="status_target" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateMemberRankRuleStatusNonCount>
+
+  <!-- ターゲットリストデータ取得（重複排除） -->
+  <GetTargetListData>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_TargetListData.*
+          FROM  w2_TargetListData
+                INNER JOIN w2_User ON
+                (
+                  w2_TargetListData.user_id = w2_User.user_id
+                )
+         WHERE  dept_id = @dept_id
+           AND  target_kbn = @target_kbn
+           AND  master_id = @master_id
+           AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="target_kbn" Type="nvarchar" Size="20" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetTargetListData>
+
+  <!-- 会員ランク最終付与人数更新 -->
+  <UpdateMemberRankRuleLastCount>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MemberRankRule
+           SET  last_count = @last_count
+         WHERE  member_rank_rule_id = @member_rank_rule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_rule_id" Type="nvarchar" Size="30" />
+      <Input Name="last_count" Type="bigint" />
+    </Parameter>
+  </UpdateMemberRankRuleLastCount>
+
+  <!-- 会員ランク取得 -->
+  <GetMemberRank>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MemberRank.*
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.member_rank_id = @member_rank_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="last_count" Type="bigint" />
+    </Parameter>
+  </GetMemberRank>
+
+</MemberRankRule>

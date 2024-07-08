@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Product>
+  <GetCriteoProducts>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Product.*,
+                category_id1.name as category_name1,
+                category_id2.name as category_name2,
+                category_id3.name as category_name3,
+                '' as recommendable,
+                '' as instock
+          FROM  w2_Product
+     LEFT JOIN  w2_ProductCategory category_id1 ON
+                (
+                  w2_Product.shop_id = category_id1.shop_id
+                  AND
+                  w2_Product.category_id1 = category_id1.category_id
+                )
+     LEFT JOIN  w2_ProductCategory category_id2 ON
+                (
+                  w2_Product.shop_id = category_id2.shop_id
+                  AND
+                  w2_Product.category_id2 = category_id2.category_id
+                )
+     LEFT JOIN  w2_ProductCategory category_id3 ON
+                (
+                  w2_Product.shop_id = category_id3.shop_id
+                  AND
+                  w2_Product.category_id3 = category_id3.category_id
+                )
+         WHERE  w2_Product.valid_flg = '1'
+           AND  w2_Product.display_kbn = '0'          -- 商品一覧○、商品詳細○
+           AND  w2_Product.display_from <= GETDATE()  -- 表示期間内
+           AND ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= DATEADD(DAY,1, GETDATE())))
+           AND  w2_Product.sell_from <= GETDATE()     -- 販売期間内
+           AND ((w2_Product.sell_to IS NULL) OR (w2_Product.sell_to >= DATEADD(DAY,1, GETDATE())))
+           AND w2_Product.cooperation_id5 = ''        -- 商品連携ID5 に値が設定されていれば、出力しない
+           AND (
+                 CASE w2_Product.stock_management_kbn
+                 WHEN '0' THEN 1  -- 在庫管理をしない
+                 WHEN '1' THEN 1  -- 商品情報：在庫０以下の場合でも表示する。購入可能
+                 WHEN '2' THEN    -- 商品情報：在庫０以下の場合でも表示する。購入不可
+                   CASE
+                   WHEN EXISTS(
+                       SELECT  w2_ProductStock.stock
+                         FROM  w2_ProductStock
+                        WHERE  w2_ProductStock.shop_id = w2_Product.shop_id
+                          AND  w2_ProductStock.product_id = w2_Product.product_id
+                                    AND  w2_ProductStock.stock > 0
+                             ) THEN 1
+                           ELSE 0
+                           END
+                       ELSE 0
+                       END
+                   ) = 1
+      ORDER BY  w2_Product.product_id
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetCriteoProducts>
+</Product>

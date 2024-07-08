@@ -1,0 +1,179 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+=========================================================================================================
+  Module      : Letro connecting settings(LetroConnectingSettings.xml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2023 All Rights Reserved.
+=========================================================================================================
+-->
+<Root>
+  <!-- ☆サンプル:商品情報 -->
+  <!-- ◇ 実行設定 CommandKey:ExternalApiバッチ実行時のコマンドラインキー -->
+  <!-- デバックモード
+    ・ExecModeType:
+       production:本番：FTP連携がONの場合は外部に出力 更新用のクエリが存在する場合は更新を実行
+       debug:デバック：FTP連携がONの場合での外部出力されない 更新用のクエリが存在する場合でも更新が実行されない
+     ※ デフォルトはdebug指定となります。
+  -->
+  <ExportSetting CommandKey="product" ExecModeType="debug">
+    <!-- ■ FTP連携設定
+    ・Use:利用有無
+    ・IsActiveMode:アクティブモードか
+    ・EnableSsl:SSL利用か
+    -->
+    <FtpSetting Use="false" IsActiveMode="true" EnableSsl="false">
+      <!-- ホスト名 -->
+      <Host><![CDATA[]]></Host>
+      <!-- ID -->
+      <Id><![CDATA[]]></Id>
+      <!-- Password -->
+      <Password><![CDATA[]]></Password>
+      <!-- 出力先ディレクトリ -->
+      <ExportDir><![CDATA[\dir]]></ExportDir>
+    </FtpSetting>
+
+    <!-- ■ 出力ファイル設定 -->
+    <FileSetting>
+      <!-- 外部連携を実施しない場合の出力先 -->
+      <ExportDir><![CDATA[]]></ExportDir>
+      <!-- 出力ファイル名
+        ・Type:
+           string:文字列
+           dateString:日付 nowの場合は現在時刻 Formatにて形式を指定
+      -->
+      <FileName>
+        <Value Type="string">product_</Value>
+        <Value Type="dateString" Format="yyyyMMddHHmmss">now</Value>
+      </FileName>
+      <!-- 出力ファイルの拡張子 -->
+      <Extension>csv</Extension>
+      <!-- 区切り文字
+        ・Type:
+           input:入力内容を区切り文字とする
+           tab:タブ記号を区切り文字とする
+      -->
+      <Separator Type="input"><![CDATA[,]]></Separator>
+      <!-- ヘッダ行出力有無 -->
+      <HeaderExport>true</HeaderExport>
+      <!-- 列の引用符
+        ※ 出力フィールド毎に付ける付けない、空欄の場合は不要などの場合は<Fields>タグ内に直接記載してください。
+      -->
+      <QuotationMark><![CDATA["]]></QuotationMark>
+      <!-- 文字コード Encoding.GetEncoding(【文字コード】)にて指定できる形式で記載してください。 -->
+      <Encoding>shift_jis</Encoding>
+      <!-- アップロードタイプ
+        overWrite 上書き許可
+        append 上書き禁止(デフォルト)
+        skip アップロード先に同一ファイルが存在する場合にアップロードをスキップ
+      -->
+      <UploadType>append</UploadType>
+    </FileSetting>
+
+    <!-- ■ 抽出設定 -->
+    <SearchSetting>
+      <!-- 抽出用SQLクエリ
+      ・ExecTimeOut 実行タイムアウト時間(秒) デフォルト60
+      ・内容 抽出用SQL @@ fields @@は<Fields>タグの設定で置換されます。
+      -->
+      <ExportSql ExecTimeOut="120">
+        <Sql>
+          <![CDATA[
+            /* ダーティリードを許可して共有ロックを掛けなくする */
+            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+            SELECT  product_id
+              INTO  #LetroCooperationExportTempTable
+              FROM  w2_Product
+
+            SELECT  @@ fields @@
+              FROM  #LetroCooperationExportTempTable
+                    INNER JOIN w2_Product ON
+                    (
+                      w2_Product.product_id = #LetroCooperationExportTempTable.product_id
+                    )
+                    LEFT JOIN w2_ProductVariation ON
+                    (
+                      w2_ProductVariation.product_id = w2_Product.product_id
+                    )
+          ]]>
+        </Sql>
+      </ExportSql>
+
+      <Fields>
+        <Field HeaderName="商品ID">
+          <Value>
+            <![CDATA[
+              w2_Product.product_id
+            ]]>
+          </Value>
+        </Field>
+        <Field HeaderName="商品バリエーションID">
+          <Value>
+            <![CDATA[
+              w2_ProductVariation.variation_id
+            ]]>
+          </Value>
+        </Field>
+        <Field HeaderName="商品名">
+          <Value>
+            <![CDATA[
+              w2_Product.name
+            ]]>
+          </Value>
+        </Field>
+        <Field HeaderName="商品名（バリエーション）">
+          <Value>
+            <![CDATA[
+              CASE
+                WHEN w2_ProductVariation.variation_id IS NOT NULL
+                  THEN
+                    w2_Product.name
+                    + '('
+                    + w2_ProductVariation.variation_name1
+                    + CASE
+                        WHEN w2_ProductVariation.variation_name2 <> ''
+                          THEN '-' + w2_ProductVariation.variation_name2
+                        ELSE ''
+                      END
+                    + CASE
+                        WHEN w2_ProductVariation.variation_name3 <> ''
+                          THEN '-' + w2_ProductVariation.variation_name3
+                        ELSE ''
+                      END
+                    + ')'
+                ELSE ''
+              END
+            ]]>
+          </Value>
+        </Field>
+        <Field HeaderName="価格">
+          <Value>
+            <![CDATA[
+              CASE
+                WHEN w2_ProductVariation.variation_id IS NOT NULL
+                  THEN LEFT(CAST(w2_ProductVariation.price AS nvarchar), LEN(CAST(w2_ProductVariation.price AS nvarchar)) - 4)
+                ELSE LEFT(CAST(w2_Product.display_price AS nvarchar), LEN(CAST(w2_Product.display_price AS nvarchar)) - 4)
+              END
+            ]]>
+          </Value>
+        </Field>
+        <Field HeaderName="商品画像URL" ConvertUrl="ProductImageHead">
+          <Value>
+            <![CDATA[
+              w2_Product.image_head
+            ]]>
+          </Value>
+        </Field>
+        <Field HeaderName="商品販売ページURL" ConvertUrl="ProductDetail">
+          <Value>
+            <![CDATA[
+              w2_Product.product_id
+            ]]>
+          </Value>
+        </Field>
+      </Fields>
+    </SearchSetting>
+  </ExportSetting>
+
+</Root>

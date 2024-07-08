@@ -1,0 +1,206 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<OrderDataExportSetting>
+
+  <!-- 出力ファイルの設定 -->
+  <ExportSetting>
+    <!-- 受注一覧・ワークフロー一覧画面に表示する送り状ダウンロードリンクの文言 -->
+    <DisplayName><![CDATA[送り状発行設定のサンプルファイル]]></DisplayName>
+    <!-- 出力ファイルの種類（設定可能値：csv） -->
+    <FormatType>csv</FormatType>
+    <!-- 出力単位（設定可能値：Order） -->
+    <UnitType>Order</UnitType>
+    <!-- 出力ファイル名 -->
+    <FileName>
+      <Value Type="string"><![CDATA[送り状_]]></Value>
+      <Value Type="dateString" Format="yyyyMMddHHmmss">Now</Value>
+      <Value Type="string">.csv</Value>
+    </FileName>
+    <!-- ヘッダ行出力有無（設定可能値：true, false） -->
+    <ExportHeader>true</ExportHeader>
+    <!-- 引用符常時出力有無（設定可能値：true, false） -->
+    <!--
+         例：引用符が「"」、1列目の値は「123」、2列目の値は「abc」、3列目の値は「1,2」の場合、
+             ・true の場合、"123","abc","1,2"を出力しますが、
+             ・false の場合、123,abc,"1,2"を出力します。（値にカンマ(,)があるときは強制エスケープ）
+    -->
+    <AlwaysExportQuotation>true</AlwaysExportQuotation>
+    <!-- 列の引用符 -->
+    <StringQuotationMark><![CDATA["]]></StringQuotationMark>
+    <!-- 区切り文字（設定可能値：COMMA, TAB） -->
+    <Separator>COMMA</Separator>
+    <!-- 文字コード（設定可能値：Shift_JIS, UTF-8, Big5） -->
+    <Encoding>Shift_JIS</Encoding>
+  </ExportSetting>
+
+  <!-- 出力項目・内容の設定 -->
+  <FieldsSetting>
+    <!-- FieldタグのNameで列を区別して値出力しますので、１つファイルの中に重複しないようにご注意 -->
+    <!-- 例１：空項目を出力します -->
+    <Field Name="例１">
+      <Value Type="string"></Value>
+    </Field>
+
+    <!-- 例２：固定文字列（”サンプル固定値出力”）を出力します -->
+    <Field Name="例２">
+      <Value Type="string">サンプル固定値出力</Value>
+    </Field>
+
+    <!-- 例３：エスケープが必要な固定文字列（"&","<",">"など）はCDATAを利用して出力します -->
+    <Field Name="例３">
+      <Value Type="string"><![CDATA[テスト&テスト]]></Value>
+    </Field>
+
+    <!-- 例４：マスタ項目（注文ID）の値を出力します -->
+    <Field Name="例４">
+      <Value Type="field">w2_Order.order_id</Value>
+    </Field>
+
+    <!-- 例５：フォーマットを指定して現在の時間を出力します -->
+    <Field Name="例５">
+      <Value Type="dateString" Format="yyyy-mm-dd hh:mi:ss">Now</Value>
+    </Field>
+
+    <!-- 例６：フォーマットを指定してマスタ項目（注文日時）の値を出力します -->
+    <Field Name="例６">
+      <Value Type="dateString" Format="yyyymmdd">w2_Order.order_date</Value>
+    </Field>
+
+    <!-- 例７：固定値"01"、マスタ項目（注文ID）、固定値"03"を結合した値を出力します -->
+    <Field Name="例７">
+      <Value Type="string">01</Value>
+      <Value Type="field">w2_Order.order_id</Value>
+      <Value Type="string">03</Value>
+    </Field>
+
+    <!-- 例８：6文字目から3文字を出力します（"1234567890"→"678"を出力） -->
+    <Field Name="例８">
+      <Substring Start="6" Length="3">
+        <Value Type="string">1234567890</Value>
+      </Substring>
+    </Field>
+
+    <!-- 例９：左側から3文字を出力します（"1234567890"→"123"を出力） -->
+    <Field Name="例９">
+      <Left Length="3">
+        <Value Type="string">1234567890</Value>
+      </Left>
+    </Field>
+
+    <!-- 例１０：右側から3文字を出力します（"1234567890"→"890"を出力） -->
+    <Field Name="例１０">
+      <Right Length="3">
+        <Value Type="string">1234567890</Value>
+      </Right>
+    </Field>
+
+    <!-- 例１１：マスタ項目（配送先の住所１～４）の値を結合して、21文字目～40文字目を取得して出力します -->
+    <Field Name=" 例１１">
+      <Substring Start="21" Length="20">
+        <Value Type="field">w2_OrderShipping.shipping_addr1</Value>
+        <Value Type="field">w2_OrderShipping.shipping_addr2</Value>
+        <Value Type="field">w2_OrderShipping.shipping_addr3</Value>
+        <Value Type="field">w2_OrderShipping.shipping_addr4</Value>
+      </Substring>
+    </Field>
+
+    <!-- 例１２：分岐で決済区分によって出力値を切り替えて出力します -->
+    <!-- 
+          決済区分は'K10'の場合、固定値"クレジット"を出力します
+          決済区分は'K20'の場合、固定値"代金引換"を出力します
+          それ以外は固定値"その他"
+     -->
+    <Field Name="例１２">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_Order.order_payment_kbn = 'K10']]></Condition>
+          <Value Type="string">クレジット</Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[w2_Order.order_payment_kbn = 'K20']]></Condition>
+          <Value Type="string">代金引換</Value>
+        </Case>
+        <Else>
+          <Value Type="string">その他</Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- ※※※※※※※※※※※※※※※※※※※※※※※※※※※※ -->
+    <!-- 出力値の処理は複雑の場合、技術者にご相談してください。 -->
+    <!-- 下記はSQLで直接値出力例となります。 -->
+    <!-- ※※※※※※※※※※※※※※※※※※※※※※※※※※※※ -->
+
+    <!-- 例１３：マスタ項目（注文の管理メモ）にある改行コードを半角スペースに置換したものを出力します -->
+    <Field Name="例１３">
+      <Value Type="field"><![CDATA[REPLACE(REPLACE(CAST(w2_Order.management_memo AS nvarchar(max)), CHAR(13), ' '), CHAR(10), ' ')]]></Value>
+    </Field>
+
+    <!-- 例１４：マスタ項目（注文者の電話番号）にあるハイフンを空に置換したものを出力します -->
+    <Field Name="例１４">
+      <Value Type="field"><![CDATA[REPLACE(w2_OrderOwner.owner_tel1, '-', '')]]></Value>
+    </Field>
+
+    <!-- 例１５：マスタ項目（注文商品小計）の税額を計算して、出力します -->
+    <Field Name="例１５">
+      <Switch>
+        <Case>
+          <Condition><![CDATA[w2_Order.order_tax_round_type = 'ROUNDOFF']]></Condition>
+          <!-- 端数処理は四捨五入（ROUNDOFF）の場合 -->
+          <Value Type="field"><![CDATA[CAST(ROUND(w2_Order.order_price_subtotal / (1 + w2_Order.order_tax_rate), 0) AS int)]]></Value>
+        </Case>
+        <Case>
+          <Condition><![CDATA[w2_Order.order_tax_round_type = 'ROUNDDOWN']]></Condition>
+          <!-- 端数処理は切り捨て（ROUNDDOWN）の場合 -->
+          <Value Type="field"><![CDATA[FLOOR(w2_Order.order_price_subtotal / (1 + w2_Order.order_tax_rate))]]></Value>
+        </Case>
+        <Else>
+          <!-- 端数処理は切り上げ（ROUNDUP）の場合 -->
+          <Value Type="field"><![CDATA[CEILING(w2_Order.order_price_subtotal / (1 + w2_Order.order_tax_rate))]]></Value>
+        </Else>
+      </Switch>
+    </Field>
+
+    <!-- 例１６：SQLで対応していないフォーマット"yyyy年mm月dd日 hh:mi:ss"でマスタ項目（注文日時）の値を出力します -->
+    <Field Name="例１６">
+      <Value Type="field"><![CDATA[CONVERT(nvarchar(4), DATEPART(YEAR, w2_Order.order_date)) + '年' + CONVERT(nvarchar(2), DATEPART(MONTH, w2_Order.order_date)) + '月'+ CONVERT(nvarchar(2), DATEPART(DAY, w2_Order.order_date)) + '日 ' + CONVERT(nvarchar(8), w2_Order.order_date, 108)]]></Value>
+    </Field>
+
+    <!-- 例１７：列の値をエスケープして出力します （デフォルトfalse）-->
+    <!--
+         ・改行のエスケープ（\r\n → \n、\r → \n）
+         ・ダブルクオートのエスケープ（" → ""）
+    -->
+    <Field Name="例１７" EscapeCsvColumn="true">
+      <Value Type="field">w2_OrderOwner.owner_name</Value>
+    </Field>
+
+    <!-- 例１８：文字列の部分文字列をバイト長で指定した範囲で出力します（"1234567890あいうえおかきくけこ" → "かきくけ"） -->
+    <Field Name="例１８" StartBytePosition="21" ByteLength="9">
+      <Value Type="string">1234567890あいうえおかきくけこ</Value>
+    </Field>
+
+    <!-- 例１９：文字の種類を変換して出力します（"12345あいうえお" → "１２３４５あいうえお"） -->
+    <!-- ConvertString属性の設定可能値：
+         ・全角への変換: ToZenkaku
+         ・全角カタカナへ変換： ToZenkakuKatakana
+         ・全角ひらがなへ変換： ToZenkakuHiragana
+         ・半角へ変換： ToHankaku
+         ・半角カタカナへ変換： ToHankakuKatakana
+    -->
+    <Field Name="例１９" ConvertString="ToZenkaku">
+      <Value Type="string">12345あいうえお</Value>
+    </Field>
+
+    <!-- 例２０：マスタ項目（配送種別IDと時間帯）からB2送り状の配送時間に変換して出力します -->
+    <Field Name="例２０" IsB2ShippingTimeField="true">
+      <B2ShippingIdValue>
+        <Value Type="field">w2_Order.shipping_id</Value>
+      </B2ShippingIdValue>
+      <B2ShippingTimeValue>
+        <Value Type="field">w2_OrderShipping.shipping_time</Value>
+      </B2ShippingTimeValue>
+    </Field>
+
+  </FieldsSetting>
+
+</OrderDataExportSetting>

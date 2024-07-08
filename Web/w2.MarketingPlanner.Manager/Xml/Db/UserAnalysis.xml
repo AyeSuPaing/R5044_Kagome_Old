@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザー分析系SQLステートメントXML(UserAnalysis.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<UserAnalysis>
+  <GetUserAnalysisList>
+    <Statement>
+      <![CDATA[
+      SELECT  A.*,
+          B.*
+        FROM  (
+          SELECT  tgt_year,
+              tgt_month,
+              tgt_day,
+              potential_all,
+              potential_active,
+              potential_unactive1 + potential_unactive2 AS potential_unactive_total,
+              potential_unactive1,
+              potential_unactive2,
+              recognize_all,
+              recognize_active,
+              recognize_unactive1 + recognize_unactive2 AS recognize_unactive_total,
+              recognize_unactive1,
+              recognize_unactive2,
+              recognize_leave
+            FROM  w2_DispUserAnalysis
+           WHERE  tgt_year + tgt_month + tgt_day IN (
+                SELECT  MAX(tgt_year + tgt_month + tgt_day)
+                  FROM  w2_DispUserAnalysis
+                 WHERE  tgt_year = @year
+                   AND  tgt_month = @month
+              )
+          ) A,
+          (
+          SELECT  SUM(potential_new) AS potential_new_total,
+              SUM(potential_new) - SUM(potential_unactive1) - SUM(potential_unactive2) AS potential_incdec,
+              SUM(recognize_new) AS recognize_new_total,
+              SUM(recognize_new) - SUM(recognize_unactive1) - SUM(recognize_unactive2) AS recognize_incdec
+            FROM  w2_DispUserAnalysis
+           WHERE  tgt_year = @year
+             AND  tgt_month = @month
+          ) B
+      ORDER BY tgt_year, tgt_month, tgt_day DESC
+      ]]>
+    </Statement>
+  </GetUserAnalysisList>
+  <!--GetUserAnalysisListDay>
+    <Statement>
+      <![CDATA[
+      SELECT  target_date,
+          potential_all,
+          potential_active,
+          potential_unactive1 + potential_unactive2 AS potential_unactive_total,
+          potential_unactive1,
+          potential_unactive2,
+          recognize_all,
+          recognize_active,
+          recognize_unactive1 + recognize_unactive2 AS recognize_unactive_total,
+          recognize_unactive1,
+          recognize_unactive2,
+          recognize_leave
+        FROM  w2_DispUserAnalysis
+        WHERE  YEAR(target_date) = @year
+        AND  MONTH(target_date) = @month
+      ORDER BY target_date DESC
+      ]]>
+    </Statement>
+  </GetUserAnalysisListDay>
+  <GetUserAnalysisListTotal>
+    <Statement>
+      <![CDATA[
+      SELECT  SUM(potential_new) AS potential_new_total,
+          SUM(potential_new) - SUM(potential_unactive1) - SUM(potential_unactive2) AS potential_incdec,
+          SUM(recognize_new) AS recognize_new_total,
+          SUM(recognize_new) - SUM(recognize_unactive1) - SUM(recognize_unactive2) AS recognize_incdec
+        FROM  w2_DispUserAnalysis
+       WHERE  YEAR(target_date) = @year
+         AND  MONTH(target_date) = @month
+      ]]>
+    </Statement>
+  </GetUserAnalysisListTotal-->
+  <GetUserAnalysisDetailDay>
+    <Statement>
+      <![CDATA[
+      SELECT  tgt_year,
+          tgt_month,
+          tgt_day,
+          potential_new,
+          potential_all,
+          potential_active,
+          potential_unactive1 + potential_unactive2 AS potential_unactive_total,
+          potential_new - potential_unactive1 - potential_unactive2 AS potential_incdec,
+          recognize_new,
+          recognize_all,
+          recognize_active,
+          recognize_unactive1 + recognize_unactive2 AS recognize_unactive_total,
+          recognize_new - recognize_unactive1 - recognize_unactive2 AS recognize_incdec,
+          recognize_leave
+        FROM  w2_DispUserAnalysis
+       WHERE  tgt_year = @year
+         AND  tgt_month = @month
+      ORDER BY tgt_year, tgt_month, tgt_day
+      ]]>
+    </Statement>
+  </GetUserAnalysisDetailDay>
+  <GetUserAnalysisDetailMonth>
+    <Statement>
+      <![CDATA[
+      SELECT  A.*,
+          B.*
+        FROM  (
+          SELECT  tgt_year,
+              tgt_month,
+              tgt_day,
+              potential_new,
+              potential_all,
+              potential_active,
+              potential_unactive1 + potential_unactive2 AS potential_unactive_total,
+              recognize_new,
+              recognize_all,
+              recognize_active,
+              recognize_unactive1 + recognize_unactive2 AS recognize_unactive_total,
+              recognize_leave
+          FROM  w2_DispUserAnalysis
+          WHERE  (tgt_year + tgt_month + tgt_day) IN (
+                SELECT  MAX(tgt_year + tgt_month + tgt_day)
+                FROM  w2_DispUserAnalysis
+                WHERE  tgt_year = @year
+                GROUP BY tgt_month
+              )
+          ) A,
+          (
+          SELECT  tgt_month,
+              SUM(potential_new) AS potential_new,
+              SUM(recognize_new) AS recognize_new,
+              SUM(potential_new) - SUM(potential_unactive1) - SUM(potential_unactive2) AS potential_incdec,
+              SUM(recognize_new) - SUM(recognize_unactive1) - SUM(recognize_unactive2) AS recognize_incdec
+          FROM  w2_DispUserAnalysis
+          WHERE  tgt_year = @year
+          GROUP BY tgt_month 
+          ) B
+       WHERE  A.tgt_month = B.tgt_month
+      ORDER BY A.tgt_year, A.tgt_month, A.tgt_day
+      ]]>
+    </Statement>
+  </GetUserAnalysisDetailMonth>
+</UserAnalysis>

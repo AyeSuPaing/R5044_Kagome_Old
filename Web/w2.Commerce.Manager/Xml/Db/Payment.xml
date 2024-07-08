@@ -1,0 +1,285 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 決済種別系SQLステートメントXML(Payment.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<Payment>
+  <!-- 決済種別一覧を取得する(全て) -->
+  <GetPaymentAllList>
+    <Statement>
+      <![CDATA[
+        SELECT  * 
+          FROM  w2_Payment
+         WHERE  shop_id = @shop_id
+                [[ PAYMENT_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetPaymentAllList>
+
+  <!-- 決済種別一覧を取得する(有効なもの) -->
+  <GetPaymentValidList>
+    <Statement>
+      <![CDATA[
+        SELECT  * 
+          FROM  w2_Payment
+         WHERE  shop_id = @shop_id
+           AND  valid_flg = '1'
+                [[ PAYMENT_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetPaymentValidList>
+
+  <!-- 決済種別一覧を取得する(有効なもの、配送種別で) -->
+  <GetPaymentValidListPermission>
+    <Statement>
+      <![CDATA[
+        SELECT  * 
+          FROM  w2_Payment
+         WHERE  shop_id = @shop_id
+           AND  valid_flg = '1'
+           AND  (
+                  @payment_selection_flg = '0'
+                  OR
+                  payment_id IN (@@ payment_ids @@)
+                )
+           AND  ((@restrict_fixedpurchase_payment = '0') OR (payment_id IN (@@ can_fixedpurchase_payment_ids @@)))
+                [[ PAYMENT_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="payment_selection_flg" Type="nvarchar" Size="1" />
+      <Input Name="restrict_fixedpurchase_payment" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetPaymentValidListPermission>
+
+  <!-- 決済種別一覧を取得する(同梱処理に利用する有効なもの) -->
+  <GetPaymentValidListForBundle>
+    <Statement>
+      <![CDATA[
+        SELECT  * 
+          FROM  w2_Payment
+         WHERE  shop_id = @shop_id
+           AND  valid_flg = '1'
+           AND  payment_id NOT IN (@@ payment_ids @@) -- 無効化する決済種別を指定
+                [[ PAYMENT_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetPaymentValidListForBundle>
+
+  <!-- 決済種別情報取得 -->
+  <GetPayment>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Payment.shop_id, 
+                w2_Payment.payment_id, 
+                w2_Payment.payment_name, 
+                w2_Payment.usable_price_min, 
+                w2_Payment.usable_price_max, 
+                w2_Payment.payment_price_kbn, 
+                w2_Payment.mobile_disp_flg,
+                w2_Payment.display_order,
+                w2_Payment.valid_flg,
+                w2_Payment.date_created,
+                w2_Payment.date_changed,
+                w2_Payment.last_changed,
+                w2_Payment.user_management_level_not_use,
+                w2_Payment.order_owner_kbn_not_use,
+                w2_PaymentPrice.payment_price_no,
+                w2_PaymentPrice.tgt_price_bgn,
+                w2_PaymentPrice.tgt_price_end,
+                w2_PaymentPrice.payment_price  -- ※未使用のw2_Payment.payment_priceを取得しない
+          FROM  w2_Payment,
+                w2_PaymentPrice
+         WHERE  w2_Payment.shop_id = @shop_id
+           AND  w2_Payment.payment_id = @payment_id
+           AND  w2_Payment.shop_id = w2_PaymentPrice.shop_id
+           AND  w2_Payment.payment_id = w2_PaymentPrice.payment_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="payment_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetPayment>
+  
+  <!-- 決済種別更新 -->
+  <UpdatePayment>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Payment 
+           SET  payment_name = @payment_name, 
+                payment_name_mobile = '',
+                usable_price_min = @usable_price_min,
+                usable_price_max = @usable_price_max,
+                payment_price_kbn = @payment_price_kbn, 
+                mobile_disp_flg = @mobile_disp_flg, 
+                display_order = @display_order,
+                valid_flg = @valid_flg, 
+                date_changed = getdate(), 
+                last_changed = @last_changed,
+                user_management_level_not_use = @user_management_level_not_use,
+                order_owner_kbn_not_use = @order_owner_kbn_not_use
+         WHERE  shop_id = @shop_id 
+           AND  payment_id = @payment_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="payment_id" Type="nvarchar" Size="10" />
+      <Input Name="payment_name" Type="nvarchar" Size="20" />
+      <Input Name="usable_price_min" Type="decimal" Size="18,3" />
+      <Input Name="usable_price_max" Type="decimal" Size="18,3" />
+      <Input Name="payment_price_kbn" Type="nvarchar" Size="3" />
+      <Input Name="mobile_disp_flg" Type="nvarchar" Size="1" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="2" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="user_management_level_not_use" Type="nvarchar" Size="256" />
+      <Input Name="order_owner_kbn_not_use" Type="nvarchar" Size="256" />
+    </Parameter>
+  </UpdatePayment>
+  
+  <!-- 決済種別手数料削除 -->
+  <DeletePaymentPrice>
+    <Statement>
+      <![CDATA[
+        DELETE 
+          FROM  w2_PaymentPrice
+         WHERE  w2_PaymentPrice.shop_id = @shop_id 
+           AND  w2_PaymentPrice.payment_id = @payment_id      
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="payment_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeletePaymentPrice>
+
+  <!-- 新決済種別ID取得 -->
+  <GetNewPaymentId>
+    <Statement>
+      <![CDATA[
+        SELECT   RIGHT('000' + CONVERT(nvarchar, CONVERT(int, ISNULL(MAX(payment_id), '000')) + 1),3) AS payment_id
+          FROM  w2_PaymentPrice
+         WHERE  w2_PaymentPrice.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetNewPaymentId>
+
+  <!-- 決済種別追加(未使用) -->
+  <InsertPayment>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_Payment
+                (
+                  shop_id, 
+                  payment_id, 
+                  payment_name, 
+                  usable_price_min,
+                  usable_price_max,
+                  payment_price_kbn, 
+                  date_created, 
+                  date_changed, 
+                  last_changed,
+                  user_management_level_not_use
+                ) 
+        VALUES  (
+                  @shop_id, 
+                  @payment_id, 
+                  @payment_name, 
+                  @usable_price_min,
+                  @usable_price_max,
+                  @payment_price_kbn, 
+                  getdate(),
+                  getdate(), 
+                  @last_changed,
+                  @user_management_level_not_use
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="payment_id" Type="nvarchar" Size="10" />
+      <Input Name="payment_name" Type="nvarchar" Size="20" />
+      <Input Name="usable_price_min" Type="decimal" Size="18,3" />
+      <Input Name="usable_price_max" Type="decimal" Size="18,3" />
+      <Input Name="payment_price_kbn" Type="nvarchar" Size="3" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="user_management_level_not_use" Type="nvarchar" Size="256" />
+    </Parameter>
+  </InsertPayment>
+  
+  <!-- 決済種別手数料追加 -->
+  <InsertPaymentPrice>
+    <Statement>
+      <![CDATA[      
+        INSERT w2_PaymentPrice
+        (
+          w2_PaymentPrice.shop_id, 
+          w2_PaymentPrice.payment_id, 
+          w2_PaymentPrice.payment_price_no, 
+          w2_PaymentPrice.tgt_price_bgn, 
+          w2_PaymentPrice.tgt_price_end, 
+          w2_PaymentPrice.payment_price, 
+          w2_PaymentPrice.date_created, 
+          w2_PaymentPrice.date_changed, 
+          w2_PaymentPrice.last_changed  
+        ) 
+        VALUES
+        (
+          @shop_id, 
+          @payment_id, 
+          @payment_price_no, 
+          @tgt_price_bgn, 
+          @tgt_price_end, 
+          @payment_price, 
+          getdate(),
+          getdate(), 
+          @last_changed
+        )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="payment_group_id" Type="nvarchar" Size="3" />
+      <Input Name="payment_id" Type="nvarchar" Size="10" />
+      <Input Name="payment_price_no" Type="int" />
+      <Input Name="tgt_price_bgn" Type="decimal" Size="18,3" />
+      <Input Name="tgt_price_end" Type="decimal" Size="18,3" />
+      <Input Name="payment_price" Type="decimal" Size="18,3" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertPaymentPrice>
+
+  <!-- 決済種別情報取得 -->
+  <GetPaymentNames>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Payment.*
+          FROM  w2_Payment
+         WHERE  w2_Payment.shop_id = @shop_id
+           AND  w2_Payment.payment_id IN (@@ payment_ids @@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetPaymentNames>
+
+</Payment>

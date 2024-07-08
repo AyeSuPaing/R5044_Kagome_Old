@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : リンクシェア成果報告系ステートメントXML(LinkShareReporter.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<LinkShareReporter>
+
+  <!-- キャンセル注文の連携ステータス更新 -->
+  <UpdateCancelOrderCoopStatus>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_AffiliateCoopLog
+           SET  coop_status = 'NONE'
+         WHERE  affiliate_kbn = 'LINKSHARE_REP'
+           AND  coop_status = 'WAIT'
+           AND  EXISTS
+                (
+                  SELECT  order_id
+                    FROM  w2_Order
+                   WHERE  order_id = w2_AffiliateCoopLog.master_id
+                     AND  order_status IN ('ODR_CNSL', 'TMP_CNSL')
+                     AND  bundle_parent_order_id = '' -- 同梱以外
+                )
+      ]]>
+    </Statement>
+  </UpdateCancelOrderCoopStatus>
+
+  <!-- 同梱注文の連携ステータス更新 -->
+  <UpdateBundleOrderCoopStatus>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_AffiliateCoopLog
+           SET  coop_status = 'NONE'
+         WHERE  affiliate_kbn = 'LINKSHARE_REP'
+           AND  coop_status = 'WAIT'
+           AND  EXISTS
+                (
+                  SELECT  order_id
+                    FROM  w2_Order
+                   WHERE  order_id = w2_AffiliateCoopLog.master_id
+                     AND  convert(nvarchar(4000), bundle_child_order_ids) <> ''  -- 同梱注文
+                )
+      ]]>
+    </Statement>
+  </UpdateBundleOrderCoopStatus>
+
+  <!-- 対象注文アイテム取得(同梱以外) -->
+  <GetTargetOrderItems>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Order.order_id,
+                w2_Order.order_date,
+                w2_AffiliateCoopLog.affiliate_kbn,
+                w2_AffiliateCoopLog.master_id,
+                w2_AffiliateCoopLog.coop_data1,
+                w2_AffiliateCoopLog.coop_data2,
+                w2_OrderItem.shop_id,
+                w2_OrderItem.product_id,
+                w2_OrderItem.variation_id,
+                w2_OrderItem.item_quantity,
+                w2_OrderItem.item_price,
+                w2_OrderItem.item_price_tax,
+                w2_OrderOwner.owner_zip,
+                w2_OrderItem.product_name,
+                w2_OrderItem.product_tax_round_type,
+                w2_OrderItem.product_tax_rate
+          FROM  w2_AffiliateCoopLog
+                INNER JOIN w2_Order ON
+                (
+                  w2_AffiliateCoopLog.master_id = w2_Order.order_id
+                  AND
+                  order_status IN ('SHP_COMP', 'DLV_COMP')  -- 出荷済み・配送済み
+                  AND
+                  convert(nvarchar(4000), bundle_child_order_ids) = '' -- 同梱無し
+                )
+                INNER JOIN w2_OrderItem ON
+                (
+                  w2_Order.order_id = w2_OrderItem.order_id
+                )
+                INNER JOIN w2_OrderOwner ON
+                (
+                  w2_Order.order_id = w2_OrderOwner.order_id
+                )
+         WHERE  w2_AffiliateCoopLog.affiliate_kbn = 'LINKSHARE_REP'
+           AND  w2_AffiliateCoopLog.coop_status = 'WAIT'
+      ]]>
+    </Statement>
+  </GetTargetOrderItems>
+
+  <!-- 報告済み連携ステータス更新 -->
+  <UpdateReportedCoopStatus>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_AffiliateCoopLog
+           SET  coop_status = 'DONE'
+         WHERE  affiliate_kbn = @affiliate_kbn
+           AND  master_id = @master_id
+           AND  coop_status = 'WAIT'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="affiliate_kbn" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </UpdateReportedCoopStatus>
+
+</LinkShareReporter>

@@ -1,0 +1,280 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : セットプロモーション系SQLステートメントXML(SetPromotion.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<SetPromotion>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_SetPromotion
+                [[ SETPROMOTION_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+  
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_SetPromotion.*
+          FROM  (
+                  SELECT  w2_SetPromotion.setpromotion_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ SETPROMOTION_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_SetPromotion
+                          [[ SETPROMOTION_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_SetPromotion ON
+                (
+                  RowIndex.setpromotion_id = w2_SetPromotion.setpromotion_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_SetPromotion
+         WHERE  setpromotion_id = @setpromotion_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="setpromotion_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Get>
+
+  <!-- 利用可能なセットプロモーション情報取得 -->
+  <GetUsable>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_SetPromotion
+         WHERE  valid_flg = '1'
+           AND  ISNULL(w2_SetPromotion.end_date, GETDATE()) >= GETDATE()
+         ORDER BY display_order, setpromotion_id
+      ]]>
+    </Statement>
+  </GetUsable>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_SetPromotion
+                (
+                  setpromotion_id
+                  ,setpromotion_name
+                  ,setpromotion_disp_name
+                  ,product_discount_flg
+                  ,shipping_charge_free_flg
+                  ,payment_charge_free_flg
+                  ,product_discount_kbn
+                  ,product_discount_setting
+                  ,description_kbn
+                  ,description
+                  ,begin_date
+                  ,end_date
+                  ,target_member_rank
+                  ,target_order_kbn
+                  ,url
+                  ,display_order
+                  ,valid_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,target_target_ids
+                  ,apply_order
+                )
+        VALUES  (
+                  @setpromotion_id
+                  ,@setpromotion_name
+                  ,@setpromotion_disp_name
+                  ,@product_discount_flg
+                  ,@shipping_charge_free_flg
+                  ,@payment_charge_free_flg
+                  ,@product_discount_kbn
+                  ,@product_discount_setting
+                  ,@description_kbn
+                  ,@description
+                  ,@begin_date
+                  ,@end_date
+                  ,@target_member_rank
+                  ,@target_order_kbn
+                  ,@url
+                  ,@display_order
+                  ,@valid_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@target_target_ids
+                  ,@apply_order
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="setpromotion_id" Type="nvarchar" Size="10" />
+      <Input Name="setpromotion_name" Type="nvarchar" Size="30" />
+      <Input Name="setpromotion_disp_name" Type="nvarchar" Size="30" />
+      <Input Name="product_discount_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_charge_free_flg" Type="nvarchar" Size="1" />
+      <Input Name="payment_charge_free_flg" Type="nvarchar" Size="1" />
+      <Input Name="product_discount_kbn" Type="nvarchar" Size="1" />
+      <Input Name="product_discount_setting" Type="decimal" Size="18,3" />
+      <Input Name="description_kbn" Type="nvarchar" Size="1" />
+      <Input Name="description" Type="nvarchar" Size="MAX" />
+      <Input Name="begin_date" Type="datetime" />
+      <Input Name="end_date" Type="datetime" />
+      <Input Name="target_member_rank" Type="nvarchar" Size="30" />
+      <Input Name="target_order_kbn" Type="nvarchar" Size="100" />
+      <Input Name="url" Type="nvarchar" Size="MAX" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="target_target_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="apply_order" Type="int" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_SetPromotion
+           SET  setpromotion_name = @setpromotion_name
+                ,setpromotion_disp_name = @setpromotion_disp_name
+                ,product_discount_flg = @product_discount_flg
+                ,shipping_charge_free_flg = @shipping_charge_free_flg
+                ,payment_charge_free_flg = @payment_charge_free_flg
+                ,product_discount_kbn = @product_discount_kbn
+                ,product_discount_setting = @product_discount_setting
+                ,description_kbn = @description_kbn
+                ,description = @description
+                ,begin_date = @begin_date
+                ,end_date = @end_date
+                ,target_member_rank = @target_member_rank
+                ,target_order_kbn = @target_order_kbn
+                ,url = @url
+                ,display_order = @display_order
+                ,valid_flg = @valid_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,target_target_ids = @target_target_ids
+                ,apply_order = @apply_order
+         WHERE  setpromotion_id = @setpromotion_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="setpromotion_id" Type="nvarchar" Size="10" />
+      <Input Name="setpromotion_name" Type="nvarchar" Size="30" />
+      <Input Name="setpromotion_disp_name" Type="nvarchar" Size="30" />
+      <Input Name="product_discount_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_charge_free_flg" Type="nvarchar" Size="1" />
+      <Input Name="payment_charge_free_flg" Type="nvarchar" Size="1" />
+      <Input Name="product_discount_kbn" Type="nvarchar" Size="1" />
+      <Input Name="product_discount_setting" Type="decimal" Size="18,3" />
+      <Input Name="description_kbn" Type="nvarchar" Size="1" />
+      <Input Name="description" Type="nvarchar" Size="MAX" />
+      <Input Name="begin_date" Type="datetime" />
+      <Input Name="end_date" Type="datetime" />
+      <Input Name="target_member_rank" Type="nvarchar" Size="30" />
+      <Input Name="target_order_kbn" Type="nvarchar" Size="100" />
+      <Input Name="url" Type="nvarchar" Size="MAX" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="target_target_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="apply_order" Type="int" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_SetPromotion
+         WHERE  setpromotion_id = @setpromotion_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="setpromotion_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+  
+  <!-- アイテムすべて取得 -->
+  <GetItemsAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_SetPromotionItem
+         WHERE  setpromotion_id IN (@@ ids @@)
+      ]]>
+    </Statement>
+  </GetItemsAll>
+  
+  <!-- アイテムインサート -->
+  <InsertItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_SetPromotionItem
+                (
+                  setpromotion_id
+                  ,setpromotion_item_no
+                  ,setpromotion_item_kbn
+                  ,setpromotion_items
+                  ,setpromotion_item_quantity
+                  ,setpromotion_item_quantity_more_flg
+                )
+        VALUES  (
+                  @setpromotion_id
+                  ,@setpromotion_item_no
+                  ,@setpromotion_item_kbn
+                  ,@setpromotion_items
+                  ,@setpromotion_item_quantity
+                  ,@setpromotion_item_quantity_more_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="setpromotion_id" Type="nvarchar" Size="10" />
+      <Input Name="setpromotion_item_no" Type="int" />
+      <Input Name="setpromotion_item_kbn" Type="nvarchar" Size="10" />
+      <Input Name="setpromotion_items" Type="nvarchar" Size="MAX" />
+      <Input Name="setpromotion_item_quantity" Type="int" />
+      <Input Name="setpromotion_item_quantity_more_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </InsertItem>
+  
+  <!-- アイテムすべて削除 -->
+  <DeleteItemsAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_SetPromotionItem
+         WHERE  setpromotion_id = @setpromotion_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="setpromotion_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteItemsAll>
+  
+</SetPromotion>

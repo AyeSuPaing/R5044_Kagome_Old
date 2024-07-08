@@ -1,0 +1,159 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+ALTER TABLE [w2_Cart] ADD [recommend_id] [nvarchar] (30) NOT NULL DEFAULT (N'');
+ALTER TABLE [w2_OrderItem] ADD [recommend_id] [nvarchar] (30) NOT NULL DEFAULT (N'');
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_Recommend]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_Recommend]
+GO
+/*
+=========================================================================================================
+  Module      : レコメンド設定 (w2_Recommend.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_Recommend] (
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[recommend_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[recommend_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[discription] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[recommend_display_page] [nvarchar] (50) NOT NULL DEFAULT (N'ORDER_CONFIRM'),
+	[recommend_kbn] [nvarchar] (30) NOT NULL DEFAULT (N'UP_SELL'),
+	[date_begin] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_end] [datetime],
+	[priority] [int] NOT NULL DEFAULT (1),
+	[valid_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[recommend_display_kbn_pc] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[recommend_display_pc] [nvarchar] ( max) NOT NULL DEFAULT (N''),
+	[recommend_display_kbn_sp] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[recommend_display_sp] [nvarchar] ( max) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_Recommend] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_Recommend] PRIMARY KEY  CLUSTERED
+	(
+		[shop_id],
+		[recommend_id]
+	) ON [PRIMARY]
+GO
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_RecommendApplyConditionItem]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_RecommendApplyConditionItem]
+GO
+/*
+=========================================================================================================
+  Module      : レコメンド適用条件アイテム (w2_RecommendApplyConditionItem.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_RecommendApplyConditionItem] (
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[recommend_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[recommend_apply_condition_type] [nvarchar] (30) NOT NULL DEFAULT (N'BUY'),
+	[recommend_apply_condition_item_type] [nvarchar] (30) NOT NULL DEFAULT (N'NORMAL'),
+	[recommend_apply_condition_item_unit_type] [nvarchar] (30) NOT NULL DEFAULT (N'PRODUCT'),
+	[recommend_apply_condition_item_product_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[recommend_apply_condition_item_variation_id] [nvarchar] (60) NOT NULL DEFAULT (N''),
+	[recommend_apply_condition_item_sort_no] [int] NOT NULL DEFAULT (1),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_RecommendApplyConditionItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_RecommendApplyConditionItem] PRIMARY KEY  CLUSTERED
+	(
+		[shop_id],
+		[recommend_id],
+		[recommend_apply_condition_type],
+		[recommend_apply_condition_item_type],
+		[recommend_apply_condition_item_unit_type],
+		[recommend_apply_condition_item_product_id],
+		[recommend_apply_condition_item_variation_id]
+	) ON [PRIMARY]
+GO
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_RecommendItem]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_RecommendItem]
+GO
+/*
+=========================================================================================================
+  Module      : レコメンドアイテム (w2_RecommendItem.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_RecommendItem] (
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[recommend_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[recommend_item_type] [nvarchar] (30) NOT NULL DEFAULT (N'NORMAL'),
+	[recommend_item_product_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[recommend_item_variation_id] [nvarchar] (60) NOT NULL DEFAULT (N''),
+	[recommend_item_add_quantity_type] [nvarchar] (30) NOT NULL DEFAULT (N'SPECIFY_QUANTITY'),
+	[recommend_item_add_quantity] [int] NOT NULL DEFAULT (1),
+	[recommend_item_sort_no] [int] NOT NULL DEFAULT (1),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_RecommendItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_RecommendItem] PRIMARY KEY  CLUSTERED
+	(
+		[shop_id],
+		[recommend_id],
+		[recommend_item_type],
+		[recommend_item_product_id],
+		[recommend_item_variation_id]
+	) ON [PRIMARY]
+GO
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_RecommendUpsellTargetItem]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_RecommendUpsellTargetItem]
+GO
+/*
+=========================================================================================================
+  Module      : レコメンドアップセル対象アイテム (w2_RecommendUpsellTargetItem.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_RecommendUpsellTargetItem] (
+	[shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+	[recommend_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[recommend_upsell_target_item_type] [nvarchar] (30) NOT NULL DEFAULT (N'NORMAL'),
+	[recommend_upsell_target_item_product_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[recommend_upsell_target_item_variation_id] [nvarchar] (60) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_RecommendUpsellTargetItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_RecommendUpsellTargetItem] PRIMARY KEY  CLUSTERED
+	(
+		[shop_id],
+		[recommend_id],
+		[recommend_upsell_target_item_type],
+		[recommend_upsell_target_item_product_id],
+		[recommend_upsell_target_item_variation_id]
+	) ON [PRIMARY]
+GO
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

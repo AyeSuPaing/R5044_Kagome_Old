@@ -1,0 +1,586 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 店舗管理者マスタ系SQLステートメントXML (ShopOperator.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<ShopOperator>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_ShopOperator
+                [[ SHOPOPERATOR_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetSearchHitCount>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ShopOperator.*,
+                MenuAuthority.menu_authority_name
+          FROM  (
+                  SELECT  w2_ShopOperator.shop_id,
+                          w2_ShopOperator.operator_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ SHOPOPERATOR_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ShopOperator
+                          [[ SHOPOPERATOR_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ShopOperator ON
+                (
+                  RowIndex.shop_id = w2_ShopOperator.shop_id
+                  AND
+                  RowIndex.operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT JOIN
+                (
+                  SELECT  DISTINCT
+                          w2_MenuAuthority.menu_authority_level,
+                          w2_MenuAuthority.menu_authority_name
+                    FROM  w2_MenuAuthority
+                   WHERE  w2_MenuAuthority.shop_id = @shop_id
+                     AND  w2_MenuAuthority.pkg_kbn = @pkg_kbn
+                ) AS MenuAuthority
+                ON
+                (
+                  1 = 1
+                  --w2_ShopOperator.menu_access_level1★ = MenuAuthority.menu_authority_level
+                  <@@hasval:login_operator_menu_access_level1@@>
+                  AND
+                  w2_ShopOperator.menu_access_level1@ = MenuAuthority.menu_authority_level
+                  </@@hasval:login_operator_menu_access_level1@@>
+                  <@@hasval:login_operator_menu_access_level2@@>
+                  AND
+                  w2_ShopOperator.menu_access_level2 = MenuAuthority.menu_authority_level
+                  </@@hasval:login_operator_menu_access_level2@@>
+                  <@@hasval:login_operator_menu_access_level3@@>
+                  AND
+                  w2_ShopOperator.menu_access_level3 = MenuAuthority.menu_authority_level
+                  </@@hasval:login_operator_menu_access_level3@@>
+                  <@@hasval:login_operator_menu_access_level4@@>
+                  AND
+                  w2_ShopOperator.menu_access_level4 = MenuAuthority.menu_authority_level
+                  </@@hasval:login_operator_menu_access_level4@@>
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="1" />
+    </Parameter>
+  </Search>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ShopOperator
+         WHERE  shop_id = @shop_id
+           AND  operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Get>
+
+  <!-- ログインIDから得 -->
+  <GetByLoginId>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1 *
+          FROM  w2_ShopOperator
+         WHERE  shop_id = @shop_id
+           AND  login_id = @login_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="login_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetByLoginId>
+
+  <!-- オペレータ一覧を取得する -->
+  <GetOperatorList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+       DECLARE  @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_ShopOperator.operator_id), 0)
+          FROM  w2_ShopOperator
+                [[ SHOPOPERATOR_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_ShopOperator.*,
+                MenuAuthority.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ShopOperator.shop_id,
+                          w2_ShopOperator.operator_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ TAG_AUTHORITY_SHOPOPERATOR_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ShopOperator
+                          [[ SHOPOPERATOR_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ShopOperator ON
+                (
+                  RowIndex.shop_id = w2_ShopOperator.shop_id
+                  AND
+                  RowIndex.operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT JOIN
+                (
+                  SELECT  DISTINCT
+                          w2_MenuAuthority.menu_authority_level,
+                          w2_MenuAuthority.menu_authority_name
+                    FROM  w2_MenuAuthority
+                   WHERE  w2_MenuAuthority.pkg_kbn = '2'  -- w2MarketingPlanner
+                     AND  w2_MenuAuthority.shop_id = @shop_id
+                ) AS MenuAuthority
+                ON
+                (
+                  w2_ShopOperator.menu_access_level2 = MenuAuthority.menu_authority_level
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="menu_access_level2" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetOperatorList>
+
+  <!-- タグIDを有しているオペレータを取得 -->
+  <GetOperatorListWithTagID>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  usable_affiliate_tag_ids_in_report,
+                operator_id,
+                name
+          FROM  w2_ShopOperator
+         WHERE  DATALENGTH(usable_affiliate_tag_ids_in_report) > 0
+      ]]>
+    </Statement>
+  </GetOperatorListWithTagID>
+
+  <!-- ECオペレータ一覧を取得する -->
+  <GetEcOperatorList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_ShopOperator.operator_id), 0)
+          FROM  w2_ShopOperator
+                [[ EC_SHOPOPERATOR_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_ShopOperator.*,
+                MenuAuthority.menu_authority_name,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ShopOperator.shop_id,
+                          w2_ShopOperator.operator_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ SHOPOPERATOR_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ShopOperator
+                          [[ EC_SHOPOPERATOR_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ShopOperator ON
+                (
+                  RowIndex.shop_id = w2_ShopOperator.shop_id
+                  AND
+                  RowIndex.operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT JOIN
+                (
+                  SELECT  DISTINCT
+                          w2_MenuAuthority.menu_authority_level,
+                          w2_MenuAuthority.menu_authority_name
+                    FROM  w2_MenuAuthority
+                   WHERE  w2_MenuAuthority.pkg_kbn = '1'  -- w2MarketingPlanner
+                     AND  w2_MenuAuthority.shop_id = @shop_id
+                ) AS MenuAuthority
+                ON
+                (
+                  w2_ShopOperator.menu_access_level1 = MenuAuthority.menu_authority_level
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="menu_access_level1" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="operator_id_like_escaped" Type="nvarchar" Size="40" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="40" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="1" />
+      <Input Name="condition_menu_access_level" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetEcOperatorList>
+
+  <!-- Mpオペレータ一覧を取得する -->
+  <GetMpOperatorList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_ShopOperator.operator_id), 0)
+          FROM  w2_ShopOperator
+                [[ MP_SHOPOPERATOR_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_ShopOperator.*,
+                MenuAuthority.menu_authority_name,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_ShopOperator.shop_id,
+                          w2_ShopOperator.operator_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ SHOPOPERATOR_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ShopOperator
+                          [[ MP_SHOPOPERATOR_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ShopOperator ON
+                (
+                  RowIndex.shop_id = w2_ShopOperator.shop_id
+                  AND
+                  RowIndex.operator_id = w2_ShopOperator.operator_id
+                )
+                LEFT JOIN
+                (
+                  SELECT  DISTINCT
+                          w2_MenuAuthority.menu_authority_level,
+                          w2_MenuAuthority.menu_authority_name
+                    FROM  w2_MenuAuthority
+                   WHERE  w2_MenuAuthority.pkg_kbn = '2'  -- w2MarketingPlanner
+                     AND  w2_MenuAuthority.shop_id = @shop_id
+                ) AS MenuAuthority
+                ON
+                (
+                  w2_ShopOperator.menu_access_level2 = MenuAuthority.menu_authority_level
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="menu_access_level2" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="operator_id_like_escaped" Type="nvarchar" Size="40" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="40" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="1" />
+      <Input Name="condition_menu_access_level" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMpOperatorList>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ShopOperator
+                (
+                  shop_id,
+                  operator_id,
+                  name,
+                  <@@hasval:mail_addr@@>
+                  mail_addr,
+                  </@@hasval:mail_addr@@>
+                  menu_access_level1,
+                  menu_access_level2,
+                  menu_access_level3,
+                  menu_access_level4,
+                  menu_access_level5,
+                  menu_access_level6,
+                  menu_access_level7,
+                  menu_access_level8,
+                  menu_access_level9,
+                  menu_access_level10,
+                  login_id,
+                  password,
+                  odbc_user_name,
+                  odbc_password,
+                  valid_flg,
+                  del_flg,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @shop_id,
+                  @operator_id,
+                  @name,
+                  <@@hasval:mail_addr@@>
+                  @mail_addr,
+                  </@@hasval:mail_addr@@>
+                  @menu_access_level1,
+                  @menu_access_level2,
+                  @menu_access_level3,
+                  @menu_access_level4,
+                  @menu_access_level5,
+                  @menu_access_level6,
+                  @menu_access_level7,
+                  @menu_access_level8,
+                  @menu_access_level9,
+                  @menu_access_level10,
+                  @login_id,
+                  @password,
+                  @odbc_user_name,
+                  @odbc_password,
+                  @valid_flg,
+                  @del_flg,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="name" Type="nvarchar" Size="20" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="menu_access_level1" Type="int" />
+      <Input Name="menu_access_level2" Type="int" />
+      <Input Name="menu_access_level3" Type="int" />
+      <Input Name="menu_access_level4" Type="int" />
+      <Input Name="menu_access_level5" Type="int" />
+      <Input Name="menu_access_level6" Type="int" />
+      <Input Name="menu_access_level7" Type="int" />
+      <Input Name="menu_access_level8" Type="int" />
+      <Input Name="menu_access_level9" Type="int" />
+      <Input Name="menu_access_level10" Type="int" />
+      <Input Name="login_id" Type="nvarchar" Size="20" />
+      <Input Name="password" Type="nvarchar" Size="20" />
+      <Input Name="odbc_user_name" Type="nvarchar" Size="30" />
+      <Input Name="odbc_password" Type="nvarchar" Size="30" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ShopOperator
+           SET  name = @name,
+                <@@hasval:mail_addr@@>
+                mail_addr = @mail_addr,
+                </@@hasval:mail_addr@@>
+                menu_access_level1 = @menu_access_level1,
+                menu_access_level2 = @menu_access_level2,
+                menu_access_level3 = @menu_access_level3,
+                menu_access_level4 = @menu_access_level4,
+                menu_access_level5 = @menu_access_level5,
+                menu_access_level6 = @menu_access_level6,
+                menu_access_level7 = @menu_access_level7,
+                menu_access_level8 = @menu_access_level8,
+                menu_access_level9 = @menu_access_level9,
+                menu_access_level10 = @menu_access_level10,
+                login_id = @login_id,
+                password = @password,
+                odbc_user_name = @odbc_user_name,
+                odbc_password = @odbc_password,
+                valid_flg = @valid_flg,
+                del_flg = @del_flg,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  shop_id = @shop_id
+           AND  operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="name" Type="nvarchar" Size="20" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="menu_access_level1" Type="int" />
+      <Input Name="menu_access_level2" Type="int" />
+      <Input Name="menu_access_level3" Type="int" />
+      <Input Name="menu_access_level4" Type="int" />
+      <Input Name="menu_access_level5" Type="int" />
+      <Input Name="menu_access_level6" Type="int" />
+      <Input Name="menu_access_level7" Type="int" />
+      <Input Name="menu_access_level8" Type="int" />
+      <Input Name="menu_access_level9" Type="int" />
+      <Input Name="menu_access_level10" Type="int" />
+      <Input Name="login_id" Type="nvarchar" Size="20" />
+      <Input Name="password" Type="nvarchar" Size="20" />
+      <Input Name="odbc_user_name" Type="nvarchar" Size="30" />
+      <Input Name="odbc_password" Type="nvarchar" Size="30" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- オペレータの閲覧可能な広告コードを更新する -->
+  <UpdateOperatorAdvAuthority>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ShopOperator
+           SET  usable_advcode_nos_in_report = @usable_advcode_nos_in_report,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  shop_id = @shop_id
+           AND  operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="usable_advcode_nos_in_report" Type="nvarchar" Size="MAX"/>
+    </Parameter>
+  </UpdateOperatorAdvAuthority>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ShopOperator
+         WHERE  shop_id = @shop_id
+           AND  operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Delete>
+
+  <!-- オペレータの閲覧可能なアフィリエイトタグを更新する -->
+  <UpdateOperatorTagAuthority>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ShopOperator
+           SET  w2_ShopOperator.usable_affiliate_tag_ids_in_report = @usable_affiliate_tag_ids_in_report,
+                w2_ShopOperator.usable_advcode_media_type_ids = @usable_advcode_media_type_ids,
+                w2_ShopOperator.usable_output_locations = @usable_output_locations,
+                w2_ShopOperator.date_changed = GETDATE(),
+                w2_ShopOperator.last_changed = @last_changed
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+           AND  w2_ShopOperator.operator_id = @operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="operator_id" Type="nvarchar" Size="20" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="usable_affiliate_tag_ids_in_report" Type="nvarchar" Size="MAX" />
+      <Input Name="usable_advcode_media_type_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="usable_output_locations" Type="nvarchar" Size="MAX" />
+    </Parameter>
+  </UpdateOperatorTagAuthority>
+
+  <!-- 認証コード更新 -->
+  <UpdateAuthenticationCode>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ShopOperator
+           SET  w2_ShopOperator.authentication_code = @authentication_code,
+                w2_ShopOperator.date_code_send = GETDATE()
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+           AND  w2_ShopOperator.login_id = @login_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="login_id" Type="nvarchar" Size="20" />
+      <Input Name="authentication_code" Type="nvarchar" Size="8" />
+    </Parameter>
+  </UpdateAuthenticationCode>
+
+  <!-- リモートIPアドレス更新 -->
+  <UpdateRemoteAddress>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ShopOperator
+           SET  w2_ShopOperator.remote_addr = @remote_addr,
+                w2_ShopOperator.date_last_loggedin = GETDATE()
+         WHERE  w2_ShopOperator.shop_id = @shop_id
+           AND  w2_ShopOperator.login_id = @login_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="login_id" Type="nvarchar" Size="20" />
+      <Input Name="remote_addr" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateRemoteAddress>
+
+  <!-- Shop operator master and real shop id acquisition -->
+  <GetShopOperatorMasterAndRealShopId>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_ShopOperator
+                [[ SHOPOPERATOR_SEARCH_WHERE ]]
+                [[ SHOPOPERATOR_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sort_kbn" Type="nvarchar" Size="1" />
+      <Input Name="delimiter" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetShopOperatorMasterAndRealShopId>
+
+  <!-- 店舗管理者キーマスタフィールドチェック -->
+  <CheckOperatorFields>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  w2_ShopOperator,w2_OperatorAuthority
+         WHERE  w2_ShopOperator.shop_id = w2_OperatorAuthority.shop_id
+           AND  w2_ShopOperator.operator_id = w2_OperatorAuthority.operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </CheckOperatorFields>
+
+</ShopOperator>

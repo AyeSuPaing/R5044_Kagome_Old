@@ -1,0 +1,579 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モール連携設定系SQLステートメントXML(Advertise.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MallLiaise>
+
+  <!-- モール連携設定一覧取得 -->
+  <GetMallCooperationSettingList>
+    <Statement>
+      <![CDATA[
+        SELECT  (
+                  SELECT  COUNT(mall_id) 
+                    FROM  w2_MallCooperationSetting
+                   WHERE  shop_id = @shop_id
+                     AND  (
+                            mall_id LIKE @mall_id_like_escaped + '%' ESCAPE '#'
+                            OR 
+                            @mall_id_like_escaped = ''
+                          )
+                     AND  (
+                            mall_name LIKE '%' + @mall_name_like_escaped + '%' ESCAPE '#'
+                            OR 
+                            @mall_name_like_escaped = ''
+                          )
+                     AND  (
+                            mall_kbn = @mall_kbn 
+                            OR 
+                            @mall_kbn = ''
+                          )
+                ) AS row_count,
+                w2_MallCooperationSetting.mall_id,    -- モールＩＤ
+                w2_MallCooperationSetting.mall_name,  -- モール設定名
+                w2_MallCooperationSetting.mall_kbn,   -- モール区分
+                w2_MallCooperationSetting.mall_exhibits_config,   -- モール出品設定
+                w2_MallCooperationSetting.valid_flg   -- 有効フラグ
+          FROM  w2_MallCooperationSetting, 
+                (
+                  SELECT  tmp_a.mall_id, COUNT(tmp_a.mall_id) AS rank
+                    FROM  w2_MallCooperationSetting AS tmp_a, 
+                          w2_MallCooperationSetting AS tmp_b
+                   WHERE  tmp_a.shop_id = tmp_b.shop_id
+                     AND  tmp_a.shop_id = @shop_id
+                     AND  tmp_a.mall_id >= tmp_b.mall_id
+                     AND  (
+                            tmp_a.mall_id LIKE @mall_id_like_escaped + '%' ESCAPE '#'
+                            OR 
+                            @mall_id_like_escaped = ''
+                          )
+                     AND  (
+                            tmp_a.mall_name LIKE '%' + @mall_name_like_escaped + '%' ESCAPE '#'
+                            OR 
+                            @mall_name_like_escaped = ''
+                          )
+                     AND  (
+                            tmp_a.mall_kbn = @mall_kbn 
+                            OR 
+                            @mall_kbn = ''
+                          )
+                     AND  (
+                            tmp_b.mall_id LIKE @mall_id_like_escaped + '%' ESCAPE '#'
+                            OR 
+                            @mall_id_like_escaped = ''
+                          )
+                     AND  (
+                            tmp_b.mall_name LIKE '%' + @mall_name_like_escaped + '%' ESCAPE '#'
+                            OR 
+                            @mall_name_like_escaped = ''
+                          )
+                     AND  (
+                            tmp_b.mall_kbn = @mall_kbn 
+                            OR 
+                            @mall_kbn = ''
+                          )
+                  GROUP BY tmp_a.mall_id
+                ) AS rank_t
+         WHERE  shop_id = @shop_id
+           AND  rank_t.rank BETWEEN @bgn_row_num AND @end_row_num
+           AND  rank_t.mall_id = w2_MallCooperationSetting.mall_id
+           AND  (
+                  w2_MallCooperationSetting.mall_id LIKE @mall_id_like_escaped + '%' ESCAPE '#'
+                  OR 
+                  @mall_id_like_escaped = ''
+                )
+           AND  (
+                  w2_MallCooperationSetting.mall_name LIKE '%' + @mall_name_like_escaped + '%' ESCAPE '#'
+                  OR 
+                  @mall_name_like_escaped = ''
+                )
+           AND  (
+                  w2_MallCooperationSetting.mall_kbn = @mall_kbn 
+                  OR 
+                  @mall_kbn = ''
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="mall_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="mall_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="mall_kbn" Type="nvarchar" Size="2" />
+    </Parameter>
+  </GetMallCooperationSettingList>
+
+  <!-- モール連携設定一覧取得（ショップIDより） -->
+  <GetMallCooperationSettingListFromShopId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MallCooperationSetting.*
+          FROM  w2_MallCooperationSetting
+         WHERE  shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMallCooperationSettingListFromShopId>
+
+  <!-- モール連携設定取得 -->
+  <GetMallCooperationSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MallCooperationSetting.*
+          FROM  w2_MallCooperationSetting
+         WHERE  shop_id = @shop_id
+           AND  mall_id = @mall_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMallCooperationSetting>
+
+  <!-- モール連携設定登録 -->
+  <InsertMallCooperation>
+    <Statement>
+      <![CDATA[
+        INSERT INTO
+                w2_MallCooperationSetting
+                (
+                  shop_id,
+                  mall_id,
+                  mall_kbn,
+                  mall_name,
+                  mall_exhibits_config,
+                  tgt_mail_addr,
+                  pop_server,
+                  pop_port,
+                  pop_user_name,
+                  pop_password,
+                  pop_apop_flg,
+                  ftp_host,
+                  ftp_user_name,
+                  ftp_password,
+                  ftp_upload_dir,
+                  other_setting,
+                  cnvid_rtn_n_ins_itemcsv,
+                  cnvid_rtn_n_upd_itemcsv,
+                  cnvid_rtn_n_stk_itemcsv,
+                  cnvid_rtn_v_ins_itemcsv,
+                  cnvid_rtn_v_ins_selectcsv,
+                  cnvid_rtn_v_upd_itemcsv,
+                  cnvid_rtn_v_stk_selectcsv,
+                  cnvid_rtn_itemcatcsv,
+                  cnvid_yho_n_ins_datacsv,
+                  cnvid_yho_n_ins_stockcsv,
+                  cnvid_yho_n_upd_datacsv,
+                  cnvid_yho_n_stk_datacsv,
+                  cnvid_yho_v_ins_datacsv,
+                  cnvid_yho_v_ins_stockcsv,
+                  cnvid_yho_v_upd_datacsv,
+                  cnvid_yho_v_stk_datacsv,
+                  maintenance_date_from,
+                  maintenance_date_to,
+                  valid_flg,
+                  last_changed,
+                  rakuten_api_user_name,
+                  rakuten_api_shop_url,
+                  rakuten_api_service_secret,
+                  rakuten_api_license_key,
+                  amazon_merchant_id,
+                  amazon_marketplace_id,
+                  amazon_aws_accesskey_id,
+                  amazon_secret_key,
+                  amazon_mws_authtoken,
+                  stock_update_use_flg,
+                  lohaco_private_key,
+                  sftp_host,
+                  sftp_user_name,
+                  sftp_pass_phrase,
+                  sftp_port,
+                  sftp_private_key_file_path,
+                  andmall_tenant_code,
+                  andmall_base_store_code,
+                  andmall_shop_no,
+                  andmall_cooperation,
+                  andmall_variation_cooperation,
+                  andmall_site_code,
+                  andmall_signature_key,
+                  next_engine_stock_store_account,
+                  next_engine_stock_auth_key,
+                  facebook_catalog_id,
+                  facebook_access_token,
+                  yahoo_api_client_id,
+                  yahoo_api_client_secret,
+                  yahoo_api_seller_id,
+                  yahoo_api_public_key,
+                  yahoo_api_public_key_version,
+                  rakuten_sku_management_id_output_format_for_normal,
+                  rakuten_sku_management_id_output_format_for_variation
+                )
+        VALUES  (
+                  @shop_id,
+                  @mall_id,
+                  @mall_kbn,
+                  @mall_name,
+                  @mall_exhibits_config,
+                  @tgt_mail_addr,
+                  @pop_server,
+                  @pop_port,
+                  @pop_user_name,
+                  @pop_password,
+                  @pop_apop_flg,
+                  @ftp_host,
+                  @ftp_user_name,
+                  @ftp_password,
+                  @ftp_upload_dir,
+                  @other_setting,
+                  @cnvid_rtn_n_ins_itemcsv,
+                  @cnvid_rtn_n_upd_itemcsv,
+                  @cnvid_rtn_n_stk_itemcsv,
+                  @cnvid_rtn_v_ins_itemcsv,
+                  @cnvid_rtn_v_ins_selectcsv,
+                  @cnvid_rtn_v_upd_itemcsv,
+                  @cnvid_rtn_v_stk_selectcsv,
+                  @cnvid_rtn_itemcatcsv,
+                  @cnvid_yho_n_ins_datacsv,
+                  @cnvid_yho_n_ins_stockcsv,
+                  @cnvid_yho_n_upd_datacsv,
+                  @cnvid_yho_n_stk_datacsv,
+                  @cnvid_yho_v_ins_datacsv,
+                  @cnvid_yho_v_ins_stockcsv,
+                  @cnvid_yho_v_upd_datacsv,
+                  @cnvid_yho_v_stk_datacsv,
+                  @maintenance_date_from,
+                  @maintenance_date_to,
+                  @valid_flg,
+                  @last_changed,
+                  @rakuten_api_user_name,
+                  @rakuten_api_shop_url,
+                  @rakuten_api_service_secret,
+                  @rakuten_api_license_key,
+                  @amazon_merchant_id,
+                  @amazon_marketplace_id,
+                  @amazon_aws_accesskey_id,
+                  @amazon_secret_key,
+                  @amazon_mws_authtoken,
+                  @stock_update_use_flg,
+                  @lohaco_private_key,
+                  @sftp_host,
+                  @sftp_user_name,
+                  @sftp_pass_phrase,
+                  @sftp_port,
+                  @sftp_private_key_file_path,
+                  @andmall_tenant_code,
+                  @andmall_base_store_code,
+                  @andmall_shop_no,
+                  @andmall_cooperation,
+                  @andmall_variation_cooperation,
+                  @andmall_site_code,
+                  @andmall_signature_key,
+                  @next_engine_stock_store_account,
+                  @next_engine_stock_auth_key,
+                  @facebook_catalog_id,
+                  @facebook_access_token,
+                  @yahoo_api_client_id,
+                  @yahoo_api_client_secret,
+                  @yahoo_api_seller_id,
+                  @yahoo_api_public_key,
+                  @yahoo_api_public_key_version,
+                  @rakuten_sku_management_id_output_format_for_normal,
+                  @rakuten_sku_management_id_output_format_for_variation
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="mall_kbn" Type="nvarchar" Size="2" />
+      <Input Name="mall_name" Type="nvarchar" Size="50" />
+      <Input Name="mall_exhibits_config" Type="nvarchar" Size="10" />
+      <Input Name="tgt_mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="pop_server" Type="nvarchar" Size="100" />
+      <Input Name="pop_port" Type="int" />
+      <Input Name="pop_user_name" Type="nvarchar" Size="50" />
+      <Input Name="pop_password" Type="nvarchar" Size="50" />
+      <Input Name="pop_apop_flg" Type="nvarchar" Size="10" />
+      <Input Name="ftp_host" Type="nvarchar" Size="256" />
+      <Input Name="ftp_user_name" Type="nvarchar" Size="50" />
+      <Input Name="ftp_password" Type="nvarchar" Size="50" />
+      <Input Name="ftp_upload_dir" Type="nvarchar" Size="256" />
+      <Input Name="other_setting" Type="ntext" />
+      <Input Name="cnvid_rtn_n_ins_itemcsv" Type="int" />
+      <Input Name="cnvid_rtn_n_upd_itemcsv" Type="int" />
+      <Input Name="cnvid_rtn_n_stk_itemcsv" Type="int" />
+      <Input Name="cnvid_rtn_v_ins_itemcsv" Type="int" />
+      <Input Name="cnvid_rtn_v_ins_selectcsv" Type="int" />
+      <Input Name="cnvid_rtn_v_upd_itemcsv" Type="int" />
+      <Input Name="cnvid_rtn_v_stk_selectcsv" Type="int" />
+      <Input Name="cnvid_rtn_itemcatcsv" Type="int" />
+      <Input Name="cnvid_yho_n_ins_datacsv" Type="int" />
+      <Input Name="cnvid_yho_n_ins_stockcsv" Type="int" />
+      <Input Name="cnvid_yho_n_upd_datacsv" Type="int" />
+      <Input Name="cnvid_yho_n_stk_datacsv" Type="int" />
+      <Input Name="cnvid_yho_v_ins_datacsv" Type="int" />
+      <Input Name="cnvid_yho_v_ins_stockcsv" Type="int" />
+      <Input Name="cnvid_yho_v_upd_datacsv" Type="int" />
+      <Input Name="cnvid_yho_v_stk_datacsv" Type="int" />
+      <Input Name="maintenance_date_from" Type="datetime" />
+      <Input Name="maintenance_date_to" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="rakuten_api_user_name" Type="nvarchar" Size="50" />
+      <Input Name="rakuten_api_shop_url" Type="nvarchar" Size="255" />
+      <Input Name="rakuten_api_service_secret" Type="nvarchar" Size="50" />
+      <Input Name="rakuten_api_license_key" Type="nvarchar" Size="50" />
+      <Input Name="amazon_merchant_id" Type="nvarchar" Size="30" />
+      <Input Name="amazon_marketplace_id" Type="nvarchar" Size="30" />
+      <Input Name="amazon_aws_accesskey_id" Type="nvarchar" Size="50" />
+      <Input Name="amazon_secret_key" Type="nvarchar" Size="50" />
+      <Input Name="amazon_mws_authtoken" Type="nvarchar" Size="100" />
+      <Input Name="stock_update_use_flg" Type="nvarchar" Size="10" />
+      <Input Name="lohaco_private_key" Type="nvarchar" Size="2048" />
+      <Input Name="sftp_host" Type="nvarchar" Size="256" />
+      <Input Name="sftp_user_name" Type="nvarchar" Size="50" />
+      <Input Name="sftp_pass_phrase" Type="nvarchar" Size="50" />
+      <Input Name="sftp_port" Type="int" />
+      <Input Name="sftp_private_key_file_path" Type="nvarchar" Size="256" />
+      <Input Name="andmall_tenant_code" Type="nvarchar" Size="5" />
+      <Input Name="andmall_base_store_code" Type="nvarchar" Size="8" />
+      <Input Name="andmall_shop_no" Type="nvarchar" Size="32" />
+      <Input Name="andmall_cooperation" Type="nvarchar" Size="50" />
+      <Input Name="andmall_variation_cooperation" Type="nvarchar" Size="50" />
+      <Input Name="andmall_site_code" Type="nvarchar" Size="30" />
+      <Input Name="andmall_signature_key" Type="nvarchar" Size="30" />
+      <Input Name="next_engine_stock_store_account" Type="nvarchar" Size="50" />
+      <Input Name="next_engine_stock_auth_key" Type="nvarchar" Size="50" />
+      <Input Name="facebook_catalog_id" Type="nvarchar" Size="30" />
+      <Input Name="facebook_access_token" Type="nvarchar" Size="256" />
+      <Input Name="yahoo_api_client_id" Type="nvarchar" Size="56" />
+      <Input Name="yahoo_api_client_secret" Type="nvarchar" Size="40" />
+      <Input Name="yahoo_api_seller_id" Type="nvarchar" Size="128" />
+      <Input Name="yahoo_api_public_key" Type="nvarchar" Size="340" />
+      <Input Name="yahoo_api_public_key_version" Type="nvarchar" Size="10"/>
+      <Input Name="rakuten_sku_management_id_output_format_for_normal" Type="nvarchar" Size="512" />
+      <Input Name="rakuten_sku_management_id_output_format_for_variation" Type="nvarchar" Size="512" />
+    </Parameter>
+  </InsertMallCooperation>
+
+  <!-- モール連携設定更新 -->
+  <UpdateMallCooperation>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallCooperationSetting
+           SET  mall_kbn = @mall_kbn,
+                mall_name = @mall_name,
+                mall_exhibits_config = @mall_exhibits_config,
+                tgt_mail_addr = @tgt_mail_addr,
+                pop_server = @pop_server,
+                pop_port = @pop_port,
+                pop_user_name = @pop_user_name,
+                pop_password = @pop_password,
+                pop_apop_flg = @pop_apop_flg,
+                ftp_host = @ftp_host,
+                ftp_user_name = @ftp_user_name,
+                ftp_password = @ftp_password,
+                ftp_upload_dir = @ftp_upload_dir,
+                other_setting  =  @other_setting,                
+                cnvid_rtn_n_ins_itemcsv = @cnvid_rtn_n_ins_itemcsv,
+                cnvid_rtn_n_upd_itemcsv = @cnvid_rtn_n_upd_itemcsv,
+                cnvid_rtn_n_stk_itemcsv = @cnvid_rtn_n_stk_itemcsv,
+                cnvid_rtn_v_ins_itemcsv = @cnvid_rtn_v_ins_itemcsv,
+                cnvid_rtn_v_ins_selectcsv = @cnvid_rtn_v_ins_selectcsv,
+                cnvid_rtn_v_upd_itemcsv = @cnvid_rtn_v_upd_itemcsv,
+                cnvid_rtn_v_stk_selectcsv = @cnvid_rtn_v_stk_selectcsv,
+                cnvid_rtn_itemcatcsv = @cnvid_rtn_itemcatcsv,
+                cnvid_yho_n_ins_datacsv = @cnvid_yho_n_ins_datacsv,
+                cnvid_yho_n_ins_stockcsv = @cnvid_yho_n_ins_stockcsv,
+                cnvid_yho_n_upd_datacsv = @cnvid_yho_n_upd_datacsv,
+                cnvid_yho_n_stk_datacsv = @cnvid_yho_n_stk_datacsv,
+                cnvid_yho_v_ins_datacsv = @cnvid_yho_v_ins_datacsv,
+                cnvid_yho_v_ins_stockcsv = @cnvid_yho_v_ins_stockcsv,
+                cnvid_yho_v_upd_datacsv = @cnvid_yho_v_upd_datacsv,
+                cnvid_yho_v_stk_datacsv = @cnvid_yho_v_stk_datacsv,
+                maintenance_date_from = @maintenance_date_from,
+                maintenance_date_to = @maintenance_date_to,
+                valid_flg = @valid_flg,
+                date_changed = getdate(),
+                last_changed = @last_changed,
+                rakuten_api_user_name = @rakuten_api_user_name,
+                rakuten_api_shop_url = @rakuten_api_shop_url,
+                rakuten_api_service_secret = @rakuten_api_service_secret,
+                rakuten_api_license_key = @rakuten_api_license_key,
+                amazon_merchant_id = @amazon_merchant_id,
+                amazon_marketplace_id = @amazon_marketplace_id,
+                amazon_aws_accesskey_id = @amazon_aws_accesskey_id,
+                amazon_secret_key = @amazon_secret_key,
+                amazon_mws_authtoken = @amazon_mws_authtoken,
+                stock_update_use_flg = @stock_update_use_flg,
+                lohaco_private_key = @lohaco_private_key,
+                sftp_host = @sftp_host,
+                sftp_user_name = @sftp_user_name,
+                sftp_pass_phrase = @sftp_pass_phrase,
+                sftp_port = @sftp_port,
+                sftp_private_key_file_path = @sftp_private_key_file_path,
+                andmall_tenant_code = @andmall_tenant_code,
+                andmall_base_store_code = @andmall_base_store_code,
+                andmall_shop_no = @andmall_shop_no,
+                andmall_cooperation = @andmall_cooperation,
+                andmall_variation_cooperation = @andmall_variation_cooperation,
+                andmall_site_code = @andmall_site_code,
+                andmall_signature_key = @andmall_signature_key,
+                next_engine_stock_store_account = @next_engine_stock_store_account,
+                next_engine_stock_auth_key = @next_engine_stock_auth_key,
+                facebook_catalog_id = @facebook_catalog_id,
+                facebook_access_token = @facebook_access_token,
+                yahoo_api_client_id = @yahoo_api_client_id,
+                yahoo_api_client_secret = @yahoo_api_client_secret,
+                yahoo_api_seller_id = @yahoo_api_seller_id,
+                yahoo_api_public_key = @yahoo_api_public_key,
+                yahoo_api_public_key_version = @yahoo_api_public_key_version,
+                rakuten_sku_management_id_output_format_for_normal = @rakuten_sku_management_id_output_format_for_normal,
+                rakuten_sku_management_id_output_format_for_variation = @rakuten_sku_management_id_output_format_for_variation
+         WHERE  shop_id = @shop_id
+           AND  mall_id = @mall_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="mall_kbn" Type="nvarchar" Size="2" />
+      <Input Name="mall_name" Type="nvarchar" Size="50" />
+      <Input Name="mall_exhibits_config" Type="nvarchar" Size="10" />
+      <Input Name="tgt_mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="pop_server" Type="nvarchar" Size="100" />
+      <Input Name="pop_port" Type="int" />
+      <Input Name="pop_user_name" Type="nvarchar" Size="50" />
+      <Input Name="pop_password" Type="nvarchar" Size="50" />
+      <Input Name="pop_apop_flg" Type="nvarchar" Size="10" />
+      <Input Name="ftp_host" Type="nvarchar" Size="256" />
+      <Input Name="ftp_user_name" Type="nvarchar" Size="50" />
+      <Input Name="ftp_password" Type="nvarchar" Size="50" />
+      <Input Name="ftp_upload_dir" Type="nvarchar" Size="256" />
+      <Input Name="other_setting" Type="ntext" />
+      <Input Name="cnvid_rtn_n_ins_itemcsv" Type="int" />
+      <Input Name="cnvid_rtn_n_upd_itemcsv" Type="int" />
+      <Input Name="cnvid_rtn_n_stk_itemcsv" Type="int" />
+      <Input Name="cnvid_rtn_v_ins_itemcsv" Type="int" />
+      <Input Name="cnvid_rtn_v_ins_selectcsv" Type="int" />
+      <Input Name="cnvid_rtn_v_upd_itemcsv" Type="int" />
+      <Input Name="cnvid_rtn_v_stk_selectcsv" Type="int" />
+      <Input Name="cnvid_rtn_itemcatcsv" Type="int" />
+      <Input Name="cnvid_yho_n_ins_datacsv" Type="int" />
+      <Input Name="cnvid_yho_n_ins_stockcsv" Type="int" />
+      <Input Name="cnvid_yho_n_upd_datacsv" Type="int" />
+      <Input Name="cnvid_yho_n_stk_datacsv" Type="int" />
+      <Input Name="cnvid_yho_v_ins_datacsv" Type="int" />
+      <Input Name="cnvid_yho_v_ins_stockcsv" Type="int" />
+      <Input Name="cnvid_yho_v_upd_datacsv" Type="int" />
+      <Input Name="cnvid_yho_v_stk_datacsv" Type="int" />
+      <Input Name="maintenance_date_from" Type="datetime" />
+      <Input Name="maintenance_date_to" Type="datetime" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="rakuten_api_user_name" Type="nvarchar" Size="50" />
+      <Input Name="rakuten_api_shop_url" Type="nvarchar" Size="255" />
+      <Input Name="rakuten_api_service_secret" Type="nvarchar" Size="50" />
+      <Input Name="rakuten_api_license_key" Type="nvarchar" Size="50" />
+      <Input Name="amazon_merchant_id" Type="nvarchar" Size="30" />
+      <Input Name="amazon_marketplace_id" Type="nvarchar" Size="30" />
+      <Input Name="amazon_aws_accesskey_id" Type="nvarchar" Size="50" />
+      <Input Name="amazon_secret_key" Type="nvarchar" Size="50" />
+      <Input Name="amazon_mws_authtoken" Type="nvarchar" Size="100" />
+      <Input Name="stock_update_use_flg" Type="nvarchar" Size="10" />
+      <Input Name="lohaco_private_key" Type="nvarchar" Size="2048" />
+      <Input Name="sftp_host" Type="nvarchar" Size="256" />
+      <Input Name="sftp_user_name" Type="nvarchar" Size="50" />
+      <Input Name="sftp_pass_phrase" Type="nvarchar" Size="50" />
+      <Input Name="sftp_port" Type="int" />
+      <Input Name="sftp_private_key_file_path" Type="nvarchar" Size="256" />
+      <Input Name="andmall_tenant_code" Type="nvarchar" Size="5" />
+      <Input Name="andmall_base_store_code" Type="nvarchar" Size="8" />
+      <Input Name="andmall_shop_no" Type="nvarchar" Size="32" />
+      <Input Name="andmall_cooperation" Type="nvarchar" Size="50" />
+      <Input Name="andmall_variation_cooperation" Type="nvarchar" Size="50" />
+      <Input Name="andmall_site_code" Type="nvarchar" Size="30" />
+      <Input Name="andmall_signature_key" Type="nvarchar" Size="30" />
+      <Input Name="next_engine_stock_store_account" Type="nvarchar" Size="50" />
+      <Input Name="next_engine_stock_auth_key" Type="nvarchar" Size="50" />
+      <Input Name="facebook_catalog_id" Type="nvarchar" Size="30" />
+      <Input Name="facebook_access_token" Type="nvarchar" Size="256" />
+      <Input Name="yahoo_api_client_id" Type="nvarchar" Size="56" />
+      <Input Name="yahoo_api_client_secret" Type="nvarchar" Size="40" />
+      <Input Name="yahoo_api_seller_id" Type="nvarchar" Size="128" />
+      <Input Name="yahoo_api_public_key" Type="nvarchar" Size="340" />
+      <Input Name="yahoo_api_public_key_version" Type="nvarchar" Size="10"/>
+      <Input Name="rakuten_sku_management_id_output_format_for_normal" Type="nvarchar" Size="512" />
+      <Input Name="rakuten_sku_management_id_output_format_for_variation" Type="nvarchar" Size="512" />
+    </Parameter>
+  </UpdateMallCooperation>
+
+  <!-- モール連携設定削除 -->
+  <DeleteMallCooperation>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MallCooperationSetting
+         WHERE  shop_id = @shop_id 
+           AND  mall_id = @mall_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteMallCooperation>
+
+  <!-- モール連携設定すべて取得 -->
+  <GetMallCooperationSettingAll>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MallCooperationSetting.*
+          FROM  w2_MallCooperationSetting
+         WHERE  w2_MallCooperationSetting.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMallCooperationSettingAll>
+
+  <!-- SMTPサーバ設定取得-->
+  <GetSmtpServerSetting>
+    <Statement>
+      <![CDATA[
+      SELECT  other_setting
+      FROM    w2_MallCooperationSetting
+      WHERE   w2_MallCooperationSetting.shop_id = @shop_id
+      AND     w2_MallCooperationSetting.mall_id = @mall_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetSmtpServerSetting>
+
+  <!-- 重複チェック（モール連携設定登録時）-->
+  <CheckDuplicationInsertMallId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(w2_MallCooperationSetting.mall_id) AS mall_id_count 
+        FROM    w2_MallCooperationSetting 
+        WHERE   w2_MallCooperationSetting.shop_id = @shop_id
+        AND     w2_MallCooperationSetting.mall_id = @mall_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationInsertMallId>
+  
+</MallLiaise>

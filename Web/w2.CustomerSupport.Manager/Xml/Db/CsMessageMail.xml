@@ -1,0 +1,166 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メッセージメール系SQLステートメントXML(CsMessageMail.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsMessageMail>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_CsMessageMail
+         WHERE  dept_id = @dept_id
+           AND  mail_id = @mail_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Get>
+
+  <!-- 取得 -->
+  <GetWithAttachment>
+    <Statement>
+      <![CDATA[
+        SELECT  mail.*,
+                attachment.file_no,
+                attachment.file_name
+          FROM  w2_CsMessageMail mail
+                LEFT OUTER JOIN  w2_CsMessageMailAttachment attachment ON
+                (
+                  mail.dept_id = attachment.dept_id AND mail.mail_id = attachment.mail_id
+                )
+         WHERE  mail.dept_id = @dept_id 
+           AND  mail.mail_id = @mail_id
+        ORDER BY attachment.file_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetWithAttachment>
+
+  <!-- 登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CsMessageMail
+                (
+                  dept_id,
+                  mail_id,
+                  mail_kbn,
+                  mail_from,
+                  mail_to,
+                  mail_cc,
+                  mail_bcc,
+                  mail_subject,
+                  mail_body,
+                  send_operator_id,
+                  send_datetime,
+                  message_id,
+                  in_reply_to,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @dept_id,
+                  @mail_id,
+                  @mail_kbn,
+                  @mail_from,
+                  @mail_to,
+                  @mail_cc,
+                  @mail_bcc,
+                  @mail_subject,
+                  @mail_body,
+                  @send_operator_id,
+                  @send_datetime,
+                  @message_id,
+                  @in_reply_to,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mail_from" Type="nvarchar" Size="512" />
+      <Input Name="mail_to" Type="nvarchar" Size="max" />
+      <Input Name="mail_cc" Type="nvarchar" Size="max" />
+      <Input Name="mail_bcc" Type="nvarchar" Size="max" />
+      <Input Name="mail_subject" Type="nvarchar" Size="100" />
+      <Input Name="mail_body" Type="nvarchar" Size="max" />
+      <Input Name="send_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="send_datetime" Type="datetime" />
+      <Input Name="message_id" Type="varchar" Size="900" />
+      <Input Name="in_reply_to" Type="varchar" Size="900" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMessageMail
+           SET  mail_kbn = @mail_kbn,
+                mail_from = @mail_from,
+                mail_to = @mail_to,
+                mail_cc = @mail_cc,
+                mail_bcc = @mail_bcc,
+                mail_subject = @mail_subject,
+                mail_body = @mail_body,
+                send_operator_id = @send_operator_id,
+                send_datetime = @send_datetime,
+                message_id = @message_id,
+                in_reply_to = @in_reply_to,
+                date_changed = GETDATE(),
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  mail_id = @mail_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mail_from" Type="nvarchar" Size="512" />
+      <Input Name="mail_to" Type="nvarchar" Size="max" />
+      <Input Name="mail_cc" Type="nvarchar" Size="max" />
+      <Input Name="mail_bcc" Type="nvarchar" Size="max" />
+      <Input Name="mail_subject" Type="nvarchar" Size="100" />
+      <Input Name="mail_body" Type="nvarchar" Size="max" />
+      <Input Name="send_operator_id" Type="nvarchar" Size="20" />
+      <Input Name="send_datetime" Type="datetime" />
+      <Input Name="message_id" Type="varchar" Size="900" />
+      <Input Name="in_reply_to" Type="varchar" Size="900" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_CsMessageMail
+         WHERE  dept_id = @dept_id
+           AND  mail_id = @mail_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+
+</CsMessageMail>

@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 広告コードレポート系SQLサブステートメントXML(AdvertisementCodeReport_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<AdvertisementCodeReport_Sub>
+
+  <!-- オーダ集計レポート情報(初回コード付き購入者詳細)取得用WHERE文 -->
+  <FIRSTORDEROWNER_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE   (@advertisement_code = '' OR w2_Order.advcode_first = @advertisement_code)
+          AND   (w2_Order.advcode_first <> '')  -- 初回広告コード空以外
+          @@ where_adv_code @@
+          AND   (@career_id = '' OR w2_Order.career_id = @career_id)
+          AND   (@term1_from IS NULL OR (w2_Order.order_shipped_date >= @term1_from))
+          AND   (@term1_to IS NULL OR (w2_Order.order_shipped_date <= DATEADD(ms, 998, @term1_to)))
+          AND   w2_Order.order_status IN ('SHP_COMP','DLV_COMP') -- 出荷完了 OR 配送完了
+          AND   w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+      ]]>
+    </Statement>
+  </FIRSTORDEROWNER_SEARCH_WHERE>
+
+  <!-- オーダ集計レポート情報(初回コード付き購入者詳細)取得用ORDER_BY -->
+  <FIRSTORDEROWNER_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          w2_Order.order_date DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_Order.order_id ASC
+      ]]>
+    </Statement>
+  </FIRSTORDEROWNER_SEARCH_ORDER_BY>
+
+  <!-- オーダ集計レポート情報(注文時広告コード購入者詳細)取得用WHERE文 -->
+  <ORDEROWNER_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE   (
+                  @advertisement_code = '' 
+                  OR 
+                  w2_Order.advcode_new = @advertisement_code
+                )
+          AND   (w2_Order.advcode_new <> '')  -- 注文時広告コード空以外
+          AND   (
+                  @career_id = '' 
+                  OR 
+                  w2_Order.career_id = @career_id
+                )
+          AND   (
+                  @term1_from IS NULL 
+                  OR 
+                  (w2_Order.order_shipped_date >= @term1_from)
+                )
+          AND   (
+                  @term1_to IS NULL 
+                  OR
+                  (w2_Order.order_shipped_date <= DATEADD(ms, 998, @term1_to))
+                )
+          AND   w2_Order.order_status IN ('SHP_COMP','DLV_COMP') -- 出荷完了 OR 配送完了
+          AND   w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+          @@ where_adv_code @@
+      ]]>
+    </Statement>
+  </ORDEROWNER_SEARCH_WHERE>
+
+  <!-- オーダ集計レポート情報(注文時広告コード購入者詳細)取得用ORDER_BY -->
+  <ORDEROWNER_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          w2_Order.order_date DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_Order.order_id ASC
+      ]]>
+    </Statement>
+  </ORDEROWNER_SEARCH_ORDER_BY>
+
+</AdvertisementCodeReport_Sub>

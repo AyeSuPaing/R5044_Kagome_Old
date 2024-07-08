@@ -1,0 +1,413 @@
+﻿@*
+=========================================================================================================
+  Module      : 商品グループ設定登録・編集ページ(Edit.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using w2.App.Common.Manager
+@using w2.Cms.Manager.Codes
+@using w2.Common.Web
+@using w2.Domain.MenuAuthority.Helper
+@{
+	ViewBag.Title = "商品グループ設定";
+	Layout = Model.PageLayout;
+	var productSearchUrl = SingleSignOnUrlCreator.CreateForMvc(MenuAuthorityHelper.ManagerSiteType.Ec, new UrlCreator(Constants.PAGE_MANAGER_PRODUCT_SEARCH).AddParam(Constants.REQUEST_KEY_PRODUCT_SEARCH_KBN, Constants.KBN_PRODUCT_SEARCH_PRODUCT).AddParam(Constants.REQUEST_KEY_PRODUCT_VALID_FLG, Constants.FLG_PRODUCT_VALID_FLG_VALID).CreateUrl());
+	var textRowsNormal = 5;
+	var textRowsLarge = 20;
+}
+@model w2.Cms.Manager.ViewModels.ProductGroup.EditViewModel
+
+@helper TopBottomControls() {
+	<input type="submit" name="BackList" value="  一覧へ戻る  " class="btn btn-main"/>
+	if (Model.IsActionStatusUpdate) {
+		<input type="button" onclick="return validate('delete', { name: 'Input.ValidationKbn', value: 2 });" value="  削除する  " class="btn btn-main"/>
+		<input type="submit" name="Delete" onclick="return confirm('削除します。よろしいですか？')" id="delete" style="display: none;">
+		<input type="button" value="  コピー新規登録する  " class="btn btn-main" onclick="return validate('copy_register', { name: 'Input.ValidationKbn', value: 1 });">
+		<input type="submit" name="CopyRegister" id="copy_register" style="display: none;">
+		<input type="button" value="  更新する  " class="btn btn-main" onclick="return validate('update', { name: 'Input.ValidationKbn', value: 1 });">
+		<input type="submit" name="Update" id="update" style="display: none;">
+	}
+	if (Model.IsActionStatusInsert || Model.IsActionStatusCopyInsert) {
+		<input type="button" value="  登録する  " class="btn btn-main" onclick="return validate('register', { name: 'Input.ValidationKbn', value: 0 });">
+		<input type="submit" name="Register" id="register" style="display: none;">
+	}
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+<!--▽ タイトル ▽-->
+<tr><td><h1 class="page-title">商品グループ設定</h1></td></tr>
+@LayoutHelper.PaddingTr(10)
+@if (Model.IsActionStatusInsert || Model.IsActionStatusCopyInsert) {
+	<tr id="trRegister">
+		<td>
+			<h2 class="cmn-hed-h2">商品グループ登録</h2>
+		</td>
+	</tr>
+}
+@if (Model.IsActionStatusUpdate) {
+	<tr id="trEdit">
+		<td>
+			<h2 class="cmn-hed-h2">商品グループ編集</h2>
+		</td>
+	</tr>
+}
+<!--△ タイトル △-->
+<!--▽ 登録・編集 ▽-->
+
+<tr>
+<td>
+<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+<tr>
+<td>
+<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+<tr>
+<td align="center">
+<table cellspacing="0" cellpadding="0" border="0">
+<tr>
+	<td>
+		<div id="divComp" class="action_part_top">
+			<table class="info_table" cellspacing="1" cellpadding="3" width="100%" border="0">
+				@if (Model.UpdateInsertSuccessFlg) {
+					<tr class="info_item_bg">
+						<td align="left">商品グループ情報を登録/更新しました。
+						</td>
+					</tr>
+				}
+			</table>
+		</div>
+		@using (Html.BeginForm("Edit", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_GROUP, new {
+			Model.ActionStatus,
+			Model.Input.ProductGroupId
+		}, FormMethod.Post, new { Id ="input_form"})) {
+			<div class="action_part_top">
+				@TopBottomControls()
+			</div>
+			<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+				<tbody>
+				@if (Model.IsActionStatusUpdate) {
+					<tr>
+						<td class="edit_title_bg" align="left">商品グループID</td>
+						<td class="edit_item_bg" align="left">
+							@Model.Input.ProductGroupId
+						</td>
+						@Html.HiddenFor(m => m.Input.ProductGroupId, new {
+							Name = "Input.ProductGroupId"
+						})
+					</tr>
+				} else if (Model.IsActionStatusInsert || Model.IsActionStatusCopyInsert) {
+					<tr>
+						<td class="edit_title_bg" align="left">商品グループID<span class="notice">*</span></td>
+						<td class="edit_item_bg" align="left">
+							@Html.TextBoxFor(m => m.Input.ProductGroupId, new {
+								Name = "Input.ProductGroupId"
+							})
+						</td>
+					</tr>
+				}
+				<tr>
+					<td class="edit_title_bg" align="left">商品グループ名<span class="notice">*</span></td>
+					<td class="edit_item_bg" align="left">
+						@Html.TextBoxFor(m => m.Input.ProductGroupName, new {
+							Name = "Input.ProductGroupName"
+						})
+					</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg" align="left">開始日時<span class="notice">*</span></td>
+					<td class="edit_item_bg" align="left">
+						@Html.DropDownListFor(model => model.Input.BeginDateYear, new SelectList(Model.BeginDateYearItems, "Value", "Text"), "----", new {
+							Id = "BeginDateYear",
+							Name = "Input.BeginDateYear"
+						})
+						/
+						@Html.DropDownListFor(model => model.Input.BeginDateMonth, new SelectList(Model.BeginDateMonthItems, "Value", "Text"), "--", new {
+							Id = "BeginDateMonth",
+							Name = "Input.BeginDateMonth"
+						})
+						/
+						@Html.DropDownListFor(model => model.Input.BeginDateDay, new SelectList(Model.BeginDateDayItems, "Value", "Text"), "--", new {
+							Id = "BeginDateDay",
+							Name = "Input.BeginDateDay"
+						})
+						&nbsp;
+						@Html.DropDownListFor(model => model.Input.BeginDateHour, new SelectList(Model.BeginDateHourItems, "Value", "Text"), "--", new {
+							Id = "BeginDateHour",
+							Name = "Input.BeginDateHour"
+						})
+						:
+						@Html.DropDownListFor(model => model.Input.BeginDateMinute, new SelectList(Model.BeginDateMinuteItems, "Value", "Text"), "--", new {
+							Id = "BeginDateMinute",
+							Name = "Input.BeginDateMinute"
+						})
+						:
+						@Html.DropDownListFor(model => model.Input.BeginDateSecond, new SelectList(Model.BeginDateSecondItems, "Value", "Text"), "--", new {
+							Id = "BeginDateSecond",
+							Name = "Input.BeginDateSecond"
+						})
+					</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg" align="left">終了日時</td>
+					<td class="edit_item_bg" align="left">
+						@Html.DropDownListFor(model => model.Input.EndDateYear, new SelectList(Model.EndDateYearItems, "Value", "Text"), "----", new {
+							Id = "EndDateYear",
+							Name = "Input.EndDateYear"
+						})
+						/
+						@Html.DropDownListFor(model => model.Input.EndDateMonth, new SelectList(Model.EndDateMonthItems, "Value", "Text"), "--", new {
+							Id = "EndDateMonth",
+							Name = "Input.EndDateMonth"
+						})
+						/
+						@Html.DropDownListFor(model => model.Input.EndDateDay, new SelectList(Model.EndDateDayItems, "Value", "Text"), "--", new {
+							Id = "EndDateDay",
+							Name = "Input.EndDateDay"
+						})
+						&nbsp;
+						@Html.DropDownListFor(model => model.Input.EndDateHour, new SelectList(Model.EndDateHourItems, "Value", "Text"), "--", new {
+							Id = "EndDateHour",
+							Name = "Input.EndDateHour"
+						})
+						:
+						@Html.DropDownListFor(model => model.Input.EndDateMinute, new SelectList(Model.EndDateMinuteItems, "Value", "Text"), "--", new {
+							Id = "EndDateMinute",
+							Name = "Input.EndDateMinute"
+						})
+						:
+						@Html.DropDownListFor(model => model.Input.EndDateSecond, new SelectList(Model.EndDateSecondItems, "Value", "Text"), "--", new {
+							Id = "EndDateSecond",
+							Name = "Input.EndDateSecond"
+						})
+						&nbsp;
+						<a href="Javascript:SetNextMonth();">翌月</a>
+						<a href="Javascript:SetNextYear();">翌年</a>
+						<a href="Javascript:SetDefault();">クリア</a>
+					</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg" align="left">有効フラグ</td>
+					<td class="edit_item_bg" align="left">
+						@Html.CheckBoxFor(m => m.Input.ValidFlg, new {
+							Name = "Input.ValidFlg"
+						})@Html.LabelFor(m => m.Input.ValidFlg, "有効")
+					</td>
+				</tr>
+				@if (Model.IsActionStatusUpdate) {
+					<tr>
+						<td class="edit_title_bg" align="left">URL</td>
+						<td class="edit_item_bg" align="left">
+							<a href="@Model.URL" target="_blank">@Model.URL</a>
+						</td>
+					</tr>
+				}
+				<tr>
+					<td class="edit_title_bg" align="left">
+						商品特集ページHTML
+					</td>
+					<td class="edit_item_bg" align="left">
+						@Html.RadioButtonFor(m => m.Input.ProductGroupPageContentsKbn, w2.Database.Common.Constants.FLG_PRODUCTGROUP_PRODUCT_GROUP_PAGE_CONTENTS_KBN_TEXT, new {
+							Id = "ProductGroupPageContentsKbn_TEXT"
+						})
+						@Html.Label("ProductGroupPageContentsKbn_TEXT", "TEXT")
+						@Html.RadioButtonFor(m => m.Input.ProductGroupPageContentsKbn, w2.Database.Common.Constants.FLG_PRODUCTGROUP_PRODUCT_GROUP_PAGE_CONTENTS_KBN_HTML, new {
+							Id = "ProductGroupPageContentsKbn_HTML"
+						})
+						@Html.Label("ProductGroupPageContentsKbn_HTML", "HTML")
+						&nbsp;
+						<input type="button" onclick="OpenWysiwyg('ProductGroupPageContents', 'ProductGroupPageContentsKbn_HTML');" value="  HTMLエディタ  " class="btn btn-main"/>
+						<input type="button" onclick="open_preview_page();" value="  フロント画面プレビュー  " class="btn btn-main"/>
+						<br/>
+						@Html.TextAreaFor(m => m.Input.ProductGroupPageContents, new {
+							Id = "ProductGroupPageContents",
+							Name = "Input.ProductGroupPageContents",
+							Rows = "5",
+							cols = "20",
+							style = "width:98%"
+						})
+						<br/>
+						<div style="margin-top: 5px; margin-right: 15px; float: right;">
+							<a id="sizeUpContens" href="javascript:sizeUp('ProductGroupPageContents','sizeUpContens','sizeDownContens')" style="display: block">拡大する</a>
+							<a id="sizeDownContens" href="javascript:sizeDown('ProductGroupPageContents','sizeUpContens','sizeDownContens')" style="display: none">縮小する</a>
+						</div>
+					</td>
+				</tr>
+				<tr>
+					<td class="edit_title_bg" align="left">商品ID</td>
+					<td class="edit_item_bg" align="left">
+						@Html.TextAreaFor(m => m.Input.ItemIds, new {
+							Id = "ItemIds",
+							Name = "Input.ItemIds",
+							Rows = "5",
+							style = "width:98%"
+						})
+						<br/>
+						<input type="button" onclick="open_product_list();" value=" 検索  " class="btn btn-main"/>
+						<div style="margin-top: 5px; margin-right: 15px; float: right;">
+							<a id="sizeUpPid" href="javascript:sizeUp('ItemIds','sizeUpPid','sizeDownPid')" style="display: block">拡大する</a>
+							<a id="sizeDownPid" href="javascript:sizeDown('ItemIds','sizeUpPid','sizeDownPid')" style="display: none">縮小する</a>
+						</div>
+					</td>
+				</tr>
+				</tbody>
+			</table>
+			<div class="action_part_bottom">
+				@TopBottomControls()
+			</div>
+		}
+	</td>
+</tr>
+@LayoutHelper.PaddingTr(10)
+<tr>
+	<td>
+		<table class="info_table" cellspacing="1" cellpadding="3" width="758" border="0">
+			<tr class="info_item_bg">
+				<td align="left">備考<br/>
+					・フロントの商品一覧の商品表示時には、「商品ID」欄に入力された順で一覧表示されます。<br/>
+					・対象商品は<strong>改行区切り</strong>で複数登録できます。<br/>
+				</td>
+			</tr>
+		</table>
+	</td>
+</tr>
+@LayoutHelper.PaddingTr(10)
+</table>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<!--△ 登録・編集 △-->
+@LayoutHelper.PaddingTr(10)
+</table>
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		// Wysiwygエディタで編集中のTextarea
+		var textAreaWysiwygBinded;
+
+		// 拡大
+		function sizeUp(textid, upid, downid) {
+			document.getElementById(textid).rows = @textRowsLarge;
+			$('#' + upid).css("display", "none");
+			$('#' + downid).css("display", "block");
+		}
+
+		// 縮小
+		function sizeDown(textid, upid, downid) {
+			document.getElementById(textid).rows = @textRowsNormal;
+			$('#' + upid).css("display", "block");
+			$('#' + downid).css("display", "none");
+		}
+
+		// Wysiwygエディタを開く
+		function OpenWysiwyg(textAreaId, htmlTextKbn) {
+			textAreaWysiwygBinded = document.getElementById(textAreaId);
+			open_window('@Url.Action("Edit", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_WYSIWYG_EDITOR)',
+				'wysiwyg',
+				'width=1000,height=740,top=120,left=420,status=NO, resizable=yes,scrollbars=yes');
+			textAreaWysiwygBinded.setAttribute("disabled", "disabled");
+			document.getElementById(htmlTextKbn).checked = true;
+		}
+
+		// 翌月
+		function SetNextMonth() {
+			document.getElementById('EndDateYear').value = '@DateTime.Now.AddMonths(1).ToString("yyyy")';
+			document.getElementById('EndDateMonth').value = '@DateTime.Now.AddMonths(1).ToString("MM")';
+			document.getElementById('EndDateDay').value = '01';
+			document.getElementById('EndDateHour').value = '00';
+			document.getElementById('EndDateMinute').value = '00';
+			document.getElementById('EndDateSecond').value = '00';
+		}
+
+		// 翌年
+		function SetNextYear() {
+			document.getElementById('EndDateYear').value = '@DateTime.Now.AddYears(1).ToString("yyyy")';
+			document.getElementById('EndDateMonth').value = '@DateTime.Now.ToString("MM")';
+			document.getElementById('EndDateDay').value = '01';
+			document.getElementById('EndDateHour').value = '00';
+			document.getElementById('EndDateMinute').value = '00';
+			document.getElementById('EndDateSecond').value = '00';
+		}
+
+		// クリア
+		function SetDefault() {
+			document.getElementById('EndDateYear').value = '';
+			document.getElementById('EndDateMonth').value = '';
+			document.getElementById('EndDateDay').value = '';
+			document.getElementById('EndDateHour').value = '';
+			document.getElementById('EndDateMinute').value = '';
+			document.getElementById('EndDateSecond').value = '';
+		}
+
+		// 商品一覧画面表示
+		function open_product_list() {
+			// ウィンドウ表示
+			open_window('@Html.Raw(productSearchUrl)',
+				'product_search',
+				'width=850,height=700,top=120,left=420,status=NO,scrollbars=yes');
+		}
+
+		// 商品一覧で選択された商品情報を設定
+		function set_productinfo(
+			product_id,
+			supplier_id,
+			v_id,
+			product_name,
+			display_price,
+			display_special_price,
+			product_price,
+			sale_id,
+			fixed_purchase_id,
+			limitedfixedpurchasekbn1setting,
+			limitedfixedpurchasekbn3setting,
+			tax_rate) {
+
+			var pText = document.getElementById('ItemIds');
+			var isConatin = false;
+			var pIds = pText.value.split('\n');
+
+			for (var i = 0; i < pIds.length; i++) {
+				if (pIds[i] === product_id) {
+					isConatin = true;
+					break;
+				}
+			}
+			if (isConatin === false) {
+				pText.value += product_id + '\n';
+			}
+		}
+
+		// プレビューページ表示
+		function open_preview_page() {
+			var text = document.getElementById("ProductGroupPageContents").value;
+			var htmlkbn = document.getElementById("ProductGroupPageContentsKbn_HTML").checked
+				? "@Constants.FLG_PRODUCTGROUP_PRODUCT_GROUP_PAGE_CONTENTS_KBN_HTML"
+				: "@Constants.FLG_PRODUCTGROUP_PRODUCT_GROUP_PAGE_CONTENTS_KBN_TEXT";
+			var url = '@Url.Action("CreatePreviewFile")';
+			var post_data = { contents: text, htmlkbn: htmlkbn };
+			@* 終わってからプレビュー飛ばす用コールバック指定 *@
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: JSON.stringify(post_data),
+				dataType: 'json',
+				contentType: 'application/json',
+				error: function() {},
+				complete: function(data) { compaction(data.responseText) }
+			});
+		}
+
+		function compaction(res) {
+			open_window('@Url.Action("Preview")', 'Preview', '');
+		}
+
+		// エンターキーによるsubmit禁止
+		prohibit_submission();
+	</script>
+}

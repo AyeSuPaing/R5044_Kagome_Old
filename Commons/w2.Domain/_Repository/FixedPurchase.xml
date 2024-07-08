@@ -1,0 +1,2924 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期購入情報系SQLステートメントXML (FixedPurchase.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchase>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchase
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- 更新ロック取得 -->
+  <GetUpdLock>
+    <Statement>
+      <![CDATA[
+        SELECT  fixed_purchase_id
+          FROM  w2_FixedPurchase WITH(UPDLOCK)
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUpdLock>
+
+  <!-- ユーザーIDから取得 -->
+  <GetFixedPurchasesByUserId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchase
+         WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetFixedPurchasesByUserId>
+
+  <!-- 商品IDから取得 -->
+  <GetFixedPurchasesByProductId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchase.*
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                )
+         WHERE  w2_FixedPurchaseItem.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetFixedPurchasesByProductId>
+
+  <!-- LINE連携_定期台帳データ取得 -->
+  <GetFixedPurchasesForLine>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  *
+          FROM  w2_FixedPurchase
+         WHERE  user_id = @user_id
+           AND  date_changed >= @date_changed
+         ORDER BY date_changed DESC
+        OFFSET  @offset ROWS
+    FETCH NEXT  @limit ROWS ONLY;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="limit" Type="int" />
+      <Input Name="offset" Type="int" />
+      <Input Name="date_changed" Type="DateTime" />
+    </Parameter>
+  </GetFixedPurchasesForLine>
+
+  <!-- 取得（詳細表示用） -->
+  <GetContainer>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchase.*
+                ,w2_FixedPurchaseShipping.*
+                ,w2_FixedPurchaseItem.*
+                ,w2_User.name AS owner_name
+                ,w2_User.mail_addr AS owner_mail_addr
+                ,w2_User.mail_addr2 AS owner_mail_addr2
+                ,w2_User.member_rank_id
+                ,w2_ProductView.name AS product_name
+                ,w2_ProductView.variation_name1
+                ,w2_ProductView.variation_name2
+                ,w2_ProductView.variation_name3
+                ,w2_ProductView.price
+                ,w2_ProductView.special_price
+                ,w2_ProductView.shipping_type
+                ,w2_ProductView.fixed_purchase_flg
+                ,w2_ProductView.variation_fixed_purchase_price
+                ,w2_ProductView.image_head
+                ,w2_ProductView.variation_image_head
+                ,w2_ProductView.use_variation_flg
+                ,w2_ProductView.shipping_size_kbn
+                ,w2_ProductView.fixed_purchase_limited_skipped_count
+                ,RIGHT(w2_FixedPurchaseItem.variation_id, LEN(w2_FixedPurchaseItem.variation_id) - LEN(w2_FixedPurchaseItem.product_id)) AS v_id
+                ,(
+                  SELECT  TOP 1
+                          w2_ProductPrice.member_rank_price
+                    FROM  w2_ProductPrice
+                          LEFT JOIN w2_MemberRank ON
+                          (
+                            w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                          )
+                   WHERE  w2_ProductPrice.shop_id = w2_ProductView.shop_id
+                     AND  w2_ProductPrice.product_id = w2_ProductView.product_id
+                     AND  (w2_ProductPrice.variation_id = w2_ProductView.variation_id OR ((w2_ProductView.use_variation_flg = '0') AND (w2_ProductPrice.variation_id = '')))
+                     AND  w2_User.member_rank_id <> ''
+                     AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = w2_User.member_rank_id AND valid_flg = 'ON')
+                     AND  w2_MemberRank.valid_flg = 'ON'
+                  ORDER BY w2_MemberRank.member_rank_order
+                ) AS member_rank_price
+                ,w2_ProductView.limited_fixed_purchase_kbn1_setting
+                ,w2_ProductView.limited_fixed_purchase_kbn3_setting
+                ,w2_ProductView.limited_fixed_purchase_kbn4_setting
+                ,w2_ProductView.fixed_purchase_cancelable_count
+                ,w2_ProductView.digital_contents_flg
+                ,w2_User.tel1 AS owner_tel1
+                ,w2_ProductView.limited_payment_ids
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                  AND
+                  w2_FixedPurchaseItem.fixed_purchase_shipping_no = w2_FixedPurchaseShipping.fixed_purchase_shipping_no
+                )
+                LEFT JOIN w2_ProductView ON
+                (
+                  w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                  AND
+                  w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+         WHERE  w2_FixedPurchase.fixed_purchase_id = @fixed_purchase_id
+        ORDER BY w2_FixedPurchaseItem.fixed_purchase_id ASC, w2_FixedPurchaseItem.fixed_purchase_shipping_no ASC, w2_FixedPurchaseItem.fixed_purchase_item_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetContainer>
+
+  <!-- 取得（メール送信用） -->
+  <GetContainerForSendMail>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchase.*
+                ,w2_FixedPurchaseShipping.*
+                ,w2_FixedPurchaseItem.*
+                ,w2_User.name AS owner_name
+                ,w2_User.mail_addr AS owner_mail_addr
+                ,w2_User.mail_addr2 AS owner_mail_addr2
+                ,w2_User.member_rank_id
+                ,w2_User.name1 AS owner_name1
+                ,w2_User.name2 AS owner_name2
+                ,w2_User.name_kana AS owner_name_kana
+                ,w2_User.name_kana1 AS owner_name_kana1
+                ,w2_User.name_kana2 AS owner_name_kana2
+                ,w2_User.zip AS owner_zip
+                ,w2_User.addr1 AS owner_addr1
+                ,w2_User.addr2 AS owner_addr2
+                ,w2_User.addr3 AS owner_addr3
+                ,w2_User.addr4 AS owner_addr4
+                ,w2_User.addr5 AS owner_addr5
+                ,w2_User.addr_country_name AS owner_country_name
+                ,w2_User.tel1 AS owner_tel1
+                ,w2_User.tel2 AS owner_tel2
+                ,w2_User.tel3 AS owner_tel3
+                ,w2_User.fax AS owner_fax
+                ,w2_User.sex AS owner_sex
+                ,w2_User.birth AS owner_birth
+                ,w2_User.birth AS birth
+                ,w2_User.birth_year AS birth_year
+                ,w2_User.birth_month AS birth_month
+                ,w2_User.birth_day AS birth_day
+                ,w2_User.career_id AS career_id1
+                ,w2_User.user_kbn AS owner_kbn
+                ,w2_User.company_name AS owner_company_name
+                ,w2_User.company_post_name AS owner_company_post_name
+                ,w2_User.company_name AS company_name
+                ,w2_User.company_post_name AS company_post_name
+                ,w2_ProductView.name AS product_name
+                ,w2_ProductView.variation_name1
+                ,w2_ProductView.variation_name2
+                ,w2_ProductView.variation_name3
+                ,w2_ProductView.price
+                ,w2_ProductView.special_price
+                ,w2_ProductView.shipping_type
+                ,w2_ProductView.fixed_purchase_flg
+                ,w2_ProductView.variation_fixed_purchase_price
+                ,w2_ProductView.fixed_purchase_limited_skipped_count
+                ,RIGHT(w2_FixedPurchaseItem.variation_id, LEN(w2_FixedPurchaseItem.variation_id) - LEN(w2_FixedPurchaseItem.product_id)) AS v_id
+                ,(
+                  SELECT  TOP 1
+                          w2_ProductPrice.member_rank_price
+                    FROM  w2_ProductPrice
+                          LEFT JOIN w2_MemberRank ON
+                          (
+                            w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                          )
+                   WHERE  w2_ProductPrice.shop_id = w2_ProductView.shop_id
+                     AND  w2_ProductPrice.product_id = w2_ProductView.product_id
+                     AND  (w2_ProductPrice.variation_id = w2_ProductView.variation_id OR ((w2_ProductView.use_variation_flg = '0') AND (w2_ProductPrice.variation_id = '')))
+                     AND  w2_User.member_rank_id <> ''
+                     AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = w2_User.member_rank_id AND valid_flg = 'ON')
+                     AND  w2_MemberRank.valid_flg = 'ON'
+                  ORDER BY w2_MemberRank.member_rank_order
+                ) AS member_rank_price
+                ,w2_Payment.payment_name
+                ,w2_ShopShipping.fixed_purchase_cancel_deadline
+                ,w2_ShopShipping.business_days_for_shipping
+                ,w2_DeliveryCompany.delivery_company_type_post_payment
+                ,w2_Order.order_item_count
+                ,w2_Order.order_price_exchange_tax
+                ,w2_Order.order_price_shipping_tax
+                ,w2_Order.order_price_subtotal_tax
+                ,w2_Order.order_price_tax
+                ,w2_Order.shipping_tax_rate
+                ,w2_Order.order_price_subtotal AS price_subtotal
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                INNER JOIN w2_Order ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_Order.fixed_purchase_id
+                )
+                INNER JOIN w2_DeliveryCompany ON
+                (
+                  w2_FixedPurchaseShipping.delivery_company_id = w2_DeliveryCompany.delivery_company_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                  AND
+                  w2_FixedPurchaseItem.fixed_purchase_shipping_no = w2_FixedPurchaseShipping.fixed_purchase_shipping_no
+                )
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                  AND
+                  w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_Product ON
+                (
+                  w2_Product.shop_id = w2_FixedPurchaseItem.shop_id
+                  AND
+                  w2_Product.product_id = w2_FixedPurchaseItem.product_id
+                )
+                INNER JOIN w2_ShopShipping ON
+                (
+                  w2_ShopShipping.shop_id = w2_Product.shop_id
+                  AND
+                  w2_ShopShipping.shipping_id = w2_Product.shipping_type
+                )
+                LEFT JOIN w2_Payment ON
+                (
+                  w2_FixedPurchase.shop_id = w2_Payment.shop_id
+                  AND
+                  w2_FixedPurchase.order_payment_kbn = w2_Payment.payment_id
+                )
+         WHERE  w2_FixedPurchase.fixed_purchase_id = @fixed_purchase_id
+        ORDER BY w2_FixedPurchaseItem.fixed_purchase_id ASC, w2_FixedPurchaseItem.fixed_purchase_shipping_no ASC, w2_FixedPurchaseItem.fixed_purchase_item_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetContainerForSendMail>
+
+  <!-- 定期購入検索ヒット件数取得 -->
+  <GetCountOfSearchFixedPurchase>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_Payment ON
+                (
+                  w2_FixedPurchase.order_payment_kbn = w2_Payment.payment_id
+                )
+                [[ FIXEDPURCHASE_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetCountOfSearchFixedPurchase>
+
+  <!-- 定期購入マスタ情報取得(CSV出力用) -->
+  <GetFixedPurchaseMaster>
+    <Statement>
+      <![CDATA[ 
+        SELECT  @@ fields @@
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                LEFT JOIN w2_TwFixedPurchaseInvoice ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_TwFixedPurchaseInvoice.fixed_purchase_id
+                )
+                [[ FIXEDPURCHASE_SEARCH_WHERE ]]
+                [[ FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetFixedPurchaseMaster>
+
+  <!-- 定期購入商品マスタ情報取得(CSV出力用) -->
+  <GetFixedPurchaseItemMaster>
+    <Statement>
+      <![CDATA[ 
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        /* 会員ランク価格や特別価格などを考慮する商品価格を取得するため */
+        SELECT  w2_FixedPurchase.fixed_purchase_id,
+                w2_FixedPurchaseItem.shop_id,
+                w2_FixedPurchaseItem.product_id,
+                w2_FixedPurchaseItem.variation_id,
+                (
+                  SELECT  ISNULL(
+                             (SELECT TOP 1 member_rank_price
+                                FROM  w2_ProductPrice 
+                                      LEFT JOIN w2_MemberRank ON
+                                      (
+                                        w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                                      )
+                               WHERE  w2_ProductPrice.shop_id = w2_FixedPurchaseItem.shop_id
+                                 AND  w2_ProductPrice.product_id = w2_FixedPurchaseItem.product_id
+                                 AND  (w2_ProductPrice.variation_id = w2_FixedPurchaseItem.variation_id OR (w2_ProductView.use_variation_flg = '0' AND w2_ProductPrice.variation_id = ''))
+                                 AND  w2_User.member_rank_id <> ''
+                                 AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = w2_User.member_rank_id AND valid_flg = 'ON')
+                                 AND  w2_MemberRank.valid_flg = 'ON'
+                            ORDER BY  w2_MemberRank.member_rank_order),
+                              ISNULL(w2_ProductView.special_price, w2_ProductView.price))
+                    FROM  w2_ProductView
+                   WHERE  w2_ProductView.shop_id = w2_FixedPurchaseItem.shop_id
+                     AND  w2_ProductView.product_id = w2_FixedPurchaseItem.product_id
+                     AND  w2_ProductView.variation_id = w2_FixedPurchaseItem.variation_id
+                ) AS price
+        INTO  #ItemPrice
+        FROM  w2_FixedPurchase
+              INNER JOIN w2_User ON
+              (
+                w2_FixedPurchase.user_id = w2_User.user_id
+              )
+              INNER JOIN w2_FixedPurchaseItem ON
+              (
+                w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+              )
+        [[ FIXEDPURCHASE_SEARCH_WHERE ]]
+
+        SELECT  @@ fields @@
+          FROM  #ItemPrice
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  #ItemPrice.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  #ItemPrice.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  #ItemPrice.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                  AND
+                  #ItemPrice.product_id = w2_FixedPurchaseItem.product_id
+                  AND
+                  #ItemPrice.variation_id = w2_FixedPurchaseItem.variation_id
+                )
+                INNER JOIN w2_Product ON
+                (
+                  w2_FixedPurchaseItem.product_id = w2_Product.product_id
+                  AND
+                  w2_FixedPurchaseItem.shop_id = w2_Product.shop_id
+                )
+                [[ FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetFixedPurchaseItemMaster>
+
+  <!-- 定期台帳マスタ取得（ワークフロー・CSV出力用） -->
+  <GetFixedPurchaseWorkflowMaster>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  w2_FixedPurchase.fixed_purchase_id
+          INTO  #TempTable
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                [[ FIXEDPURCHASEWORKFLOW_SEARCH_WHERE ]]
+
+        SELECT  @@ fields @@
+          FROM  #TempTable
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = #TempTable.fixed_purchase_id
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                LEFT JOIN w2_Payment ON
+                (
+                  w2_FixedPurchase.shop_id = w2_Payment.shop_id
+                  AND
+                  w2_FixedPurchase.order_payment_kbn = w2_Payment.payment_id
+                )
+                LEFT JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                [[ FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+        ]]>
+    </Statement>
+  </GetFixedPurchaseWorkflowMaster>
+
+  <!-- 定期購入商品マスタ情報取得(ワークフロー・CSV出力用) -->
+  <GetFixedPurchaseItemWorkflowMaster>
+    <Statement>
+      <![CDATA[ 
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        /* 会員ランク価格や特別価格などを考慮する商品価格を取得するため */
+        SELECT  w2_FixedPurchase.fixed_purchase_id,
+                w2_FixedPurchaseItem.shop_id,
+                w2_FixedPurchaseItem.product_id,
+                w2_FixedPurchaseItem.variation_id,
+                (
+                  SELECT  ISNULL(
+                             (SELECT TOP 1 member_rank_price
+                                FROM  w2_ProductPrice 
+                                      LEFT JOIN w2_MemberRank ON
+                                      (
+                                        w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                                      )
+                               WHERE  w2_ProductPrice.shop_id = w2_FixedPurchaseItem.shop_id
+                                 AND  w2_ProductPrice.product_id = w2_FixedPurchaseItem.product_id
+                                 AND  (w2_ProductPrice.variation_id = w2_FixedPurchaseItem.variation_id OR (w2_ProductView.use_variation_flg = '0' AND w2_ProductPrice.variation_id = ''))
+                                 AND  w2_User.member_rank_id <> ''
+                                 AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = w2_User.member_rank_id AND valid_flg = 'ON')
+                                 AND  w2_MemberRank.valid_flg = 'ON'
+                            ORDER BY  w2_MemberRank.member_rank_order),
+                              ISNULL(w2_ProductView.special_price, w2_ProductView.price))
+                    FROM  w2_ProductView
+                   WHERE  w2_ProductView.shop_id = w2_FixedPurchaseItem.shop_id
+                     AND  w2_ProductView.product_id = w2_FixedPurchaseItem.product_id
+                     AND  w2_ProductView.variation_id = w2_FixedPurchaseItem.variation_id
+                ) AS price
+        INTO  #ItemPrice
+        FROM  w2_FixedPurchase
+              INNER JOIN w2_User ON
+              (
+                w2_FixedPurchase.user_id = w2_User.user_id
+              )
+              INNER JOIN w2_FixedPurchaseItem ON
+              (
+                w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+              )
+        [[ FIXEDPURCHASEWORKFLOW_SEARCH_WHERE ]]
+
+        SELECT  @@ fields @@
+          FROM  #ItemPrice
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  #ItemPrice.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  #ItemPrice.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  #ItemPrice.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                  AND
+                  #ItemPrice.product_id = w2_FixedPurchaseItem.product_id
+                  AND
+                  #ItemPrice.variation_id = w2_FixedPurchaseItem.variation_id
+                )
+                INNER JOIN w2_Product ON
+                (
+                  w2_FixedPurchaseItem.product_id = w2_Product.product_id
+                  AND
+                  w2_FixedPurchaseItem.shop_id = w2_Product.shop_id
+                )
+                [[ FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetFixedPurchaseItemWorkflowMaster>
+
+  <!-- 定期購入マスタフィールドチェック -->
+  <CheckFixedPurchaseFields>
+    <Statement>
+      <![CDATA[
+
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_FixedPurchase
+                  INNER JOIN w2_FixedPurchaseShipping ON
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                  )
+                  INNER JOIN w2_TwFixedPurchaseInvoice ON
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = w2_TwFixedPurchaseInvoice.fixed_purchase_id
+                  )
+            WHERE  w2_FixedPurchase.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckFixedPurchaseFields>
+
+  <!-- 定期購入商品マスタフィールドチェック -->
+  <CheckFixedPurchaseItemFields>
+    <Statement>
+      <![CDATA[
+           /* ダーティリードを許可して共有ロックを掛けなくする */
+          SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+          /* 明細金額（小計）項目の該当的をチェックするため */
+          CREATE TABLE #ItemPrice (product_id nvarchar(30), price decimal(18,3))
+          
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_FixedPurchase
+                  INNER JOIN w2_FixedPurchaseShipping ON
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                  )
+                  LEFT JOIN w2_FixedPurchaseItem ON
+                  (
+                    w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                  )
+                  LEFT JOIN #ItemPrice ON
+                  (
+                    w2_FixedPurchaseItem.product_id = #ItemPrice.product_id
+                  )
+                  INNER JOIN w2_Product ON
+                  (
+                    w2_FixedPurchaseItem.product_id = w2_Product.product_id
+                  )
+            WHERE  w2_FixedPurchase.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckFixedPurchaseItemFields>
+
+  <!-- 定期購入検索 -->
+  <SearchFixedPurchase>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchase.*
+                ,w2_User.name
+                ,w2_Payment.payment_name
+          FROM  (
+                  SELECT  w2_FixedPurchase.fixed_purchase_id
+                          ,ROW_NUMBER()
+                          OVER
+                          (
+                            [[ FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_FixedPurchase
+                          INNER JOIN w2_User ON
+                          (
+                            w2_FixedPurchase.user_id = w2_User.user_id
+                           )
+                          [[ FIXEDPURCHASE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  RowIndex.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                INNER JOIN w2_Payment ON
+                (
+                  w2_FixedPurchase.order_payment_kbn = w2_Payment.payment_id
+                )                
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchFixedPurchase>
+
+  <!-- ユーザ定期購入検索ヒット件数取得 -->
+  <GetCountOfSearchUserFixedPurchase>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_FixedPurchase
+                [[ USER_FIXEDPURCHASE_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetCountOfSearchUserFixedPurchase>
+
+  <!-- ユーザ定期購入検索 -->
+  <SearchUserFixedPurchase>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchase.*
+                ,w2_FixedPurchaseShipping.*
+                ,w2_FixedPurchaseItem.*
+                ,w2_User.name AS owner_name
+                ,w2_User.mail_addr AS owner_mail_addr
+                ,w2_User.mail_addr2 AS owner_mail_addr2
+                ,w2_ProductView.name AS product_name
+                ,w2_ProductView.variation_name1
+                ,w2_ProductView.variation_name2
+                ,w2_ProductView.variation_name3
+                ,w2_ProductView.price
+                ,w2_ProductView.special_price
+                ,w2_ProductView.variation_fixed_purchase_price
+                ,w2_ProductView.fixed_purchase_flg
+                ,RIGHT(w2_FixedPurchaseItem.variation_id, LEN(w2_FixedPurchaseItem.variation_id) - LEN(w2_FixedPurchaseItem.product_id)) AS v_id
+                ,(
+                  SELECT  TOP 1
+                          w2_ProductPrice.member_rank_price
+                    FROM  w2_ProductPrice
+                          LEFT JOIN w2_MemberRank ON
+                          (
+                            w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                          )
+                   WHERE  w2_ProductPrice.shop_id = w2_ProductView.shop_id
+                     AND  w2_ProductPrice.product_id = w2_ProductView.product_id
+                     AND  (w2_ProductPrice.variation_id = w2_ProductView.variation_id OR ((w2_ProductView.use_variation_flg = '0') AND (w2_ProductPrice.variation_id = '')))
+                     AND  w2_User.member_rank_id <> ''
+                     AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = w2_User.member_rank_id AND valid_flg = 'ON')
+                     AND  w2_MemberRank.valid_flg = 'ON'
+                  ORDER BY w2_MemberRank.member_rank_order
+                ) AS member_rank_price
+                ,
+                (
+                  SELECT  TOP 1
+                          ISNULL(CONVERT(varchar(50),w2_OrderShipping.shipping_date),'')
+                    FROM  w2_Order
+                          LEFT JOIN w2_OrderShipping ON
+                          (
+                            w2_Order.order_id = w2_OrderShipping.order_id
+                          )
+                   WHERE  w2_Order.user_id = w2_FixedPurchase.user_id
+                     AND  w2_Order.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                     AND  w2_Order.order_status IN ('ODR','ODR_RECG','STK_RSVD')
+                ORDER BY  w2_OrderShipping.shipping_date ASC
+                ) AS fixedpurchase_shipping_date_nearest
+          FROM  (
+                  SELECT  w2_FixedPurchase.fixed_purchase_id
+                          ,ROW_NUMBER()
+                          OVER
+                          (
+                            [[ USER_FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_FixedPurchase
+                          [[ USER_FIXEDPURCHASE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  RowIndex.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                  AND
+                  w2_FixedPurchaseItem.fixed_purchase_shipping_no = w2_FixedPurchaseShipping.fixed_purchase_shipping_no
+                )
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                  AND
+                  w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+         WHERE  (@bgn_row_num IS NULL OR @bgn_row_num <= RowIndex.row_num)
+           AND  (@end_row_num IS NULL OR RowIndex.row_num <= @end_row_num)
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchUserFixedPurchase>
+
+  <!-- ユーザ定期購入検索ヒット件数取得 注文同梱でのキャンセル除く -->
+  <GetCountOfSearchUserFixedPurchaseExcludeOrderCombineCancel>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_FixedPurchase
+                [[ USER_FIXEDPURCHASE_SEARCH_WHERE_EXCLUDE_ORDERCOMBINE_CANCEL ]]
+      ]]>
+    </Statement>
+  </GetCountOfSearchUserFixedPurchaseExcludeOrderCombineCancel>
+
+  <!-- ユーザ定期購入検索 注文同梱でのキャンセル除く-->
+  <SearchUserFixedPurchaseExcludeOrderCombineCancel>
+    <Statement>
+      <![CDATA[
+        IF (OBJECT_ID('tempdb..#RowIndex') IS NOT NULL)
+          DROP TABLE #RowIndex
+
+        SELECT  w2_FixedPurchase.fixed_purchase_id,
+                ROW_NUMBER()
+                OVER
+                (
+                  [[ USER_FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+                ) AS row_num
+          INTO  #RowIndex
+          FROM  w2_FixedPurchase
+                [[ USER_FIXEDPURCHASE_SEARCH_WHERE_EXCLUDE_ORDERCOMBINE_CANCEL ]]
+
+        SELECT  w2_FixedPurchase.*
+                ,w2_FixedPurchaseShipping.*
+                ,w2_FixedPurchaseItem.*
+                ,w2_User.name AS owner_name
+                ,w2_User.mail_addr AS owner_mail_addr
+                ,w2_User.mail_addr2 AS owner_mail_addr2
+                ,w2_ProductView.name AS product_name
+                ,w2_ProductView.variation_name1
+                ,w2_ProductView.variation_name2
+                ,w2_ProductView.variation_name3
+                ,w2_ProductView.price
+                ,w2_ProductView.special_price
+                ,w2_SubscriptionBox.display_name
+                ,RIGHT(w2_FixedPurchaseItem.variation_id, LEN(w2_FixedPurchaseItem.variation_id) - LEN(w2_FixedPurchaseItem.product_id)) AS v_id
+                ,(
+                  SELECT  TOP 1
+                          w2_ProductPrice.member_rank_price
+                    FROM  w2_ProductPrice
+                          LEFT JOIN w2_MemberRank ON
+                          (
+                            w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                          )
+                   WHERE  w2_ProductPrice.shop_id = w2_ProductView.shop_id
+                     AND  w2_ProductPrice.product_id = w2_ProductView.product_id
+                     AND  (w2_ProductPrice.variation_id = w2_ProductView.variation_id OR ((w2_ProductView.use_variation_flg = '0') AND (w2_ProductPrice.variation_id = '')))
+                     AND  w2_User.member_rank_id <> ''
+                     AND  w2_MemberRank.valid_flg = 'ON'
+                     AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = w2_User.member_rank_id AND valid_flg = 'ON')
+                  ORDER BY w2_MemberRank.member_rank_order
+                ) AS member_rank_price
+                ,ISNULL(CONVERT(DateTime,FixedPurchaseNearest.fixedpurchase_shipping_date_nearest),NULL) AS fixedpurchase_shipping_date_nearest
+          FROM  w2_FixedPurchase
+                INNER JOIN #RowIndex ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = #RowIndex.fixed_purchase_id
+                  <@@hasval:bgn_row_num@@>
+                  AND
+                  @bgn_row_num <= #RowIndex.row_num
+                  </@@hasval:bgn_row_num@@>
+                  <@@hasval:end_row_num@@>
+                  AND
+                  #RowIndex.row_num <= @end_row_num
+                  </@@hasval:end_row_num@@>
+                )
+                LEFT JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                LEFT JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                  AND
+                  w2_FixedPurchaseItem.fixed_purchase_shipping_no = w2_FixedPurchaseShipping.fixed_purchase_shipping_no
+                )
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                  AND
+                  w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                LEFT JOIN
+                (
+                  SELECT  w2_Order.fixed_purchase_id,
+                          w2_Order.user_id,
+                          MIN(w2_OrderShipping.shipping_date) AS fixedpurchase_shipping_date_nearest
+                    FROM  w2_OrderShipping
+                          LEFT JOIN w2_Order ON
+                          (
+                            w2_OrderShipping.order_id = w2_Order.order_id
+                          )
+                   WHERE  w2_OrderShipping.shipping_date IS NOT NULL
+                     AND  w2_Order.order_status IN ('ODR','ODR_RECG','STK_RSVD')
+                  GROUP BY w2_Order.fixed_purchase_id, w2_Order.user_id
+                ) AS FixedPurchaseNearest ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = FixedPurchaseNearest.fixed_purchase_id
+                  AND
+                  w2_FixedPurchase.user_id = FixedPurchaseNearest.user_id
+                )
+                LEFT JOIN w2_SubscriptionBox ON
+                (
+                  w2_FixedPurchase.subscription_box_course_id = w2_SubscriptionBox.subscription_box_course_id
+                )
+        ORDER BY #RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchUserFixedPurchaseExcludeOrderCombineCancel>
+
+  <!-- 注文対象の定期購入取得 -->
+  <GetTargetsForCreateOrder>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchase
+                INNER JOIN
+                (
+                  SELECT  DISTINCT
+                          DATEADD(DAY, fixed_purchase_order_entry_timing, GETDATE()) next_date
+                          ,w2_FixedPurchase.fixed_purchase_id
+                          ,w2_ShopShipping.fixed_purchase_order_entry_timing
+                    FROM  w2_FixedPurchase
+                          INNER JOIN w2_FixedPurchaseItem ON
+                          (
+                            w2_FixedPurchaseItem.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                          )
+                          INNER JOIN w2_Product ON
+                          (
+                            w2_Product.shop_id = w2_FixedPurchaseItem.shop_id
+                            AND
+                            w2_Product.product_id = w2_FixedPurchaseItem.product_id
+                          )
+                          INNER JOIN w2_ShopShipping ON
+                          (
+                            w2_ShopShipping.shop_id = w2_Product.shop_id
+                            AND
+                            w2_ShopShipping.shipping_id = w2_Product.shipping_type
+                          )
+                ) AS ShopShipping ON
+                (
+                  ShopShipping.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+         WHERE  (
+                  next_shipping_date < next_date
+                )
+           AND  fixed_purchase_status NOT IN (01,14,30,31,20) -- 完了,キャンセル,仮登録,仮登録キャンセル,休止以外（通常、在庫エラー、決済エラー）はとりあえず実行
+           AND  payment_status <> '11'        -- 決済失敗のときは実行しない
+           AND  valid_flg = '1'
+      ORDER BY  next_shipping_date
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetTargetsForCreateOrder>
+
+  <!-- 変更期限案内メール送信対象の定期購入取得（全件） -->
+  <GetTargetsForSendChangeDeadlineMail>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchase
+                INNER JOIN
+                (
+                  SELECT  DISTINCT
+                          w2_FixedPurchase.fixed_purchase_id
+                          ,w2_ShopShipping.fixed_purchase_cancel_deadline
+                    FROM  w2_FixedPurchase
+                          INNER JOIN w2_FixedPurchaseItem ON
+                          (
+                            w2_FixedPurchaseItem.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                          )
+                          INNER JOIN w2_Product ON
+                          (
+                            w2_Product.shop_id = w2_FixedPurchaseItem.shop_id
+                            AND
+                            w2_Product.product_id = w2_FixedPurchaseItem.product_id
+                          )
+                          INNER JOIN w2_ShopShipping ON
+                          (
+                            w2_ShopShipping.shop_id = w2_Product.shop_id
+                            AND
+                            w2_ShopShipping.shipping_id = w2_Product.shipping_type
+                          )
+                ) AS ShopShipping ON
+                (
+                  ShopShipping.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+         WHERE  fixed_purchase_status NOT IN ('01','20','30','31') -- 仮登録、キャンセル以外（通常、在庫エラー、決済エラー）はとりあえず実行
+           AND  payment_status <> '11'        -- 決済失敗のときは実行しない
+           AND  valid_flg = '1'
+      ORDER BY  next_shipping_date
+      ]]>
+    </Statement>
+  </GetTargetsForSendChangeDeadlineMail>
+
+  <!-- 定期売上集計対象の定期取得 -->
+  <GetTargetsForForecastAggregate>
+    <Statement>
+      <![CDATA[
+      SELECT  *
+        FROM  w2_FixedPurchase
+       WHERE  valid_flg = '1'
+         AND  fixed_purchase_status = '10'
+         <@@hasval:last_exec_date@@>
+           AND  w2_FixedPurchase.date_changed >= @last_exec_date
+         </@@hasval:last_exec_date@@>
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="last_exec_date" Type="datetime" />
+    </Parameter>
+  </GetTargetsForForecastAggregate>
+
+  <!-- 稼働している定期情報すべて取得（日次出荷予測レポート用） -->
+  <GetContainerWorking>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchase.*
+                ,w2_FixedPurchaseShipping.*
+                ,w2_FixedPurchaseItem.*
+                ,w2_User.name AS owner_name
+                ,w2_User.mail_addr AS owner_mail_addr
+                ,w2_User.mail_addr2 AS owner_mail_addr2
+                ,w2_User.member_rank_id
+                ,w2_ProductView.name AS product_name
+                ,w2_ProductView.variation_name1
+                ,w2_ProductView.variation_name2
+                ,w2_ProductView.variation_name3
+                ,w2_ProductView.price
+                ,w2_ProductView.special_price
+                ,w2_ProductView.shipping_type
+                ,w2_ProductView.fixed_purchase_flg
+                ,w2_ProductView.variation_fixed_purchase_price
+                ,w2_ProductView.image_head
+                ,w2_ProductView.variation_image_head
+                ,w2_ProductView.use_variation_flg
+                ,w2_ProductView.shipping_size_kbn
+                ,w2_ProductView.fixed_purchase_limited_skipped_count
+                ,RIGHT(w2_FixedPurchaseItem.variation_id, LEN(w2_FixedPurchaseItem.variation_id) - LEN(w2_FixedPurchaseItem.product_id)) AS v_id
+                ,(
+                  SELECT  TOP 1
+                          w2_ProductPrice.member_rank_price
+                    FROM  w2_ProductPrice
+                          LEFT JOIN w2_MemberRank ON
+                          (
+                            w2_ProductPrice.member_rank_id = w2_MemberRank.member_rank_id
+                          )
+                   WHERE  w2_ProductPrice.shop_id = w2_ProductView.shop_id
+                     AND  w2_ProductPrice.product_id = w2_ProductView.product_id
+                     AND  (w2_ProductPrice.variation_id = w2_ProductView.variation_id OR ((w2_ProductView.use_variation_flg = '0') AND (w2_ProductPrice.variation_id = '')))
+                     AND  w2_User.member_rank_id <> ''
+                     AND  w2_MemberRank.member_rank_order >= (SELECT ISNULL(MAX(member_rank_order), 999) FROM w2_MemberRank where member_rank_id = w2_User.member_rank_id AND valid_flg = 'ON')
+                     AND  w2_MemberRank.valid_flg = 'ON'
+                  ORDER BY w2_MemberRank.member_rank_order
+                ) AS member_rank_price
+                ,w2_ProductView.limited_fixed_purchase_kbn1_setting
+                ,w2_ProductView.limited_fixed_purchase_kbn3_setting
+                ,w2_ProductView.limited_fixed_purchase_kbn4_setting
+                ,w2_ProductView.fixed_purchase_cancelable_count
+                ,w2_ProductView.digital_contents_flg
+                ,w2_User.tel1 AS owner_tel1
+                ,w2_ProductView.limited_payment_ids
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                  AND
+                  w2_FixedPurchaseItem.fixed_purchase_shipping_no = w2_FixedPurchaseShipping.fixed_purchase_shipping_no
+                )
+                LEFT JOIN w2_ProductView ON
+                (
+                  w2_FixedPurchaseItem.shop_id = w2_ProductView.shop_id
+                  AND
+                  w2_FixedPurchaseItem.product_id = w2_ProductView.product_id
+                  AND
+                  w2_FixedPurchaseItem.variation_id = w2_ProductView.variation_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+         WHERE  (
+                  next_shipping_date > GETDATE()
+                )
+           AND  fixed_purchase_status NOT IN (01,14,30,31,20) -- 完了,キャンセル,仮登録,仮登録キャンセル,休止以外（通常、在庫エラー、決済エラー）はとりあえず実行
+           AND  payment_status <> '11'        -- 決済失敗のときは実行しない
+           AND  w2_FixedPurchase.valid_flg = '1'
+        ORDER BY w2_FixedPurchaseItem.fixed_purchase_id ASC, w2_FixedPurchaseItem.fixed_purchase_shipping_no ASC, w2_FixedPurchaseItem.fixed_purchase_item_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetContainerWorking>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FixedPurchase
+                (
+                  fixed_purchase_id
+                  ,fixed_purchase_kbn
+                  ,fixed_purchase_setting1
+                  ,base_tel_no
+                  ,fixed_purchase_status
+                  ,payment_status
+                  ,last_order_date
+                  ,order_count
+                  ,user_id
+                  ,shop_id
+                  ,supplier_id
+                  ,order_kbn
+                  ,order_payment_kbn
+                  ,fixed_purchase_date_bgn
+                  ,card_kbn
+                  ,valid_flg
+                  ,del_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,credit_branch_no
+                  ,next_shipping_date
+                  ,next_next_shipping_date
+                  ,fixed_purchase_management_memo
+                  ,card_installments_code
+                  ,extend_status1
+                  ,extend_status2
+                  ,extend_status3
+                  ,extend_status4
+                  ,extend_status5
+                  ,extend_status6
+                  ,extend_status7
+                  ,extend_status8
+                  ,extend_status9
+                  ,extend_status10
+                  ,extend_status11
+                  ,extend_status12
+                  ,extend_status13
+                  ,extend_status14
+                  ,extend_status15
+                  ,extend_status16
+                  ,extend_status17
+                  ,extend_status18
+                  ,extend_status19
+                  ,extend_status20
+                  ,extend_status21
+                  ,extend_status22
+                  ,extend_status23
+                  ,extend_status24
+                  ,extend_status25
+                  ,extend_status26
+                  ,extend_status27
+                  ,extend_status28
+                  ,extend_status29
+                  ,extend_status30
+                  ,extend_status31
+                  ,extend_status32
+                  ,extend_status33
+                  ,extend_status34
+                  ,extend_status35
+                  ,extend_status36
+                  ,extend_status37
+                  ,extend_status38
+                  ,extend_status39
+                  ,extend_status40
+                  ,extend_status41
+                  ,extend_status42
+                  ,extend_status43
+                  ,extend_status44
+                  ,extend_status45
+                  ,extend_status46
+                  ,extend_status47
+                  ,extend_status48
+                  ,extend_status49
+                  ,extend_status50
+                  ,shipped_count
+                  ,cancel_reason_id
+                  ,cancel_memo
+                  ,access_country_iso_code
+                  ,disp_language_code
+                  ,disp_language_locale_id
+                  ,disp_currency_code
+                  ,disp_currency_locale_id
+                  ,external_payment_agreement_id
+                  ,memo
+                  ,resume_date
+                  ,suspend_reason
+                  ,shipping_memo
+                  ,receipt_flg
+                  ,receipt_address
+                  ,receipt_proviso
+                  ,attribute1
+                  ,attribute2
+                  ,attribute3
+                  ,attribute4
+                  ,attribute5
+                  ,attribute6
+                  ,attribute7
+                  ,attribute8
+                  ,attribute9
+                  ,attribute10
+                  ,subscription_box_course_id
+                  ,subscription_box_order_count
+                  ,subscription_box_fixed_amount
+                  ,use_all_point_flg
+                )
+        VALUES  (
+                  @fixed_purchase_id
+                  ,@fixed_purchase_kbn
+                  ,@fixed_purchase_setting1
+                  ,@base_tel_no
+                  ,@fixed_purchase_status
+                  ,@payment_status
+                  ,@last_order_date
+                  ,@order_count
+                  ,@user_id
+                  ,@shop_id
+                  ,@supplier_id
+                  ,@order_kbn
+                  ,@order_payment_kbn
+                  ,@fixed_purchase_date_bgn
+                  ,@card_kbn
+                  ,@valid_flg
+                  ,@del_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@credit_branch_no
+                  ,@next_shipping_date
+                  ,@next_next_shipping_date
+                  ,@fixed_purchase_management_memo
+                  ,@card_installments_code
+                  ,@extend_status1
+                  ,@extend_status2
+                  ,@extend_status3
+                  ,@extend_status4
+                  ,@extend_status5
+                  ,@extend_status6
+                  ,@extend_status7
+                  ,@extend_status8
+                  ,@extend_status9
+                  ,@extend_status10
+                  ,@extend_status11
+                  ,@extend_status12
+                  ,@extend_status13
+                  ,@extend_status14
+                  ,@extend_status15
+                  ,@extend_status16
+                  ,@extend_status17
+                  ,@extend_status18
+                  ,@extend_status19
+                  ,@extend_status20
+                  ,@extend_status21
+                  ,@extend_status22
+                  ,@extend_status23
+                  ,@extend_status24
+                  ,@extend_status25
+                  ,@extend_status26
+                  ,@extend_status27
+                  ,@extend_status28
+                  ,@extend_status29
+                  ,@extend_status30
+                  ,@extend_status31
+                  ,@extend_status32
+                  ,@extend_status33
+                  ,@extend_status34
+                  ,@extend_status35
+                  ,@extend_status36
+                  ,@extend_status37
+                  ,@extend_status38
+                  ,@extend_status39
+                  ,@extend_status40
+                  ,@extend_status41
+                  ,@extend_status42
+                  ,@extend_status43
+                  ,@extend_status44
+                  ,@extend_status45
+                  ,@extend_status46
+                  ,@extend_status47
+                  ,@extend_status48
+                  ,@extend_status49
+                  ,@extend_status50
+                  ,@shipped_count
+                  ,@cancel_reason_id
+                  ,@cancel_memo
+                  ,@access_country_iso_code
+                  ,@disp_language_code
+                  ,@disp_language_locale_id
+                  ,@disp_currency_code
+                  ,@disp_currency_locale_id
+                  ,@external_payment_agreement_id
+                  ,@memo
+                  ,@resume_date
+                  ,@suspend_reason
+                  ,@shipping_memo
+                  ,@receipt_flg
+                  ,@receipt_address
+                  ,@receipt_proviso
+                  ,@attribute1
+                  ,@attribute2
+                  ,@attribute3
+                  ,@attribute4
+                  ,@attribute5
+                  ,@attribute6
+                  ,@attribute7
+                  ,@attribute8
+                  ,@attribute9
+                  ,@attribute10
+                  ,@subscription_box_course_id
+                  ,@subscription_box_order_count
+                  ,@subscription_box_fixed_amount
+                  ,@use_all_point_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_kbn" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_setting1" Type="nvarchar" Size="10" />
+      <Input Name="base_tel_no" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_status" Type="nvarchar" Size="10" />
+      <Input Name="payment_status" Type="nvarchar" Size="10" />
+      <Input Name="last_order_date" Type="datetime" />
+      <Input Name="order_count" Type="int" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="supplier_id" Type="nvarchar" Size="20" />
+      <Input Name="order_kbn" Type="nvarchar" Size="10" />
+      <Input Name="order_payment_kbn" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_date_bgn" Type="datetime" />
+      <Input Name="card_kbn" Type="nvarchar" Size="30" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="credit_branch_no" Type="int" />
+      <Input Name="next_shipping_date" Type="datetime" />
+      <Input Name="next_next_shipping_date" Type="datetime" />
+      <Input Name="fixed_purchase_management_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="card_installments_code" Type="nvarchar" Size="10" />
+      <Input Name="extend_status1" Type="nvarchar" Size="10" />
+      <Input Name="extend_status2" Type="nvarchar" Size="10" />
+      <Input Name="extend_status3" Type="nvarchar" Size="10" />
+      <Input Name="extend_status4" Type="nvarchar" Size="10" />
+      <Input Name="extend_status5" Type="nvarchar" Size="10" />
+      <Input Name="extend_status6" Type="nvarchar" Size="10" />
+      <Input Name="extend_status7" Type="nvarchar" Size="10" />
+      <Input Name="extend_status8" Type="nvarchar" Size="10" />
+      <Input Name="extend_status9" Type="nvarchar" Size="10" />
+      <Input Name="extend_status10" Type="nvarchar" Size="10" />
+      <Input Name="extend_status11" Type="nvarchar" Size="10" />
+      <Input Name="extend_status12" Type="nvarchar" Size="10" />
+      <Input Name="extend_status13" Type="nvarchar" Size="10" />
+      <Input Name="extend_status14" Type="nvarchar" Size="10" />
+      <Input Name="extend_status15" Type="nvarchar" Size="10" />
+      <Input Name="extend_status16" Type="nvarchar" Size="10" />
+      <Input Name="extend_status17" Type="nvarchar" Size="10" />
+      <Input Name="extend_status18" Type="nvarchar" Size="10" />
+      <Input Name="extend_status19" Type="nvarchar" Size="10" />
+      <Input Name="extend_status20" Type="nvarchar" Size="10" />
+      <Input Name="extend_status21" Type="nvarchar" Size="10" />
+      <Input Name="extend_status22" Type="nvarchar" Size="10" />
+      <Input Name="extend_status23" Type="nvarchar" Size="10" />
+      <Input Name="extend_status24" Type="nvarchar" Size="10" />
+      <Input Name="extend_status25" Type="nvarchar" Size="10" />
+      <Input Name="extend_status26" Type="nvarchar" Size="10" />
+      <Input Name="extend_status27" Type="nvarchar" Size="10" />
+      <Input Name="extend_status28" Type="nvarchar" Size="10" />
+      <Input Name="extend_status29" Type="nvarchar" Size="10" />
+      <Input Name="extend_status30" Type="nvarchar" Size="10" />
+      <Input Name="extend_status31" Type="nvarchar" Size="10" />
+      <Input Name="extend_status32" Type="nvarchar" Size="10" />
+      <Input Name="extend_status33" Type="nvarchar" Size="10" />
+      <Input Name="extend_status34" Type="nvarchar" Size="10" />
+      <Input Name="extend_status35" Type="nvarchar" Size="10" />
+      <Input Name="extend_status36" Type="nvarchar" Size="10" />
+      <Input Name="extend_status37" Type="nvarchar" Size="10" />
+      <Input Name="extend_status38" Type="nvarchar" Size="10" />
+      <Input Name="extend_status39" Type="nvarchar" Size="10" />
+      <Input Name="extend_status40" Type="nvarchar" Size="10" />
+      <Input Name="extend_status41" Type="nvarchar" Size="10" />
+      <Input Name="extend_status42" Type="nvarchar" Size="10" />
+      <Input Name="extend_status43" Type="nvarchar" Size="10" />
+      <Input Name="extend_status44" Type="nvarchar" Size="10" />
+      <Input Name="extend_status45" Type="nvarchar" Size="10" />
+      <Input Name="extend_status46" Type="nvarchar" Size="10" />
+      <Input Name="extend_status47" Type="nvarchar" Size="10" />
+      <Input Name="extend_status48" Type="nvarchar" Size="10" />
+      <Input Name="extend_status49" Type="nvarchar" Size="10" />
+      <Input Name="extend_status50" Type="nvarchar" Size="10" />
+      <Input Name="shipped_count" Type="int" />
+      <Input Name="cancel_reason_id" Type="nvarchar" Size="30" />
+      <Input Name="cancel_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="access_country_iso_code" Type="nvarchar" Size="3" />
+      <Input Name="disp_language_code" Type="nvarchar" Size="4" />
+      <Input Name="disp_language_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="disp_currency_code" Type="nvarchar" Size="4" />
+      <Input Name="disp_currency_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="external_payment_agreement_id" Type="nvarchar" Size="100" />
+      <Input Name="memo" Type="nvarchar" Size="MAX" />
+      <Input Name="resume_date" Type="datetime" />
+      <Input Name="suspend_reason" Type="nvarchar" Size="MAX" />
+      <Input Name="shipping_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="receipt_flg" Type="nvarchar" Size="1" />
+      <Input Name="receipt_address" Type="nvarchar" Size="100" />
+      <Input Name="receipt_proviso" Type="nvarchar" Size="100" />
+      <Input Name="attribute1" Type="nvarchar" Size="100" />
+      <Input Name="attribute2" Type="nvarchar" Size="100" />
+      <Input Name="attribute3" Type="nvarchar" Size="100" />
+      <Input Name="attribute4" Type="nvarchar" Size="100" />
+      <Input Name="attribute5" Type="nvarchar" Size="100" />
+      <Input Name="attribute6" Type="nvarchar" Size="100" />
+      <Input Name="attribute7" Type="nvarchar" Size="100" />
+      <Input Name="attribute8" Type="nvarchar" Size="100" />
+      <Input Name="attribute9" Type="nvarchar" Size="100" />
+      <Input Name="attribute10" Type="nvarchar" Size="100" />
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+      <Input Name="subscription_box_order_count" Type="int" />
+      <Input Name="subscription_box_fixed_amount" Type="decimal" Size="18,3" />
+      <Input Name="use_all_point_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </Insert>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FixedPurchase
+           SET  fixed_purchase_kbn = @fixed_purchase_kbn
+                ,fixed_purchase_setting1 = @fixed_purchase_setting1
+                ,base_tel_no = @base_tel_no
+                ,fixed_purchase_status = @fixed_purchase_status
+                ,payment_status = @payment_status
+                ,last_order_date = @last_order_date
+                ,order_count = @order_count
+                ,user_id = @user_id
+                ,shop_id = @shop_id
+                ,supplier_id = @supplier_id
+                ,order_kbn = @order_kbn
+                ,order_payment_kbn = @order_payment_kbn
+                ,fixed_purchase_date_bgn = @fixed_purchase_date_bgn
+                ,card_kbn = @card_kbn
+                ,valid_flg = @valid_flg
+                ,del_flg = @del_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,credit_branch_no = @credit_branch_no
+                ,next_shipping_date = @next_shipping_date
+                ,next_next_shipping_date = @next_next_shipping_date
+                ,fixed_purchase_management_memo = @fixed_purchase_management_memo
+                ,card_installments_code = @card_installments_code
+                ,extend_status1 = @extend_status1
+                ,extend_status2 = @extend_status2
+                ,extend_status3 = @extend_status3
+                ,extend_status4 = @extend_status4
+                ,extend_status5 = @extend_status5
+                ,extend_status6 = @extend_status6
+                ,extend_status7 = @extend_status7
+                ,extend_status8 = @extend_status8
+                ,extend_status9 = @extend_status9
+                ,extend_status10 = @extend_status10
+                ,extend_status11 = @extend_status11
+                ,extend_status12 = @extend_status12
+                ,extend_status13 = @extend_status13
+                ,extend_status14 = @extend_status14
+                ,extend_status15 = @extend_status15
+                ,extend_status16 = @extend_status16
+                ,extend_status17 = @extend_status17
+                ,extend_status18 = @extend_status18
+                ,extend_status19 = @extend_status19
+                ,extend_status20 = @extend_status20
+                ,extend_status21 = @extend_status21
+                ,extend_status22 = @extend_status22
+                ,extend_status23 = @extend_status23
+                ,extend_status24 = @extend_status24
+                ,extend_status25 = @extend_status25
+                ,extend_status26 = @extend_status26
+                ,extend_status27 = @extend_status27
+                ,extend_status28 = @extend_status28
+                ,extend_status29 = @extend_status29
+                ,extend_status30 = @extend_status30
+                ,extend_status31 = @extend_status31
+                ,extend_status32 = @extend_status32
+                ,extend_status33 = @extend_status33
+                ,extend_status34 = @extend_status34
+                ,extend_status35 = @extend_status35
+                ,extend_status36 = @extend_status36
+                ,extend_status37 = @extend_status37
+                ,extend_status38 = @extend_status38
+                ,extend_status39 = @extend_status39
+                ,extend_status40 = @extend_status40
+                ,extend_status41 = @extend_status41
+                ,extend_status42 = @extend_status42
+                ,extend_status43 = @extend_status43
+                ,extend_status44 = @extend_status44
+                ,extend_status45 = @extend_status45
+                ,extend_status46 = @extend_status46
+                ,extend_status47 = @extend_status47
+                ,extend_status48 = @extend_status48
+                ,extend_status49 = @extend_status49
+                ,extend_status50 = @extend_status50
+                ,extend_status_date1 = @extend_status_date1
+                ,extend_status_date2 = @extend_status_date2
+                ,extend_status_date3 = @extend_status_date3
+                ,extend_status_date4 = @extend_status_date4
+                ,extend_status_date5 = @extend_status_date5
+                ,extend_status_date6 = @extend_status_date6
+                ,extend_status_date7 = @extend_status_date7
+                ,extend_status_date8 = @extend_status_date8
+                ,extend_status_date9 = @extend_status_date9
+                ,extend_status_date10 = @extend_status_date10
+                ,extend_status_date11 = @extend_status_date11
+                ,extend_status_date12 = @extend_status_date12
+                ,extend_status_date13 = @extend_status_date13
+                ,extend_status_date14 = @extend_status_date14
+                ,extend_status_date15 = @extend_status_date15
+                ,extend_status_date16 = @extend_status_date16
+                ,extend_status_date17 = @extend_status_date17
+                ,extend_status_date18 = @extend_status_date18
+                ,extend_status_date19 = @extend_status_date19
+                ,extend_status_date20 = @extend_status_date20
+                ,extend_status_date21 = @extend_status_date21
+                ,extend_status_date22 = @extend_status_date22
+                ,extend_status_date23 = @extend_status_date23
+                ,extend_status_date24 = @extend_status_date24
+                ,extend_status_date25 = @extend_status_date25
+                ,extend_status_date26 = @extend_status_date26
+                ,extend_status_date27 = @extend_status_date27
+                ,extend_status_date28 = @extend_status_date28
+                ,extend_status_date29 = @extend_status_date29
+                ,extend_status_date30 = @extend_status_date30
+                ,extend_status_date31 = @extend_status_date31
+                ,extend_status_date32 = @extend_status_date32
+                ,extend_status_date33 = @extend_status_date33
+                ,extend_status_date34 = @extend_status_date34
+                ,extend_status_date35 = @extend_status_date35
+                ,extend_status_date36 = @extend_status_date36
+                ,extend_status_date37 = @extend_status_date37
+                ,extend_status_date38 = @extend_status_date38
+                ,extend_status_date39 = @extend_status_date39
+                ,extend_status_date40 = @extend_status_date40
+                ,extend_status_date41 = @extend_status_date41
+                ,extend_status_date42 = @extend_status_date42
+                ,extend_status_date43 = @extend_status_date43
+                ,extend_status_date44 = @extend_status_date44
+                ,extend_status_date45 = @extend_status_date45
+                ,extend_status_date46 = @extend_status_date46
+                ,extend_status_date47 = @extend_status_date47
+                ,extend_status_date48 = @extend_status_date48
+                ,extend_status_date49 = @extend_status_date49
+                ,extend_status_date50 = @extend_status_date50
+                ,shipped_count = @shipped_count
+                ,cancel_reason_id = @cancel_reason_id
+                ,cancel_memo = @cancel_memo
+                ,next_shipping_use_point = @next_shipping_use_point
+                ,combined_org_fixedpurchase_ids = @combined_org_fixedpurchase_ids
+                ,external_payment_agreement_id = @external_payment_agreement_id
+                ,cancel_date = @cancel_date
+                ,restart_date = @restart_date
+                ,memo = @memo
+                ,resume_date = @resume_date
+                ,suspend_reason = @suspend_reason
+                ,shipping_memo = @shipping_memo
+                ,next_shipping_use_coupon_id = @next_shipping_use_coupon_id
+                ,next_shipping_use_coupon_no = @next_shipping_use_coupon_no
+                ,receipt_flg = @receipt_flg
+                ,receipt_address = @receipt_address
+                ,receipt_proviso = @receipt_proviso
+                ,skipped_count = @skipped_count
+                ,attribute1 = @attribute1
+                ,attribute2 = @attribute2
+                ,attribute3 = @attribute3
+                ,attribute4 = @attribute4
+                ,attribute5 = @attribute5
+                ,attribute6 = @attribute6
+                ,attribute7 = @attribute7
+                ,attribute8 = @attribute8
+                ,attribute9 = @attribute9
+                ,attribute10 = @attribute10
+                ,subscription_box_course_id = @subscription_box_course_id
+                ,subscription_box_order_count = @subscription_box_order_count
+                ,subscription_box_fixed_amount = @subscription_box_fixed_amount
+                ,use_all_point_flg = @use_all_point_flg
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_kbn" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_setting1" Type="nvarchar" Size="10" />
+      <Input Name="base_tel_no" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_status" Type="nvarchar" Size="10" />
+      <Input Name="payment_status" Type="nvarchar" Size="10" />
+      <Input Name="last_order_date" Type="datetime" />
+      <Input Name="order_count" Type="int" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="supplier_id" Type="nvarchar" Size="20" />
+      <Input Name="order_kbn" Type="nvarchar" Size="10" />
+      <Input Name="order_payment_kbn" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_date_bgn" Type="datetime" />
+      <Input Name="card_kbn" Type="nvarchar" Size="30" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="credit_branch_no" Type="int" />
+      <Input Name="next_shipping_date" Type="datetime" />
+      <Input Name="next_next_shipping_date" Type="datetime" />
+      <Input Name="fixed_purchase_management_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="card_installments_code" Type="nvarchar" Size="10" />
+      <Input Name="extend_status1" Type="nvarchar" Size="10" />
+      <Input Name="extend_status2" Type="nvarchar" Size="10" />
+      <Input Name="extend_status3" Type="nvarchar" Size="10" />
+      <Input Name="extend_status4" Type="nvarchar" Size="10" />
+      <Input Name="extend_status5" Type="nvarchar" Size="10" />
+      <Input Name="extend_status6" Type="nvarchar" Size="10" />
+      <Input Name="extend_status7" Type="nvarchar" Size="10" />
+      <Input Name="extend_status8" Type="nvarchar" Size="10" />
+      <Input Name="extend_status9" Type="nvarchar" Size="10" />
+      <Input Name="extend_status10" Type="nvarchar" Size="10" />
+      <Input Name="extend_status11" Type="nvarchar" Size="10" />
+      <Input Name="extend_status12" Type="nvarchar" Size="10" />
+      <Input Name="extend_status13" Type="nvarchar" Size="10" />
+      <Input Name="extend_status14" Type="nvarchar" Size="10" />
+      <Input Name="extend_status15" Type="nvarchar" Size="10" />
+      <Input Name="extend_status16" Type="nvarchar" Size="10" />
+      <Input Name="extend_status17" Type="nvarchar" Size="10" />
+      <Input Name="extend_status18" Type="nvarchar" Size="10" />
+      <Input Name="extend_status19" Type="nvarchar" Size="10" />
+      <Input Name="extend_status20" Type="nvarchar" Size="10" />
+      <Input Name="extend_status21" Type="nvarchar" Size="10" />
+      <Input Name="extend_status22" Type="nvarchar" Size="10" />
+      <Input Name="extend_status23" Type="nvarchar" Size="10" />
+      <Input Name="extend_status24" Type="nvarchar" Size="10" />
+      <Input Name="extend_status25" Type="nvarchar" Size="10" />
+      <Input Name="extend_status26" Type="nvarchar" Size="10" />
+      <Input Name="extend_status27" Type="nvarchar" Size="10" />
+      <Input Name="extend_status28" Type="nvarchar" Size="10" />
+      <Input Name="extend_status29" Type="nvarchar" Size="10" />
+      <Input Name="extend_status30" Type="nvarchar" Size="10" />
+      <Input Name="extend_status31" Type="nvarchar" Size="10" />
+      <Input Name="extend_status32" Type="nvarchar" Size="10" />
+      <Input Name="extend_status33" Type="nvarchar" Size="10" />
+      <Input Name="extend_status34" Type="nvarchar" Size="10" />
+      <Input Name="extend_status35" Type="nvarchar" Size="10" />
+      <Input Name="extend_status36" Type="nvarchar" Size="10" />
+      <Input Name="extend_status37" Type="nvarchar" Size="10" />
+      <Input Name="extend_status38" Type="nvarchar" Size="10" />
+      <Input Name="extend_status39" Type="nvarchar" Size="10" />
+      <Input Name="extend_status40" Type="nvarchar" Size="10" />
+      <Input Name="extend_status41" Type="nvarchar" Size="10" />
+      <Input Name="extend_status42" Type="nvarchar" Size="10" />
+      <Input Name="extend_status43" Type="nvarchar" Size="10" />
+      <Input Name="extend_status44" Type="nvarchar" Size="10" />
+      <Input Name="extend_status45" Type="nvarchar" Size="10" />
+      <Input Name="extend_status46" Type="nvarchar" Size="10" />
+      <Input Name="extend_status47" Type="nvarchar" Size="10" />
+      <Input Name="extend_status48" Type="nvarchar" Size="10" />
+      <Input Name="extend_status49" Type="nvarchar" Size="10" />
+      <Input Name="extend_status50" Type="nvarchar" Size="10" />
+      <Input Name="shipped_count" Type="int" />
+      <Input Name="cancel_reason_id" Type="nvarchar" Size="30" />
+      <Input Name="cancel_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="next_shipping_use_point" Type="decimal" />
+      <Input Name="combined_org_fixedpurchase_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="external_payment_agreement_id" Type="nvarchar" Size="100" />
+      <Input Name="memo" Type="nvarchar" Size="MAX" />
+      <Input Name="cancel_date" Type="datetime" />
+      <Input Name="restart_date" Type="datetime" />
+      <Input Name="resume_date" Type="datetime" />
+      <Input Name="suspend_reason" Type="nvarchar" Size="MAX" />
+      <Input Name="shipping_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="extend_status_date1" Type="datetime" />
+      <Input Name="extend_status_date2" Type="datetime" />
+      <Input Name="extend_status_date3" Type="datetime" />
+      <Input Name="extend_status_date4" Type="datetime" />
+      <Input Name="extend_status_date5" Type="datetime" />
+      <Input Name="extend_status_date6" Type="datetime" />
+      <Input Name="extend_status_date7" Type="datetime" />
+      <Input Name="extend_status_date8" Type="datetime" />
+      <Input Name="extend_status_date9" Type="datetime" />
+      <Input Name="extend_status_date10" Type="datetime" />
+      <Input Name="extend_status_date11" Type="datetime" />
+      <Input Name="extend_status_date12" Type="datetime" />
+      <Input Name="extend_status_date13" Type="datetime" />
+      <Input Name="extend_status_date14" Type="datetime" />
+      <Input Name="extend_status_date15" Type="datetime" />
+      <Input Name="extend_status_date16" Type="datetime" />
+      <Input Name="extend_status_date17" Type="datetime" />
+      <Input Name="extend_status_date18" Type="datetime" />
+      <Input Name="extend_status_date19" Type="datetime" />
+      <Input Name="extend_status_date20" Type="datetime" />
+      <Input Name="extend_status_date21" Type="datetime" />
+      <Input Name="extend_status_date22" Type="datetime" />
+      <Input Name="extend_status_date23" Type="datetime" />
+      <Input Name="extend_status_date24" Type="datetime" />
+      <Input Name="extend_status_date25" Type="datetime" />
+      <Input Name="extend_status_date26" Type="datetime" />
+      <Input Name="extend_status_date27" Type="datetime" />
+      <Input Name="extend_status_date28" Type="datetime" />
+      <Input Name="extend_status_date29" Type="datetime" />
+      <Input Name="extend_status_date30" Type="datetime" />
+      <Input Name="extend_status_date31" Type="datetime" />
+      <Input Name="extend_status_date32" Type="datetime" />
+      <Input Name="extend_status_date33" Type="datetime" />
+      <Input Name="extend_status_date34" Type="datetime" />
+      <Input Name="extend_status_date35" Type="datetime" />
+      <Input Name="extend_status_date36" Type="datetime" />
+      <Input Name="extend_status_date37" Type="datetime" />
+      <Input Name="extend_status_date38" Type="datetime" />
+      <Input Name="extend_status_date39" Type="datetime" />
+      <Input Name="extend_status_date40" Type="datetime" />
+      <Input Name="extend_status_date41" Type="datetime" />
+      <Input Name="extend_status_date42" Type="datetime" />
+      <Input Name="extend_status_date43" Type="datetime" />
+      <Input Name="extend_status_date44" Type="datetime" />
+      <Input Name="extend_status_date45" Type="datetime" />
+      <Input Name="extend_status_date46" Type="datetime" />
+      <Input Name="extend_status_date47" Type="datetime" />
+      <Input Name="extend_status_date48" Type="datetime" />
+      <Input Name="extend_status_date49" Type="datetime" />
+      <Input Name="extend_status_date50" Type="datetime" />
+      <Input Name="next_shipping_use_coupon_id" Type="nvarchar" Size="30" />
+      <Input Name="next_shipping_use_coupon_no" Type="int" />
+      <Input Name="receipt_flg" Type="nvarchar" Size="1" />
+      <Input Name="receipt_address" Type="nvarchar" Size="100" />
+      <Input Name="receipt_proviso" Type="nvarchar" Size="100" />
+      <Input Name="skipped_count" Type="int" />
+      <Input Name="attribute1" Type="nvarchar" Size="100" />
+      <Input Name="attribute2" Type="nvarchar" Size="100" />
+      <Input Name="attribute3" Type="nvarchar" Size="100" />
+      <Input Name="attribute4" Type="nvarchar" Size="100" />
+      <Input Name="attribute5" Type="nvarchar" Size="100" />
+      <Input Name="attribute6" Type="nvarchar" Size="100" />
+      <Input Name="attribute7" Type="nvarchar" Size="100" />
+      <Input Name="attribute8" Type="nvarchar" Size="100" />
+      <Input Name="attribute9" Type="nvarchar" Size="100" />
+      <Input Name="attribute10" Type="nvarchar" Size="100" />
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+      <Input Name="subscription_box_order_count" Type="int" />
+      <Input Name="subscription_box_fixed_amount" Type="decimal" Size="18,3" />
+      <Input Name="use_all_point_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </Update>
+
+  <!-- 配送先取得（全て） -->
+  <GetShippingAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseShipping
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetShippingAll>
+
+  <!-- 配送先登録 -->
+  <InsertShipping>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FixedPurchaseShipping
+                (
+                  fixed_purchase_id
+                  ,fixed_purchase_shipping_no
+                  ,shipping_name
+                  ,shipping_name_kana
+                  ,shipping_zip
+                  ,shipping_addr1
+                  ,shipping_addr2
+                  ,shipping_addr3
+                  ,shipping_addr4
+                  ,shipping_tel1
+                  ,shipping_tel2
+                  ,shipping_tel3
+                  ,shipping_fax
+                  ,shipping_company
+                  ,shipping_date
+                  ,shipping_time
+                  ,del_flg
+                  ,date_created
+                  ,date_changed
+                  ,shipping_name1
+                  ,shipping_name2
+                  ,shipping_name_kana1
+                  ,shipping_name_kana2
+                  ,shipping_company_name
+                  ,shipping_company_post_name
+                  ,shipping_method
+                  ,delivery_company_id
+                  ,shipping_country_iso_code
+                  ,shipping_country_name
+                  ,shipping_addr5
+                  ,shipping_receiving_store_flg
+                  ,shipping_receiving_store_id
+                  ,shipping_receiving_store_type
+                )
+        VALUES  (
+                  @fixed_purchase_id
+                  ,@fixed_purchase_shipping_no
+                  ,@shipping_name
+                  ,@shipping_name_kana
+                  ,@shipping_zip
+                  ,@shipping_addr1
+                  ,@shipping_addr2
+                  ,@shipping_addr3
+                  ,@shipping_addr4
+                  ,@shipping_tel1
+                  ,@shipping_tel2
+                  ,@shipping_tel3
+                  ,@shipping_fax
+                  ,@shipping_company
+                  ,@shipping_date
+                  ,@shipping_time
+                  ,@del_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@shipping_name1
+                  ,@shipping_name2
+                  ,@shipping_name_kana1
+                  ,@shipping_name_kana2
+                  ,@shipping_company_name
+                  ,@shipping_company_post_name
+                  ,@shipping_method
+                  ,@delivery_company_id
+                  ,@shipping_country_iso_code
+                  ,@shipping_country_name
+                  ,@shipping_addr5
+                  ,@shipping_receiving_store_flg
+                  ,@shipping_receiving_store_id
+                  ,@shipping_receiving_store_type
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_shipping_no" Type="int" />
+      <Input Name="shipping_name" Type="nvarchar" Size="40" />
+      <Input Name="shipping_name_kana" Type="nvarchar" Size="60" />
+      <Input Name="shipping_zip" Type="nvarchar" Size="8" />
+      <Input Name="shipping_addr1" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr2" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr3" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr4" Type="nvarchar" Size="50" />
+      <Input Name="shipping_tel1" Type="nvarchar" Size="16" />
+      <Input Name="shipping_tel2" Type="nvarchar" Size="16" />
+      <Input Name="shipping_tel3" Type="nvarchar" Size="16" />
+      <Input Name="shipping_fax" Type="nvarchar" Size="16" />
+      <Input Name="shipping_company" Type="nvarchar" Size="30" />
+      <Input Name="shipping_date" Type="datetime" />
+      <Input Name="shipping_time" Type="nvarchar" Size="30" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_name1" Type="nvarchar" Size="20" />
+      <Input Name="shipping_name2" Type="nvarchar" Size="20" />
+      <Input Name="shipping_name_kana1" Type="nvarchar" Size="30" />
+      <Input Name="shipping_name_kana2" Type="nvarchar" Size="30" />
+      <Input Name="shipping_company_name" Type="nvarchar" Size="50" />
+      <Input Name="shipping_company_post_name" Type="nvarchar" Size="50" />
+      <Input Name="shipping_method" Type="nvarchar" Size="10" />
+      <Input Name="delivery_company_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_country_iso_code" Type="nvarchar" Size="3" />
+      <Input Name="shipping_country_name" Type="nvarchar" Size="100" />
+      <Input Name="shipping_addr5" Type="nvarchar" Size="50" />
+      <Input Name="shipping_receiving_store_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_receiving_store_id" Type="nvarchar" Size="20" />
+      <Input Name="shipping_receiving_store_type" Type="nvarchar" Size="5" />
+    </Parameter>
+  </InsertShipping>
+
+  <!-- 配送先更新 -->
+  <UpdateShipping>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FixedPurchaseShipping
+           SET  shipping_name = @shipping_name
+                ,shipping_name_kana = @shipping_name_kana
+                ,shipping_zip = @shipping_zip
+                ,shipping_addr1 = @shipping_addr1
+                ,shipping_addr2 = @shipping_addr2
+                ,shipping_addr3 = @shipping_addr3
+                ,shipping_addr4 = @shipping_addr4
+                ,shipping_tel1 = @shipping_tel1
+                ,shipping_tel2 = @shipping_tel2
+                ,shipping_tel3 = @shipping_tel3
+                ,shipping_fax = @shipping_fax
+                ,shipping_company = @shipping_company
+                ,shipping_date = @shipping_date
+                ,shipping_time = @shipping_time
+                ,del_flg = @del_flg
+                ,date_changed = GETDATE()
+                ,shipping_name1 = @shipping_name1
+                ,shipping_name2 = @shipping_name2
+                ,shipping_name_kana1 = @shipping_name_kana1
+                ,shipping_name_kana2 = @shipping_name_kana2
+                ,shipping_company_name = @shipping_company_name
+                ,shipping_company_post_name = @shipping_company_post_name
+                ,shipping_method = @shipping_method
+                ,delivery_company_id = @delivery_company_id
+                ,shipping_country_iso_code = @shipping_country_iso_code
+                ,shipping_country_name = @shipping_country_name
+                ,shipping_addr5 = @shipping_addr5
+                ,shipping_receiving_store_flg = @shipping_receiving_store_flg
+                ,shipping_receiving_store_id = @shipping_receiving_store_id
+                ,shipping_receiving_store_type = @shipping_receiving_store_type
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+           AND  fixed_purchase_shipping_no = @fixed_purchase_shipping_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_shipping_no" Type="int" />
+      <Input Name="shipping_name" Type="nvarchar" Size="40" />
+      <Input Name="shipping_name_kana" Type="nvarchar" Size="60" />
+      <Input Name="shipping_zip" Type="nvarchar" Size="8" />
+      <Input Name="shipping_addr1" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr2" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr3" Type="nvarchar" Size="50" />
+      <Input Name="shipping_addr4" Type="nvarchar" Size="50" />
+      <Input Name="shipping_tel1" Type="nvarchar" Size="16" />
+      <Input Name="shipping_tel2" Type="nvarchar" Size="16" />
+      <Input Name="shipping_tel3" Type="nvarchar" Size="16" />
+      <Input Name="shipping_fax" Type="nvarchar" Size="16" />
+      <Input Name="shipping_company" Type="nvarchar" Size="30" />
+      <Input Name="shipping_date" Type="datetime" />
+      <Input Name="shipping_time" Type="nvarchar" Size="30" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_name1" Type="nvarchar" Size="20" />
+      <Input Name="shipping_name2" Type="nvarchar" Size="20" />
+      <Input Name="shipping_name_kana1" Type="nvarchar" Size="30" />
+      <Input Name="shipping_name_kana2" Type="nvarchar" Size="30" />
+      <Input Name="shipping_company_name" Type="nvarchar" Size="50" />
+      <Input Name="shipping_company_post_name" Type="nvarchar" Size="50" />
+      <Input Name="shipping_method" Type="nvarchar" Size="10" />
+      <Input Name="delivery_company_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_country_iso_code" Type="nvarchar" Size="3" />
+      <Input Name="shipping_country_name" Type="nvarchar" Size="100" />
+      <Input Name="shipping_addr5" Type="nvarchar" Size="50" />
+      <Input Name="shipping_receiving_store_flg" Type="nvarchar" Size="1" />
+      <Input Name="shipping_receiving_store_id" Type="nvarchar" Size="20" />
+      <Input Name="shipping_receiving_store_type" Type="nvarchar" Size="5" />
+    </Parameter>
+  </UpdateShipping>
+
+  <!-- 配送先削除 -->
+  <DeleteShipping>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FixedPurchaseShipping
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteShipping>
+
+  <!-- 商品取得（全て） -->
+  <GetItemAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseItem
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetItemAll>
+
+  <!-- 商品登録 -->
+  <InsertItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FixedPurchaseItem
+                (
+                  fixed_purchase_id
+                  ,fixed_purchase_item_no
+                  ,fixed_purchase_shipping_no
+                  ,shop_id
+                  ,product_id
+                  ,variation_id
+                  ,supplier_id
+                  ,item_quantity
+                  ,item_quantity_single
+                  ,product_set_id
+                  ,product_set_no
+                  ,product_set_count
+                  ,date_created
+                  ,date_changed
+                  ,product_option_texts
+                  ,item_order_count
+                  ,item_shipped_count
+                )
+        VALUES  (
+                  @fixed_purchase_id
+                  ,@fixed_purchase_item_no
+                  ,@fixed_purchase_shipping_no
+                  ,@shop_id
+                  ,@product_id
+                  ,@variation_id
+                  ,@supplier_id
+                  ,@item_quantity
+                  ,@item_quantity_single
+                  ,@product_set_id
+                  ,@product_set_no
+                  ,@product_set_count
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@product_option_texts
+                  ,@item_order_count
+                  ,@item_shipped_count
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_item_no" Type="int" />
+      <Input Name="fixed_purchase_shipping_no" Type="int" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="supplier_id" Type="nvarchar" Size="20" />
+      <Input Name="item_quantity" Type="int" />
+      <Input Name="item_quantity_single" Type="int" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+      <Input Name="product_set_no" Type="int" />
+      <Input Name="product_set_count" Type="int" />
+      <Input Name="product_option_texts" Type="nvarchar" Size="MAX" />
+      <Input Name="item_order_count" Type="int" />
+      <Input Name="item_shipped_count" Type="int" />
+    </Parameter>
+  </InsertItem>
+
+  <!-- 商品登録（更新用） -->
+  <InsertItemForUpdate>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FixedPurchaseItem
+                (
+                  fixed_purchase_id
+                  ,fixed_purchase_item_no
+                  ,fixed_purchase_shipping_no
+                  ,shop_id
+                  ,product_id
+                  ,variation_id
+                  ,supplier_id
+                  ,item_quantity
+                  ,item_quantity_single
+                  ,product_set_id
+                  ,product_set_no
+                  ,product_set_count
+                  ,date_created
+                  ,date_changed
+                  ,product_option_texts
+                  ,item_order_count
+                  ,item_shipped_count
+                )
+        VALUES  (
+                  @fixed_purchase_id
+                  ,@fixed_purchase_item_no
+                  ,@fixed_purchase_shipping_no
+                  ,@shop_id
+                  ,@product_id
+                  ,@variation_id
+                  ,@supplier_id
+                  ,@item_quantity
+                  ,@item_quantity_single
+                  ,@product_set_id
+                  ,@product_set_no
+                  ,@product_set_count
+                  ,@date_created
+                  ,GETDATE()
+                  ,@product_option_texts
+                  ,@item_order_count
+                  ,@item_shipped_count
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_item_no" Type="int" />
+      <Input Name="fixed_purchase_shipping_no" Type="int" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="supplier_id" Type="nvarchar" Size="20" />
+      <Input Name="item_quantity" Type="int" />
+      <Input Name="item_quantity_single" Type="int" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+      <Input Name="product_set_no" Type="int" />
+      <Input Name="product_set_count" Type="int" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="product_option_texts" Type="nvarchar" Size="MAX" />
+      <Input Name="item_order_count" Type="int" />
+      <Input Name="item_shipped_count" Type="int" />
+    </Parameter>
+  </InsertItemForUpdate>
+
+  <!-- 商品更新 -->
+  <UpdateItem>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FixedPurchaseItem
+           SET  fixed_purchase_shipping_no = @fixed_purchase_shipping_no
+                ,shop_id = @shop_id
+                ,product_id = @product_id
+                ,variation_id = @variation_id
+                ,supplier_id = @supplier_id
+                ,item_quantity = @item_quantity
+                ,item_quantity_single = @item_quantity_single
+                ,product_set_id = @product_set_id
+                ,product_set_no = @product_set_no
+                ,product_set_count = @product_set_count
+                ,date_changed = GETDATE()
+                ,product_option_texts = @product_option_texts
+                ,item_order_count = @item_order_count
+                ,item_shipped_count = @item_shipped_count
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+           AND  fixed_purchase_item_no = @fixed_purchase_item_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_item_no" Type="int" />
+      <Input Name="fixed_purchase_shipping_no" Type="int" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="supplier_id" Type="nvarchar" Size="20" />
+      <Input Name="item_quantity" Type="int" />
+      <Input Name="item_quantity_single" Type="int" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+      <Input Name="product_set_no" Type="int" />
+      <Input Name="product_set_count" Type="int" />
+      <Input Name="product_option_texts" Type="nvarchar" Size="MAX" />
+      <Input Name="item_order_count" Type="int" />
+      <Input Name="item_shipped_count" Type="int" />
+    </Parameter>
+  </UpdateItem>
+
+  <!-- 商品削除（全て） -->
+  <DeleteItemsAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FixedPurchaseItem
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteItemsAll>
+
+  <!-- 定期購入履歴検索ヒット件数取得 -->
+  <GetCountOfSearchFixedPurchaseHistory>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_FixedPurchaseHistory
+         [[ FIXEDPURCHASEHISTORY_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCountOfSearchFixedPurchaseHistory>
+
+  <!-- 定期購入履歴取得検索 -->
+  <SearchFixedPurchaseHistory>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchaseHistory.*
+                ,w2_Order.order_price_total
+          FROM  (
+                  SELECT  w2_FixedPurchaseHistory.fixed_purchase_id
+                          ,w2_FixedPurchaseHistory.fixed_purchase_history_no
+                          ,ROW_NUMBER()
+                          OVER
+                          (
+                            [[ FIXEDPURCHASEHISTORY_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_FixedPurchaseHistory
+                          [[ FIXEDPURCHASEHISTORY_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_FixedPurchaseHistory ON
+                (
+                  RowIndex.fixed_purchase_id = w2_FixedPurchaseHistory.fixed_purchase_id
+                  AND
+                  RowIndex.fixed_purchase_history_no = w2_FixedPurchaseHistory.fixed_purchase_history_no
+                )
+                LEFT JOIN w2_Order ON
+                (
+                  w2_FixedPurchaseHistory.fixed_purchase_id = w2_Order.fixed_purchase_id
+                  AND
+                  w2_FixedPurchaseHistory.order_id = w2_Order.order_id
+                )
+         WHERE  (@bgn_row_num IS NULL OR @bgn_row_num <= RowIndex.row_num)
+           AND  (@end_row_num IS NULL OR RowIndex.row_num <= @end_row_num)
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchFixedPurchaseHistory>
+
+  <!-- 履歴件数取得 -->
+  <GetHistoryCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_FixedPurchaseHistory
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetHistoryCount>
+
+  <!-- 履歴登録 -->
+  <InsertHistory>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FixedPurchaseHistory
+                (
+                  fixed_purchase_id
+                  ,fixed_purchase_history_no
+                  ,fixed_purchase_history_kbn
+                  ,base_tel_no
+                  ,user_id
+                  ,order_id
+                  ,date_created
+                  ,last_changed
+                  ,update_order_count
+                  ,update_shipped_count
+                  ,update_order_count_result
+                  ,update_shipped_count_result
+                  ,external_payment_cooperation_log
+                )
+        VALUES  (
+                  @fixed_purchase_id
+                  ,@fixed_purchase_history_no
+                  ,@fixed_purchase_history_kbn
+                  ,@base_tel_no
+                  ,@user_id
+                  ,@order_id
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@update_order_count
+                  ,@update_shipped_count
+                  ,@update_order_count_result
+                  ,@update_shipped_count_result
+                  ,@external_payment_cooperation_log
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_history_no" Type="bigint" />
+      <Input Name="fixed_purchase_history_kbn" Type="nvarchar" Size="10" />
+      <Input Name="base_tel_no" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="update_order_count" Type="int" />
+      <Input Name="update_shipped_count" Type="int" />
+      <Input Name="update_order_count_result" Type="int" />
+      <Input Name="update_shipped_count_result" Type="int" />
+      <Input Name="external_payment_cooperation_log" Type="nvarchar" Size="MAX" />
+    </Parameter>
+  </InsertHistory>
+
+  <!-- 解約理由取得 -->
+  <GetCancelReason>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseCancelReason
+         WHERE  cancel_reason_id = @cancel_reason_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cancel_reason_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCancelReason>
+
+  <!-- 解約理由取得（全て） -->
+  <GetCancelReasonAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseCancelReason
+      ]]>
+    </Statement>
+  </GetCancelReasonAll>
+
+  <!-- 解約理由取得（定期購入情報に利用されている全て） -->
+  <GetUsedCancelReasonAll>
+    <Statement>
+      <![CDATA[
+        SELECT  DISTINCT w2_FixedPurchaseCancelReason.*
+          FROM  w2_FixedPurchaseCancelReason
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  w2_FixedPurchaseCancelReason.cancel_reason_id = w2_FixedPurchase.cancel_reason_id
+                )
+      ]]>
+    </Statement>
+  </GetUsedCancelReasonAll>
+
+  <!-- 解約理由登録 -->
+  <InsertCancelReason>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FixedPurchaseCancelReason
+                (
+                  cancel_reason_id
+                  ,cancel_reason_name
+                  ,display_order
+                  ,display_kbn
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @cancel_reason_id
+                  ,@cancel_reason_name
+                  ,@display_order
+                  ,@display_kbn
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cancel_reason_id" Type="nvarchar" Size="30" />
+      <Input Name="cancel_reason_name" Type="nvarchar" Size="100" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="display_kbn" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertCancelReason>
+
+  <!-- 解約理由削除（全て） -->
+  <DeleteCancelReasonAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FixedPurchaseCancelReason
+      ]]>
+    </Statement>
+  </DeleteCancelReasonAll>
+
+  <!-- 定期購入履歴取得(未出荷の受注情報を持つもののみ抽出) -->
+  <GetFixedPurchaseHistoryListForMailTemplate>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_FixedPurchaseHistory.fixed_purchase_id,
+                w2_FixedPurchaseHistory.order_id,
+                w2_FixedPurchaseHistory.fixed_purchase_history_no,
+                w2_OrderShipping.shipping_date,
+                w2_Order.order_status
+          FROM  w2_FixedPurchaseHistory
+                LEFT JOIN  w2_Order ON
+                (
+                  w2_FixedPurchaseHistory.fixed_purchase_id = w2_Order.fixed_purchase_id
+                  AND
+                  w2_FixedPurchaseHistory.order_id = w2_Order.order_id
+                )
+                LEFT JOIN  w2_OrderShipping ON
+                (
+                  w2_Order.order_id = w2_OrderShipping.order_id
+                )
+         WHERE  w2_FixedPurchaseHistory.fixed_purchase_id = @fixed_purchase_id
+           AND  w2_FixedPurchaseHistory.fixed_purchase_history_kbn = 10
+           AND  w2_Order.order_status IN ('ODR','ODR_RECG','SHP_ARGD')
+                [[ FIXEDPURCHASEHISTORY_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetFixedPurchaseHistoryListForMailTemplate>
+  <!-- Get subcription box id -->
+  <GetSubcriptionBoxId>
+    <Statement>
+      <![CDATA[
+        SELECT  top 1  subscription_box_course_id 
+          FROM  w2_Order o(nolock)  
+         WHERE  o.fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetSubcriptionBoxId>
+
+  <!-- 定期購入メール一時ログ検索(メール実行IDに基づいて検索) -->
+  <SearchFixedPurchaseBatchMailTmpLogs>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseBatchMailTmpLog
+         WHERE  action_master_id = @action_master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </SearchFixedPurchaseBatchMailTmpLogs>
+
+  <!-- 定期購入メール一時ログ登録 -->
+  <InsertFixedPurchaseBatchMailTmpLog>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_FixedPurchaseBatchMailTmpLog
+                (
+                  master_type
+                  ,master_id
+                  ,action_master_id
+                )
+        VALUES  (
+                  @master_type
+                  ,@master_id
+                  ,@action_master_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="master_type" Type="nvarchar" Size="10" />
+      <Input Name="master_id" Type="nvarchar" Size="100" />
+      <Input Name="action_master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </InsertFixedPurchaseBatchMailTmpLog>
+
+  <!-- 定期購入メール一時ログ削除 -->
+  <DeleteFixedPurchaseBatchMailTmpLog>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FixedPurchaseBatchMailTmpLog
+         WHERE  tmp_log_id = @tmp_log_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tmp_log_id" Type="int" />
+    </Parameter>
+  </DeleteFixedPurchaseBatchMailTmpLog>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        Delete  w2_FixedPurchase
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- 更新履歴削除 -->
+  <DeleteHistory>
+    <Statement>
+      <![CDATA[
+        Delete  w2_FixedPurchaseHistory
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteHistory>
+
+  <!-- 注文同梱履歴削除 -->
+	<DeleteHistoryByOrderId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_FixedPurchaseHistory
+         WHERE  order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteHistoryByOrderId>
+
+  <!-- 配送会社、配送種別、配送方法に紐づく定期台帳の商品数取得 -->
+  <GetCountOfDeliveryCompanyFixedPurchaseItems>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_Product
+                INNER JOIN w2_ShopShipping ON
+                (
+                  w2_Product.shipping_type = w2_ShopShipping.shipping_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchaseItem.product_id = w2_Product.product_id
+                ) 
+                INNER JOIN w2_FixedPurchaseShipping ON
+                ( 
+                  w2_FixedPurchaseItem.fixed_purchase_id = w2_FixedPurchaseShipping.fixed_purchase_id
+                )
+         WHERE  w2_FixedPurchaseShipping.delivery_company_id = @delivery_company_id
+           AND  shipping_id = @shipping_id
+           AND  shipping_method = @shipping_method
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="delivery_company_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_id" Type="nvarchar" Size="10" />
+      <Input Name="shipping_method" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetCountOfDeliveryCompanyFixedPurchaseItems>
+
+  <!-- 再開対象の定期購入取得 -->
+  <GetTargetsForResume>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+         WHERE  w2_FixedPurchase.valid_flg = '1'  -- 有効
+           AND  w2_FixedPurchase.fixed_purchase_status = '20'  -- 休止
+           AND  w2_FixedPurchase.resume_date <= @resume_date
+           AND  w2_User.del_flg = '0'  -- 退会ユーザー
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="resume_date" Type="datetime" />
+    </Parameter>
+  </GetTargetsForResume>
+
+  <!--定期購入履歴の取得-->
+  <GetFixedPurchaseHistory>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_FixedPurchaseHistory
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_history_no" Type="bigint" />
+    </Parameter>
+  </GetFixedPurchaseHistory>
+
+  <!-- 定期購入IDとクーポン利用ユーザー(メールアドレスorユーザーID)から定期台帳情報を取得 -->
+  <GetFixedPurchaseByFixedPurchaseIdAndCouponUseUser>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_FixedPurchase.*
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+         WHERE  w2_FixedPurchase.fixed_purchase_id = @fixed_purchase_id
+                AND
+                @coupon_use_user =
+                  CASE @used_user_judge_type
+                    WHEN 'MailAddress' THEN w2_User.mail_addr
+                    WHEN 'UserId' THEN w2_User.user_id
+                  END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="coupon_use_user" Type="nvarchar" Size="256" />
+      <Input Name="used_user_judge_type" Type="nvarchar" Size="15" />
+    </Parameter>
+  </GetFixedPurchaseByFixedPurchaseIdAndCouponUseUser>
+
+  <!-- Clear Skipped Count -->
+  <ClearSkippedCount>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FixedPurchase
+           SET  skipped_count = 0
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </ClearSkippedCount>
+  
+  <!-- Get fixed purchase workflow list no pagination -->
+  <GetFixedPurchaseWorkflowListNoPagination>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(DISTINCT w2_FixedPurchase.fixed_purchase_id), 0)
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                )
+                INNER JOIN w2_Payment ON
+                (
+                  w2_Payment.payment_id = w2_FixedPurchase.order_payment_kbn
+                )
+                [[ FIXEDPURCHASEWORKFLOW_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_FixedPurchase.fixed_purchase_id,
+                w2_FixedPurchase.user_id,
+                w2_FixedPurchase.shop_id,
+                w2_FixedPurchase.fixed_purchase_kbn,
+                w2_FixedPurchase.order_count,
+                w2_FixedPurchase.order_payment_kbn,
+                w2_FixedPurchase.fixed_purchase_setting1,
+                w2_FixedPurchase.fixed_purchase_status,
+                w2_FixedPurchase.payment_status,
+                w2_FixedPurchase.memo,
+                w2_FixedPurchase.date_created,
+                w2_FixedPurchase.fixed_purchase_management_memo,
+                w2_FixedPurchase.shipping_memo,
+                w2_FixedPurchase.order_kbn,
+                w2_FixedPurchase.next_shipping_date,
+                w2_FixedPurchase.next_next_shipping_date,
+                w2_FixedPurchase.fixed_purchase_date_bgn,
+                w2_FixedPurchase.last_order_date,
+                w2_FixedPurchase.order_count,
+                w2_FixedPurchase.shipped_count,
+                w2_FixedPurchase.extend_status1,
+                w2_FixedPurchase.extend_status2,
+                w2_FixedPurchase.extend_status3,
+                w2_FixedPurchase.extend_status4,
+                w2_FixedPurchase.extend_status5,
+                w2_FixedPurchase.extend_status6,
+                w2_FixedPurchase.extend_status7,
+                w2_FixedPurchase.extend_status8,
+                w2_FixedPurchase.extend_status9,
+                w2_FixedPurchase.extend_status10,
+                w2_FixedPurchase.extend_status11,
+                w2_FixedPurchase.extend_status12,
+                w2_FixedPurchase.extend_status13,
+                w2_FixedPurchase.extend_status14,
+                w2_FixedPurchase.extend_status15,
+                w2_FixedPurchase.extend_status16,
+                w2_FixedPurchase.extend_status17,
+                w2_FixedPurchase.extend_status18,
+                w2_FixedPurchase.extend_status19,
+                w2_FixedPurchase.extend_status20,
+                w2_FixedPurchase.extend_status21,
+                w2_FixedPurchase.extend_status22,
+                w2_FixedPurchase.extend_status23,
+                w2_FixedPurchase.extend_status24,
+                w2_FixedPurchase.extend_status25,
+                w2_FixedPurchase.extend_status26,
+                w2_FixedPurchase.extend_status27,
+                w2_FixedPurchase.extend_status28,
+                w2_FixedPurchase.extend_status29,
+                w2_FixedPurchase.extend_status30,
+                w2_FixedPurchase.extend_status31,
+                w2_FixedPurchase.extend_status32,
+                w2_FixedPurchase.extend_status33,
+                w2_FixedPurchase.extend_status34,
+                w2_FixedPurchase.extend_status35,
+                w2_FixedPurchase.extend_status36,
+                w2_FixedPurchase.extend_status37,
+                w2_FixedPurchase.extend_status38,
+                w2_FixedPurchase.extend_status39,
+                w2_FixedPurchase.extend_status40,
+                w2_FixedPurchase.next_shipping_date,
+                w2_FixedPurchaseShipping.shipping_date,
+                w2_FixedPurchaseShipping.shipping_time,
+                w2_FixedPurchaseShipping.delivery_company_id,
+                w2_FixedPurchaseShipping.shipping_addr1,
+                w2_FixedPurchaseShipping.shipping_addr2,
+                w2_FixedPurchaseShipping.shipping_addr3,
+                w2_FixedPurchaseShipping.shipping_addr4,
+                w2_FixedPurchaseShipping.shipping_name,
+                w2_FixedPurchaseShipping.shipping_tel1,
+                w2_User.name,
+                w2_User.tel1,
+                w2_User.mail_addr,
+                w2_User.user_management_level_id,
+                w2_User.mall_id,
+                w2_User.member_rank_id,
+                w2_payment.payment_name,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_FixedPurchase.fixed_purchase_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_FixedPurchase
+                          INNER JOIN w2_User ON
+                          (
+                            w2_FixedPurchase.user_id = w2_User.user_id
+                          )
+                          [[ FIXEDPURCHASEWORKFLOW_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  RowIndex.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_User.user_id = w2_FixedPurchase.user_id
+                )
+                INNER JOIN w2_Payment ON
+                (
+                  w2_Payment.payment_id = w2_FixedPurchase.order_payment_kbn
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchaseShipping.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+      ]]>
+    </Statement>
+  </GetFixedPurchaseWorkflowListNoPagination>
+
+  <!-- 定期台帳一覧を取得(ワークフロー) -->
+  <GetFixedPurchaseWorkflowList>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(DISTINCT w2_FixedPurchase.fixed_purchase_id), 0)
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                )
+                INNER JOIN w2_Payment ON
+                (
+                  w2_Payment.payment_id = w2_FixedPurchase.order_payment_kbn
+                )
+                [[ FIXEDPURCHASEWORKFLOW_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_FixedPurchase.fixed_purchase_id,
+                w2_FixedPurchase.user_id,
+                w2_FixedPurchase.shop_id,
+                w2_FixedPurchase.fixed_purchase_kbn,
+                w2_FixedPurchase.order_count,
+                w2_FixedPurchase.order_payment_kbn,
+                w2_FixedPurchase.fixed_purchase_setting1,
+                w2_FixedPurchase.fixed_purchase_status,
+                w2_FixedPurchase.payment_status,
+                w2_FixedPurchase.memo,
+                w2_FixedPurchase.date_created,
+                w2_FixedPurchase.fixed_purchase_management_memo,
+                w2_FixedPurchase.shipping_memo,
+                w2_FixedPurchase.order_kbn,
+                w2_FixedPurchase.next_shipping_date,
+                w2_FixedPurchase.next_next_shipping_date,
+                w2_FixedPurchase.fixed_purchase_date_bgn,
+                w2_FixedPurchase.last_order_date,
+                w2_FixedPurchase.order_count,
+                w2_FixedPurchase.shipped_count,
+                w2_FixedPurchase.extend_status1,
+                w2_FixedPurchase.extend_status2,
+                w2_FixedPurchase.extend_status3,
+                w2_FixedPurchase.extend_status4,
+                w2_FixedPurchase.extend_status5,
+                w2_FixedPurchase.extend_status6,
+                w2_FixedPurchase.extend_status7,
+                w2_FixedPurchase.extend_status8,
+                w2_FixedPurchase.extend_status9,
+                w2_FixedPurchase.extend_status10,
+                w2_FixedPurchase.extend_status11,
+                w2_FixedPurchase.extend_status12,
+                w2_FixedPurchase.extend_status13,
+                w2_FixedPurchase.extend_status14,
+                w2_FixedPurchase.extend_status15,
+                w2_FixedPurchase.extend_status16,
+                w2_FixedPurchase.extend_status17,
+                w2_FixedPurchase.extend_status18,
+                w2_FixedPurchase.extend_status19,
+                w2_FixedPurchase.extend_status20,
+                w2_FixedPurchase.extend_status21,
+                w2_FixedPurchase.extend_status22,
+                w2_FixedPurchase.extend_status23,
+                w2_FixedPurchase.extend_status24,
+                w2_FixedPurchase.extend_status25,
+                w2_FixedPurchase.extend_status26,
+                w2_FixedPurchase.extend_status27,
+                w2_FixedPurchase.extend_status28,
+                w2_FixedPurchase.extend_status29,
+                w2_FixedPurchase.extend_status30,
+                w2_FixedPurchase.extend_status31,
+                w2_FixedPurchase.extend_status32,
+                w2_FixedPurchase.extend_status33,
+                w2_FixedPurchase.extend_status34,
+                w2_FixedPurchase.extend_status35,
+                w2_FixedPurchase.extend_status36,
+                w2_FixedPurchase.extend_status37,
+                w2_FixedPurchase.extend_status38,
+                w2_FixedPurchase.extend_status39,
+                w2_FixedPurchase.extend_status40,
+                w2_FixedPurchase.next_shipping_date,
+                w2_FixedPurchaseShipping.shipping_date,
+                w2_FixedPurchaseShipping.shipping_time,
+                w2_FixedPurchaseShipping.delivery_company_id,
+                w2_FixedPurchaseShipping.shipping_addr1,
+                w2_FixedPurchaseShipping.shipping_addr2,
+                w2_FixedPurchaseShipping.shipping_addr3,
+                w2_FixedPurchaseShipping.shipping_addr4,
+                w2_FixedPurchaseShipping.shipping_name,
+                w2_FixedPurchaseShipping.shipping_tel1,
+                w2_User.name,
+                w2_User.tel1,
+                w2_User.mail_addr,
+                w2_User.user_management_level_id,
+                w2_User.mall_id,
+                w2_User.member_rank_id,
+                w2_payment.payment_name,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_FixedPurchase.fixed_purchase_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ FIXEDPURCHASE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_FixedPurchase
+                          INNER JOIN w2_User ON
+                          (
+                            w2_FixedPurchase.user_id = w2_User.user_id
+                          )
+                          [[ FIXEDPURCHASEWORKFLOW_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  RowIndex.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_User.user_id = w2_FixedPurchase.user_id
+                )
+                INNER JOIN w2_Payment ON
+                (
+                  w2_Payment.payment_id = w2_FixedPurchase.order_payment_kbn
+                )
+                INNER JOIN w2_FixedPurchaseShipping ON
+                (
+                  w2_FixedPurchaseShipping.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetFixedPurchaseWorkflowList>
+
+  <!-- Update subscription box Count -->
+  <UpdateSubScriptionBoxOrderCount>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_FixedPurchase
+           SET  subscription_box_order_count = @subscription_box_order_count
+         WHERE  fixed_purchase_id = @fixed_purchase_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_id" Type="nvarchar" Size="30" />
+      <Input Name="subscription_box_order_count" Type="int" />
+    </Parameter>
+  </UpdateSubScriptionBoxOrderCount>
+
+  <!-- Get order count by fixed purchase workflow setting -->
+  <GetOrderCountByFixedPurchaseWorkflowSetting>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  ISNULL(COUNT(DISTINCT w2_FixedPurchase.fixed_purchase_id), 0)
+          FROM  w2_FixedPurchase
+                INNER JOIN w2_User ON
+                (
+                  w2_FixedPurchase.user_id = w2_User.user_id
+                )
+                INNER JOIN w2_FixedPurchaseItem ON
+                (
+                  w2_FixedPurchase.fixed_purchase_id = w2_FixedPurchaseItem.fixed_purchase_id
+                )
+                INNER JOIN w2_Payment ON
+                (
+                  w2_Payment.payment_id = w2_FixedPurchase.order_payment_kbn
+                )
+                [[ FIXEDPURCHASEWORKFLOW_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetOrderCountByFixedPurchaseWorkflowSetting>
+
+  <!-- Get Count Order Fixed Purchase -->
+  <GetCountOrderFixedPurchase>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_FixedPurchaseHistory
+         WHERE  order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetCountOrderFixedPurchase>
+
+</FixedPurchase>

@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+/* 配送種別より削除 */
+DECLARE @table_id NVARCHAR(100)
+DECLARE @column_id NVARCHAR(100)
+DECLARE @table_name NVARCHAR(100)
+DECLARE @column_name NVARCHAR(100)
+DECLARE @const_name NVARCHAR(100)
+
+DECLARE cur CURSOR FOR
+	SELECT id, colid, OBJECT_NAME(id), name
+	FROM syscolumns
+	WHERE OBJECT_NAME(id) = 'w2_ShopShipping'
+		AND name LIKE 'shipping#_time#_%' ESCAPE '#'
+	ORDER BY colid
+OPEN cur
+FETCH NEXT FROM cur
+INTO @table_id, @column_id, @table_name, @column_name
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+	SELECT @const_name = name FROM sysobjects WHERE id = ( SELECT constid FROM sys.sysconstraints WHERE id = @table_id and colid = @column_id )
+	
+	--制約を削除する
+	EXEC('ALTER TABLE '+ @table_name + ' DROP CONSTRAINT ' + @const_name)
+	
+	EXEC('ALTER TABLE '+ @table_name + ' DROP COLUMN ' + @column_name)
+	
+	FETCH NEXT FROM cur
+	INTO @table_id, @column_id, @table_name, @column_name
+END
+CLOSE cur
+DEALLOCATE cur
+GO
+
+		]]>
+    </Statement>
+  </Up>
+</Migration>

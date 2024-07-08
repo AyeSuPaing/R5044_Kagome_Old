@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品ランキングセッティングXML(ProductRanking.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductRanking>
+  <!--
+    Statementへはvalue_name、countsが取得できるSQLを記述する。
+    （例）
+    ========================================
+    [rank]  [value_name]            [counts]  [extra](特殊な値)
+    ========================================
+        1   www.w2solution.co.jp       35           50
+        2   www.w2solution.com         32           25
+        2   w2solution.co.jp           32           60
+    ========================================
+  -->
+  <ProductSearchWordRanking>
+    <Title>商品検索ワードランキング</Title>
+    <Value>商品検索ワード</Value>
+    <Unit>検索回数</Unit>
+    <Extra>平均Hit数</Extra>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @summary_kbn nvarchar(30)
+
+        -- PC限定
+        IF @access_kbn = '1'
+          BEGIN
+            SET @summary_kbn = 'pct_searchword_pc'
+          END
+        -- モバイル限定
+        ELSE IF @access_kbn = '2'
+          BEGIN
+            SET @summary_kbn = 'pct_searchword_mob'
+          END
+        -- スマートフォン限定
+        ELSE IF @access_kbn = '3'
+          BEGIN
+            SET @summary_kbn = 'pct_searchword_sp'
+          END
+        -- 全体
+        ELSE
+          BEGIN
+            SET @summary_kbn = 'pct_searchword'
+          END
+
+        ---------------------------------------
+        -- 変数テーブル作成
+        ---------------------------------------
+        DECLARE  @temp_table TABLE
+        (
+          [row_num] [int] IDENTITY(1, 1),
+          [row_count] [int],
+          [value_name] [nvarchar](1000),
+          [counts] [int],
+          [extra] [nvarchar](50),
+          [total_counts] [int]
+        )
+
+        ---------------------------------------
+        -- データ取得(アクセス総数)
+        ---------------------------------------
+        DECLARE @total_counts int
+        SELECT  @total_counts = SUM(counts)
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+
+        ---------------------------------------
+        -- データ取得
+        ---------------------------------------
+        INSERT
+          INTO  @temp_table
+                (
+                value_name,
+                counts,
+                extra,
+                total_counts
+                )
+        SELECT  value_name,
+                SUM(counts) AS counts,
+                AVG(reserved1) AS extra,
+                @total_counts
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+        GROUP BY value_name
+        ORDER BY counts DESC
+
+        ---------------------------------------
+        -- 件数情報更新
+        ---------------------------------------
+        UPDATE  @temp_table
+           SET  row_count = (SELECT COUNT(*) FROM @temp_table)
+
+        ---------------------------------------
+        -- 絞込み（順位決定）
+        ---------------------------------------
+        SELECT  (
+                  SELECT  COUNT(*) + 1 
+                    FROM  @temp_table A 
+                   WHERE  A.counts > B.counts
+                ) AS rank, *
+          FROM  @temp_table B
+         WHERE  @bgn_row_num <= row_num 
+           AND  row_num <= @end_row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="access_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </ProductSearchWordRanking>
+
+  <ProductBuyCountRanking>
+    <Title>商品販売個数ランキング</Title>
+    <Value>商品名</Value>
+    <Unit>販売個数</Unit>
+    <Extra>商品ID</Extra>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @summary_kbn nvarchar(30)
+
+        -- PC限定
+        IF @access_kbn = '1'
+          BEGIN
+            SET @summary_kbn = 'pct_buycount_pc'
+          END
+        -- モバイル限定
+        ELSE IF @access_kbn = '2'
+          BEGIN
+            SET @summary_kbn = 'pct_buycount_mob'
+          END
+        -- スマートフォン限定
+        ELSE IF @access_kbn = '3'
+          BEGIN
+            SET @summary_kbn = 'pct_buycount_sp'
+          END
+        -- 全体
+        ELSE
+          BEGIN
+            SET @summary_kbn = 'pct_buycount'
+          END
+          
+        ---------------------------------------
+        -- 変数テーブル作成
+        ---------------------------------------
+        DECLARE  @temp_table TABLE
+        (
+          [row_num] [int] IDENTITY(1, 1),
+          [row_count] [int],
+          [value_name] [nvarchar](1000),
+          [counts] [int],
+          [extra] [nvarchar](50),
+          [total_counts] [int]
+        )
+
+        ---------------------------------------
+        -- データ取得(アクセス総数)
+        ---------------------------------------
+        DECLARE @total_counts int
+        SELECT  @total_counts = SUM(counts)
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+
+        ---------------------------------------
+        -- データ取得
+        ---------------------------------------
+        INSERT
+          INTO  @temp_table
+                (
+                value_name,
+                counts,
+                total_counts,
+                extra
+                )
+        SELECT  MAX(value_name),  -- 商品名が集計関数内に含まれていないため、MAX関数を利用し商品名を取得
+                SUM(counts) AS counts,
+                @total_counts,
+                reserved7
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+        GROUP BY reserved6, reserved7
+        ORDER BY counts DESC
+
+        ---------------------------------------
+        -- 件数情報更新
+        ---------------------------------------
+        UPDATE  @temp_table
+           SET  row_count = (SELECT COUNT(*) FROM @temp_table)
+
+        ---------------------------------------
+        -- 絞込み（順位決定）
+        ---------------------------------------
+        SELECT  (
+                  SELECT  COUNT(*) + 1
+                    FROM  @temp_table A 
+                   WHERE  A.counts > B.counts
+                ) AS rank, *
+          FROM  @temp_table B
+         WHERE  @bgn_row_num <= row_num 
+           AND  row_num <= @end_row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="access_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </ProductBuyCountRanking>
+
+  <ProductBuyPriceRanking>
+    <Title>商品販売金額ランキング</Title>
+    <Value>商品名</Value>
+    <Unit>販売金額</Unit>
+    <Extra>商品ID</Extra>
+    <Statement>
+      <![CDATA[
+        ---------------------------------------
+        -- 変数定義
+        ---------------------------------------
+        DECLARE @summary_kbn nvarchar(30)
+
+        -- PC限定
+        IF @access_kbn = '1'
+          BEGIN
+            SET @summary_kbn = 'pct_buyprice_pc'
+          END
+        -- モバイル限定
+        ELSE IF @access_kbn = '2'
+          BEGIN
+            SET @summary_kbn = 'pct_buyprice_mob'
+          END
+        -- スマートフォン限定
+        ELSE IF @access_kbn = '3'
+          BEGIN
+            SET @summary_kbn = 'pct_buyprice_sp'
+          END
+        -- 全体
+        ELSE
+          BEGIN
+            SET @summary_kbn = 'pct_buyprice'
+          END
+
+        ---------------------------------------
+        -- 変数テーブル作成
+        ---------------------------------------
+        DECLARE  @temp_table TABLE
+        (
+          [row_num] [int] IDENTITY(1, 1),
+          [row_count] [int],
+          [value_name] [nvarchar](1000),
+          [price] [decimal](23,3),
+          [extra] [nvarchar](50),
+          [total_price] [decimal](23,3)
+        )
+
+        ---------------------------------------
+        -- データ取得(アクセス総数)
+        ---------------------------------------
+        DECLARE @total_price decimal(23,3)
+        SELECT  @total_price = SUM(@@ amount_field @@)
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+
+        ---------------------------------------
+        -- データ取得
+        ---------------------------------------
+        INSERT
+          INTO  @temp_table
+                (
+                value_name,
+                price,
+                total_price,
+                extra
+                )
+        SELECT  MAX(value_name),  -- 商品名が集計関数内に含まれていないため、MAX関数を利用し商品名を取得
+                SUM(@@ amount_field @@) AS price,
+                @total_price,
+                reserved7
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = @summary_kbn
+           AND  (@tgt_year = '0000' OR tgt_year = @tgt_year)
+           AND  (@tgt_month = '00' OR tgt_month= @tgt_month)
+           AND  (@tgt_day = '00' OR tgt_day= @tgt_day)
+        GROUP BY reserved6, reserved7
+        ORDER BY price DESC
+
+        ---------------------------------------
+        -- 件数情報更新
+        ---------------------------------------
+        UPDATE  @temp_table
+           SET  row_count = (SELECT COUNT(*) FROM @temp_table)
+
+        ---------------------------------------
+        -- 絞込み（順位決定）
+        ---------------------------------------
+        SELECT  (
+                  SELECT  COUNT(*) + 1 
+                    FROM  @temp_table A 
+                   WHERE  A.price > B.price
+                ) AS rank, *
+          FROM  @temp_table B
+         WHERE  @bgn_row_num <= row_num 
+           AND  row_num <= @end_row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="tgt_year" Type="nvarchar" Size="4" />
+      <Input Name="tgt_month" Type="nvarchar" Size="2" />
+      <Input Name="tgt_day" Type="nvarchar" Size="2" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="access_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </ProductBuyPriceRanking>
+
+</ProductRanking>

@@ -1,0 +1,44 @@
+﻿<%--
+=========================================================================================================
+  Module      : Amazon Payコールバック画面(AmazonPayCallbackPage.master)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+--%>
+<%@ Master Language="C#" AutoEventWireup="true" CodeFile="AmazonPayCallbackPage.master.cs" Inherits="Form_User_Amazon_AmazonPayCallbackPage" %>
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<title>Loading...</title>
+</head>
+<body>
+	<form runat="server">
+		<div>
+			<input type="hidden" name="access_token" value="" />
+			<input type="hidden" name="state" value="" />
+		</div>
+	</form>
+	<script>
+		function getURLParameter(name, source) {
+			return decodeURIComponent((new RegExp('[?|&|#]' + name + '=' +
+				'([^&]+?)(&|#|;|$)').exec(source) || [, ""])[1].replace(/\+/g,
+				'%20')) || null;
+		}
+
+		document.body.onload = function () {
+			var accessToken = getURLParameter("access_token", location.hash);
+			if (typeof accessToken === 'string' && accessToken.match(/^Atza/)) {
+				document.cookie = "amazon_Login_accessToken=" + accessToken +
+					";path=/;secure";
+			}
+
+			document.aspnetForm.access_token.value = accessToken;
+			document.aspnetForm.state.value = getURLParameter("state", location.hash)
+			document.aspnetForm.submit();
+		}
+	</script>
+</body>
+</html>

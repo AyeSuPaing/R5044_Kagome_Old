@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メール署名管理画面系SQLステートメントXML(CsMailSignature.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsMailSignature>
+  
+  <!-- 一覧取得 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+       DECLARE  @row_count int
+       
+        -- 該当件数取得
+        SELECT  @row_count = ISNULL(COUNT(dept_id), 0)
+          FROM  w2_CsMailSignature
+         WHERE  w2_CsMailSignature.dept_id = @dept_id
+                AND
+                (
+                  w2_CsMailSignature.owner_id = ''
+                  OR
+                  w2_CsMailSignature.owner_id = @owner_id
+                  OR
+                  @owner_id = ''
+                )
+        
+        -- 一覧情報取得
+        SELECT  w2_CsMailSignature.*,
+                @row_count as row_count
+          FROM  (
+                  SELECT  w2_CsMailSignature.dept_id,
+                          w2_CsMailSignature.mail_signature_id,
+                          ROW_NUMBER() OVER (ORDER BY w2_CsMailSignature.display_order, w2_CsMailSignature.mail_signature_id) AS row_num
+                    FROM  w2_CsMailSignature
+                   WHERE  w2_CsMailSignature.dept_id = @dept_id 
+                          AND
+                          (
+                            w2_CsMailSignature.owner_id = ''
+                            OR
+                            w2_CsMailSignature.owner_id = @owner_id
+                            OR
+                            @owner_id = ''
+                          )
+                ) AS RowIndex
+                INNER JOIN w2_CsMailSignature ON
+                (
+                  RowIndex.dept_id = w2_CsMailSignature.dept_id
+                  AND
+                  RowIndex.mail_signature_id = w2_CsMailSignature.mail_signature_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="owner_id" Type="nvarchar" Size="20" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  * 
+          FROM  w2_CsMailSignature
+         WHERE  w2_CsMailSignature.dept_id = @dept_id
+           AND  w2_CsMailSignature.mail_signature_id = @mail_signature_id 
+                AND
+                (
+                  w2_CsMailSignature.owner_id = ''
+                  OR
+                  w2_CsMailSignature.owner_id = @owner_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_signature_id" Type="nvarchar" Size="10" />
+      <Input Name="owner_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Get>
+
+  <!-- 指定オペレータにとって使用可能なものを取得 -->
+  <GetUsableAll>
+    <Statement>
+      <![CDATA[
+        SELECT  * 
+          FROM  w2_CsMailSignature
+         WHERE  w2_CsMailSignature.dept_id = @dept_id
+                AND
+                (
+                  w2_CsMailSignature.owner_id = ''
+                  OR
+                  w2_CsMailSignature.owner_id = @owner_id
+                )
+           AND  w2_CsMailSignature.valid_flg = '1'
+      ORDER BY  w2_CsMailSignature.display_order ASC, w2_CsMailSignature.mail_signature_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="owner_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetUsableAll>
+
+  <!--登録 -->
+  <Register>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_CsMailSignature
+          (
+            w2_CsMailSignature.dept_id, 
+            w2_CsMailSignature.mail_signature_id, 
+            w2_CsMailSignature.signature_title, 
+            w2_CsMailSignature.signature_text, 
+            w2_CsMailSignature.owner_id,
+            w2_CsMailSignature.display_order, 
+            w2_CsMailSignature.valid_flg, 
+            w2_CsMailSignature.date_created, 
+            w2_CsMailSignature.date_changed, 
+            w2_CsMailSignature.last_changed 
+          ) 
+          VALUES
+          (
+            @dept_id, 
+            @mail_signature_id, 
+            @signature_title, 
+            @signature_text, 
+            @owner_id,
+            @display_order, 
+            @valid_flg, 
+            getdate(),
+            getdate(),
+            @last_changed  
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_signature_id" Type="nvarchar" Size="10" />
+      <Input Name="signature_title" Type="nvarchar" Size="30" />
+      <Input Name="signature_text" Type="nvarchar" Size="max" />
+      <Input Name="owner_id" Type="nvarchar" Size="20" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Register>
+
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_CsMailSignature 
+           SET  w2_CsMailSignature.signature_title = @signature_title, 
+                w2_CsMailSignature.signature_text = @signature_text, 
+                w2_CsMailSignature.owner_id = @owner_id,
+                w2_CsMailSignature.display_order = @display_order, 
+                w2_CsMailSignature.valid_flg = @valid_flg, 
+                w2_CsMailSignature.date_changed = getdate(), 
+                w2_CsMailSignature.last_changed = @last_changed 
+         WHERE  w2_CsMailSignature.dept_id = @dept_id
+           AND  w2_CsMailSignature.mail_signature_id = @mail_signature_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_signature_id" Type="nvarchar" Size="10" />
+      <Input Name="signature_title" Type="nvarchar" Size="30" />
+      <Input Name="signature_text" Type="nvarchar" Size="max" />
+      <Input Name="owner_id" Type="nvarchar" Size="20" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE 
+          FROM  w2_CsMailSignature
+         WHERE  w2_CsMailSignature.dept_id = @dept_id 
+           AND  w2_CsMailSignature.mail_signature_id = @mail_signature_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_signature_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Delete>
+
+</CsMailSignature>

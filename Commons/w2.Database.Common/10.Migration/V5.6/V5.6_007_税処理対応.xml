@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+-- 商品ランキング
+update w2_DispSummaryAnalysis
+set reserved2 = counts - Floor((counts / 1.05) + 0)
+where (summary_kbn = 'pct_buyprice' or summary_kbn = 'pct_buyprice_pc' or summary_kbn = 'pct_buyprice_mob' or summary_kbn = 'pct_buyprice_sp')
+and counts <> 0 and reserved2 = 0;
+
+-- 同梱
+update w2_OrderItem
+set product_tax_included_flg = '1'
+, product_tax_rate = 5
+, product_tax_round_type = 'ROUNDDOWN'
+, product_price_pretax = product_price
+where product_tax_rate = 0;
+
+			]]>
+    </Statement>
+  </Up>
+</Migration>

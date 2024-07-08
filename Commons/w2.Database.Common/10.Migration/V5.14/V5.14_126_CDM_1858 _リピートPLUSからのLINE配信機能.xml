@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+	<Up>
+		<Statement>
+			<![CDATA[
+				IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_MailDistText' AND COLUMN_NAME = 'line_use_flg')
+					BEGIN
+						ALTER TABLE w2_MailDistText ADD line_use_flg NVARCHAR(1) NOT NULL DEFAULT N'0';
+					END
+				GO
+
+				/*
+				=========================================================================================================
+					Module      : メッセージアプリ向けコンテンツ (w2_MessagingAppContents.sql)
+				 ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+					Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+				=========================================================================================================
+				*/
+				if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_MessagingAppContents]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+				drop table [dbo].[w2_MessagingAppContents]
+				GO
+				IF NOT EXISTS (SELECT * FROM dbo.SYSOBJECTS WHERE NAME='w2_MessagingAppContents')
+					CREATE TABLE [dbo].[w2_MessagingAppContents] (
+						[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+						[master_kbn] [nvarchar] (30) NOT NULL DEFAULT (N''),
+						[master_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+						[messaging_app_kbn] [nvarchar] (20) NOT NULL DEFAULT (N'0'),
+						[branch_no] [nvarchar] (10) NOT NULL DEFAULT (N''),
+						[media_type] [nvarchar] (20) NOT NULL DEFAULT (N''),
+						[contents] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+						[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+						[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+						[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+					) ON [PRIMARY]
+				GO
+				ALTER TABLE [dbo].[w2_MessagingAppContents] WITH NOCHECK ADD
+					CONSTRAINT [PK_w2_MessagingAppContents] PRIMARY KEY  NONCLUSTERED
+					(
+					 [dept_id],
+					 [master_kbn],
+					 [master_id],
+					 [messaging_app_kbn],
+					 [branch_no]
+					) ON [PRIMARY]
+				GO
+
+				/*
+				=========================================================================================================
+					Module      : タスクスケジュールログマスタ (w2_TaskScheduleLog.sql)
+				 ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+					Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+				=========================================================================================================
+				*/
+				if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_TaskScheduleLog]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+				drop table [dbo].[w2_TaskScheduleLog]
+				GO
+				IF NOT EXISTS (SELECT * FROM dbo.SYSOBJECTS WHERE NAME='w2_TaskScheduleLog')
+					CREATE TABLE [dbo].[w2_TaskScheduleLog] (
+						[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+						[action_kbn] [nvarchar] (30) NOT NULL DEFAULT (N''),
+						[action_master_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+						[action_no] [int] NOT NULL DEFAULT (1),
+						[messaging_app_kbn] [nvarchar] (20) NOT NULL DEFAULT (N''),
+						[result] [nvarchar] (1000) NOT NULL DEFAULT (N''),
+					) ON [PRIMARY]
+				GO
+				ALTER TABLE [dbo].[w2_TaskScheduleLog] WITH NOCHECK ADD
+					CONSTRAINT [PK_w2_TaskScheduleLog] PRIMARY KEY  NONCLUSTERED
+					(
+					 [dept_id],
+					 [action_kbn],
+					 [action_master_id],
+					 [action_no],
+					 [messaging_app_kbn]
+					) ON [PRIMARY]
+				GO
+				]]>
+		</Statement>
+	</Up>
+</Migration>

@@ -1,0 +1,570 @@
+﻿@*
+=========================================================================================================
+  Module      : List (List.cshtml)
+  ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Web.Page
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.Common
+
+<!-- Page list area -->
+@helper PageListArea()
+{
+	<div class="list">
+		<div class="list-content custom-scroll-area is-list-style-thumb" data-simplebar="init" style="height: 328px;">
+			<div class="simplebar-wrapper" style="margin: 0px;">
+				<div class="simplebar-height-auto-observer-wrapper">
+					<div class="simplebar-height-auto-observer"></div>
+				</div>
+				<div class="simplebar-mask">
+					<div class="simplebar-offset" style="right: -17px; bottom: 0px;">
+						<div class="simplebar-content-wrapper" style="height: 100%; overflow: hidden scroll;">
+							<div class="simplebar-content" style="padding: 0px;">
+								<div class="list-head">
+									<div class="list-head-row">
+										<div class="list-head-col ta-left w30">
+											<p>@CommonPage.ReplaceTag("@@ScoreAxis.list_head.score_axis_title.name@@")</p>
+										</div>
+										<div class="list-head-col ta-left w50"></div>
+										<div class="list-head-col hide-list-detail w20">
+											<p>@CommonPage.ReplaceTag("@@ScoreAxis.list_head.date_changed.name@@")</p>
+										</div>
+									</div>
+								</div>
+								<!-- ko foreach: ScoreAxisList -->
+								<div class="list-row" data-list-id="1-1" data-bind="attr: { id: $data.ScoreAxisId }">
+									<div class="list-col list-col-title w30" style="padding: 20px 20px 20px 10px;">
+										<div class="list-col-inner">
+											<p class="list-col-title-label line-clamp">
+												<a data-bind="attr: { href: 'javascript:scoreAxisListPage.set_detail_datas(\'' + $data.ScoreAxisId + '\')' }, text: $data.ScoreAxisTitle" class="list-col-title-a"></a>
+											</p>
+										</div>
+									</div>
+									<div class="list-col w10 ta-left w50"></div>
+									<div class="list-col w10 hide-list-detail w20">
+										<p data-bind="text: $data.DateChanged1"></p>
+										<p data-bind="text: $data.DateChanged2"></p>
+									</div>
+								</div>
+								<!-- /ko -->
+								<br />
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="simplebar-placeholder"></div>
+			</div>
+			<div class="simplebar-track simplebar-horizontal" style="visibility: hidden;">
+				<div class="simplebar-scrollbar" style="transform: translate3d(0px, 0px, 0px); display: none; width: 31px;"></div>
+			</div>
+			<div class="simplebar-track simplebar-vertical" style="visibility: visible;">
+				<div class="simplebar-scrollbar" style="transform: translate3d(0px, 0px, 0px); display: block; height: 25px;"></div>
+			</div>
+		</div>
+	</div>
+}
+
+<!-- Page list tool area -->
+@helper PageListToolArea()
+{
+	<div class="list-tools">
+		<div class="list-tools-row">
+			<div class="list-tools-col ta-left">
+				<div class="keyword-search">
+					<input name="" id="search_keyword" type="text" placeholder="@CommonPage.ReplaceTag("@@ScoreAxis.list_head.score_axis_title.name@@")" class="keyword-search-input" data-bind="textInput: SearchWord" />
+					<a href="javascript:scoreAxisListPage.get_page_list()" class="keyword-search-submit">
+						<span class="icon-search"></span>
+					</a>
+				</div>
+			</div>
+			<div class="list-tools-col ta-right">
+				<button id="lp-new-register" class="btn btn-main btn-size-m" type="button" onclick="scoreAxisListPage.open_new_page();">
+					<span class="icon icon-plus"></span>
+					<span class="hide-list-detail">@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.create.name@@")</span>
+				</button>
+			</div>
+		</div>
+	</div>
+}
+
+<!-- Page detail area -->
+@helper PageDetailArea()
+{
+	<div class="main-content-detail-inner">
+		<a class="main-content-detail-btn-close"><span class="icon icon-close"></span>@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.close.name@@")</a>
+		<div class="main-content-detail-head">
+			<div class="main-content-detail-head-title h2">
+				<input name="scoreAxisTitle" data-bind="textInput: ScoreAxisTitle" type="text" placeholder="@CommonPage.ReplaceTag("@@ScoreAxis.detail.set_management_name_text.name@@")">
+			</div>
+			<div class="main-content-detail-head-main-actions">
+				<input type="button" name="Update" onclick="javascript: scoreAxisListPage.update()" class="btn btn-main btn-size-l" data-bind="visible: IsActionStatusUpdate" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.update.name@@")" />
+				<input type="button" name="Regist" onclick="javascript: scoreAxisListPage.regist()" class="btn btn-main btn-size-l" data-bind="visible: IsActionStatusInsert" value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.register.name@@")" />
+				<div class="dropdown" data-bind="visible: IsActionStatusUpdate">
+					<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle">
+						<span class="icon-dots"></span>
+					</a>
+					<div class="dropdown-menu" data-bind="visible: IsActionStatusUpdate">
+						<a class="dropdown-menu-item" href="javascript:scoreAxisListPage.copy_new()">@CommonPage.ReplaceTag("@@ScoringSale.duplicate_create_scoring_sale_text.name@@")</a>
+						<a class="dropdown-menu-item" href="javascript:scoreAxisListPage.delete_score()">@CommonPage.ReplaceTag("@@ScoringSale.delete_scoring_sale_text.name@@")</a>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="main-content-detail-body simplebar-is-scroll" data-simplebar="init" style="height: 307px;">
+			<div class="simplebar-wrapper" style="margin: -6px -30px 0px;">
+				<div class="simplebar-height-auto-observer-wrapper">
+					<div class="simplebar-height-auto-observer"></div>
+				</div>
+				<div class="simplebar-mask">
+					<div class="simplebar-offset" style="right: -17px; bottom: 0px;">
+						<div class="simplebar-content-wrapper" style="height: 100%; overflow: hidden scroll;">
+							<div class="simplebar-content" style="padding: 6px 30px 0px;">
+								<h3>@CommonPage.ReplaceTag("@@ScoreAxis.detail.setting_score.name@@")</h3>
+								<div class="feature-page-element-head" style="padding: 10px 10px 10px 0; border-bottom: none; justify-content: left;"></div>
+								<div class="feature-page-elements" style="background-color: white;">
+									<div class="feature-page-element">
+										<div style="border-bottom: inherit; padding: 1em">
+											<p>@CommonPage.ReplaceTag("@@ScoreAxis.detail.setting_score.setting_axis_name.name@@")</p>
+										</div>
+										<div class="feature-page-element-content">
+											<div class="feature-item-list">
+												<div class="form-element-group form-element-group-vertical">
+													<div class="form-element-group-content">
+														<div class="feature-selected-item-list">
+															<div style="overflow: auto;" class="feature-selected-item-list-body ui-sortable">
+																<!-- ko foreach: AxisNames -->
+																<div class="feature-selected-item-list-item list-row" data-bind="attr: { axisNameId: AxisName }">
+																	<div style="width: 5%; padding: 30px 0px 30px 15px" class="list-col-drag ui-sortable-handle">
+																		<span class="icon-drag"></span>
+																	</div>
+																	<div style="width: 10%">
+																		<input type="text" data-bind="textInput: $data.AxisName" style="width: 500px" placeholder="@CommonPage.ReplaceTag("@@ScoreAxis.modal_list_head.set_item_name_text.name@@")" />
+																	</div>
+																	<div style="width: 10%; cursor: pointer; margin-left: auto">
+																		<span class="icon icon-close" data-bind="click: function (data, event) { scoreAxisListPage.remove_score_axis(data); }"></span>
+																	</div>
+																</div>
+																<!-- /ko -->
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div class="feature-item-list-btn">
+												<a href="javascript:scoreAxisListPage.add_axis_name();" data-bind="visible: $data.AxisNames().length < @Constants.CONST_SCORE_AXIS_COLUMN_NAME_AMOUNT_MAX" class="btn btn-sub btn-size-m">項目追加</a>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="simplebar-placeholder"></div>
+			</div>
+			<div class="simplebar-track simplebar-horizontal" style="visibility: hidden;">
+				<div class="simplebar-scrollbar" style="transform: translate3d(0px, 0px, 0px); display: none;"></div>
+			</div>
+			<div class="simplebar-track simplebar-vertical" style="visibility: visible;">
+				<div class="simplebar-scrollbar" style="transform: translate3d(0px, 222px, 0px); display: block; height: 36px;"></div>
+			</div>
+		</div>
+	</div>
+}
+
+<a href="javascript:void(0)" class="list-menu-btn">
+	<span class="icon icon-menu"></span>
+</a>
+<div class="main-content-list">
+	<!-- Page list tool area -->
+	@PageListToolArea()
+	<!-- Page list area -->
+	@PageListArea()
+</div>
+
+<div class="main-content-detail" id="lpDetailBody">
+	<!-- Page detail area -->
+	@PageDetailArea()
+</div>
+
+<script type="text/javascript">
+	$(function () {
+		list.ini();
+		dropdown_toggle.ini();
+	});
+
+	var scoreAxisListPage = (function () {
+		var viewModel;
+		var intervalSendOpeningFileName;
+		var axisNameTemplate;
+
+		return {
+			ini: function () {
+				viewModel = {
+					ScoreAxisId: ko.observable(),
+					ScoreAxisTitle: ko.observable(),
+					IsActionStatusInsert: ko.observable(),
+					IsActionStatusUpdate: ko.observable(),
+					ScoreAxisList: ko.observableArray([]),
+					SearchWord: ko.observable(),
+					AxisNames: ko.observableArray([]),
+				};
+
+				ko.applyBindings(viewModel);
+
+				ko.bindingHandlers.popbind = {
+					init: function () {
+						popover.ini();
+					}
+				};
+
+				ko.virtualElements.allowedBindings.popbind = true;
+
+				get_page_list();
+			},
+			open_new_page: function () {
+				$.ajax({
+					url: '@Url.Action("GetScoreAxisDefaultDetailViewModel")',
+					type: 'POST',
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function (data) {
+						viewModel.ScoreAxisId('');
+						viewModel.ScoreAxisTitle('');
+						viewModel.IsActionStatusInsert(true);
+						viewModel.IsActionStatusUpdate(false);
+						viewModel.AxisNames.splice(viewModel.AxisNames.length);
+						slide_check.ini();
+						list.open();
+						$("#search_keyword").addClass("placeholder-display-none");
+						scoreAxisListPage.add_axis_name();
+						$(".selected-low").removeClass("selected-low");
+					},
+					function () {
+						to_error();
+					}
+				);
+			},
+			get_page_list: function () {
+				get_page_list();
+			},
+			set_detail_datas: function (id) {
+				set_detail_datas(id);
+				axis_name_sort_table();
+			},
+			add_axis_name: function () {
+				var clone = $.extend(true, {}, axisNameTemplate);
+				clone.AxisName = ko.observable('');
+				viewModel.AxisNames.push(clone);
+				slide_check.ini();
+				axis_name_sort_table();
+			},
+			remove_score_axis: function (data) {
+				if (viewModel.AxisNames().length > 1) {
+					viewModel.AxisNames.remove(data);
+				} else {
+					notification.show('@WebMessages.ScoreAxisSetItemOneOrMoreItemError', 'warning', 'fadeout');
+				}
+			},
+			regist: function () {
+				loading_animation.start();
+				var postData = create_post_input();
+
+				$.ajax({
+					url: '@Url.Action("Register")',
+					type: 'POST',
+					data: JSON.stringify(postData),
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function (data) {
+						regist_success(data);
+					},
+					function () {
+						to_error();
+					}
+				);
+			},
+			copy_new: function () {
+				loading_animation.start();
+				var postData = { scoreAxisId: viewModel.ScoreAxisId() };
+
+				$.ajax({
+					url: '@Url.Action("GetScoreAxisDetailViewModel")',
+					type: 'POST',
+					data: JSON.stringify(postData),
+					dataType: 'json',
+					contentType: 'application/json'
+				}).then(
+					function (data) {
+						change_copy_view_model(data);
+					},
+					function () {
+						to_error();
+					}
+				);
+			},
+			update: function () {
+				checkOtherOperatorFileOpening('ScoreAxisId' + viewModel.ScoreAxisId()).done(function (result) {
+					if (result !== "") {
+						notification.show(result, 'warning', 'fixed');
+						return;
+					} else {
+						loading_animation.start();
+						var postData = create_post_input();
+
+						$.ajax({
+							url: '@Url.Action("Modify")',
+							type: 'POST',
+							data: JSON.stringify(postData),
+							dataType: 'json',
+							contentType: 'application/json'
+						}).then(
+							function (data) {
+								update_success(data);
+							},
+							function () {
+								to_error();
+							}
+						);
+					}
+				});
+			},
+			delete_score: function () {
+				if (confirm('@WebMessages.ConfirmDeletedMessage') == false) return;
+
+				checkOtherOperatorFileOpening('ScoreAxisId' + viewModel.ScoreAxisId()).done(function (result) {
+					if (result !== "") {
+						notification.show(result, 'warning', 'fixed');
+						return;
+					} else {
+						var postData = { scoreAxisId: viewModel.ScoreAxisId() };
+						$.ajax({
+							url: '@Url.Action("Delete")',
+							type: 'POST',
+							data: JSON.stringify(postData),
+							dataType: 'json',
+							contentType: 'application/json'
+						}).then(
+							function (data) {
+								delete_ok(data)
+							},
+							function () {
+								to_error()
+							}
+						);
+					}
+				});
+			},
+		}
+
+		// Get page list
+		function get_page_list() {
+			loading_animation.start();
+			var postData = {
+				SearchWord: viewModel.SearchWord(),
+			};
+
+			$.ajax({
+				url: '@Url.Action("GetScoreAxisListViewModel")',
+				type: 'POST',
+				data: JSON.stringify(postData),
+				dataType: 'json',
+				contentType: 'application/json'
+			}).then(
+				function (data) {
+					change_list_view_model(data);
+				},
+				function () {
+					to_error();
+				}
+			).then(
+				function () {
+					setTimeout(function () {
+						loading_animation.end();
+					}, 200);
+				}
+			);
+		}
+
+		// Set detail datas
+		function set_detail_datas(id) {
+			$(".selected-low").removeClass("selected-low");
+			clearInterval(intervalSendOpeningFileName);
+			loading_animation.start();
+			var postData = { scoreAxisId: id };
+
+			$.ajax({
+				url: '@Url.Action("GetScoreAxisDetailViewModel")',
+				type: 'POST',
+				data: JSON.stringify(postData),
+				dataType: 'json',
+				contentType: 'application/json'
+			}).then(
+				function (data) {
+					checkOtherOperatorFileOpening('ScoreAxisId' + id).done(function (result) {
+						$("#" + id).addClass("selected-low");
+						$("#search_keyword").addClass("placeholder-display-none");
+						$('input[value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.update.name@@")"]').attr('disabled', false);
+
+						if (result !== "") {
+							notification.show(result, 'warning', 'fixed');
+							$('input[value="@CommonPage.ReplaceTag("@@ScoringSale.display_button_attribute_text.update.name@@")"]').attr('disabled', true);
+						} else {
+							sendOpeningFileName('ScoreAxisId' + id);
+							intervalSendOpeningFileName = setInterval(function () {
+								sendOpeningFileName('ScoreAxisId' + id)
+							}, 50 * 1000);
+						}
+					});
+					change_view_model(data);
+				},
+				function () {
+					to_error();
+				}
+			).then(
+				function () {
+					setTimeout(function () {
+						loading_animation.end();
+					}, 200);
+				}
+			);
+		}
+
+		// Change list view model
+		function change_list_view_model(data) {
+			viewModel.ScoreAxisList.splice(viewModel.ScoreAxisList.length);
+			data.Items.forEach(function (item) {
+				viewModel.ScoreAxisList.push(item);
+			});
+		}
+
+		// Change view model
+		function change_view_model(data) {
+			viewModel.ScoreAxisId(data.ScoreAxisId);
+			viewModel.ScoreAxisTitle(data.ScoreAxisTitle);
+			viewModel.IsActionStatusInsert(false);
+			viewModel.IsActionStatusUpdate(true);
+			change_axis_name_view_model(data.AxisNames);
+			list.open();
+		}
+
+		// Change axis name view model
+		function change_axis_name_view_model(data) {
+			viewModel.AxisNames.splice(viewModel.AxisNames.length);
+			data.forEach(function (item) {
+				var clone = $.extend(true, {}, axisNameTemplate);
+				clone.AxisName = ko.observable(item);
+				viewModel.AxisNames.push(clone);
+			});
+		}
+
+		// Change copy view model
+		function change_copy_view_model(data) {
+			viewModel.ScoreAxisId("");
+			viewModel.ScoreAxisTitle(data.ScoreAxisTitle + "@Constants.COPY_NEW_SUFFIX");
+			viewModel.IsActionStatusInsert(true);
+			viewModel.IsActionStatusUpdate(false);
+			change_axis_name_view_model(data.AxisNames);
+			loading_animation.end();
+			list.open();
+		}
+
+		// Create post input
+		function create_post_input() {
+			var postData = {
+				ScoreAxisId: viewModel.ScoreAxisId(),
+				ScoreAxisTitle: viewModel.ScoreAxisTitle(),
+				AxisNames: [],
+			};
+			for (i = 0; i < viewModel.AxisNames().length; i++) {
+				postData.AxisNames.push(viewModel.AxisNames()[i].AxisName());
+			}
+
+			return postData;
+		}
+
+		// Register success
+		function regist_success(data) {
+			loading_animation.end();
+			if (data.result === '@Constants.CONST_RESPONSE_KEY_RESULT_NG') {
+				notification.show(data.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('@WebMessages.RegisteredMessage', 'info', 'fadeout');
+				get_page_list();
+				set_detail_datas(data.id);
+			}
+		}
+
+		// Update success
+		function update_success(data) {
+			loading_animation.end();
+			if (data.result === '@Constants.CONST_RESPONSE_KEY_RESULT_NG') {
+				notification.show(data.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('@WebMessages.UpdatedMessage', 'info', 'fadeout');
+				get_page_list();
+				set_detail_datas(data.id);
+			}
+		}
+
+		// Delete ok
+		function delete_ok(data) {
+			if (data.result === '@Constants.CONST_RESPONSE_KEY_RESULT_NG') {
+				notification.show(data.msg, 'warning', 'fadeout');
+			} else {
+				notification.show('@WebMessages.DeletedMessage', 'info', 'fadeout');
+				get_page_list();
+				list.close();
+				$("#search_keyword").removeClass("placeholder-display-none");
+			}
+		}
+
+		// Sort axis name
+		function axis_name_sort_table() {
+			setTimeout(function () {
+				$(".feature-selected-item-list-body").each(function () {
+					var elements = $(this);
+					elements.each(function () {
+						$(this).sortable({
+							start: function (e, ui) {
+								ui.placeholder.height(ui.item.height());
+							},
+							handle: ".list-col-drag",
+							axis: "y",
+							placeholder: "ui-state-highlight",
+							update: function (e, ui) {
+								moveAfterAxisNameList = $(this).sortable("toArray", { attribute: 'axisNameId' });
+								change_axis_name_view_model(moveAfterAxisNameList);
+							}
+						});
+					});
+				});
+			}, 200);
+		}
+
+		// To error
+		function to_error() {
+			window.location.href = '@this.Url.Action(string.Empty, Constants.CONTROLLER_W2CMS_MANAGER_ERROR, new { ErrorPageLayout = Constants.LAYOUT_PATH_DEFAULT, })';
+		}
+	})();
+
+	scoreAxisListPage.ini();
+	keyword_ini();
+
+	// Keyword form initialization
+	function keyword_ini() {
+		$('#search_keyword').off("keydown").on("keydown", function (e) {
+			if ((e.which && e.which === 13) || (e.keyCode && e.keyCode === 13)) {
+				$('#search_keyword').blur();
+				scoreAxisListPage.get_page_list();
+				$('#search_keyword').focus();
+				return false;
+			}
+			return true;
+		});
+	};
+</script>

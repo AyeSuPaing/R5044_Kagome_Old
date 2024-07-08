@@ -1,0 +1,919 @@
+﻿@*
+=========================================================================================================
+  Module      : ページ管理 ページ詳細(パーシャルビュー)(_MainContentDetail.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Design
+@using w2.App.Common.Util
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.Common
+@using w2.Cms.Manager.Codes.PageDesign
+@model w2.Cms.Manager.ViewModels.PageDesign.PageDetailViewModel
+
+@* パーツ配置編集備考欄 PC *@
+@helper PartsEditRemarksPc()
+{
+	<div class="bottom-notes">
+		<p>備考</p>
+		<p>■ファイル内の配置箇所について</p>
+		<p>・ページ上部</p>
+		<code>
+			<%-- ▽ユーザーコントロール宣言領域▽ --%><br>
+			<%-- △ユーザーコントロール宣言領域△ --%>
+		</code>
+		<p>・左サイドバー</p>
+		<code>
+			<%-- ▽レイアウト領域：レフトエリア▽ --%><br>
+			<%-- △レイアウト領域△ --%>
+		</code> 
+		<p>・右サイドバー</p>
+		<code>
+			<%-- ▽レイアウト領域：ライトエリア▽ --%><br>
+			<%-- △レイアウト領域△ --%>
+		</code> 
+		<p>・コンテンツ上部</p>
+		<code>
+			<%-- ▽レイアウト領域：トップエリア▽ --%><br>
+			<%-- △レイアウト領域△ --%>
+		</code> 
+		<p>・コンテンツ下部</p>
+		<code>
+			<%-- ▽レイアウト領域：ボトムエリア▽ --%><br>
+			<%-- △レイアウト領域△ --%>
+		</code>
+		<br>aspxファイル内に記載された上記のタグ内に設置されたパーツが配置されます。
+	</div>
+}
+
+@* パーツ配置編集備考欄 SP *@
+@helper PartsEditRemarksSp()
+{
+	<div class="bottom-notes">
+		<p>備考</p>
+		<p>■ファイル内の配置箇所について</p>
+		<p>・ページ上部</p>
+		<code>
+			<%-- ▽ユーザーコントロール宣言領域▽ --%><br>
+			<%-- △ユーザーコントロール宣言領域△ --%>
+		</code>
+		<p>・コンテンツ上部</p>
+		<code>
+			<%-- ▽レイアウト領域：トップエリア▽ --%><br>
+			<%-- △レイアウト領域△ --%>
+		</code> 
+		<p>・コンテンツ下部</p>
+		<code>
+			<%-- ▽レイアウト領域：ボトムエリア▽ --%><br>
+			<%-- △レイアウト領域△ --%>
+		</code>
+		<br>aspxファイル内に記載された上記のタグ内に設置されたパーツが配置されます。
+	</div>
+}
+
+@* コンテンツ編集備考欄 *@
+@helper ContentEditRemarks()
+{
+	<div class="bottom-notes">
+		<p>備考</p>
+		<p>■ファイル内の編集箇所について</p>
+		<code>
+			<%-- ▽編集可能領域：【項目名】▽ --%><br>
+			<%-- △編集可能領域△ --%>
+		</code>
+		<br>aspxファイル内に記載された上記のタグ内に編集内容が反映されます。
+		<br>
+		<p>例) 項目名:コンテンツの場合</p>
+		<code>
+			<%-- ▽編集可能領域：コンテンツ▽ --%><br>
+			<%-- △編集可能領域△ --%>
+		</code>
+	</div>
+}
+
+<div class="main-content-detail-inner">
+<a class="main-content-detail-btn-close"><span class="icon icon-close"></span>閉じる</a>
+@*エラーメッセージ表示*@
+@if ((Model.Input.IsHtmlPage == false) && (Model.IsActionStatusUpdate))
+{
+	var errorMessage = PageDesignUtility.CheckTags(Model.PcRealPage.PhysicalFullPath, Model.SpRealPage.PhysicalFullPath, Model.Input.PcContentInput.NoUse, Model.Input.SpContentInput.NoUse);
+	if (string.IsNullOrEmpty(errorMessage) == false)
+{
+	@*PCサイトのエラーメッセージ表示*@
+	if (Model.Input.PcContentInput.NoUse == false)
+	{
+	<div class="tab-content" id="error-pc" style="border: none; padding: 0; margin: 0;">
+
+		<div class="tab-content" id="error-pc-error-layout" style="border: none; padding: 0; margin: 0; display: none">
+			<div class="main-content-detail-caution-message">
+				<p>@Html.Raw(errorMessage)</p>
+			</div>
+		</div>
+
+		<div class="tab-content" id="error-pc-error-contents" style="border: none; padding: 0; margin: 0; display: none">
+			<div class="main-content-detail-caution-message">
+				<p>@Html.Raw(errorMessage)</p>
+			</div>
+		</div>
+	</div>
+	}
+	@*SPサイトのエラーメッセージ表示*@
+	if (Model.Input.SpContentInput.NoUse == false)
+	{
+	<div class="tab-content"id="error-sp" style="border: none; padding: 0; margin: 0;">
+
+		<div class="tab-content" id="error-sp-error-layout" style="border: none; padding: 0; margin: 0; display: none">
+			<div class="main-content-detail-caution-message">
+				<p>@Html.Raw(errorMessage)</p>
+			</div>
+		</div>
+
+		<div class="tab-content" id="error-sp-error-contents" style="border: none; padding: 0; margin: 0; display: none">
+			<div class="main-content-detail-caution-message">
+				<p>@Html.Raw(errorMessage)</p>
+			</div>
+		</div>
+	</div>
+	}
+}
+}
+@using (Html.BeginForm("UpdateDetailPage", Constants.CONTROLLER_W2CMS_MANAGER_PAGE_DESIGN, new
+{
+}, FormMethod.Post, new
+{
+	Id = "detail_form"
+}))
+{
+	@Html.HiddenFor(model => Model.Input.PageId, new
+{
+	Name = "Input.PageId"
+})
+	@Html.HiddenFor(model => Model.Input.PageType, new
+{
+	Name = "Input.PageType"
+})
+	@Html.HiddenFor(model => Model.Input.SourcePageId, new
+	{
+		Name = "Input.SourcePageId"
+	})
+@Html.HiddenFor(model => Model.Input.IsPc, new
+{
+	Name = "Input.IsPc",
+	Value = true,
+})
+	<div class="main-content-detail-head">
+		<div class="main-content-detail-head-title h2">
+			@if (Model.Input.IsCustomPage || Model.Input.IsHtmlPage)
+   {
+				@Html.TextBoxFor(model => model.Input.ManagementTitle, new
+{
+	Name = "Input.ManagementTitle",
+	Placeholder = "管理用ページ名を入力してください（必須）"
+})
+   }
+   else
+   {
+				@Model.Input.ManagementTitle
+   }
+		</div>
+		<div class="main-content-detail-head-main-actions">
+			@if (Model.Input.IsCustomPage)
+   {
+				<div class="form-element-group form-element-group-horizontal">
+					<div class="form-element-group-title">
+						@Html.Label("form-select-page-status", "状態")
+					</div>
+					<div class="form-element-group-content">
+						@Html.DropDownListFor(model => model.Input.Publish, Model.PublishItems, new
+ {
+	 Id = "form-select-page-status",
+	 Name = "Input.Publish"
+ })
+					</div>
+				</div>
+   }
+			@if (Model.Input.IsHtmlPage == false)
+   {
+			<a href="javascript:preview()" class="btn btn-txt btn-size-m">プレビュー</a>
+   }
+			@if (Model.IsActionStatusUpdate)
+   {
+				<input type="button" class="btn btn-main btn-size-l"  onclick="mail_content_detail_update_code_diff_check()"  value="更新">
+   }
+			@if (Model.IsActionStatusInsert || Model.IsActionStatusCopyInsert)
+   {
+				<input type="button" class="btn btn-main btn-size-l" onclick="page_main_content_detail_register()" value="登録">
+   }
+			@if (Model.Input.IsHtmlPage == false)
+   {
+			<div class="dropdown">
+				<a href="javascript:void(0)" class="btn-dot-menu dropdown-toggle">
+					<span class="icon-dots"></span>
+				</a>
+				<div class="dropdown-menu">
+					@if (Model.Input.IsCustomPage && Model.IsActionStatusUpdate)
+	 {
+						<a class="dropdown-menu-item" href="javascript:open_custom_page_copy(@Model.Input.PageId)">複製して新規作成する</a>
+						<a class="dropdown-menu-item" href="javascript:delete_custom_page(@Model.Input.PageId)">削除する</a>
+	 }
+					@if (Model.IsActionStatusUpdate)
+	 {
+						<a class="dropdown-menu-item" href="javascript:void(0);" onclick="modal.open('#modal_auto_backup_list', 'modal-size-m', '');get_page_backup_list();">復元する</a>
+	 }
+					<a class="dropdown-menu-item" href="javascript:page_main_content_detail_reset(@Model.Input.PageId)">リセットする</a>
+				</div>
+			</div>
+   }
+		</div>
+	</div>
+	<div class="main-content-detail-body">
+	<div class="group-select">
+		<div class="form-element-group form-element-group-horizontal">
+			<div class="form-element-group-title">
+				@Html.Label("group-select", "グループ")
+			</div>
+			<div class="form-element-group-content">
+				<span class="custom-select">
+					@Html.DropDownListFor(model => model.Input.GroupId, Model.GroupItems, new
+{
+	Id = "group-select",
+	Name = "Input.GroupId"
+})
+				</span>
+			</div>
+		</div>
+		<a href="javascript:void(0)" class="group-select-add-group-trigger btn btn-txt btn-size-s">グループを作成する</a>
+		<div class="group-select-add-group-bg"></div>
+		<div class="group-select-add-group-form">
+			<div class="group-select-add-group-form-title">グループを作成する</div>
+			<div class="group-select-add-group-form-input-wrap">
+				@Html.TextBox("Input.GroupName", "グループ名", new
+{
+	id = "form-list-group-name-detail",
+	Class = "group-select-add-group-form-input w60",
+	Placeholder = "グループ名"
+})
+				<a href="javascript:group_add('form-list-group-name-detail');" class="group-select-add-group-submit btn btn-main btn-size-m">追加する</a>
+			</div>
+			<div class="group-select-add-group-form-exist-list">
+				@foreach (var groupItem in Model.GroupItems)
+	{
+					<span class="group-select-add-group-form-exist-list-item">@groupItem.Text</span>
+	}
+			</div>
+		</div>
+	</div>
+
+	<div class="form-element-group form-element-group-horizontal">
+		<div class="form-element-group-title">
+			<label for="form-input-002">URL</label>
+		</div>
+		<div class="form-element-group-content">
+			<div class="page-url">
+				<span class="page-url-value">
+					@if (Model.Input.IsHtmlPage)
+	 {
+						<a href="javascript:void(0)" onclick="open_front_page()">
+							@PageDesignUtility.WebTargetPageUrl(Model.PcRealPage.PageDirPath, "")<span class="page-url-value-filename">@Model.Input.FileNameNoExtension</span>.html
+						</a>
+	 }
+	 else
+	 {
+						<a href="javascript:void(0)" onclick="open_front_page()">
+							@PageDesignUtility.WebTargetPageUrl(Model.PcRealPage.PageDirPath, "")<span class="page-url-value-filename">@Model.Input.FileNameNoExtension</span>.aspx
+						</a>
+	 }
+				</span>
+				<span class="page-url-value-form">
+					@Model.PcDirPath
+					@Html.TextBoxFor(model => model.Input.FileNameNoExtension, new
+{
+	Name = "",
+	Class = "page-url-value-form-input"
+})
+					@Html.HiddenFor(model => model.Input.FileNameNoExtension, new
+{
+	Id = "input-file-name-hidden",
+	Class = "page-url-value-form-input-hidden",
+	Name = "Input.FileNameNoExtension",
+})
+					@if (Model.Input.IsHtmlPage)
+	 {
+						<span>@DesignCommon.HTML_FILE_EXTENSION</span>
+	 }
+	 else
+	 {
+						<span>@DesignCommon.PAGE_FILE_EXTENSION</span>
+	 }
+					<input type="button" class="btn btn-main btn-size-s page-url-edit-submit" value="OK">
+					<input type="button" class="btn btn-sub btn-size-s page-url-edit-cancel" value="キャンセル">
+				</span>
+				<span class="page-url-btns">
+					@if (Model.Input.IsCustomPage || Model.Input.IsHtmlPage)
+	 {
+						<button type="button" class="btn btn-sub btn-size-s page-url-edit-trigger">編集</button>
+	 }
+					<button id="url-copy-btn" type="button" class="btn btn-sub btn-size-s">URLコピー</button>
+				</span>
+			</div>
+		</div>
+	</div>
+
+	@if (Model.Input.IsCustomPage)
+ {
+		@Html.Partial("_ReleaseRangeSetting", Model.Input.ReleaseRangeSettingInput)
+
+		if (Constants.SEOTAGDISPSETTING_OPTION_ENABLED)
+		{
+			<div class="form-element-group form-element-group-horizontal-grid form-element-group-feature">
+				<div class="form-element-group-title">
+					@Html.Label("input-pc-description", "SEOディスクリプション")
+				</div>
+				<div class="form-element-group-content">
+					@Html.TextBoxFor(model => model.Input.MetadataDesc, new
+					{
+						Id = "input-pc-description",
+						Name = "Input.MetadataDesc",
+						Class = "w100",
+						Placeholder = "SEOディスクリプションを入力してください"
+					})
+				</div>
+			</div>
+		}
+		else
+		{
+			<div style="display: none;">
+				@Html.TextBoxFor(model => model.Input.MetadataDesc, new
+				{
+					value = "",
+				})
+			</div>
+		}
+ }
+		
+	@if (Model.Input.IsHtmlPage == false)
+ {
+		<div class="form-element-group form-element-group-horizontal-grid">
+			<div class="form-element-group-title">
+				サイト
+			</div>
+			<div class="form-element-group-content">
+				<div class="tabs tabs-site-select">
+					<div class="tabs-tab" id="tab_pc">
+						<a href="javascript:void(0)" class="tab is-active" data-tab-content-selector="#tab-pc,#error-pc" onclick="$('input[name=&quot;Input.IsPc&quot;]').val('True');">
+							@Html.Raw((DesignCommon.UseResponsive) ? "RESPONSIVE" : "PC")
+						</a>
+					</div>
+					@if (DesignCommon.UseSmartPhone && ((Model.IsActionStatusInsert || Model.IsActionStatusCopyInsert) || Model.SpRealPage.Existence == RealPage.ExistStatus.Exist))
+	 {
+						<div class="tabs-tab" id="tab_sp">
+							<a href="javascript:void(0)" class="tab" data-tab-content-selector="#tab-sp,#error-sp" onclick="$('input[name=&quot;Input.IsPc&quot;]').val('False');">SP</a>
+						</div>
+	 }
+				</div>
+			</div>
+		</div>
+ }
+
+	<div id="tab-pc" class="main-content-detail-site">
+	@if (Model.Input.IsCustomPage && DesignCommon.UseSmartPhone)
+ {
+		<div class="page-layout-template-active-selector">
+			<input id="page-layout-template-active-selector-pc"
+					name="Input.PcContentInput.NoUse"
+					data-val="true"
+					data-val-required="NoUsePc フィールドが必要です。"
+					type="checkbox"
+					value="true">
+			@Html.Label("page-layout-template-active-selector-pc", "使用しない")
+		</div>
+ }
+	
+	<div class="page-layout-template-active-selector">
+	@if (Model.Input.IsCustomPage)
+ {
+		<div class="htmltitle form-element-group form-element-group-horizontal-grid">
+			<div class="form-element-group-title">
+				@Html.Label("input-pc-pagetitle", "HTMLページタイトル")<span class="notice">*</span>
+			</div>
+			<div class="form-element-group-content">
+				@Html.TextBoxFor(model => model.Input.PcContentInput.PageTitle, new
+{
+	Id = "input-pc-pagetitle",
+	Name = "Input.PcContentInput.PageTitle",
+	Class = "w100",
+	Placeholder = "HTMLページタイトルを入力してください"
+})
+			</div>
+		</div>
+ }
+	</div>
+	
+	@if (Model.Input.IsHtmlPage)
+ {
+		<!-- PC -->
+		<div class="tabs">
+			<div class="tabs-tab">
+				<a href="javascript:void(0)" class="tab is-active" data-tab-content-selector="#tab-pc-contents-content,#error-pc-error-contents">コンテンツ編集</a>
+			</div>
+		</div>
+		<div class="tab-contents">
+			<div class="tab-content" id="tab-pc-contents-content">
+				@* コンテンツ編集 *@
+				@{ var i = 0; }
+				@foreach (var content in Model.Input.PcContentInput.Content)
+	{
+		var codeEditorId = "codeEditorId" + i;
+		var codeEditorHideAreaId = "codeEditorHideAreaId" + i;
+		var codeEditorBeforeHideAreaId = "codeEditorBeforeHideAreaId" + i;
+		var codeEditorResizeBtnId = "codeEditorResizeBtnId" + i;
+					<script type="text/javascript">
+						$(function () {
+							set_ace_code_editor("@codeEditorId", "@codeEditorHideAreaId", "@codeEditorResizeBtnId");
+							pc_diff.addModel("@content.Key", "@codeEditorBeforeHideAreaId", "@codeEditorHideAreaId");
+						});
+					</script>
+					<div class="form-element-group form-element-group-vertical">
+						<div class="form-element-group-title">
+							<label>@content.Key</label>
+						</div>
+						<div class="form-element-group-content">
+							<div id="@codeEditorId" class="codeeditor">@content.Value</div>
+							@Html.HiddenFor(model => content.Key, new
+  {
+	  Name = "Input.PcContentInput.Content[" + i + "].Key",
+  })
+							@Html.TextAreaFor(model => content.Value, new
+  {
+	  Name = "Input.PcContentInput.Content[" + i + "].Value",
+	  Id = codeEditorHideAreaId,
+	  style = "display: none;"
+  })
+							@Html.TextAreaFor(model => content.Value, new
+  {
+	  Id = codeEditorBeforeHideAreaId,
+	  style = "display: none;"
+  })
+							<button class="btn btn-size-m btn-main editor-resize-btn" type="button" id="@codeEditorResizeBtnId">拡大</button>
+						</div>
+					</div>
+		i++;
+	}
+			</div>
+		</div>
+		<!-- /PC -->
+ }
+ else
+ {
+		<!-- PC -->
+		<div class="tabs">
+			<div class="tabs-tab">
+				<a href="javascript:void(0)" class="tab is-active" data-tab-content-selector="#tab-pc-layout-content,#error-pc-error-layout">レイアウト編集</a>
+			</div>
+			<div class="tabs-tab">
+				<a href="javascript:void(0)" class="tab" data-tab-content-selector="#tab-pc-contents-content,#error-pc-error-contents">コンテンツ編集</a>
+			</div>
+		</div>
+		<div class="tab-contents">
+			<div class="tab-content" id="tab-pc-layout-content">
+				<!-- レイアウト編集 PC -->
+				@Html.Partial("_LayoutEditPc", Model.LayoutEditViewModelPc)
+				@PartsEditRemarksPc()
+			</div>
+			<div class="tab-content" id="tab-pc-contents-content">
+				@* コンテンツ編集 *@
+				@{ var i = 0; }
+				@foreach (var content in Model.Input.PcContentInput.Content)
+	{
+		var codeEditorId = "codeEditorId" + i;
+		var codeEditorHideAreaId = "codeEditorHideAreaId" + i;
+		var codeEditorBeforeHideAreaId = "codeEditorBeforeHideAreaId" + i;
+		var codeEditorResizeBtnId = "codeEditorResizeBtnId" + i;
+					<script type="text/javascript">
+						$(function() {
+							set_ace_code_editor("@codeEditorId", "@codeEditorHideAreaId", "@codeEditorResizeBtnId");
+							pc_diff.addModel("@content.Key", "@codeEditorBeforeHideAreaId", "@codeEditorHideAreaId");
+						});
+					</script>
+					<div class="form-element-group form-element-group-vertical">
+						<div class="form-element-group-title">
+							<label>@content.Key</label>
+						</div>
+						<div class="form-element-group-content">
+							<div id="@codeEditorId" class="codeeditor">@content.Value</div>
+							@Html.HiddenFor(model => content.Key, new
+  {
+	  Name = "Input.PcContentInput.Content[" + i + "].Key",
+  })
+							@Html.TextAreaFor(model => content.Value, new
+  {
+	  Name = "Input.PcContentInput.Content[" + i + "].Value",
+	  Id = codeEditorHideAreaId,
+	  style = "display: none;"
+  })
+							@Html.TextAreaFor(model => content.Value, new
+  {
+	  Id = codeEditorBeforeHideAreaId,
+	  style = "display: none;"
+  })
+							<button class="btn btn-size-m btn-main editor-resize-btn" type="button" id="@codeEditorResizeBtnId">拡大</button>
+						</div>
+					</div>
+		i++;
+	}
+
+				<div class="bottom-notes">
+					<dl>
+						<dt>作成日</dt>
+						<dd>@DateTimeUtility.ToStringForManager(Model.PcRealPage.CreateDate, DateTimeUtility.FormatType.ShortDateHourMinuteSecond2Letter)</dd>
+						<dt>更新日</dt>
+						<dd>@DateTimeUtility.ToStringForManager(Model.PcRealPage.UpdateDate, DateTimeUtility.FormatType.ShortDateHourMinuteSecond2Letter)</dd>
+						<dt>最終更新者</dt>
+						<dd>@Model.PcRealPage.LastChange</dd>
+					</dl>
+				</div>
+
+				@ContentEditRemarks()
+
+			</div>
+		</div>
+		<!-- /PC -->
+ }
+	</div>
+	<div id="tab-sp" class="main-content-detail-site" style="display: none;">
+	@if (Model.Input.IsCustomPage)
+ {
+		<div class="page-layout-template-active-selector">
+			<input id="page-layout-template-active-selector-sp"
+					name="Input.SpContentInput.NoUse"
+					data-val="true"
+					data-val-required="NoUseSp フィールドが必要です。"
+					type="checkbox"
+					value="true">
+			@Html.Label("page-layout-template-active-selector-sp", "使用しない")
+		</div>
+ }
+	<div class="page-layout-template-active-selector">
+		@if (Model.Input.IsCustomPage)
+  {
+			<div class="htmltitle form-element-group form-element-group-horizontal-grid">
+				<div class="form-element-group-title">
+					@Html.Label("input-sp-pagetitle", "HTMLページタイトル")<span class="notice">*</span>
+				</div>
+				<div class="form-element-group-content">
+					@Html.TextBoxFor(model => model.Input.SpContentInput.PageTitle, new
+{
+	Id = "input-sp-pagetitle",
+	Name = "Input.SpContentInput.PageTitle",
+	Class = "w100",
+	Placeholder = "HTMLページタイトルを入力してください"
+})
+				</div>
+			</div>
+  }
+	</div>
+
+	@if (Model.Input.IsHtmlPage == false)
+ {
+	<!-- SP -->
+	<div class="tabs">
+		<div class="tabs-tab">
+			<a href="javascript:void(0)" class="tab is-active" data-tab-content-selector="#tab-sp-layout-content,#error-sp-error-layout">レイアウト編集</a>
+		</div>
+		<div class="tabs-tab">
+			<a href="javascript:void(0)" class="tab" data-tab-content-selector="#tab-sp-contents-content,#error-sp-error-contents">コンテンツ編集</a>
+		</div>
+	</div>
+	<div class="tab-contents">
+		<div class="tab-content" id="tab-sp-layout-content">
+			<!-- レイアウト編集 SP -->
+			@Html.Partial("_LayoutEditSp", Model.LayoutEditViewModelSp)
+			@PartsEditRemarksSp()
+		</div>
+		<div class="tab-content" id="tab-sp-contents-content">
+			@* コンテンツ編集 *@
+			@{ var j = 0; }
+			@foreach (var content in Model.Input.SpContentInput.Content)
+   {
+	   var codeEditorIdSp = "codeEditorIdSp" + j;
+	   var codeEditorHideAreaIdSp = "codeEditorHideAreaIdSp" + j;
+	   var codeEditorBeforeHideAreaIdSp = "codeEditorBeforeHideAreaIdSp" + j;
+	   var codeEditorResizeBtnIdSp = "codeEditorResizeBtnIdSp" + j;
+				<script type="text/javascript">
+					$(function() {
+						set_ace_code_editor("@codeEditorIdSp", "@codeEditorHideAreaIdSp", "@codeEditorResizeBtnIdSp");
+						sp_diff.addModel("@content.Key", "@codeEditorBeforeHideAreaIdSp", "@codeEditorHideAreaIdSp");
+					});
+				</script>
+				<div class="form-element-group form-element-group-vertical">
+					<div class="form-element-group-title">
+						<label>@content.Key</label>
+					</div>
+					<div class="form-element-group-content">
+						<div id="@codeEditorIdSp" class="codeeditor">@content.Value</div>
+						@Html.HiddenFor(model => content.Key, new
+ {
+	 Name = "Input.SpContentInput.Content[" + j + "].Key"
+ })
+						@Html.TextAreaFor(model => content.Value, new
+ {
+	 Name = "Input.SpContentInput.Content[" + j + "].Value",
+	 Id = codeEditorHideAreaIdSp,
+	 style = "display: none;"
+ })
+						@Html.TextAreaFor(model => content.Value, new
+ {
+	 Id = codeEditorBeforeHideAreaIdSp,
+	 style = "display: none;"
+ })
+						<button class="btn btn-size-m btn-main editor-resize-btn" type="button" id="@codeEditorResizeBtnIdSp">拡大</button>
+					</div>
+				</div>
+	   j++;
+   }
+			<div class="bottom-notes">
+				<dl>
+					<dt>作成日</dt>
+					<dd>@DateTimeUtility.ToStringForManager(Model.SpRealPage.CreateDate, DateTimeUtility.FormatType.ShortDateHourMinuteSecond2Letter)</dd>
+					<dt>更新日</dt>
+					<dd>@DateTimeUtility.ToStringForManager(Model.SpRealPage.UpdateDate, DateTimeUtility.FormatType.ShortDateHourMinuteSecond2Letter)</dd>
+					<dt>最終更新者</dt>
+					<dd>@Model.SpRealPage.LastChange</dd>
+				</dl>
+			</div>
+
+			@ContentEditRemarks()
+
+		</div>
+	</div>
+	<!-- /SP -->
+ }
+	</div>
+	</div>
+}
+
+</div>
+
+<div id="parts_modal_content_detail"></div>
+
+<script type="text/javascript">
+	$(function() {
+		height_fit.ini();
+		custom_scroll.ini();
+		tab.ini();
+		page_url_edit.ini();
+		page.ini();
+		parts.ini();
+		list.ini();
+		dropdown_toggle.ini();
+		use_device_check_ini();
+		tab_layout_ini();
+		var pageId = "@this.Model.Input.PageId";
+		history.replaceState("", "", "#page" + pageId);
+	});
+
+	/**
+	* PCコード差分
+	*/
+	var pc_diff = new diff_main_content_model("PC");
+	/**
+	 * SPコード差分
+	 */
+	var sp_diff = new diff_main_content_model("SP");
+
+	/**
+	 * コード差分チェック
+	 */
+	function mail_content_detail_update_code_diff_check() {
+		checkOtherOperatorFileOpening('pageId' + '@Model.Input.PageId').done(function (result) {
+			if (result !== "") {
+				notification.show(result, 'warning', 'fixed');
+			} else {
+				$('#modal-inner-diff-content-code-inner').html(null);
+				$('#modal-inner-diff-content-code-inner').append("<div id=\"modal-diff-content-show-pc\" style=\"display: inline-block; vertical-align: top; width: 48%; padding-right: 1.5%\"></div>");
+				var pc_result = pc_diff.diffHtml('modal-diff-content-show-pc', ($('input[name="Input.IsPc"]').val() === 'True'));
+				$('#modal-inner-diff-content-code-inner').append("<div id=\"modal-diff-content-show-sp\" style=\"display: inline-block; vertical-align: top; width: 50%\"></div>");
+				var sp_result = sp_diff.diffHtml('modal-diff-content-show-sp', ($('input[name="Input.IsPc"]').val() === 'False'));
+				if (pc_result || sp_result) {
+					setTimeout(function () {
+							custom_scroll.ini();
+							$('#modal-diff-content-code-update-btn').off('click').on('click', function () {
+								modal.close();
+								page_main_content_detail_update();
+							});
+							modal.open('#modal-diff-content-code', 'modal-size-l', '');
+						},
+						500);
+				} else {
+					page_main_content_detail_update();
+				}
+			}
+		});
+	}
+
+	/**
+	 * 詳細エリアフォームの入力データ取得
+	 * returns {} 入力データ 
+	 */
+	function get_main_content_detail_date() {
+		var form = $('#detail_form').get(0);
+		var formData = new FormData(form);
+		@if (this.Model.Input.IsHtmlPage == false)
+  {
+			@:set_pc_layout_form_data(formData);
+			@:set_sp_layout_form_data(formData);
+		}
+		return formData;
+	}
+
+	/**
+	* ページ詳細更新
+	*/
+	function page_main_content_detail_update() {
+		loading_animation.start();
+		var isPc = $('input[name="Input.IsPc"]').val();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("UpdateDetailPage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PAGE_DESIGN)",
+			data: get_main_content_detail_date(),
+			processData: false,
+			contentType: false
+		}).done(function(errorMessage) {
+			setTimeout(function() { loading_animation.end(); }, 200);
+			// 警告表示を削除
+			$('.notification-message-warning').remove();
+			if (errorMessage === "") {
+				group_list_redraw();
+				open_page(@Model.Input.PageId);
+				notification.show((isPc === 'True' ? 'PC：ページを更新しました。' : 'SP：ページを更新しました。'), 'info', 'fadeout');
+			} else {
+				notification.show(errorMessage, 'warning', 'fixed');
+			}
+		}).fail(function() {
+		});
+	}
+
+	/**
+	* ページ登録
+	*/
+	function page_main_content_detail_register() {
+		loading_animation.start();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("RegisterDetailPage", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PAGE_DESIGN)",
+			data: get_main_content_detail_date(),
+			processData: false,
+			contentType: false
+		}).done(function (data) {
+			setTimeout(function () { loading_animation.end(); }, 200);
+			// 警告表示を削除
+			$('.notification-message-warning').remove();
+			if (data.errorMessage === "") {
+				group_list_redraw();
+				open_page(data.pageId)
+				notification.show('ページを新規登録しました。', 'info', 'fadeout');
+			} else {
+				notification.show(data.errorMessage, 'warning', 'fixed');
+			}
+		}).fail(function () {
+		});
+	}
+
+
+	/**
+	 * リセット
+	 * param {} pageId 対象ページID
+	 */
+	function page_main_content_detail_reset(pageId) {
+		if (pageId == '@PageDesignUtility.NEW_PAGE_DEFAULT_PAGE_ID') {
+			open_new_custom_page();
+		} else {
+			open_page(pageId);
+		}
+	}
+
+	/**
+	 * コピー新規
+	 * param {} pageId コピー対象ページID
+	 */
+	function open_custom_page_copy(pageId) {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("MainContentDetailCopy", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PAGE_DESIGN)",
+			data: { 'pageId': pageId }
+		}).done(function(viewHTML) {
+			group_list_redraw();
+			open_main_content_detail_success(viewHTML);
+		}).fail(function() {
+		});
+	}
+
+	/**
+	 * プレビュー表示
+	 */
+	function preview() {
+		loading_animation.start();
+		var url = "";
+		var windowSize = "";
+
+		if ($('.tab.is-active').data('tab-content-selector').indexOf("#tab-pc") !== -1) {
+			url = "@Url.Action("PreviewPc", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PAGE_DESIGN)";
+			windowSize = "";
+		} else {
+			url = "@Url.Action("PreviewSp", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PAGE_DESIGN)";
+			windowSize = "width=450,height=800,scrollbars=yes";
+		}
+		$.ajax({
+			type: "POST",
+			url: url,
+			data: get_main_content_detail_date(),
+			processData: false,
+			contentType: false
+		}).done(function (response) {
+			if (response.errorMessage) {
+				notification.show(response.errorMessage, 'warning', 'fixed');
+			} else {
+				setTimeout(function () {
+					loading_animation.end();
+					open_window(response.url, '_blank', windowSize);
+				}, 1500);
+			}
+			loading_animation.end();
+		}).fail(function() {
+		});
+	}
+
+	/**
+	 * 端末タブ レイアウト初期配置
+	 */
+	function tab_layout_ini() {
+		@* レイアウト初期選択 *@
+		$(".layout-edit-page").each(function() {
+			var layoutEditPage = $(this);
+			layoutEditPage.find(".layout-edit-basic-layout-select-item").each(function() {
+				if (layoutEditPage.find('.basic-layout-select-hidden-input-date').val() ===
+					$(this).data('layout-type')) {
+					$(this).addClass("is-selected");
+					layoutEditPage.find(".layout-edit-page-droparea").addClass($(this).data('layout-classname'));
+				}
+			});
+		});
+	}
+
+	/**
+	 * 各デバイス使用の有無チェックボックス初期配置
+	 */
+	function use_device_check_ini() {
+		@* PCを利用しない場合は使用しないにチェック *@
+		@if (Model.Input.PcContentInput.NoUse)
+  {
+			@Html.Raw("$('#page-layout-template-active-selector-pc').click();")
+  }
+
+		@* SPを利用しない場合は使用しないにチェック *@
+		@if (Model.Input.SpContentInput.NoUse)
+  {
+			@Html.Raw("$('#page-layout-template-active-selector-sp').click();")
+  }
+
+		@* SPのみを利用の場合はデフォルトSP表示 *@
+		@if (Model.Input.PcContentInput.NoUse && (Model.Input.SpContentInput.NoUse == false))
+  {
+			@Html.Raw("$('#tab_sp > a').click();")
+  }
+	}
+
+	/**
+	 * クリップボードコピー コピー内容
+	 * param {} trigger 
+	 * returns {} 
+	 */
+	function clipboard_url_copy(trigger) {
+		return get_front_url();
+	}
+
+	/**
+	 * フロントページ表示
+	 */
+	function open_front_page() {
+		window.open(get_front_url());
+	}
+
+	/**
+	 * フロントURL取得
+	 * returns フロントURL
+	 */
+	function get_front_url() {
+		return "@PageDesignUtility.WebTargetPageUrl(Model.PcRealPage.PageDirPath, "")" +
+			$('#input-file-name-hidden').val() +
+			@if (Model.PcRealPage.PageType == Constants.FLG_PAGEDESIGN_PAGE_TYPE_HTML)
+   {
+				@:'@DesignCommon.HTML_FILE_EXTENSION';
+			}
+   else
+   {
+				@:'@DesignCommon.PAGE_FILE_EXTENSION';
+			}
+	}
+</script>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : モバイルページ系SQLステートメントXML(MobilePage.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Application : w2.Commerce.Batch.ImportPublicity
+  BaseVersion : V5.0
+  Author      : M.Yoshimoto
+  email       : product@w2solution.co.jp
+  Copyright   : Copyright w2solution Co.,Ltd. 2011 All Rights Reserved.
+  URL         : http://www.w2solution.co.jp/
+=========================================================================================================
+PKG-V5.0[PF0118] 2011/04/25 M.Yoshimoto     P0001_NatureLab：パブリシティ取込機能対応
+-->
+<MobilePage>
+  
+  <!-- モバイルページ設定取得 -->
+  <GetMobilePage>
+    <Statement>
+      <![CDATA[      
+        SELECT  *
+          FROM  w2_MobilePage
+         WHERE  dept_id = @dept_id
+           AND  page_id = @page_id
+           AND  brand_id = @brand_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="page_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMobilePage>
+
+  <!-- モバイルページ挿入/更新 (XML反映用) -->
+  <InsertUpdateMobilePage>
+    <Statement>
+      <![CDATA[
+        DECLARE @counts int
+        SELECT  @counts = COUNT(*)
+          FROM  w2_MobilePage
+         WHERE  dept_id = @dept_id
+           AND  page_id = @page_id
+           AND  brand_id = @brand_id
+      
+        IF @counts = 0  
+        BEGIN
+          INSERT  w2_MobilePage
+                  (
+                    dept_id,
+                    page_id,
+                    page_name,
+                    brand_id,
+                    html,
+                    last_changed
+                  )
+          VALUES  (
+                    @dept_id,
+                    @page_id,
+                    @page_name,
+                    @brand_id,
+                    @html,
+                    @last_changed
+                  )
+        END
+        ELSE
+        BEGIN
+          UPDATE  w2_MobilePage
+             SET  html = @html,
+                  date_changed = GETDATE(),
+                  last_changed = @last_changed
+           WHERE  dept_id = @dept_id
+             AND  page_id = @page_id
+             AND  brand_id = @brand_id
+        END
+
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="page_id" Type="nvarchar" Size="30" />
+      <Input Name="html" Type="ntext" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="page_name" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertUpdateMobilePage>
+
+</MobilePage>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+		
+		-- 定期購入商品マスタの明細金額[item_price, item_price_single]カラム削除
+		
+		DECLARE @constname_item_price nvarchar(200)
+		DECLARE @constname_item_price_single nvarchar(200)
+
+		IF EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseItem' AND column_name = 'item_price')
+		BEGIN
+		  SET @constname_item_price = (SELECT name FROM sys.objects 
+			WHERE object_id = (SELECT constid FROM  sysconstraints WHERE id = OBJECT_ID('w2_FixedPurchaseItem') 
+								AND COL_NAME(id,colid) = 'item_price'))
+		  EXEC ('ALTER TABLE [w2_FixedPurchaseItem] DROP CONSTRAINT ' + @constname_item_price + ', COLUMN [item_price]')
+		END
+
+        IF  EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseItem' AND column_name = 'item_price_single')
+		BEGIN
+		 SET @constname_item_price_single = (SELECT name FROM sys.objects 
+			WHERE object_id = (SELECT constid FROM sysconstraints WHERE id = OBJECT_ID('w2_FixedPurchaseItem') 
+								AND COL_NAME(id,colid) = 'item_price_single'))
+		 EXEC ('ALTER TABLE [w2_FixedPurchaseItem] DROP CONSTRAINT ' + @constname_item_price_single + ', COLUMN [item_price_single]')
+		END
+		GO
+		]]>
+    </Statement>
+  </Up>
+</Migration>

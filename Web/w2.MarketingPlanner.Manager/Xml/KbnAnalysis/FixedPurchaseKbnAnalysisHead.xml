@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期購構成分析セッティングXML(FixedPurchaseKbnAnalysisHead.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchaseKbnAnalysisHead>
+
+  <FixedPurchaseFrequencyAnalysis>
+    <Title>定期ステータスによる件数分析</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        -- totalデータ作成
+        DECLARE @total_count decimal
+        SELECT  @total_count = COUNT(fixed_purchase_id)
+          FROM  w2_FixedPurchase
+         WHERE  valid_flg = '1'  -- 有効
+           AND  (
+                  @regular_type = 'all'
+                  OR  (@regular_type = 'fixed_purchase' AND subscription_box_course_id = '') 
+                  OR  (@regular_type = 'subscription_box' AND subscription_box_course_id != '')
+                )
+        -- 分析データ集計
+        SELECT  datas.name,
+                SUM(datas.count) AS count,
+                @total_count AS total
+          FROM  (
+                  (
+                    SELECT  1 AS no,
+                            '通常' AS name,
+                            COUNT(1) AS count
+                      FROM  w2_FixedPurchase
+                     WHERE  fixed_purchase_status = '10'  -- 通常
+                       AND  valid_flg = '1'  -- 有効
+                       AND  (
+                             @regular_type = 'all'
+                             OR  (@regular_type = 'fixed_purchase' AND subscription_box_course_id = '') 
+                             OR  (@regular_type = 'subscription_box' AND subscription_box_course_id != '')
+                           )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  2 AS no,
+                            '頒布会完了' AS name,
+                            COUNT(1) AS count
+                      FROM  w2_FixedPurchase
+                     WHERE  fixed_purchase_status = '14'  -- 頒布会完了
+                       AND  valid_flg = '1'  -- 有効
+                       AND  (
+                              @regular_type = 'all'
+                              OR  (@regular_type = 'subscription_box' AND subscription_box_course_id != '')
+                           )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  3 AS no,
+                            '決済エラー停止' AS name,
+                            COUNT(1) AS count
+                      FROM  w2_FixedPurchase
+                     WHERE  fixed_purchase_status = '11'  -- 決済エラー停止
+                       AND  valid_flg = '1'  -- 有効
+                       AND  (
+                             @regular_type = 'all'
+                             OR  (@regular_type = 'fixed_purchase' AND subscription_box_course_id = '') 
+                             OR  (@regular_type = 'subscription_box' AND subscription_box_course_id != '')
+                           )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  4 AS no,
+                            '在庫切れ停止' AS name,
+                            COUNT(1) AS count
+                      FROM  w2_FixedPurchase
+                     WHERE  fixed_purchase_status = '12'  -- 在庫切れ停止
+                       AND  valid_flg = '1'  -- 有効
+                       AND  (
+                             @regular_type = 'all'
+                             OR  (@regular_type = 'fixed_purchase' AND subscription_box_course_id = '') 
+                             OR  (@regular_type = 'subscription_box' AND subscription_box_course_id != '')
+                           )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  5 AS no,
+                            'その他エラー停止' AS name,
+                            COUNT(1) AS count
+                      FROM  w2_FixedPurchase
+                     WHERE  fixed_purchase_status = '19'  -- その他エラー停止
+                       AND  valid_flg = '1'  -- 有効
+                       AND  (
+                             @regular_type = 'all'
+                             OR  (@regular_type = 'fixed_purchase' AND subscription_box_course_id = '') 
+                             OR  (@regular_type = 'subscription_box' AND subscription_box_course_id != '')
+                           )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  6 AS no,
+                            '解約' AS name,
+                            COUNT(1) AS count
+                      FROM  w2_FixedPurchase
+                     WHERE  fixed_purchase_status = '30'  -- キャンセル
+                       AND  valid_flg = '1'  -- 有効
+                       AND  (
+                             @regular_type = 'all'
+                             OR  (@regular_type = 'fixed_purchase' AND subscription_box_course_id = '') 
+                             OR  (@regular_type = 'subscription_box' AND subscription_box_course_id != '')
+                           )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  7 AS no,
+                            '休止' AS name,
+                            COUNT(1) AS count
+                      FROM  w2_FixedPurchase
+                     WHERE  fixed_purchase_status = '20'  -- 休止
+                       AND  valid_flg = '1'  -- 有効
+                       AND  (
+                             @regular_type = 'all'
+                             OR  (@regular_type = 'fixed_purchase' AND subscription_box_course_id = '') 
+                             OR  (@regular_type = 'subscription_box' AND subscription_box_course_id != '')
+                           )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  8 AS no,
+                            '仮登録' AS name,
+                            COUNT(1) AS count
+                      FROM  w2_FixedPurchase
+                     WHERE  fixed_purchase_status = '01'  -- 仮登録
+                       AND  valid_flg = '1'  -- 有効
+                       AND  (
+                             @regular_type = 'all'
+                             OR  (@regular_type = 'fixed_purchase' AND subscription_box_course_id = '') 
+                             OR  (@regular_type = 'subscription_box' AND subscription_box_course_id != '')
+                           )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  9 AS no,
+                            '仮登録キャンセル' AS name,
+                            COUNT(1) AS count
+                      FROM  w2_FixedPurchase
+                     WHERE  fixed_purchase_status = '31'  -- 仮登録キャンセル
+                       AND  valid_flg = '1'  -- 有効
+                       AND  (
+                             @regular_type = 'all'
+                             OR  (@regular_type = 'fixed_purchase' AND subscription_box_course_id = '') 
+                             OR  (@regular_type = 'subscription_box' AND subscription_box_course_id != '')
+                           )
+                  )
+                ) datas
+        GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="regular_type" Type="nvarchar" Size="30" />
+    </Parameter>
+  </FixedPurchaseFrequencyAnalysis>
+
+</FixedPurchaseKbnAnalysisHead>

@@ -1,0 +1,256 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メール配信マスタ系SQLステートメントXML (MailDist.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<MailDist>
+
+  <!-- メール配信文章取得 -->
+  <GetText>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailDistText
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetText>
+
+  <!-- メール配信文章取得(すべて) -->
+  <GetTextAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailDistText
+         WHERE  dept_id = @dept_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetTextAll>
+
+  <!-- グローバル設定を含めてメール配信文章情報取得 -->
+  <GetMailDistTextContainGlobalSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MailDistText.*
+          FROM  w2_MailDistText
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+                <@@hasval:language_code@@>
+           AND  language_code = @language_code
+                </@@hasval:language_code@@>
+                <@@hasval:language_locale_id@@>
+           AND  language_locale_id = @language_locale_id
+                </@@hasval:language_locale_id@@>
+        UNION ALL
+        SELECT  w2_MailDistTextGlobal.dept_id,
+                w2_MailDistTextGlobal.mailtext_id,
+                w2_MailDistTextGlobal.mailtext_name,
+                w2_MailDistTextGlobal.mailtext_subject,
+                w2_MailDistTextGlobal.mailtext_body,
+                w2_MailDistTextGlobal.mailtext_html,
+                '' AS mailtext_subject_mobile,
+                '' AS mailtext_body_mobile,
+                '' AS mailtext_decome,
+                w2_MailDistTextGlobal.sendhtml_flg,
+                '' AS senddecome_flg,
+                w2_MailDistTextGlobal.mail_from_name,
+                w2_MailDistTextGlobal.mail_from,
+                '' AS mail_cc,
+                '' AS mail_bcc,
+                '' AS mail_attachmentfile_path,
+                '' AS del_flg,
+                w2_MailDistTextGlobal.date_created,
+                w2_MailDistTextGlobal.date_changed,
+                w2_MailDistTextGlobal.last_changed,
+                w2_MailDistTextGlobal.language_code,
+                w2_MailDistTextGlobal.language_locale_id,
+                w2_MailDistTextGlobal.sms_use_flg,
+                '0' AS line_use_flg
+          FROM  w2_MailDistTextGlobal
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+                <@@hasval:language_code@@>
+           AND  language_code = @language_code
+                </@@hasval:language_code@@>
+                <@@hasval:language_locale_id@@>
+           AND  language_locale_id = @language_locale_id
+                </@@hasval:language_locale_id@@>
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetMailDistTextContainGlobalSetting>
+
+  <!-- メール配信文章取得(言語コード指定) -->
+  <GetTextByLanguageCode>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MailDistText.*
+          FROM  w2_MailDistText
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  language_code = @language_code
+           AND  language_locale_id = @language_locale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetTextByLanguageCode>
+
+  <!-- メール配信文章グローバル設定取得 -->
+  <GetTextGlobalSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MailDistTextGlobal.*
+          FROM  w2_MailDistTextGlobal
+                INNER JOIN w2_MailDistText ON
+                (
+                  w2_MailDistText.dept_id = w2_MailDistTextGlobal.dept_id
+                  AND
+                  w2_MailDistText.mailtext_id = w2_MailDistTextGlobal.mailtext_id
+                )
+         WHERE  w2_MailDistTextGlobal.dept_id = @dept_id
+           AND  w2_MailDistTextGlobal.mailtext_id = @mailtext_id
+           AND  w2_MailDistTextGlobal.language_code = @language_code
+           AND  w2_MailDistTextGlobal.language_locale_id = @language_locale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetTextGlobalSetting>
+
+  <!-- メール配信文章グローバル設定登録 -->
+  <InsertTextGlobalSetting>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_MailDistTextGlobal
+                (
+                  dept_id
+                  ,mailtext_id
+                  ,language_code
+                  ,language_locale_id
+                  ,mailtext_name
+                  ,mailtext_subject
+                  ,mailtext_body
+                  ,mailtext_html
+                  ,sendhtml_flg
+                  ,mail_from_name
+                  ,mail_from
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,sms_use_flg
+                )
+        VALUES  (
+                  @dept_id
+                  ,@mailtext_id
+                  ,@language_code
+                  ,@language_locale_id
+                  ,@mailtext_name
+                  ,@mailtext_subject
+                  ,@mailtext_body
+                  ,@mailtext_html
+                  ,@sendhtml_flg
+                  ,@mail_from_name
+                  ,@mail_from
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@sms_use_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="mailtext_name" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_subject" Type="nvarchar" Size="50" />
+      <Input Name="mailtext_body" Type="ntext" />
+      <Input Name="mailtext_html" Type="ntext" />
+      <Input Name="sendhtml_flg" Type="nvarchar" Size="10" />
+      <Input Name="mail_from_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_from" Type="nvarchar" Size="500" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="sms_use_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </InsertTextGlobalSetting>
+
+  <!-- メール配信文章グローバル設定更新 -->
+  <UpdateTextGlobalSetting>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MailDistTextGlobal
+           SET  mailtext_name = @mailtext_name
+                ,mailtext_subject = @mailtext_subject
+                ,mailtext_body = @mailtext_body
+                ,mailtext_html = @mailtext_html
+                ,sendhtml_flg = @sendhtml_flg
+                ,mail_from_name = @mail_from_name
+                ,mail_from = @mail_from
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,sms_use_flg = @sms_use_flg
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  language_code = @language_code
+           AND  language_locale_id = @language_locale_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="mailtext_name" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_subject" Type="nvarchar" Size="50" />
+      <Input Name="mailtext_body" Type="ntext" />
+      <Input Name="mailtext_html" Type="ntext" />
+      <Input Name="sendhtml_flg" Type="nvarchar" Size="10" />
+      <Input Name="mail_from_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_from" Type="nvarchar" Size="500" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="sms_use_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </UpdateTextGlobalSetting>
+
+  <!-- メール配信文章グローバル設定削除 -->
+  <DeleteTextGlobalSetting>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MailDistTextGlobal
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteTextGlobalSetting>
+
+</MailDist>

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+		<Statement>
+      <![CDATA[
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_Coordinate]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+BEGIN
+
+/*
+=========================================================================================================
+  Module      : コーディネートマスタ (w2_Coordinate.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_Coordinate] (
+	[coordinate_id] [nvarchar] (30) NOT NULL,
+	[coordinate_title] [nvarchar] (200) NOT NULL DEFAULT (N''),
+	[coordinate_url] [nvarchar] (2000) NOT NULL DEFAULT (N''),
+	[coordinate_summary] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[internal_memo] [nvarchar] (max) NOT NULL DEFAULT (N''),
+	[staff_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[real_shop_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[html_title] [nvarchar] (200) NOT NULL DEFAULT (N''),
+	[metadata_keywords] [nvarchar] (200) NOT NULL DEFAULT (N''),
+	[metadata_desc] [nvarchar] (200) NOT NULL DEFAULT (N''),
+	[display_kbn] [nvarchar] (20) NOT NULL DEFAULT (N'DRAFT'),
+	[display_date] [datetime],
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_Coordinate] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_Coordinate] PRIMARY KEY  CLUSTERED
+	(
+		[coordinate_id]
+	) ON [PRIMARY]
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_CoordinateCategory]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+BEGIN
+
+/*
+=========================================================================================================
+  Module      : コーディネートカテゴリ (w2_CoordinateCategory.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CoordinateCategory] (
+	[coordinate_category_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[coordinate_parent_category_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[coordinate_category_name] [nvarchar] (40) NOT NULL DEFAULT (N''),
+	[seo_keywords] [nvarchar] (200) NOT NULL DEFAULT (N''),
+	[display_order] [int] NOT NULL DEFAULT (0),
+	[valid_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_CoordinateCategory] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CoordinateCategory] PRIMARY KEY  CLUSTERED
+	(
+		[coordinate_category_id]
+	) ON [PRIMARY]
+
+END
+
+if not exists  (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_CoordinateItem]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+BEGIN
+
+/*
+=========================================================================================================
+  Module      : コーディネートアイテム (w2_CoordinateItem.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_CoordinateItem] (
+	[coordinate_id] [nvarchar] (30) NOT NULL,
+	[item_no] [int] IDENTITY (1, 1) NOT NULL,
+	[item_kbn] [nvarchar] (15) NOT NULL DEFAULT (N''),
+	[item_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[item_id2] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[item_name] [nvarchar] (100) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar](20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_CoordinateItem] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_CoordinateItem] PRIMARY KEY  CLUSTERED
+	(
+		[coordinate_id],
+		[item_no]
+	) ON [PRIMARY]
+
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_Staff]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+BEGIN
+
+/*
+=========================================================================================================
+  Module      : スタッフ (w2_Staff.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_Staff] (
+	[staff_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[staff_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[staff_profile] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[staff_height] [int] NOT NULL DEFAULT (0),
+	[staff_instagram_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[staff_sex] [nvarchar] (10) NOT NULL DEFAULT (N'UNKNOWN'),
+	[model_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0'),
+	[operator_id] [nvarchar] (20) NOT NULL DEFAULT (N''),
+	[real_shop_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[valid_flg] [nvarchar] (1) NOT NULL DEFAULT (N'1'),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+	[last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_Staff] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_Staff] PRIMARY KEY  CLUSTERED
+	(
+		[staff_id]
+	) ON [PRIMARY]
+
+CREATE INDEX [IX_w2_Staff_1] ON [dbo].[w2_Staff]([staff_height]) ON [PRIMARY]
+
+END
+
+if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_ContentsTag]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+BEGIN
+
+/*
+=========================================================================================================
+  Module      : コンテンツタグ (w2_ContentsTag.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_ContentsTag] (
+	[contents_tag_id] [bigint] IDENTITY (1, 1) NOT NULL,
+	[contents_tag_name] [nvarchar] (50) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate()),
+	[date_changed] [datetime] NOT NULL DEFAULT (getdate())
+) ON [PRIMARY]
+
+ALTER TABLE [dbo].[w2_ContentsTag] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_ContentsTag] PRIMARY KEY  CLUSTERED
+	(
+		[contents_tag_id]
+	) ON [PRIMARY]
+
+END
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

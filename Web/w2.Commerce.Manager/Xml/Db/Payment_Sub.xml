@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 決済種別系SQLサブステートメントXML(Payment_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<Payment_Sub>
+
+  <!-- 決済種別情報一覧取得用WHERE文 -->
+  <PAYMENT_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_Payment.shop_id = @shop_id 
+           AND  ('1' = @AmazonPaymentOption OR w2_Payment.payment_id NOT IN(@AmazonPaymentID, @AmazonPaymentCV2ID))
+           AND  ('1' = @AmazonPaymentCV2Enabled OR w2_Payment.payment_id <> @AmazonPaymentCV2ID)
+           AND  ('0' = @AmazonPaymentCV2Enabled OR w2_Payment.payment_id <> @AmazonPaymentID)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="AmazonPaymentOption" Type="nvarchar" Size="1" />
+      <Input Name="AmazonPaymentCV2Enabled" Type="nvarchar" Size="1" />
+      <Input Name="AmazonPaymentID" Type="nvarchar" Size="10" />
+      <Input Name="AmazonPaymentCV2ID" Type="nvarchar" Size="10" />
+    </Parameter>
+  </PAYMENT_SEARCH_WHERE>
+
+  <!-- 決済種別情報一覧取得用ORDER_BY -->
+  <PAYMENT_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_Payment.display_order ASC, w2_Payment.payment_id ASC
+      ]]>
+    </Statement>
+  </PAYMENT_SEARCH_ORDER_BY>
+
+</Payment_Sub>

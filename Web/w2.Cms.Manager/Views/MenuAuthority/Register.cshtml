@@ -1,0 +1,172 @@
+﻿@*
+=========================================================================================================
+  Module      : メニュー権限設定登録ページ(Register.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@{
+	ViewBag.Title = "メニュー権限設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+	var sessionWrapper = new SessionWrapper(this.Session);
+}
+@model w2.Cms.Manager.ViewModels.MenuAuthority.RegisterViewModel
+@helper TopButtomControls()
+{
+	<input onclick="javascript: history.back();" type="button" value="  戻る  " class="btn btn-main"/>
+	if (this.Model.IsActionStatusInsert)
+	{
+		<input type="button" value="  確認する  " class="btn btn-main" onclick="return validate('confirm', { name: 'Input.IsInsert', value: true });">
+	}
+	if (this.Model.IsActionStatusUpdate)
+	{
+		<input type="button" value="  確認する  " class="btn btn-main" onclick="return validate('confirm', { name: 'Input.IsInsert', value: false });">
+	}
+	<input type="submit" name="Confirm" id="confirm" style="display: none;">
+}
+
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<!--▽ タイトル ▽-->
+	<tr><td><h1 class="page-title">メニュー権限設定</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	<tr>
+		<td>
+			<h2 class="cmn-hed-h2">
+				メニュー権限設定
+				@if (this.Model.IsActionStatusInsert)
+				{
+					@:登録
+				}
+				@if (this.Model.IsActionStatusUpdate)
+				{
+					@:編集
+				}
+			</h2>
+		</td>
+	</tr>
+	<!--△ タイトル △-->
+	<!--▽ 編集入力 ▽-->
+	<tr>
+	<td>
+		<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+			<tr>
+				<td>
+					<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+						<tr>
+							<td align="center">
+								<table cellspacing="0" cellpadding="0" border="0">
+									<tr>
+										<td>
+											@using (Html.BeginForm(
+												"Register",
+												Constants.CONTROLLER_W2CMS_MANAGER_MENU_AUTHORITY,
+												new
+												{
+													this.Model.ActionStatus,
+												},
+												FormMethod.Post,
+												new { name = "Register", Id = "input_form"}))
+											{
+												@Html.Hidden(Constants.REQUEST_KEY_SHOP_ID, sessionWrapper.LoginOperator.ShopId)
+												<div class="action_part_top">
+													@TopButtomControls()
+												</div>
+												<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+													<tr>
+														<td class="edit_title_bg" align="center" width="30%">メニュー権限名<span class="notice">*</span></td>
+														<td class="edit_item_bg" align="left">
+															@Html.TextBoxFor(m => m.Input.Name, new { maxlength = "20", style = "width: 400px" })
+															@Html.HiddenFor(m => m.Input.MenuAuthorityLevel)
+														</td>
+													</tr>
+												</table>
+												<div style="padding: 20px 0"><input type="checkbox" name="checkAll" id="checkAll" value="checkAll"><span >一括選択</span></div>
+												<table class="list_table" cellspacing="1" cellpadding="3" width="758" border="0">
+													@for (var mlIndex = 0; mlIndex < Model.Input.MenuLarges.Length; mlIndex++)
+													{
+														<tr>
+															<td align="left" class="edit_title_bg" colspan="3">
+																@Model.Input.MenuLarges[mlIndex].Name
+																@Html.HiddenFor(m => m.Input.MenuLarges[mlIndex].Name)
+															</td>
+														</tr>
+														for (var msIndex = 0; msIndex < Model.Input.MenuLarges[mlIndex].MenuSmalls.Length; msIndex++)
+														{
+															<tr>
+																<td align="center" class="edit_title_bg" width="10%">
+																	@Html.CheckBoxFor(m => m.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].Valid)
+																	@if (Model.Input.DispDefault == Model.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].DefaultPageRadioButton)
+																	{
+																		@Html.RadioButtonFor(m => m.Input.DispDefault, Model.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].DefaultPageRadioButton, new { Name = "Input.DispDefault", Checked = true })
+																	}
+																	else
+																	{
+																		@Html.RadioButtonFor(m => m.Input.DispDefault, Model.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].DefaultPageRadioButton, new { Name = "Input.DispDefault" })
+																	}
+																	@Html.HiddenFor(m => m.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].DefaultPageRadioButton)
+																</td>
+																<td align="left" class="edit_item_bg" width="20%">@Model.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].Name</td>
+																@Html.HiddenFor(m => m.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].Name)
+																@Html.HiddenFor(m => m.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].MenuPath)
+																<td align="left" class="edit_item_bg" width="70%">
+																	@for (var mfIndex = 0; mfIndex < Model.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].MenuFunctions.Length; mfIndex++)
+																	{
+																		@Html.CheckBoxFor(m => m.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].MenuFunctions[mfIndex].Enable)
+																		@Model.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].MenuFunctions[mfIndex].Name
+																		@Html.HiddenFor(m => m.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].MenuFunctions[mfIndex].Name)
+																		@Html.HiddenFor(m => m.Input.MenuLarges[mlIndex].MenuSmalls[msIndex].MenuFunctions[mfIndex].Level)
+																	}
+																</td>
+															</tr>
+														}
+													}
+												</table>
+												<div class="action_part_bottom">
+													@TopButtomControls()
+												</div>
+											}
+										</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<br />
+		<table class="info_table" cellspacing="1" cellpadding="3" width="758" border="0">
+			<tr class="info_item_bg">
+				<td align="left">
+					備考<br />
+					権限用有効/無効はチェックボックスで、ログイン後デフォルト表示するページはラジオボタンで指定してください。
+				</td>
+			</tr>
+		</table>
+	</td>
+	</tr>
+	<!--△ 詳細 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+
+@section JavaScript
+{
+	<script type="text/javascript">
+		// エンターキーによるsubmit禁止
+		prohibit_submission();
+		// 一括選択
+		const checkAll = document.getElementById('checkAll');
+		checkAll.addEventListener('click', toggle);
+		function toggle(){
+			const isChecked = checkAll.checked;
+			Array.from(document.getElementsByTagName('input')).forEach(element =>{
+				element.checked = isChecked; 
+			});
+			var radios = document.querySelectorAll('input[type="radio"]');
+			if(isChecked) {
+				radios[0].checked = isChecked;
+			}
+		}
+	</script>
+}

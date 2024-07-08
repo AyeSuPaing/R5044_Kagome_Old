@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_TwOrderInvoice' AND COLUMN_NAME = 'tw_invoice_no')
+			DECLARE @CONSTRAINT_NAME nvarchar(200)
+			
+			SELECT @CONSTRAINT_NAME = obj.name FROM sys.objects AS obj
+			JOIN sys.columns AS clm ON obj.object_id = clm.default_object_id
+			WHERE obj.type = 'D' AND obj.parent_object_id = OBJECT_ID('w2_TwOrderInvoice') AND clm.name = 'tw_invoice_no'
+			
+			--制約を削除する
+			EXEC('ALTER TABLE w2_TwOrderInvoice DROP CONSTRAINT ' + @CONSTRAINT_NAME)
+
+        	ALTER TABLE [w2_TwOrderInvoice] ALTER COLUMN [tw_invoice_no] [varchar] (16) NOT NULL;
+			
+			ALTER TABLE [w2_TwOrderInvoice] ADD DEFAULT '' FOR [tw_invoice_no] ;
+        GO
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

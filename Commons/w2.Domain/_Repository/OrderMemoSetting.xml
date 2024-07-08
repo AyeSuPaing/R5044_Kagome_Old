@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文メモ系SQLステートメントXML(OrderMemoSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderMemoSetting>
+
+  <!-- 注文メモ情報取得 -->
+  <GetOrderMemoSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  *,
+                order_memo_name before_translation_order_memo_name
+          FROM  w2_OrderMemoSetting
+         WHERE  display_kbn = @display_kbn
+           AND  valid_flg = @valid_flg
+           AND  term_bgn < getdate()
+           AND  term_end > getdate()
+     ORDER  BY  display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="display_kbn" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetOrderMemoSetting>
+
+  <!-- 注文メモ情報取得(翻訳情報含む) -->
+  <GetOrderMemoSettingContainsGlobalSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_OrderMemoSetting.order_memo_id,
+                ISNULL(OrderMemoTrans.after_translation_order_memo_name, w2_OrderMemoSetting.order_memo_name) as order_memo_name,
+                w2_OrderMemoSetting.height,
+                w2_OrderMemoSetting.width,
+                w2_OrderMemoSetting.css_class,
+                w2_OrderMemoSetting.max_length,
+                ISNULL(DefaultTextTrans.after_translation_default_text, w2_OrderMemoSetting.default_text) as default_text,
+                w2_OrderMemoSetting.display_kbn,
+                w2_OrderMemoSetting.display_order,
+                w2_OrderMemoSetting.term_bgn,
+                w2_OrderMemoSetting.term_end,
+                w2_OrderMemoSetting.valid_flg,
+                w2_OrderMemoSetting.date_created,
+                w2_OrderMemoSetting.date_changed,
+                w2_OrderMemoSetting.last_changed
+          FROM  w2_OrderMemoSetting
+                LEFT OUTER JOIN
+                (
+                  SELECT  w2_NameTranslationSetting.master_id1,
+                          w2_NameTranslationSetting.after_translational_name as after_translation_order_memo_name
+                    FROM  w2_NameTranslationSetting
+                   WHERE  w2_NameTranslationSetting.data_kbn = 'OrderMemoSetting'
+                     AND  w2_NameTranslationSetting.translation_target_column = 'order_memo_name'
+                     AND  w2_NameTranslationSetting.language_code = @language_code
+                     AND  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+                ) OrderMemoTrans ON
+                (
+                  OrderMemoTrans.master_id1 = w2_OrderMemoSetting.order_memo_id
+                )
+                LEFT OUTER JOIN
+                (
+                  SELECT  w2_NameTranslationSetting.master_id1,
+                          w2_NameTranslationSetting.after_translational_name as after_translation_default_text
+                    FROM  w2_NameTranslationSetting
+                   WHERE  w2_NameTranslationSetting.data_kbn = 'OrderMemoSetting'
+                     and  w2_NameTranslationSetting.translation_target_column = 'default_text'
+                     and  w2_NameTranslationSetting.language_code = @language_code
+                     and  w2_NameTranslationSetting.language_locale_id = @language_locale_id
+                ) DefaultTextTrans ON
+                (
+                  DefaultTextTrans.master_id1 = w2_OrderMemoSetting.order_memo_id
+                )
+         WHERE  w2_OrderMemoSetting.display_kbn = @display_kbn
+           AND  w2_OrderMemoSetting.valid_flg = @valid_flg
+           AND  w2_OrderMemoSetting.term_bgn < getdate()
+           AND  w2_OrderMemoSetting.term_end > getdate()
+       ORDER BY w2_OrderMemoSetting.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="display_kbn" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="language_code" Type="nvarchar" Size="4" />
+      <Input Name="language_locale_id" Type="nvarchar" Size="7" />
+    </Parameter>
+  </GetOrderMemoSettingContainsGlobalSetting>
+
+</OrderMemoSetting>

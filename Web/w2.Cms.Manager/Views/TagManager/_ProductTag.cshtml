@@ -1,0 +1,51 @@
+﻿@*
+=========================================================================================================
+  Module      : タグマネージャー 商品タグ部分ビュー(_ProductTag.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@model w2.Cms.Manager.ViewModels.TagManager.ProductTagViewModel
+
+@Html.DropDownListFor(model =>
+		model.AffiliateProductTagId, Model.AffiliateProductTagIdItems,
+		"商品タグを利用しない",
+		new
+		{
+			Name = "Input.AffiliateProductTagId",
+			Id = "ddlAffiliateProductTagId",
+			onChange = "Javascript:ProductTagDisplayUpdate()"
+		})
+<input type="button" value="  商品タグの登録  " onclick="Javascript: OpenProductTagWindows();" class="btn btn-sub"/><br>
+<strong>タグ内容:</strong><br>
+@Model.ProductTag.TagContent<br>
+<strong>区切り文字:</strong><br>
+@Model.ProductTag.TagDelimiter
+
+<script type="text/javascript">
+	// 子ウィンドウで更新が発生した場合に実行
+	function listChange() {
+		ProductTagDisplayUpdate();
+	}
+
+	// 商品タグドロップダウンリスト更新イベント
+	function ProductTagDisplayUpdate() {
+		$.ajax({
+			type: "GET",
+			cache: false,
+			url: "@Url.Action("ProductTagDisplayUpdate", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_TAG_MANAGER)",
+			data: "selectedAffiliateProductTagId=" + $("#ddlAffiliateProductTagId").val()
+		}).done(function (viewHTML) {
+			$("#divAffiliateProductTagId").html(viewHTML);
+		}).fail(function () {
+		});
+	}
+
+	// 商品タグポップアップウィンドウの呼び出し
+	function OpenProductTagWindows() {
+		open_window('@Url.Action("List", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_TAG_MANAGER)',
+			'productTagWindow',
+			'width=1400,height=900,top=50,left=200,status=NO,scrollbars=yes');
+	}
+</script>

@@ -1,0 +1,990 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 売上状況レポート系SQLステートメントXML(OrderConditionReport.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+
+<OrderConditionReport>
+  <!-- 売上状況レポート(日別レポート) -->
+  <!-- 交換キャンセルの情報は別途取得して調整しています。 -->
+  <GetOrderConditionDay>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+      -- 変数宣言
+      DECLARE @start_date datetime
+      DECLARE @end_date datetime
+      SET @start_date = @year + '/' + @month + '/' + @day + ' ' + @time_from
+      SET @end_date = DATEADD(DAY, (@number_of_days - 1), (@year + '/' + @month + '/' + @day + ' ' + @time_to))
+
+      -- カレンダーテーブル生成(日別)
+      [[ GET_CALENDAR_DAY ]]
+      
+      SELECT
+              [[ SELECT_REPORT ]]
+        FROM
+              @calendar AS calendar
+   -- 売上(注文基準)
+   LEFT JOIN  (
+              SELECT  CONVERT(nvarchar(8), w2_Order.order_date, 112) AS order_date_ymd,
+                      ISNULL(SUM(@@ amount_field_name @@), 0) AS ordered_amount,
+                      ISNULL(@@ count_field_name @@, 0) AS ordered_count
+              @@ table_name @@
+               WHERE  w2_Order.order_date >= @start_date
+                      AND w2_Order.order_date < @end_date
+                      AND w2_Order.order_status IN ('ODR','ODR_RECG','STK_RSVD','SHP_ARGD','SHP_COMP','DLV_COMP','ODR_CNSL') -- 注文済み OR 受注承認 OR 在庫引当済み OR 出荷手配済み OR 出荷完了 OR 配送完了 OR キャンセル
+                      [[ GET_CONDITIONS_NOT_EXIST_EXCHANGE_CANCEL ]]
+                      AND w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                      @@ item_search_condition @@
+            GROUP BY  CONVERT(nvarchar(8), w2_Order.order_date, 112)
+              ) AS ordered
+              ON
+              (
+                ordered.order_date_ymd = calendar.tgt_ymd
+              )
+   -- キャンセル
+   LEFT JOIN  (
+              SELECT  CONVERT(nvarchar(8), w2_Order.order_cancel_date, 112) AS cancel_date_ymd,
+                      (-1) * ISNULL(SUM(@@ amount_field_name @@), 0) AS canceled_amount,
+                      (-1) * ISNULL(@@ count_field_name @@, 0) AS canceled_count
+              @@ table_name @@
+               WHERE  w2_Order.order_cancel_date >= @start_date
+                      AND w2_Order.order_cancel_date < @end_date
+                      AND w2_Order.order_status = 'ODR_CNSL' -- キャンセル
+                      [[ GET_CONDITIONS_NOT_EXIST_EXCHANGE_CANCEL ]]
+                      AND w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                      @@ item_search_condition @@
+            GROUP BY  CONVERT(nvarchar(8), w2_Order.order_cancel_date, 112)
+              ) AS canceled
+              ON
+              (
+                canceled.cancel_date_ymd = calendar.tgt_ymd
+              )
+   -- 売上(出荷基準)
+   LEFT JOIN  (
+              SELECT  shippint_temp.shipped_date_ymd,
+                      SUM(shippint_temp.shipped_amount) AS shipped_amount,
+                      SUM(shippint_temp.shipped_count) AS shipped_count
+                FROM  (
+                         SELECT  CONVERT(nvarchar(8), w2_Order.order_shipped_date, 112) AS shipped_date_ymd,
+                                 ISNULL(SUM(@@ amount_field_name @@), 0) AS shipped_amount,
+                                 ISNULL(@@ count_field_name @@, 0) AS shipped_count
+                         @@ table_name @@
+                          WHERE  w2_Order.order_shipped_date IS NOT NULL
+                            AND  w2_Order.order_shipped_date >= @start_date
+                            AND  w2_Order.order_shipped_date < @end_date
+                            AND  w2_Order.order_status IN ('SHP_COMP','DLV_COMP') -- 出荷完了 OR 配送完了
+                            [[ GET_CONDITIONS ]]
+                            AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                            @@ item_search_condition @@
+                       GROUP BY  CONVERT(nvarchar(8), w2_Order.order_shipped_date, 112)
+                       UNION ALL
+                         SELECT  CONVERT(nvarchar(8), w2_Order.order_delivering_date, 112) AS shipped_date_ymd,
+                                 ISNULL(SUM(@@ amount_field_name @@), 0) AS shipped_amount,
+                                 ISNULL(@@ count_field_name @@, 0) AS shipped_count
+                         @@ table_name @@
+                          WHERE  w2_Order.order_shipped_date IS NULL
+                            AND  w2_Order.order_delivering_date >= @start_date
+                            AND  w2_Order.order_delivering_date < @end_date
+                            AND  w2_Order.order_status IN ('SHP_COMP','DLV_COMP') -- 出荷完了 OR 配送完了
+                            [[ GET_CONDITIONS ]]
+                            AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                            @@ item_search_condition @@
+                       GROUP BY  CONVERT(nvarchar(8), w2_Order.order_delivering_date, 112)
+                      ) AS shippint_temp
+                      GROUP BY shippint_temp.shipped_date_ymd
+              ) AS shipped
+              ON
+              (
+                shipped.shipped_date_ymd = calendar.tgt_ymd
+              )
+   -- 返品
+   LEFT JOIN  (
+              SELECT  CONVERT(nvarchar(8), w2_Order.order_return_exchange_complete_date, 112) AS returned_date_ymd,
+                      ISNULL(SUM(@@ amount_field_name @@), 0) AS returned_amount,
+                      ISNULL(@@ count_field_name @@, 0) AS returned_count
+              @@ table_name @@
+               WHERE  w2_Order.order_return_exchange_complete_date >= @start_date
+                      AND w2_Order.order_return_exchange_complete_date < @end_date
+                      AND w2_Order.order_status = '' -- 指定無し
+                      [[ GET_CONDITIONS ]]
+                      AND w2_Order.return_exchange_kbn = '01' -- 返品
+                      @@ item_search_condition @@
+            GROUP BY  CONVERT(nvarchar(8), w2_Order.order_return_exchange_complete_date, 112)
+              ) AS returned
+              ON
+              (
+                returned.returned_date_ymd = calendar.tgt_ymd
+              )
+    ORDER BY  calendar.rowid
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="month" Type="nvarchar" Size="2" />
+      <Input Name="day" Type="nvarchar" Size="2" />
+      <Input Name="number_of_days" Type="int" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_kbn" Type="nvarchar" Size="10" />
+      <Input Name="time_from" Type="nvarchar" Size="12" />
+      <Input Name="time_to" Type="nvarchar" Size="12" />
+    </Parameter>
+  </GetOrderConditionDay>
+
+   <!--売上状況レポート(月別レポート)--> 
+  <!-- 交換キャンセルの情報は別途取得して調整しています。 -->
+  <GetOrderConditionMonth>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- 変数宣言
+      DECLARE @start_date datetime
+      DECLARE @end_date datetime
+      SET @start_date = @year + '/' + '01' + '/' + '01'
+      SET @end_date = DATEADD(MONTH, 12, @start_date)
+      
+      -- カレンダーテーブル生成(月別)
+      [[ GET_CALENDAR_MONTH ]]
+      
+      SELECT
+              [[ SELECT_REPORT ]]
+        FROM
+              @calendar AS calendar
+   -- 売上(注文基準)
+   LEFT JOIN  (
+              SELECT  CONVERT(nvarchar(6), w2_Order.order_date, 112) AS order_date_ym,
+                      ISNULL(SUM(@@ amount_field_name @@), 0) AS ordered_amount,
+                      ISNULL(@@ count_field_name @@, 0) AS ordered_count
+              @@ table_name @@
+               WHERE  w2_Order.order_date >= @start_date
+                      AND w2_Order.order_date < @end_date
+                      AND w2_Order.order_status IN ('ODR','ODR_RECG','STK_RSVD','SHP_ARGD','SHP_COMP','DLV_COMP','ODR_CNSL') -- 注文済み OR 受注承認 OR 在庫引当済み OR 出荷手配済み OR 出荷完了 OR 配送完了 OR キャンセル
+                      AND w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                      [[ GET_CONDITIONS_NOT_EXIST_EXCHANGE_CANCEL ]]
+                      @@ item_search_condition @@
+            GROUP BY  CONVERT(nvarchar(6), w2_Order.order_date, 112)
+              ) AS ordered
+              ON
+              (
+                ordered.order_date_ym = calendar.tgt_ym
+              )
+   -- キャンセル
+   LEFT JOIN  (
+              SELECT  CONVERT(nvarchar(6), w2_Order.order_cancel_date, 112) AS cancel_date_ym,
+                      (-1) * ISNULL(SUM(@@ amount_field_name @@), 0) AS canceled_amount,
+                      (-1) * ISNULL(@@ count_field_name @@, 0) AS canceled_count
+              @@ table_name @@
+               WHERE  w2_Order.order_cancel_date >= @start_date
+                      AND w2_Order.order_cancel_date < @end_date
+                      AND w2_Order.order_status = 'ODR_CNSL' -- キャンセル
+                      AND w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                      [[ GET_CONDITIONS_NOT_EXIST_EXCHANGE_CANCEL ]]
+                      @@ item_search_condition @@
+            GROUP BY  CONVERT(nvarchar(6), w2_Order.order_cancel_date, 112)
+              ) AS canceled
+              ON
+              (
+                canceled.cancel_date_ym = calendar.tgt_ym
+              )
+   -- 売上(出荷基準)
+   LEFT JOIN  (
+              SELECT  shippint_temp.shipped_date_ym,
+                      SUM(shippint_temp.shipped_amount) AS shipped_amount,
+                      SUM(shippint_temp.shipped_count) AS shipped_count
+                FROM  (
+                         SELECT  CONVERT(nvarchar(6), w2_Order.order_shipped_date, 112) AS shipped_date_ym,
+                                 ISNULL(SUM(@@ amount_field_name @@), 0) AS shipped_amount,
+                                 ISNULL(@@ count_field_name @@, 0) AS shipped_count
+                         @@ table_name @@
+                          WHERE  w2_Order.order_shipped_date IS NOT NULL
+                            AND  w2_Order.order_shipped_date >= @start_date
+                            AND  w2_Order.order_shipped_date < @end_date
+                            AND  w2_Order.order_status IN ('SHP_COMP','DLV_COMP') -- 出荷完了 OR 配送完了
+                            [[ GET_CONDITIONS ]]
+                            AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                            @@ item_search_condition @@
+                       GROUP BY  CONVERT(nvarchar(6), w2_Order.order_shipped_date, 112)
+                       UNION ALL
+                         SELECT  CONVERT(nvarchar(6), w2_Order.order_delivering_date, 112) AS shipped_date_ym,
+                                 ISNULL(SUM(@@ amount_field_name @@), 0) AS shipped_amount,
+                                 ISNULL(@@ count_field_name @@, 0) AS shipped_count
+                         @@ table_name @@
+                          WHERE  w2_Order.order_shipped_date IS NULL
+                            AND  w2_Order.order_delivering_date >= @start_date
+                            AND  w2_Order.order_delivering_date < @end_date
+                            AND  w2_Order.order_status IN ('SHP_COMP','DLV_COMP') -- 出荷完了 OR 配送完了
+                            [[ GET_CONDITIONS ]]
+                            AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                            @@ item_search_condition @@
+                       GROUP BY  CONVERT(nvarchar(6), w2_Order.order_delivering_date, 112)
+                      ) AS shippint_temp
+                      GROUP BY shippint_temp.shipped_date_ym
+              ) AS shipped
+              ON
+              (
+                shipped.shipped_date_ym = calendar.tgt_ym
+              )
+   -- 返品
+   LEFT JOIN  (
+              SELECT  CONVERT(nvarchar(6), w2_Order.order_return_exchange_complete_date, 112) AS returned_date_ym,
+                      ISNULL(SUM(@@ amount_field_name @@), 0) AS returned_amount,
+                      ISNULL(@@ count_field_name @@, 0) AS returned_count
+              @@ table_name @@
+               WHERE  w2_Order.order_return_exchange_complete_date >= @start_date
+                      AND w2_Order.order_return_exchange_complete_date < @end_date
+                      AND w2_Order.order_status = '' -- 指定無し
+                      [[ GET_CONDITIONS ]]
+                      AND w2_Order.return_exchange_kbn = '01' -- 返品
+                      @@ item_search_condition @@
+            GROUP BY  CONVERT(nvarchar(6), w2_Order.order_return_exchange_complete_date, 112)
+              ) AS returned
+              ON
+              (
+                returned.returned_date_ym = calendar.tgt_ym
+              )
+    ORDER BY  calendar.rowid
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_kbn" Type="nvarchar" Size="10" />
+      <Input Name="category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetOrderConditionMonth>
+
+  <!-- 売上状況レポート(時間別月レポート) -->
+  <!-- 交換キャンセルの情報は別途取得して調整しています。 -->
+  <GetOrderConditionMonthTime>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- 変数宣言
+      DECLARE @start_date datetime
+      DECLARE @end_date datetime
+      DECLARE @start_time time
+      SET @start_date = @year + '/' + @month + '/' + '01'
+      SET @end_date = DATEADD(MONTH, 1, @start_date)
+      SET @start_time = '00:00'
+
+      
+      -- カレンダーテーブル生成(月別)
+      
+        DECLARE @calendar TABLE
+        (
+          [rowid] int,
+          [tgt_time] nvarchar(2)
+        )
+        DECLARE @loop int
+        SET @loop = 0
+        DECLARE @date datetime
+        SET @date = @start_time
+        WHILE ( @loop < 24 )
+        BEGIN
+          INSERT INTO @calendar
+          (
+            rowid,
+            tgt_time
+          )
+          VALUES
+          (
+            @loop + 1,
+            CONVERT(nvarchar(2), @date, 24)
+          )
+          SET @loop = @loop + 1
+          SET @date = DATEADD(hour,1,@date)
+        END
+        
+      SELECT
+              [[ SELECT_TIME_REPORT ]]
+        FROM  @calendar AS calendar
+              -- 売上(注文基準)
+              LEFT JOIN 
+              (
+              SELECT  CONVERT(nvarchar(2), w2_Order.order_date, 24) AS order_date_time,
+                      ISNULL(SUM(@@ amount_field_name @@), 0) AS ordered_amount,
+                      ISNULL(@@ count_field_name @@, 0) AS ordered_count
+                      @@ table_name @@
+               WHERE  w2_Order.order_date >= @start_date
+                 AND  w2_Order.order_date < @end_date
+                 AND  w2_Order.order_status IN ('ODR','ODR_RECG','STK_RSVD','SHP_ARGD','SHP_COMP','DLV_COMP','ODR_CNSL') -- 注文済み OR 受注承認 OR 在庫引当済み OR 出荷手配済み OR 出荷完了 OR 配送完了 OR キャンセル
+                 AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                      [[ GET_CONDITIONS_NOT_EXIST_EXCHANGE_CANCEL ]]
+                      @@ item_search_condition @@
+              GROUP BY CONVERT(nvarchar(2), w2_Order.order_date, 24)
+              ) AS ordered
+              ON
+              (
+               ordered.order_date_time = calendar.tgt_time
+              )
+              -- キャンセル
+              LEFT JOIN  
+              (
+              SELECT  CONVERT(nvarchar(2), w2_Order.order_cancel_date, 24) AS cancel_date_time,
+                      (-1) * ISNULL(SUM(@@ amount_field_name @@), 0) AS canceled_amount,
+                      (-1) * ISNULL(@@ count_field_name @@, 0) AS canceled_count
+                      @@ table_name @@
+               WHERE  w2_Order.order_cancel_date >= @start_date
+                 AND  w2_Order.order_cancel_date < @end_date
+                 AND  w2_Order.order_status = 'ODR_CNSL' -- キャンセル
+                 AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                      [[ GET_CONDITIONS_NOT_EXIST_EXCHANGE_CANCEL ]]
+                      @@ item_search_condition @@
+              GROUP BY  CONVERT(nvarchar(2), w2_Order.order_cancel_date, 24)
+              ) AS canceled
+              ON
+              (
+               canceled.cancel_date_time = calendar.tgt_time
+              )
+              -- 売上(出荷基準)
+              LEFT JOIN  
+              (
+              SELECT  shipped_temp.shipped_date_time,
+                      SUM(shipped_temp.shipped_amount) AS shipped_amount,
+                      SUM(shipped_temp.shipped_count) AS shipped_count
+                FROM  (
+                         SELECT  CONVERT(nvarchar(2), w2_Order.order_shipped_date, 24) AS shipped_date_time,
+                                 ISNULL(SUM(@@ amount_field_name @@), 0) AS shipped_amount,
+                                 ISNULL(@@ count_field_name @@, 0) AS shipped_count
+                                 @@ table_name @@
+                          WHERE  w2_Order.order_shipped_date IS NOT NULL
+                            AND  w2_Order.order_shipped_date >= @start_date
+                            AND  w2_Order.order_shipped_date < @end_date
+                            AND  w2_Order.order_status IN ('SHP_COMP','DLV_COMP') -- 出荷完了 OR 配送完了
+                                 [[ GET_CONDITIONS ]]
+                            AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                                 @@ item_search_condition @@
+                         GROUP BY  CONVERT(nvarchar(2), w2_Order.order_shipped_date, 24)
+                         
+                         UNION ALL
+                         
+                         SELECT  CONVERT(nvarchar(2), w2_Order.order_delivering_date, 24) AS shipped_date_time,
+                                 ISNULL(SUM(@@ amount_field_name @@), 0) AS shipped_amount,
+                                 ISNULL(@@ count_field_name @@, 0) AS shipped_count
+                                 @@ table_name @@
+                          WHERE  w2_Order.order_shipped_date IS NULL
+                            AND  w2_Order.order_delivering_date >= @start_date
+                            AND  w2_Order.order_delivering_date < @end_date
+                            AND  w2_Order.order_status IN ('SHP_COMP','DLV_COMP') -- 出荷完了 OR 配送完了
+                                 [[ GET_CONDITIONS ]]
+                            AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                                 @@ item_search_condition @@
+                         GROUP BY  CONVERT(nvarchar(2), w2_Order.order_delivering_date, 24)
+              ) AS shipped_temp
+              GROUP BY shipped_temp.shipped_date_time
+              ) AS shipped
+              ON
+              (
+              shipped.shipped_date_time = calendar.tgt_time
+              )
+              -- 返品
+              LEFT JOIN  
+              (
+              SELECT  CONVERT(nvarchar(2), w2_Order.order_return_exchange_complete_date, 24) AS returned_date_time,
+                      ISNULL(SUM(@@ amount_field_name @@), 0) AS returned_amount,
+                      ISNULL(@@ count_field_name @@, 0) AS returned_count
+                      @@ table_name @@
+               WHERE  w2_Order.order_return_exchange_complete_date >= @start_date
+                 AND  w2_Order.order_return_exchange_complete_date < @end_date
+                 AND  w2_Order.order_status = '' -- 指定無し
+                      [[ GET_CONDITIONS ]]
+                 AND  w2_Order.return_exchange_kbn = '01' -- 返品
+                      @@ item_search_condition @@
+              GROUP BY CONVERT(nvarchar(2), w2_Order.order_return_exchange_complete_date, 24)
+              ) AS returned
+              ON
+              (
+                returned.returned_date_time = calendar.tgt_time
+              )
+      ORDER BY  calendar.rowid
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="month" Type="nvarchar" Size="4" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetOrderConditionMonthTime>
+
+  <!-- 売上状況レポート(時間別日レポート) -->
+  <!-- 交換キャンセルの情報は別途取得して調整しています。 -->
+  <GetOrderConditionDayTime>
+    <Statement>
+      <![CDATA[
+     /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- 変数宣言
+    DECLARE @start_date datetime
+      DECLARE @end_date datetime
+      DECLARE @start_time time
+      DECLARE @end_time time
+      SET @start_date = @year + '/' + @month + '/' + @day + ' ' + @time_from
+      SET @end_date = @year + '/' + @month + '/' + @day + ' ' + @time_to
+      SET @start_time = '00:00'
+      SET @end_time = '23:00'
+
+      -- カレンダーテーブル生成(月別)
+      
+        DECLARE @calendar TABLE
+        (
+          [rowid] int,
+          [tgt_time] nvarchar(2)
+        )
+        DECLARE @loop int
+        SET @loop = 0
+        DECLARE @date datetime
+        SET @date = @start_time
+        WHILE ( @loop < 24 )
+        BEGIN
+          INSERT INTO @calendar
+          (
+            rowid,
+            tgt_time
+          )
+          VALUES
+          (
+            @loop + 1,
+            CONVERT(nvarchar(2), @date, 24)
+          )
+          SET @loop = @loop + 1
+          SET @date = DATEADD(hour,1,@date)
+        END
+      
+      
+     SELECT
+              [[ SELECT_TIME_REPORT ]]
+        FROM  @calendar AS calendar
+              -- 売上(注文基準)
+              LEFT JOIN 
+              (
+              SELECT  CONVERT(nvarchar(2), w2_Order.order_date, 24) AS order_date_time,
+                      ISNULL(SUM(@@ amount_field_name @@), 0) AS ordered_amount,
+                      ISNULL(@@ count_field_name @@, 0) AS ordered_count
+                      @@ table_name @@
+               WHERE  w2_Order.order_date >= @start_date
+                 AND  w2_Order.order_date < @end_date
+                 AND  w2_Order.order_status IN ('ODR','ODR_RECG','STK_RSVD','SHP_ARGD','SHP_COMP','DLV_COMP','ODR_CNSL') -- 注文済み OR 受注承認 OR 在庫引当済み OR 出荷手配済み OR 出荷完了 OR 配送完了 OR キャンセル
+                 AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                      [[ GET_CONDITIONS_NOT_EXIST_EXCHANGE_CANCEL ]]
+                      @@ item_search_condition @@
+              GROUP BY CONVERT(nvarchar(2), w2_Order.order_date, 24)
+              ) AS ordered
+              ON
+              (
+               ordered.order_date_time = calendar.tgt_time
+              )
+              -- キャンセル
+              LEFT JOIN  
+              (
+              SELECT  CONVERT(nvarchar(2), w2_Order.order_cancel_date, 24) AS cancel_date_time,
+                      (-1) * ISNULL(SUM(@@ amount_field_name @@), 0) AS canceled_amount,
+                      (-1) * ISNULL(@@ count_field_name @@, 0) AS canceled_count
+                      @@ table_name @@
+               WHERE  w2_Order.order_cancel_date >= @start_date
+                 AND  w2_Order.order_cancel_date < @end_date
+                 AND  w2_Order.order_status = 'ODR_CNSL' -- キャンセル
+                 AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                      [[ GET_CONDITIONS_NOT_EXIST_EXCHANGE_CANCEL ]]
+                      @@ item_search_condition @@
+              GROUP BY  CONVERT(nvarchar(2), w2_Order.order_cancel_date, 24)
+              ) AS canceled
+              ON
+              (
+               canceled.cancel_date_time = calendar.tgt_time
+              )
+              -- 売上(出荷基準)
+              LEFT JOIN  
+              (
+              SELECT  shippint_temp.shipped_date_time,
+                      SUM(shippint_temp.shipped_amount) AS shipped_amount,
+                      SUM(shippint_temp.shipped_count) AS shipped_count
+                FROM  (
+                         SELECT  CONVERT(nvarchar(2), w2_Order.order_shipped_date, 24) AS shipped_date_time,
+                                 ISNULL(SUM(@@ amount_field_name @@), 0) AS shipped_amount,
+                                 ISNULL(@@ count_field_name @@, 0) AS shipped_count
+                                 @@ table_name @@
+                          WHERE  w2_Order.order_shipped_date IS NOT NULL
+                            AND  w2_Order.order_shipped_date >= @start_date
+                            AND  w2_Order.order_shipped_date < @end_date
+                            AND  w2_Order.order_status IN ('SHP_COMP','DLV_COMP') -- 出荷完了 OR 配送完了
+                                 [[ GET_CONDITIONS ]]
+                            AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                                 @@ item_search_condition @@
+                         GROUP BY  CONVERT(nvarchar(2), w2_Order.order_shipped_date, 24)
+                         
+                         UNION ALL
+                         
+                         SELECT  CONVERT(nvarchar(2), w2_Order.order_delivering_date, 24) AS shipped_date_time,
+                                 ISNULL(SUM(@@ amount_field_name @@), 0) AS shipped_amount,
+                                 ISNULL(@@ count_field_name @@, 0) AS shipped_count
+                                 @@ table_name @@
+                          WHERE  w2_Order.order_shipped_date IS NULL
+                            AND  w2_Order.order_delivering_date >= @start_date
+                            AND  w2_Order.order_delivering_date < @end_date
+                            AND  w2_Order.order_status IN ('SHP_COMP','DLV_COMP') -- 出荷完了 OR 配送完了
+                                 [[ GET_CONDITIONS ]]
+                            AND  w2_Order.return_exchange_kbn IN('00', '10')  -- 返品以外
+                                 @@ item_search_condition @@
+                         GROUP BY  CONVERT(nvarchar(2), w2_Order.order_delivering_date, 24)
+              ) AS shippint_temp
+              GROUP BY shippint_temp.shipped_date_time
+              ) AS shipped
+              ON
+              (
+              shipped.shipped_date_time = calendar.tgt_time
+              )
+              -- 返品
+              LEFT JOIN  
+              (
+              SELECT  CONVERT(nvarchar(2), w2_Order.order_return_exchange_complete_date, 24) AS returned_date_time,
+                      ISNULL(SUM(@@ amount_field_name @@), 0) AS returned_amount,
+                      ISNULL(@@ count_field_name @@, 0) AS returned_count
+                      @@ table_name @@
+               WHERE  w2_Order.order_return_exchange_complete_date >= @start_date
+                 AND  w2_Order.order_return_exchange_complete_date < @end_date
+                 AND  w2_Order.order_status = '' -- 指定無し
+                      [[ GET_CONDITIONS ]]
+                 AND  w2_Order.return_exchange_kbn = '01' -- 返品
+                      @@ item_search_condition @@
+              GROUP BY CONVERT(nvarchar(2), w2_Order.order_return_exchange_complete_date, 24)
+              ) AS returned
+              ON
+              (
+                returned.returned_date_time = calendar.tgt_time
+              )
+      ORDER BY  calendar.rowid
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="month" Type="nvarchar" Size="2" />
+      <Input Name="day" Type="nvarchar" Size="2" />
+      <Input Name="number_of_days" Type="int" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_kbn" Type="nvarchar" Size="10" />
+      <Input Name="time_from" Type="nvarchar" Size="12" />
+      <Input Name="time_to" Type="nvarchar" Size="12" />
+    </Parameter>
+  </GetOrderConditionDayTime>
+
+  <!-- 売上状況レポート(日別レポート) 交換キャンセル情報取得 -->
+  <GetOrderExchangeCancelConditionDay>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+          
+        -- 変数宣言
+        DECLARE @start_date datetime
+        DECLARE @end_date datetime
+        SET @start_date = @year + '/' + @month + '/' + @day
+        SET @end_date = DATEADD(DAY, @number_of_days, @start_date)
+        
+        -- カレンダーテーブル生成(日別)
+        [[ GET_CALENDAR_DAY ]]
+        
+        -- 交換キャンセル情報取得
+        [[ GET_EXCHANGE_CANCEL ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="month" Type="nvarchar" Size="2" />
+      <Input Name="day" Type="nvarchar" Size="2" />
+      <Input Name="number_of_days" Type="int" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetOrderExchangeCancelConditionDay>
+
+  <!-- 売上状況レポート(月別レポート) 交換キャンセル情報取得 -->
+  <GetOrderExchangeCancelConditionMonth>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- 変数宣言
+        DECLARE @start_date datetime
+        DECLARE @end_date datetime
+        SET @start_date = @year + '/' + '01' + '/' + '01'
+        SET @end_date = DATEADD(MONTH, 12, @start_date)
+        
+        -- カレンダーテーブル生成(月別)
+        [[ GET_CALENDAR_MONTH ]]
+        
+        -- 交換キャンセル情報取得
+        [[ GET_EXCHANGE_CANCEL ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetOrderExchangeCancelConditionMonth>
+
+  <!-- 決済種別一覧を取得する(全て) -->
+  <GetPaymentAllList>
+    <Statement>
+      <![CDATA[
+        SELECT  * 
+          FROM  w2_Payment
+         WHERE  shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetPaymentAllList>
+
+  <!-- 決済種別一覧を取得する(有効なもの) -->
+  <GetPaymentValidList>
+    <Statement>
+      <![CDATA[
+        SELECT  * 
+          FROM  w2_Payment
+         WHERE  shop_id = @shop_id
+           AND  valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetPaymentValidList>
+
+  <!-- 商品情報該当件数取得 -->
+  <GetProductCount>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 全件数取得
+        SELECT  ISNULL(COUNT(w2_Product.product_id), 0) AS row_count
+          FROM  w2_Product
+                [[ PRODUCT_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+    </Parameter>
+  </GetProductCount>
+
+  <!-- 商品情報一覧取得 -->
+  <GetProductList>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 該当情報取得
+        SELECT  w2_Product.*
+          FROM  (
+                  SELECT  w2_Product.shop_id,
+                          w2_Product.product_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCT_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_Product
+                          [[ PRODUCT_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_Product ON
+                (
+                  RowIndex.shop_id = w2_Product.shop_id
+                  AND
+                  RowIndex.product_id = w2_Product.product_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetProductList>
+
+  <!-- 商品別販売数ランキングレポート -->
+  <GetProductSaleRankingReport>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        WITH 
+          TempOrder AS
+          (
+            SELECT  w2_OrderItem.shop_id,
+                    w2_OrderItem.product_id,
+                    (
+                      CASE WHEN @product_unit_type = '1'
+                        THEN w2_OrderItem.variation_id
+                        ELSE w2_OrderItem.product_id
+                      END
+                    ) AS variation_id,
+                    w2_OrderItem.product_name AS name,
+                    w2_OrderItem.item_quantity,
+                    w2_OrderItem.product_price,
+                    w2_OrderItem.product_tax_rate,
+                    w2_OrderItem.product_tax_round_type,
+                    (
+                      CASE @tax_included_flg
+                        WHEN '1' THEN w2_OrderItem.product_price_pretax * w2_OrderItem.item_quantity
+                        WHEN '0' THEN w2_OrderItem.product_price_pretax * w2_OrderItem.item_quantity - w2_OrderItem.item_price_tax
+                      END
+                    ) AS item_price
+              FROM  w2_Order
+                    INNER JOIN w2_OrderItem ON 
+                    (
+                      w2_Order.order_id = w2_OrderItem.order_id
+                    )
+                    LEFT JOIN w2_ProductSale ON
+                    (
+                      w2_OrderItem.productsale_id = w2_ProductSale.productsale_id
+                    )
+                    [[ PRODUCT_SALE_RANKING_SEARCH_WHERE ]]
+          ),
+          DailySummary AS
+          (
+            SELECT  TempOrder.shop_id,
+                    TempOrder.product_id,
+                    TempOrder.variation_id,
+                    MAX(TempOrder.name) AS name,
+                    SUM(TempOrder.item_quantity) AS item_quantity_total,
+                    SUM(TempOrder.item_price) AS product_price_total
+              FROM  TempOrder
+            GROUP BY TempOrder.shop_id, TempOrder.product_id, TempOrder.variation_id
+          ),
+          WithIndex AS
+          (
+            SELECT  *,
+                    ROW_NUMBER()
+                    OVER
+                    (
+                      ORDER BY DailySummary.item_quantity_total DESC, DailySummary.variation_id
+                    ) AS row_num
+              FROM  DailySummary
+          ),
+          PageTarget AS
+          (
+            SELECT  *
+              FROM  WithIndex
+             WHERE  row_num BETWEEN @bgn_row_num AND @end_row_num
+          ),
+          TotalOrderSummary AS
+          (
+            SELECT  PageTarget.shop_id,
+                    PageTarget.product_id,
+                    PageTarget.variation_id,
+                    CONVERT(decimal, ISNULL(SUM(w2_OrderItem.item_quantity) ,0)) as item_quantity_all_total
+              FROM  PageTarget
+                    INNER JOIN w2_OrderItem ON
+                    (
+                      PageTarget.shop_id = w2_OrderItem.shop_id
+                      AND
+                      PageTarget.product_id = w2_OrderItem.product_id
+                      AND
+                      PageTarget.variation_id = CASE WHEN @product_unit_type = '1' THEN w2_OrderItem.variation_id ELSE w2_OrderItem.product_id END
+                    )
+                    INNER JOIN w2_Order ON
+                    (
+                      w2_Order.order_id = w2_OrderItem.order_id
+                    )
+             WHERE  w2_Order.order_status IN ('ODR','ODR_RECG','STK_RSVD','SHP_ARGD','SHP_COMP','DLV_COMP') -- 注文済み OR 受注承認 OR 在庫引当済み OR 出荷手配済み OR 出荷完了 OR 配送完了
+               AND  w2_Order.return_exchange_kbn IN('00')  -- 返品交換以外
+            GROUP BY PageTarget.shop_id, PageTarget.product_id, PageTarget.variation_id
+          ),
+          StockSummary AS
+          (
+            SELECT  PageTarget.shop_id,
+                    PageTarget.product_id,
+                    PageTarget.variation_id,
+                    MAX(ISNULL(w2_ProductView.image_head, '')) AS image_head,
+                    MAX(ISNULL(w2_ProductView.image_mobile, '')) AS image_mobile,
+                    MAX(ISNULL(w2_ProductView.variation_image_mobile, '')) AS variation_image_mobile,
+                    MAX(ISNULL(w2_ProductView.variation_image_head, '')) AS variation_image_head,
+                    ISNULL(
+                    (
+                      CASE
+                        WHEN SUM(ISNULL(w2_ProductView.stock, 0)) < 0 THEN 0
+                        ELSE SUM(ISNULL(w2_ProductView.stock, 0))
+                      END
+                    ),0) AS stock
+              FROM  PageTarget 
+                    LEFT JOIN w2_ProductView ON
+                    (
+                      w2_ProductView.shop_id = PageTarget.shop_id
+                      AND
+                      w2_ProductView.product_id = PageTarget.product_id
+                      AND
+                      (CASE WHEN @product_unit_type = '1' THEN w2_ProductView.variation_id ELSE w2_ProductView.product_id end) = PageTarget.variation_id
+                    )
+            GROUP BY PageTarget.shop_id, PageTarget.product_id, PageTarget.variation_id
+          ),
+          OrderItemTotals AS
+          (
+            SELECT  PageTarget.shop_id,
+                    PageTarget.product_id,
+                    PageTarget.variation_id,
+                    PageTarget.item_quantity_total,
+                    PageTarget.product_price_total,
+                    PageTarget.row_num,
+                    TotalOrderSummary.item_quantity_all_total,
+                    PageTarget.name,
+                    StockSummary.image_head,
+                    StockSummary.image_mobile,
+                    StockSummary.variation_image_mobile,
+                    StockSummary.variation_image_head,
+                    StockSummary.stock
+              FROM  PageTarget
+                    INNER JOIN TotalOrderSummary ON
+                    (
+                      PageTarget.shop_id = TotalOrderSummary.shop_id
+                      AND
+                      PageTarget.product_id = TotalOrderSummary.product_id
+                      AND
+                      PageTarget.variation_id = TotalOrderSummary.variation_id
+                    )
+                    INNER JOIN StockSummary ON
+                    (
+                      PageTarget.shop_id = StockSummary.shop_id
+                      AND
+                      PageTarget.product_id = StockSummary.product_id
+                      AND
+                      PageTarget.variation_id = StockSummary.variation_id
+                    )
+             WHERE  PageTarget.item_quantity_total > 0
+               AND  TotalOrderSummary.item_quantity_all_total > 0
+          )
+
+          -- 商品・在庫数に販売数・販売金額を紐づける
+          SELECT  OrderItemTotals.shop_id,
+                  OrderItemTotals.product_id,
+                  OrderItemTotals.variation_id,
+                  OrderItemTotals.name,
+                  OrderItemTotals.image_head,
+                  OrderItemTotals.image_mobile,
+                  OrderItemTotals.variation_image_mobile,
+                  OrderItemTotals.variation_image_head,
+                  -- アイコンフラグON かつ 有効期間内 であれば表示可能と判断する
+                  (CASE WHEN ((w2_Product.icon_flg1 = '1') AND (w2_Product.icon_term_end1 IS NOT null) AND (w2_Product.icon_term_end1 >= GETDATE())) THEN '1' ELSE '0' END) AS icon1,
+                  (CASE WHEN ((w2_Product.icon_flg2 = '1') AND (w2_Product.icon_term_end2 IS NOT null) AND (w2_Product.icon_term_end2 >= GETDATE())) THEN '1' ELSE '0' END) AS icon2,
+                  (CASE WHEN ((w2_Product.icon_flg3 = '1') AND (w2_Product.icon_term_end3 IS NOT null) AND (w2_Product.icon_term_end3 >= GETDATE())) THEN '1' ELSE '0' END) AS icon3,
+                  (CASE WHEN ((w2_Product.icon_flg4 = '1') AND (w2_Product.icon_term_end4 IS NOT null) AND (w2_Product.icon_term_end4 >= GETDATE())) THEN '1' ELSE '0' END) AS icon4,
+                  (CASE WHEN ((w2_Product.icon_flg5 = '1') AND (w2_Product.icon_term_end5 IS NOT null) AND (w2_Product.icon_term_end5 >= GETDATE())) THEN '1' ELSE '0' END) AS icon5,
+                  (CASE WHEN ((w2_Product.icon_flg6 = '1') AND (w2_Product.icon_term_end6 IS NOT null) AND (w2_Product.icon_term_end6 >= GETDATE())) THEN '1' ELSE '0' END) AS icon6,
+                  (CASE WHEN ((w2_Product.icon_flg7 = '1') AND (w2_Product.icon_term_end7 IS NOT null) AND (w2_Product.icon_term_end7 >= GETDATE())) THEN '1' ELSE '0' END) AS icon7,
+                  (CASE WHEN ((w2_Product.icon_flg8 = '1') AND (w2_Product.icon_term_end8 IS NOT null) AND (w2_Product.icon_term_end8 >= GETDATE())) THEN '1' ELSE '0' END) AS icon8,
+                  (CASE WHEN ((w2_Product.icon_flg9 = '1') AND (w2_Product.icon_term_end9 IS NOT null) AND (w2_Product.icon_term_end9 >= GETDATE())) THEN '1' ELSE '0' END) AS icon9,
+                  (CASE WHEN ((w2_Product.icon_flg10 = '1') AND (w2_Product.icon_term_end10 IS NOT null) AND (w2_Product.icon_term_end10 >= GETDATE())) THEN '1' ELSE '0' END) AS icon10,
+                  OrderItemTotals.item_quantity_total, -- 期中販売数
+                  OrderItemTotals.product_price_total, -- 期中売上計
+                  CONVERT(decimal(18,3), OrderItemTotals.product_price_total / OrderItemTotals.item_quantity_total) AS average_price, -- 平均売価
+                  CONVERT(decimal(5,2), ROUND(OrderItemTotals.item_quantity_total / (OrderItemTotals.item_quantity_all_total + OrderItemTotals.stock) * 100, 2)) AS period_digestive_rate, -- 期中消化率
+                  OrderItemTotals.item_quantity_all_total + OrderItemTotals.stock AS total_input_count, -- 総投入数
+                  OrderItemTotals.item_quantity_all_total, -- 総販売数
+                  CONVERT(decimal(5,2), ROUND(OrderItemTotals.item_quantity_all_total / (OrderItemTotals.item_quantity_all_total + OrderItemTotals.stock) * 100, 2)) AS total_digestive_rate, -- 総消化率
+                  OrderItemTotals.stock -- 在庫数
+            FROM  OrderItemTotals
+                  LEFT JOIN w2_Product ON 
+                  (
+                    OrderItemTotals.shop_id = w2_Product.shop_id
+                    AND
+                    OrderItemTotals.product_id = w2_Product.product_id
+                  )
+          ORDER BY OrderItemTotals.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="sales_type" Type="nvarchar" Size="10" />
+      <Input Name="tax_included_flg" Type="nvarchar" Size="1" />
+      <Input Name="product_unit_type" Type="nvarchar" Size="1" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductSaleRankingReport>
+
+  <!-- 商品別販売数ランキングレポート総件数 -->
+  <GetProductSaleRankingReportCount>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  ISNULL(COUNT((case when @product_unit_type = '1' then w2_OrderItem.variation_id else w2_OrderItem.product_id end)), 0)
+          FROM  w2_Order 
+                INNER JOIN w2_OrderItem ON 
+                (
+                  w2_Order.order_id = w2_OrderItem.order_id
+                )
+                LEFT JOIN w2_ProductSale ON
+                (
+                  w2_OrderItem.productsale_id = w2_ProductSale.productsale_id
+                )
+                [[ PRODUCT_SALE_RANKING_SEARCH_WHERE ]]
+        GROUP BY w2_OrderItem.shop_id, w2_OrderItem.product_id, (case when @product_unit_type = '1' then w2_OrderItem.variation_id else w2_OrderItem.product_id end)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="sales_type" Type="nvarchar" Size="10" />
+      <Input Name="product_unit_type" Type="nvarchar" Size="1" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="productsale_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetProductSaleRankingReportCount>
+
+</OrderConditionReport>

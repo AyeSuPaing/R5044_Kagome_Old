@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文情報系SQLステートメントXML (Order.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+
+<Order>
+
+  <!-- 取込済みAmazon注文情報取得 -->
+  <GetImportedAmazonOrder>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Order.*,
+                w2_OrderItem.*,
+                w2_OrderOwner.*,
+                w2_OrderShipping.*
+          FROM  w2_Order
+                INNER JOIN w2_OrderItem ON
+                (
+                  w2_OrderItem.order_id = w2_Order.order_id
+                )
+                INNER JOIN w2_OrderOwner ON
+                (
+                  w2_OrderOwner.order_id = w2_Order.order_id
+                )
+                INNER JOIN w2_OrderShipping ON
+                (
+                  w2_OrderShipping.order_id = w2_Order.order_id
+                )
+         WHERE  @@ order_id_where @@
+      ]]>
+    </Statement>
+  </GetImportedAmazonOrder>
+
+  <!-- Amazon出荷通知処理中更新 -->
+  <UpdateAmazonShipNoteProgress>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Order
+           SET  mall_link_status = 'SHIPNOTE_PROGRESS'
+         WHERE  @@ order_id_where @@
+      ]]>
+    </Statement>
+  </UpdateAmazonShipNoteProgress>
+
+  <!-- Amazon出荷通知済み更新 -->
+  <UpdateAmazonShipNoteComplete>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Order
+           SET  mall_link_status = 'SHIPNOTE_COMP'
+         WHERE  @@ order_id_where @@
+      ]]>
+    </Statement>
+  </UpdateAmazonShipNoteComplete>
+
+</Order>

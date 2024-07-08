@@ -1,0 +1,157 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メッセージ集計SQLステートメントXML(CsReportMessage.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsReportMessage>
+
+  <!-- オペレータ毎レポート取得 -->
+  <GetOperatorReport>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(message_count.reply_operator_id, '') AS [Id],
+                ISNULL(operators.name, '') AS [Name],
+                ISNULL(message_count.media_kbn, '') AS [MediaKbn],
+                ISNULL(message_count.direction_kbn, '') AS [DirectionKbn],
+                ISNULL(message_count.Count, 0)AS [Count],
+                ISNULL(operators.valid_flg, CASE WHEN message_count.reply_operator_id = '' THEN '1' ELSE '0' END) AS [valid_flg]
+          FROM  (
+                  SELECT  w2_CsMessage.dept_id,
+                          w2_CsMessage.reply_operator_id,
+                          w2_CsMessage.media_kbn,
+                          w2_CsMessage.direction_kbn,
+                          COUNT(1) AS [Count]
+                    FROM  w2_CsMessage
+                  [[ GetReport_Where ]]
+                  GROUP BY w2_CsMessage.dept_id, w2_CsMessage.reply_operator_id, w2_CsMessage.media_kbn, w2_CsMessage.direction_kbn
+                ) AS message_count
+                FULL OUTER JOIN
+                ( 
+                  SELECT  w2_CsOperator.dept_id,
+                          w2_ShopOperator.operator_id,
+                          w2_ShopOperator.name,
+                          w2_CsOperator.display_order,
+                          w2_ShopOperator.valid_flg
+                    FROM  w2_ShopOperator
+                          INNER JOIN w2_CsOperator ON
+                          (
+                            w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                            AND
+                            w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                          )
+                ) operators ON
+                (
+                  operators.dept_id = message_count.dept_id
+                  AND
+                  operators.operator_id = message_count.reply_operator_id
+                )
+        ORDER BY ISNULL(operators.display_order, '999999'), operators.operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="inquiry_reply_date_bgn" Type="datetime" />
+      <Input Name="inquiry_reply_date_end" Type="datetime" />
+    </Parameter>
+  </GetOperatorReport>
+
+  <!-- 月毎レポート取得 -->
+  <GetMonthReport>
+    <Statement>
+      <![CDATA[
+        SELECT  DatePart(month, ISNULL(w2_CsMessage.inquiry_reply_date, w2_CsMessage.date_created)) AS [Month],
+                ISNULL(w2_CsMessage.media_kbn, '') AS [MediaKbn],
+                ISNULL(w2_CsMessage.direction_kbn, '') AS [DirectionKbn],
+                COUNT(1) AS [Count],
+                1 AS [valid_flg]
+          FROM  w2_CsMessage
+        [[ GetReport_Where ]]
+        GROUP BY w2_CsMessage.dept_id, DatePart(month, ISNULL(w2_CsMessage.inquiry_reply_date, w2_CsMessage.date_created)), w2_CsMessage.media_kbn, w2_CsMessage.direction_kbn
+        ORDER BY [Month]
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetMonthReport>
+
+  <!-- 月-日毎レポート取得 -->
+  <GetMonthDayReport>
+    <Statement>
+      <![CDATA[
+        SELECT  Convert(NVARCHAR, ISNULL(w2_CsMessage.inquiry_reply_date, w2_CsMessage.date_created), 111) AS [MonthDay],
+                ISNULL(w2_CsMessage.media_kbn, '') AS [MediaKbn],
+                ISNULL(w2_CsMessage.direction_kbn, '') AS [DirectionKbn],
+                COUNT(1) AS [Count],
+                1 AS [valid_flg]
+          FROM  w2_CsMessage
+        [[ GetReport_Where ]]
+        GROUP BY w2_CsMessage.dept_id, Convert(NVARCHAR, ISNULL(w2_CsMessage.inquiry_reply_date, w2_CsMessage.date_created), 111), w2_CsMessage.media_kbn, w2_CsMessage.direction_kbn
+        ORDER BY [MonthDay]
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetMonthDayReport>
+
+  <!-- 曜日毎レポート取得 -->
+  <GetWeekdayReport>
+    <Statement>
+      <![CDATA[
+        SELECT  DatePart(weekday, ISNULL(w2_CsMessage.inquiry_reply_date, w2_CsMessage.date_created)) - 1 AS [Weekday],  -- 曜日はC#にあわせる
+                ISNULL(w2_CsMessage.media_kbn, '') AS [MediaKbn],
+                ISNULL(w2_CsMessage.direction_kbn, '') AS [DirectionKbn],
+                COUNT(1) AS [Count],
+                1 AS [valid_flg]
+          FROM  w2_CsMessage
+        [[ GetReport_Where ]]
+        GROUP BY w2_CsMessage.dept_id, DatePart(weekday, ISNULL(w2_CsMessage.inquiry_reply_date, w2_CsMessage.date_created)), w2_CsMessage.media_kbn, w2_CsMessage.direction_kbn
+        ORDER BY [Weekday]
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetWeekdayReport>
+
+  <!-- 時間帯毎レポート取得 -->
+  <GetTimeReport>
+    <Statement>
+      <![CDATA[
+        SELECT  DatePart(hour, ISNULL(w2_CsMessage.inquiry_reply_date, w2_CsMessage.date_created)) AS [Hour],
+                ISNULL(w2_CsMessage.media_kbn, '') AS [MediaKbn],
+                ISNULL(w2_CsMessage.direction_kbn, '') AS [DirectionKbn],
+                COUNT(1) AS [Count],
+                1 AS [valid_flg]
+          FROM  w2_CsMessage
+       [[ GetReport_Where ]]
+        GROUP BY w2_CsMessage.dept_id, DatePart(hour, ISNULL(w2_CsMessage.inquiry_reply_date, w2_CsMessage.date_created)), w2_CsMessage.media_kbn, w2_CsMessage.direction_kbn
+        ORDER BY [Hour]
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetTimeReport>
+
+  <!-- 曜日-時間帯毎レポート取得 -->
+  <GetWeekdayTimeReport>
+    <Statement>
+      <![CDATA[
+        SELECT  DatePart(weekday, ISNULL(w2_CsMessage.inquiry_reply_date, w2_CsMessage.date_created)) - 1 AS [Weekday],  -- 曜日はC#にあわせる
+                ISNULL(w2_CsMessage.media_kbn, '') AS [MediaKbn],
+                ISNULL(w2_CsMessage.direction_kbn, '') AS [DirectionKbn],
+                DatePart(hour, ISNULL(w2_CsMessage.inquiry_reply_date, w2_CsMessage.date_created)) AS [Hour],
+                COUNT(1) AS [Count],
+                1 AS [valid_flg]
+          FROM  w2_CsMessage
+        [[ GetReport_Where ]]
+        GROUP BY w2_CsMessage.dept_id, DatePart(weekday, ISNULL(w2_CsMessage.inquiry_reply_date, w2_CsMessage.date_created)), DatePart(hour, ISNULL(w2_CsMessage.inquiry_reply_date, w2_CsMessage.date_created)), w2_CsMessage.media_kbn, w2_CsMessage.direction_kbn
+        ORDER BY [Weekday], [Hour]
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetWeekdayTimeReport>
+
+</CsReportMessage>

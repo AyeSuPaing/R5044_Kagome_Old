@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品マスタ系SQLステートメントXML (Product.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<Product>
+
+  <!-- 商品情報を取得 -->
+  <GetProductVariation>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                w2_ProductView.*,
+                [[ MEMBER_RANK_PRICE_PRODUCTVARIATION ]]
+          FROM  w2_ProductView
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id = @product_id
+           AND  w2_ProductView.variation_id = @variation_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductVariation>
+
+  <!-- 商品バリエーション在庫情報取得 -->
+  <GetProductVariationStockInfos>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductView.shop_id,
+                w2_ProductView.product_id,
+                w2_ProductView.variation_id,
+                w2_ProductView.name,
+                w2_ProductView.variation_name1,
+                w2_ProductView.variation_name2,
+                w2_ProductView.variation_name3,
+                w2_ProductView.tax_included_flg,
+                w2_ProductView.display_price,
+                w2_ProductView.display_special_price,
+                w2_ProductView.fixed_purchase_firsttime_price,
+                w2_ProductView.fixed_purchase_price,
+                w2_ProductView.price,
+                w2_ProductView.special_price,
+                w2_ProductView.variation_fixed_purchase_firsttime_price,
+                w2_ProductView.variation_fixed_purchase_price,
+                w2_ProductView.sale_price,
+                w2_ProductView.stock_management_kbn,
+                w2_ProductView.fixed_purchase_flg,
+                w2_ProductView.use_variation_flg,
+                w2_ProductView.stock_message_def,
+                w2_ProductView.stock_message_id,
+                CASE
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum7 THEN w2_ProductView.stock_message7
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum6 THEN w2_ProductView.stock_message6
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum5 THEN w2_ProductView.stock_message5
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum4 THEN w2_ProductView.stock_message4
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum3 THEN w2_ProductView.stock_message3
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum2 THEN w2_ProductView.stock_message2
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum1 THEN w2_ProductView.stock_message1
+                  WHEN w2_ProductView.stock > w2_ProductView.stock_datum1 THEN w2_ProductView.stock_message_def
+                  ELSE ''
+                END AS stock_message,
+                CASE
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum7 THEN 'stock_message7'
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum6 THEN 'stock_message6'
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum5 THEN 'stock_message5'
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum4 THEN 'stock_message4'
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum3 THEN 'stock_message3'
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum2 THEN 'stock_message2'
+                  WHEN w2_ProductView.stock <= w2_ProductView.stock_datum1 THEN 'stock_message1'
+                  WHEN w2_ProductView.stock > w2_ProductView.stock_datum1 THEN 'stock_message_def'
+                  ELSE ''
+                END AS stock_message_display_column_name
+          FROM  w2_ProductView
+         WHERE  w2_ProductView.shop_id = @shop_id
+           AND  w2_ProductView.product_id = @product_id
+         ORDER BY w2_ProductView.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductVariationStockInfos>
+
+  <!-- 商品税率カテゴリと紐づけられた商品情報を取得 -->
+  <GetProductByTaxCategoryId>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                *
+          FROM  w2_ProductView
+         WHERE  tax_category_id = @tax_category_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tax_category_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductByTaxCategoryId>
+
+</Product>

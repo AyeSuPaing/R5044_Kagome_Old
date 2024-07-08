@@ -1,0 +1,678 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 顧客状況分析セッティングXML(UserKbnAnalysis.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<UserKbnAnalysis>
+  <!--
+    構成分析のStatementへはname、count、total（各レコード共通）が取得できるSQLを記述する。
+
+    （例）
+
+    ========================================
+    [name]         [count]         [total]
+    ========================================
+    男             35              68
+    女             32              68
+    不明           1               68
+    ========================================
+  -->
+  <SexAnalysis>
+    <Title>性別構成</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- totalデータ作成
+      DECLARE @total_count decimal
+      SELECT  @total_count = COUNT(user_id)
+        FROM  w2_User
+       WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+         AND  (
+                @mall_id = ''
+                OR
+                w2_User.mall_id = @mall_id -- モールID（サイト）
+              )
+         AND  (del_flg = '0' AND integrated_flg = '0')
+      
+      -- 分析データ集計
+
+      SELECT  datas.name,
+          SUM(datas.count) AS count,
+          @total_count AS total
+        FROM  (
+            (
+            SELECT  1 AS no,
+                @@ValueText:sex:MALE@@ AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  sex = 'MALE'
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  2 AS no,
+                @@ValueText:sex:FEMALE@@ AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  sex = 'FEMALE'
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  3 AS no,
+                @@ValueText:sex:UNKNOWN@@ AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+              AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  sex = 'UNKNOWN'
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+          ) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </SexAnalysis>
+
+  <AgeAnalysis>
+    <Title>年齢構成</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- totalデータ作成
+      DECLARE @total_count decimal
+      SELECT  @total_count = COUNT(user_id)
+        FROM  w2_User
+       WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+         AND  (
+                @mall_id = ''
+                OR
+                w2_User.mall_id = @mall_id -- モールID（サイト）
+              )
+         AND  (del_flg = '0' AND integrated_flg = '0')
+       
+      -- 現在日付文字列取得yyyymmdd
+      DECLARE @now varchar(8)
+      SET @now = DATENAME(yyyy, getdate()) + DATENAME(mm, getdate()) + DATENAME(dd, getdate())
+      
+      -- 分析データ集計
+
+      SELECT  datas.name,
+          SUM(datas.count) AS count,
+          @total_count AS total
+        FROM  (
+            (
+            SELECT  1 AS no,
+                '12才以下' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  @now < DATENAME(yyyy, DATEADD(yyyy,12+1,birth)) + DATENAME(mm,birth) + DATENAME(dd, birth)
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  2 AS no,
+                '13-19才' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  @now >= DATENAME(yyyy, DATEADD(yyyy,13,birth)) + DATENAME(mm,birth) + DATENAME(dd, birth)
+               AND  @now < DATENAME(yyyy, DATEADD(yyyy,19+1,birth)) + DATENAME(mm,birth) + DATENAME(dd, birth)
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  3 AS no,
+                '20-29才' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  @now >= DATENAME(yyyy, DATEADD(yyyy,20,birth)) + DATENAME(mm,birth) + DATENAME(dd, birth)
+               AND  @now < DATENAME(yyyy, DATEADD(yyyy,29+1,birth)) + DATENAME(mm,birth) + DATENAME(dd, birth)
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  4 AS no,
+                '30-39才' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  @now >= DATENAME(yyyy, DATEADD(yyyy,30,birth)) + DATENAME(mm,birth) + DATENAME(dd, birth)
+               AND  @now < DATENAME(yyyy, DATEADD(yyyy,39+1,birth)) + DATENAME(mm,birth) + DATENAME(dd, birth)
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  5 AS no,
+                '40-49才' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  @now >= DATENAME(yyyy, DATEADD(yyyy,40,birth)) + DATENAME(mm,birth) + DATENAME(dd, birth)
+               AND  @now < DATENAME(yyyy, DATEADD(yyyy,49+1,birth)) + DATENAME(mm,birth) + DATENAME(dd, birth)
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  6 AS no,
+                '50才以上' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  @now >= DATENAME(yyyy, DATEADD(yyyy,50,birth)) + DATENAME(mm,birth) + DATENAME(dd, birth)
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+          ) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </AgeAnalysis>
+
+  <Addr1Analysis>
+    <Title>都道府県</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- テンポラリテーブル作成
+      DECLARE @tableTemp table(no int IDENTITY(1,1), addr1 varchar(10))
+      INSERT INTO @tableTemp (addr1) VALUES( '北海道' )
+      INSERT INTO @tableTemp (addr1) VALUES( '青森県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '岩手県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '宮城県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '秋田県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '山形県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '福島県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '茨城県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '栃木県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '群馬県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '埼玉県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '千葉県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '東京都' )
+      INSERT INTO @tableTemp (addr1) VALUES( '神奈川県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '新潟県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '富山県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '石川県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '福井県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '山梨県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '長野県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '岐阜県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '静岡県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '愛知県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '三重県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '滋賀県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '京都府' )
+      INSERT INTO @tableTemp (addr1) VALUES( '大阪府' )
+      INSERT INTO @tableTemp (addr1) VALUES( '兵庫県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '奈良県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '和歌山県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '鳥取県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '島根県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '岡山県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '広島県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '山口県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '徳島県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '香川県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '愛媛県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '高知県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '福岡県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '佐賀県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '長崎県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '熊本県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '大分県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '宮崎県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '鹿児島県' )
+      INSERT INTO @tableTemp (addr1) VALUES( '沖縄県' )
+    
+      -- totalデータ作成
+      DECLARE @total_count decimal
+      SELECT  @total_count = COUNT(user_id)
+        FROM  w2_User
+       WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+         AND  (
+                @mall_id = ''
+                OR
+                w2_User.mall_id = @mall_id -- モールID（サイト）
+              )
+         AND  (del_flg = '0' AND integrated_flg = '0')
+       
+      -- 分析データ集計
+
+      SELECT  temp.addr1 as name,
+          ISNULL(SUM(datas.count),0) AS count,
+          @total_count AS total
+        FROM  @tableTemp temp 
+              LEFT JOIN 
+              (
+                (
+                SELECT  1 AS no,
+                    addr1 AS name,
+                    COUNT(user_id) AS count
+                  FROM  w2_User
+                 WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+                   AND  (
+                          @mall_id = ''
+                          OR
+                          w2_User.mall_id = @mall_id -- モールID（サイト）
+                        )
+                   AND  (del_flg = '0' AND integrated_flg = '0')
+                GROUP BY addr1
+                )
+              ) datas ON
+              (
+                temp.addr1 = datas.name
+              )
+      GROUP BY temp.addr1, temp.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Addr1Analysis>
+  
+  <MailFlgAnalysis>
+    <Title>メール配信</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- totalデータ作成
+      DECLARE @total_count decimal
+      SELECT  @total_count = COUNT(user_id)
+        FROM  w2_User
+       WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+         AND  (
+                @mall_id = ''
+                OR
+                w2_User.mall_id = @mall_id -- モールID（サイト）
+              )
+         AND  (del_flg = '0' AND integrated_flg = '0')
+         
+      -- 分析データ集計
+
+      SELECT  datas.name,
+          SUM(datas.count) AS count,
+          @total_count AS total
+        FROM  (
+            (
+            SELECT  1 AS no,
+                'メール配信する' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  mail_flg = 'ON'
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  2 AS no,
+                'メール配信しない' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  mail_flg = 'OFF'
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  3 AS no,
+                '不明' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  mail_flg = 'UNKNOWN'
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+          ) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </MailFlgAnalysis>
+  
+  <DelFlgAnalysis>
+    <Title>削除フラグ</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- totalデータ作成
+      DECLARE @total_count decimal
+      SELECT  @total_count = COUNT(user_id)
+        FROM  w2_User
+       WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+         AND  (
+                @mall_id = ''
+                OR
+                w2_User.mall_id = @mall_id -- モールID（サイト）
+              )
+         AND  (
+                (del_flg = '0' AND integrated_flg = '0')
+                OR
+                (del_flg = '1')
+              )
+
+      -- 分析データ集計
+
+      SELECT  datas.name,
+          SUM(datas.count) AS count,
+          @total_count AS total
+        FROM  (
+            (
+            SELECT  1 AS no,
+                '通常' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  (del_flg = '0' AND integrated_flg = '0')
+            )
+            UNION ALL
+            (
+            SELECT  2 AS no,
+                '削除あり' AS name,
+                COUNT(user_id) AS count
+              FROM  w2_User
+             WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+               AND  (
+                      @mall_id = ''
+                      OR
+                      w2_User.mall_id = @mall_id -- モールID（サイト）
+                    )
+               AND  del_flg = '1'
+            )
+          ) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DelFlgAnalysis>
+
+  <CountryIsCoodeAnalysis>
+    <Title>アクセス国ISOコード</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- テンポラリテーブル作成
+        DECLARE @tableTemp table(no int IDENTITY(1,1), access_country_iso_code varchar(10))
+        INSERT INTO @tableTemp (access_country_iso_code)
+        SELECT  access_country_iso_code
+          FROM  w2_User WHERE access_country_iso_code != ''
+        GROUP BY w2_User.access_country_iso_code
+      
+        -- totalデータ作成
+        DECLARE @total_count decimal
+        SELECT  @total_count = COUNT(user_id)
+          FROM  w2_User
+         WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+           AND  (
+                  @mall_id = ''
+                  OR
+                  w2_User.mall_id = @mall_id -- モールID（サイト）
+                )
+           AND  (del_flg = '0' AND integrated_flg = '0')
+           AND  access_country_iso_code != ''
+         
+        -- 分析データ集計
+      
+        SELECT  temp.access_country_iso_code as name,
+                ISNULL(SUM(datas.count),0) AS count,
+                @total_count AS total
+          FROM  @tableTemp temp 
+                LEFT JOIN 
+                (
+                  (
+                  SELECT  1 AS no,
+                          access_country_iso_code AS name,
+                          COUNT(user_id) AS count
+                    FROM  w2_User
+                   WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+                     AND  (
+                            @mall_id = ''
+                            OR
+                            w2_User.mall_id = @mall_id -- モールID（サイト）
+                          )
+                     AND  (del_flg = '0' AND integrated_flg = '0')
+                  GROUP BY access_country_iso_code
+                  )
+                ) datas ON
+                (
+                  temp.access_country_iso_code = datas.name
+                )
+        GROUP BY temp.access_country_iso_code, temp.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CountryIsCoodeAnalysis>
+
+  <LanguageCodeAnalysis>
+    <Title>表示言語コード</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- テンポラリテーブル作成
+        DECLARE @tableTemp table(no int IDENTITY(1,1), disp_language_code varchar(10))
+        INSERT INTO @tableTemp (disp_language_code)
+        SELECT  disp_language_code FROM w2_User
+         WHERE  disp_language_code != ''
+        GROUP BY w2_User.disp_language_code
+      
+        -- totalデータ作成
+        DECLARE @total_count decimal
+        SELECT  @total_count = COUNT(user_id)
+          FROM  w2_User
+         WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+           AND  (
+                  @mall_id = ''
+                  OR
+                  w2_User.mall_id = @mall_id -- モールID（サイト）
+                )
+           AND  (del_flg = '0' AND integrated_flg = '0')
+           AND  disp_language_code != ''
+         
+        -- 分析データ集計
+      
+        SELECT  temp.disp_language_code as name,
+                ISNULL(SUM(datas.count),0) AS count,
+                @total_count AS total
+          FROM  @tableTemp temp 
+                LEFT JOIN 
+                (
+                  (
+                  SELECT  1 AS no,
+                          disp_language_code AS name,
+                          COUNT(user_id) AS count
+                    FROM  w2_User
+                   WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+                     AND  (
+                            @mall_id = ''
+                            OR
+                            w2_User.mall_id = @mall_id -- モールID（サイト）
+                          )
+                     AND  (del_flg = '0' AND integrated_flg = '0')
+                  GROUP BY disp_language_code
+                  )
+                ) datas ON
+                (
+                  temp.disp_language_code = datas.name
+                )
+        GROUP BY temp.disp_language_code, temp.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </LanguageCodeAnalysis>
+
+  <CurrencyCodeAnalysis>
+    <Title>表示通貨コード</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- テンポラリテーブル作成
+        DECLARE @tableTemp table(no int IDENTITY(1,1), disp_currency_code varchar(10))
+        INSERT INTO @tableTemp (disp_currency_code)
+        SELECT  disp_currency_code
+          FROM  w2_User
+         WHERE  disp_currency_code != ''
+        GROUP BY w2_User.disp_currency_code
+       
+        -- totalデータ作成
+        DECLARE @total_count decimal
+        SELECT  @total_count = COUNT(user_id)
+          FROM  w2_User
+         WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+           AND  (
+                  @mall_id = ''
+                  OR
+                  w2_User.mall_id = @mall_id -- モールID（サイト）
+                )
+           AND  (del_flg = '0' AND integrated_flg = '0')
+           AND  disp_currency_code != ''
+         
+        -- 分析データ集計
+       
+        SELECT  temp.disp_currency_code as name,
+                ISNULL(SUM(datas.count),0) AS count,
+                @total_count AS total
+          FROM  @tableTemp temp 
+                LEFT JOIN 
+                (
+                  (
+                  SELECT  1 AS no,
+                      disp_currency_code AS name,
+                      COUNT(user_id) AS count
+                    FROM  w2_User
+                   WHERE  (@user_kbn IS NULL OR user_kbn LIKE '%' + @user_kbn + '%' ESCAPE '#')
+                     AND  (
+                            @mall_id = ''
+                            OR
+                            w2_User.mall_id = @mall_id -- モールID（サイト）
+                          )
+                     AND  (del_flg = '0' AND integrated_flg = '0')
+                  GROUP BY disp_currency_code
+                  )
+                ) datas ON
+                (
+                  temp.disp_currency_code = datas.name
+                )
+        GROUP BY temp.disp_currency_code, temp.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CurrencyCodeAnalysis>
+  
+</UserKbnAnalysis>

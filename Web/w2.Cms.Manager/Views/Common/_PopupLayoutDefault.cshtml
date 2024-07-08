@@ -1,0 +1,192 @@
+﻿@*
+=========================================================================================================
+  Module      : ポップアップウィンドウ用 デフォルトレイアウトクラス(_PopupLayoutDefault.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using CommonConstants = w2.App.Common.Constants
+@using w2.App.Common.Manager.Menu
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.Menu
+@using w2.Cms.Manager.Codes.Settings
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+    <!--▽ HEAD ▽-->
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<title>
+		@if (DesignSetting.IsW2Cms)
+		{
+			@:W2Unified
+		}
+		else if (DesignSetting.IsRepeatPlus)
+		{
+			@:W2Repeat
+		}
+		else if (DesignSetting.IsRepeatFood)
+		{
+			@:W2Repeat Food
+		}
+		else
+		{
+			@w2.App.Common.Constants.MANAGER_DESIGN_SETTING
+		}
+		&nbsp;
+		@if (string.IsNullOrEmpty(ViewBag.Title) == false)
+		{
+			@ViewBag.Title
+		}
+		else
+		{
+			@ManagerMenuCache.Instance.GetTitle(Request.FilePath)
+		}
+	</title>
+    <link rel="stylesheet" href="~/Css/legacy_style.css?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED" media="screen,print" type="text/css" />
+    <link rel="stylesheet" href="~/Css/w2style.css?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED" media="screen,print" type="text/css"  />
+    <link rel="stylesheet" href="~/Css/w2style_cms_v2_1.css?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED" media="screen,print" type="text/css" />
+    <link rel="stylesheet" href="~/Images/Icon/icomoon/style.css" media="screen,print" type="text/css"/>
+    <link rel="stylesheet" href="~/Lib/jquery-ui-1.12.1.custom/jquery-ui.min.css" media="screen,print" type="text/css" />
+    <link rel="stylesheet" href="~/Lib/tags-input-autocomplete/jquery.tagsinput-revisited.css" media="screen,print" type="text/css" />
+    <script type="text/javascript" charset="Shift_JIS" src="~/Js/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" charset="Shift_JIS" src="~/Lib/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+    <script type="text/javascript" charset="Shift_JIS" src="~/Lib/tags-input-autocomplete/jquery.tagsinput-revisited.js"></script>
+    <script type="text/javascript" charset="Shift_JIS" src="~/Js/jquery.unobtrusive-ajax.min.js"></script>
+    <script type="text/javascript" charset="Shift_JIS" src="~/Js/cookie-utils.js"></script>
+    <script type="text/javascript" src="~/Js/Manager.js?@w2.App.Common.Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED"></script>
+    <script type="text/javascript" src="~/Js/menuaccordion.js"></script>
+    <script type="text/javascript" charset="Shift_JIS" src="~/Js/dateformat.js"></script>
+    <script type="text/javascript" charset="Shift_JIS" src="~/Js/knockout-3.5.0.js"></script>
+    <script type="text/javascript" charset="UTF-8" src="~/Lib/simplebar/simplebar.min.js"></script>
+    <script type="text/javascript">
+		var root_path = "@w2.Common.Constants.PATH_ROOT";
+		var supportSiteUrl = "@w2.App.Common.Constants.SUPPORT_SITE_URL";
+    </script>
+    <script type="text/javascript" charset="UTF-8" src="~/Js/common.js?@w2.App.Common.Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED"></script>
+
+    <script type="text/javascript">
+		<!--
+        // ページロード処理
+        function pageLoad(sender, args) {
+            // デザインセット
+            set_disabled_class();
+
+            // body側のpageLoad実行
+            if (typeof bodyPageLoad == "function") bodyPageLoad(sender, args);
+        }
+
+        // 親ウィンドウリロード（reload_list関数呼び出し）
+        function reload_parent_window() {
+            // 親ウィンドウあり AND 親ウィンドウが開いている AND 同一URLではない（同一URLの場合、リロードがループ）
+            if (window.opener &&
+                (window.opener.closed == false) &&
+                (window.location != window.opener.location) &&
+                (window.opener.reload_list != null)) {
+                // IE11で例外が発生する（処理は実行される）ためtry-catch
+                try {
+                    window.opener.reload_list();
+                } catch (e) {
+                }
+            }
+        }
+        //-->
+    </script>
+    @RenderSection("Style", false)
+    <!--△ HEAD △-->
+</head>
+<body onload="@ViewBag.OnLoadEvents" class="popup_body @DesignSetting.SiteCssClassName">
+<!-- Header START -->
+<div id="header">
+	<div class="package-title-wrapper">
+		<div class="package-logo_popup">
+			@if (DesignSetting.IsW2Cms)
+			{
+				<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_Unified_logo.svg" alt="logo"/>
+			}
+			else if (DesignSetting.IsRepeatPlus)
+			{
+				<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_Repeat_logo.svg" alt="logo"/>
+			}
+			else if (DesignSetting.IsRepeatFood)
+			{
+				<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_RepeatFood_logo.svg" alt="logo"/>
+			}
+			else
+			{
+				<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/logo_head.png" alt="logo"/>
+			}
+		</div>
+		<div class="header-site-label_popup">
+			@if (string.IsNullOrEmpty(w2.App.Common.Constants.MANAGER_DESIGN_DECORATE_ICON_FILENAME) == false)
+			{
+				<span class="icon">
+					<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/@w2.App.Common.Constants.MANAGER_DESIGN_DECORATE_ICON_FILENAME" alt=""/>
+				</span>
+			}
+			@if (string.IsNullOrEmpty(w2.App.Common.Constants.MANAGER_DESIGN_DECORATE_MESSAGE) == false)
+			{
+				<span class="label">@w2.App.Common.Constants.MANAGER_DESIGN_DECORATE_MESSAGE</span>
+			}
+		</div>
+	</div>
+</div>
+<!-- Header End -->
+<table class="popup_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+		<td align="center">
+
+			<!-- main contents -->
+			<div style="position: relative;">
+			@RenderBody()
+			@if (w2.App.Common.Constants.COOPERATION_SUPPORT_SITE)
+			{
+				<div class="main-contents-inner-support"></div>
+			}
+			</div>
+			<!-- /main contents -->
+
+			<table class="list_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+				<tr>
+					<td align="right">
+						<input id="btnClose" type="button" onclick="Javascript: close_popup();" Value="  閉じる  " class="btn btn-main"/>
+					</td>
+				</tr>
+			</table>
+			@if (DesignSetting.IsW2Product)
+			{
+				<p class="copyright">&copy; W2 Co.,Ltd.</p>
+			}
+		</td>
+	</tr>
+</table>
+@if (w2.App.Common.Constants.GOOGLEANALYTICS_ENABLED && w2.Common.Constants.SETTING_PRODUCTION_ENVIRONMENT)
+{
+	<script async src="https://www.googletagmanager.com/gtag/js?id='@(string.IsNullOrEmpty(CommonConstants.GOOGLEANALYTICS_PROFILE_ID) ? CommonConstants.GOOGLEANALYTICS_MEASUREMENT_ID : CommonConstants.GOOGLEANALYTICS_PROFILE_ID)'"></script>
+	<script type="text/javascript">
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
+		@if (string.IsNullOrEmpty(CommonConstants.GOOGLEANALYTICS_PROFILE_ID) == false)
+		{
+			@: gtag('config', '@CommonConstants.GOOGLEANALYTICS_PROFILE_ID');
+		}
+		gtag('config', '@CommonConstants.GOOGLEANALYTICS_MEASUREMENT_ID');
+	</script>
+}
+<script type="text/javascript">
+	// ポップアップ ウィンドウを閉じる確認します。
+	function close_popup() {
+		if ('@Request[w2.App.Common.Constants.REQUEST_KEY_MANAGER_POPUP_CLOSE_CONFIRM]' == '') {
+			window.close();
+		} else {
+			var msg = '';
+			if (confirm(msg))
+				window.close();
+			else return;
+		}
+	}
+</script>
+@RenderSection("JavaScript", false)
+</body>
+</html>

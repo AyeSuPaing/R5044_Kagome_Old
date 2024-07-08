@@ -1,0 +1,283 @@
+﻿<%--
+=========================================================================================================
+  Module      : デフォルトマスタページ(DefaultPage.master)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+--%>
+<%@ Import Namespace="w2.App.Common.Manager" %>
+<%@ Master Language="C#" AutoEventWireup="true" CodeFile="DefaultPage.master.cs" Inherits="Form_Common_DefaultPage" %>
+<%@ Import Namespace="w2.Domain.MenuAuthority.Helper" %>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head runat="server">
+	<title>
+		<%if (this.IsW2C) {%><%: Constants.APPLICATION_NAME_DISP %><%} %>
+		<%else if (this.IsRepeatPlus) {%>W2Repeat<%}%>
+		<%else if (this.IsRepeatFood) {%>W2Repeat Food<%} %>
+		<%else {%><%: Constants.MANAGER_DESIGN_SETTING %><%} %>
+		&nbsp;
+		<%if (string.IsNullOrEmpty(this.Page.Title) == false) {%><%: this.Page.Title %><%} %>
+		<%else {%><%: MenuUtility.GetTitle(Request.FilePath) %><%} %>
+	</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link rel="stylesheet" href="<%: this.ResolveClientUrl("~/Css/w2style.css?") + Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED %>" media="screen,print" type="text/css"  />
+	<link rel="stylesheet" href="<%: this.ResolveClientUrl("~/Css/w2style_ec.css?") + Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED %>" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="<%: this.ResolveClientUrl("~/Css/w2style_ec_v2.css?") + Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED %>" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="../../Images/Icon/icomoon/style.css" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="../../Css/jquery.autocomplete.css" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="../../Css/jquery.qtip.css" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="../../Css/jquery-ui-1.10.0.custom.css" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="../../Lib/simplebar/simplebar.css" media="screen,print" type="text/css"/>
+	<link rel="stylesheet" href="../../Css/odmeter/odometer-theme-default.css" media="screen,print" type="text/css" />
+	<script type="text/javascript" charset="Shift_JIS" src="<%= this.ResolveClientUrl("~/Js/jquery-3.3.1.min.js") %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%= this.ResolveClientUrl("~/Lib/jquery-ui-1.12.1.custom/jquery-ui.min.js") %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%= this.ResolveClientUrl("~/Js/cookie-utils.js") %>"></script>
+	<script type="text/javascript" charset="UTF-8" src="<%= this.ResolveClientUrl("~/Lib/simplebar/simplebar.min.js") %>"></script>
+	<script type="text/javascript" src="<%= Constants.PATH_ROOT %>Js/Manager.js?<%: Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED %>"></script>
+	<script type="text/javascript" src="<%= Constants.PATH_ROOT %>Js/menuaccordion.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%= this.ResolveClientUrl("~/Js/dateformat.js") %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%= this.ResolveClientUrl("~/Js/jquery.autocomplete.js") %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%= this.ResolveClientUrl("~/Js/jquery.tinyTips.js") %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%= this.ResolveClientUrl("~/Js/jquery.qtip.js") %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%= this.ResolveClientUrl("~/Js/clipboard.min.js") %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%= this.ResolveClientUrl("~/Js/fixed_midashi.js") %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%= this.ResolveClientUrl("~/Js/fixed_midashi.custom.js") %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%= this.ResolveClientUrl("~/Js/odometer.min.js") %>"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%= this.ResolveClientUrl("~/Js/moment.js") %>"></script>
+	<script type="text/javascript">
+		var root_path = "<%= Constants.PATH_ROOT %>";
+		var supportSiteUrl = "<%= Constants.SUPPORT_SITE_URL%>";
+	</script>
+	<script type="text/javascript" charset="Shift_JIS" src="<%: this.ResolveClientUrl("~/Js/common.js?") + Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED %>"></script>
+	<script type="text/javascript" src="<%= WebSanitizer.HtmlEncode(Constants.PATH_ROOT + "Js/AutoKana/jquery.autoKana.js") %>"></script>
+	<script type="text/javascript">
+		/**
+		 * 氏名（姓・名）の自動振り仮名変換を実行する
+		 * @param firstName 名
+		 * @param firstNameKana 名（かな）
+		 * @param lastName 姓
+		 * @param lastNameKana 姓（かな）
+		 */
+		function execAutoKanaWithKanaType(firstName, firstNameKana, lastName, lastNameKana) {
+			execAutoKana(
+				firstName,
+				firstNameKana,
+				lastName,
+				lastNameKana,
+				'<%: w2.App.Common.Web.Page.CommonPage.ReplaceTag("@@User.name_kana.type@@") %>');
+			}
+	</script>
+	<script type="text/javascript">
+<!--
+	// ページロード処理
+	function pageLoad(sender, args) {
+		// デザインセット
+		set_disabled_class();
+
+		// body側のpageLoad実行
+		if (typeof bodyPageLoad == "function") bodyPageLoad(sender, args);
+	}
+
+	function OnLoadEvent() {
+			<%= OnLoadEvents %>
+		}
+
+		// Save Url to cookie before unload page for check when come back from error page 
+		window.onbeforeunload = function() {
+			setCookie('<%= Constants.COOKIE_KEY_PREV_URL %>', window.location.protocol + "//" + window.location.host + window.location.pathname, { path: '<%= Constants.PATH_ROOT %>' });
+		};
+
+		// Wysiwygエディタで編集中のTextarea
+		var textAreaWysiwygBinded;
+
+		// グローバル変数 フルページモード
+		var global_fullPageFlg = false;
+
+		// Wysiwygエディタを開く
+		function open_wysiwyg(textAreaId, htmlTextKbn, isNewProductRegistPage) {
+			global_fullPageFlg = false;
+			textAreaWysiwygBinded = document.getElementById(textAreaId);
+			open_window('<%= WebSanitizer.UrlAttrHtmlEncode(Constants.PATH_ROOT + Constants.PAGE_MANAGER_WYSIWYG_EDITOR) %>', 'wysiwyg', 'width=900,height=740,top=120,left=420,status=NO, resizable=yes,scrollbars=yes');
+			textAreaWysiwygBinded.setAttribute("disabled", "disabled");
+			if (isNewProductRegistPage) {
+				document.getElementById(htmlTextKbn).checked = true;
+			} else {
+				document.getElementById(htmlTextKbn + '_1').checked = true;
+			}
+		}
+
+		// Open Wysiwyg And Get Window
+		function OpenWysiwygAndGetWindow(textAreaId, fullPageFlg) {
+			global_fullPageFlg = fullPageFlg;
+			textAreaWysiwygBinded = document.getElementById(textAreaId);
+			var popup = open_and_get_window('<%= WebSanitizer.UrlAttrHtmlEncode(Constants.PATH_ROOT + Constants.PAGE_MANAGER_WYSIWYG_EDITOR) %>', 'wysiwyg', 'width=900,height=740,top=120,left=420,status=NO, resizable=yes,scrollbars=yes');
+			textAreaWysiwygBinded.setAttribute("disabled", "disabled");
+
+			return popup;
+		}
+		//-->
+	</script>
+
+<asp:ContentPlaceHolder id="ContentPlaceHolderHead" runat="server">
+</asp:ContentPlaceHolder>
+</head>
+<body onload="OnLoadEvent();" style="background-image:url('<%= Constants.PATH_ROOT %>Images/Common/bg.gif');" class="<%: this.SiteCssClassName %>">
+<form id="form1" onsubmit="return (document.getElementById('__EVENTVALIDATION') != null);" runat="server" novalidate="novalidate">
+	<asp:Button ID="btnDummy" runat="server" OnClientClick="return false;" style="display:none;" />
+	<asp:ScriptManager ID="ScriptManager1" runat="server" OnAsyncPostBackError="smScriptManager_AsyncPostBackError"></asp:ScriptManager>
+
+	<!-- Header START -->
+	<div id="header">
+		<div class="package-title-wrapper">
+			<div class="package-logo">
+				<%if (this.IsW2C) {%>
+						<img src="<%= Constants.PATH_ROOT %>Images/Common/<%: this.ManagerDesingSettingDirName %>/W2_Unified_logo.svg" alt="logo"/>
+					<%} else if (this.IsRepeatPlus) {%>
+						<img src="<%= Constants.PATH_ROOT %>Images/Common/<%: this.ManagerDesingSettingDirName %>/W2_Repeat_logo.svg" alt="logo"/>
+					<%} else if (this.IsRepeatFood) {%>
+						<img src="<%= Constants.PATH_ROOT %>Images/Common/<%: this.ManagerDesingSettingDirName %>/W2_RepeatFood_logo.svg" alt="logo"/>
+					<%} else {%>
+						<img src="<%= Constants.PATH_ROOT %>Images/Common/<%: this.ManagerDesingSettingDirName %>/logo_login.png" alt="logo"/>
+				<% } %>
+			</div>
+			<div class="package-name">
+				<img src="<%= Constants.PATH_ROOT %>Images/Common/PKG_form/W2_EC_name.svg" alt="EC"/>
+			</div>
+			<div class="package-form">
+				<div class="header-site-label" style="margin-left: auto">
+					<%if (string.IsNullOrEmpty(Constants.MANAGER_DESIGN_DECORATE_ICON_FILENAME) == false) {%><span class="icon" ><img src="<%= Constants.PATH_ROOT %>Images/Common/<%: this.ManagerDesingSettingDirName %>/<%: Constants.MANAGER_DESIGN_DECORATE_ICON_FILENAME %>" alt="" /></span><%} %>
+					<%if (string.IsNullOrEmpty(Constants.MANAGER_DESIGN_DECORATE_MESSAGE) == false) {%><span class="label"><%: Constants.MANAGER_DESIGN_DECORATE_MESSAGE %></span><%} %>
+				</div>
+				<div class="header-tools">
+					<div class="operator-name">
+						<%: this.LoginOperatorName %> 様
+					</div>
+					<div class="btn-logout">
+						<a href="<%= Constants.PATH_ROOT %>" data-popover-message="ログアウト"><span class="icon icon-logout"></span></a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Header End -->
+
+	<div class="content">
+
+		<!-- tabs package -->
+		<div class="tabs-packages-wrapper">
+			<ul class="tabs-packages">
+				<%
+					var appNameHead = this.IsW2Product ? "Ｗ２" : "";
+				%>
+				<% if (Constants.EC_OPTION_ENABLED){ %>
+					<li class="tab-ec active"><a href="#" title='<%: appNameHead + "Commerce" %>'><span class="label">EC</span></a></li>
+				<%} %>
+				<% if (Constants.MP_OPTION_ENABLED){ %>
+					<li class="tab-mp"><a href="<%: SingleSignOnUrlCreator.CreateForWebForms(MenuAuthorityHelper.ManagerSiteType.Mp) %>" title='<%: appNameHead + "MarketingPlanner" %>' data-popover-message='<%: appNameHead + "MarketingPlanner" %>'><span class="label">MP</span></a></li>
+				<%} %>
+				<% if (Constants.CS_OPTION_ENABLED){ %>
+					<li class="tab-cs"><a href="<%: SingleSignOnUrlCreator.CreateForWebForms(MenuAuthorityHelper.ManagerSiteType.Cs) %>" title='<%: appNameHead + "CustomerSupport" %>' data-popover-message='<%: appNameHead + "CustomerSupport" %>'><span class="label">CS</span></a></li>
+				<%} %>
+				<% if (Constants.CMS_OPTION_ENABLED){ %>
+					<li class="tab-cms"><a href="<%: SingleSignOnUrlCreator.CreateForWebForms(MenuAuthorityHelper.ManagerSiteType.Cms) %>" title='<%: appNameHead + "CMS" %>' data-popover-message='<%: appNameHead + "CMS" %>'><span class="label">CMS</span></a></li>
+				<%} %>
+			</ul>
+			<ul class="packages-popmenu">
+				<% if (Constants.EC_OPTION_ENABLED){ %>
+					<li class="tab-ec active"><a href="#" title='<%: appNameHead + "Commerce" %>'><span class="label"><%: appNameHead + "Commerce" %></span></a></li>
+				<%} %>
+				<% if (Constants.MP_OPTION_ENABLED){ %>
+					<li class="tab-mp"><a href="<%: SingleSignOnUrlCreator.CreateForWebForms(MenuAuthorityHelper.ManagerSiteType.Mp) %>" title='<%: appNameHead + "MarketingPlanner" %>'><span class="label"><%: appNameHead + "MarketingPlanner" %></span></a></li>
+				<%} %>
+				<% if (Constants.CS_OPTION_ENABLED){ %>
+					<li class="tab-cs"><a href="<%: SingleSignOnUrlCreator.CreateForWebForms(MenuAuthorityHelper.ManagerSiteType.Cs) %>" title='<%: appNameHead + "CustomerSupport" %>'><span class="label"><%: appNameHead + "CustomerSupport" %></span></a></li>
+				<%} %>
+				<% if (Constants.CMS_OPTION_ENABLED){ %>
+					<li class="tab-cms"><a href="<%: SingleSignOnUrlCreator.CreateForWebForms(MenuAuthorityHelper.ManagerSiteType.Cms) %>" title='<%: appNameHead + "CMS" %>'><span class="label"><%: appNameHead + "CMS" %></span></a></li>
+				<%} %>
+			</ul>
+		</div>
+		<!-- /tabs package -->
+
+		<!-- sidemenu -->
+		<div class="sidemenu-wrapper">
+			<div class="sidemenu-btn-slimtoggle">
+				<%if (SessionManager.UsePaymentTabletZeus == false) {%>
+				<span class="btn-slimtoggle-on" data-popover-message="メニューを閉じる"></span>
+				<span class="btn-slimtoggle-off" data-popover-message="メニューを開く"></span>
+				<%} %>
+			</div>
+			<div class="sidemenu-btns-alltoggle">
+				<span class="btn-alltoggle-open">すべて開く</span>
+				<span class="btn-alltoggle-close">すべて閉じる</span>
+			</div>
+			<ul class="sidemenu">
+				<asp:Repeater id="rLargeMenu" ItemType="w2.App.Common.Manager.Menu.MenuLarge" Runat="server">
+				<ItemTemplate>
+					<li class="sidemenu-list open">
+						<p class="sidemenu-list-label">
+							<a href="javascript:void(0)"><span class="icon"><span class="<%# Item.IconCss %>"></span></span><span class="label"><%#: Item.Name %></span></a>
+							<a href="<%#: Item.PageIndexListUrl %>" class="poplink" visible="<%# (string.IsNullOrEmpty(Item.Key) == false) %>" runat="server">機能一覧</a>
+						</p>
+						<ul class="sidemenu-child-list">
+							<li class="sidemenu-list-parent-label">
+								<p class="sidemenu-list-label"><a href="#"><span class="label"><%#: Item.Name %></span></a></p>
+							</li>
+							<asp:Repeater ID="rSmallMenu" DataSource='<%# Item.SmallMenus %>' ItemType="w2.App.Common.Manager.Menu.MenuSmall" Runat="server">
+							<ItemTemplate>
+								<li class="sidemenu-list <%#: Request.FilePath.Contains(Item.MenuPath) ? "current" : "" %>"><p class="sidemenu-list-label"><a href="<%#: Item.Href %>"><%#: Item.Name %></a></p></li>
+							</ItemTemplate>
+							</asp:Repeater>
+						</ul>
+					</li>
+				</ItemTemplate>
+				</asp:Repeater>
+			</ul>
+			<%if (this.IsW2Product) {%>
+				<p class="copyright">
+				<%if (this.IsW2C && string.IsNullOrEmpty(Constants.W2UNIFIED_TERMS_OF_SERVICE_URL) == false ) {%>
+					<a id="terms_of_use" href="<%=Constants.SUPPORT_SITE_URL %><%= Constants.W2UNIFIED_TERMS_OF_SERVICE_URL %>?al=on&rd=on" target="_blank">利用規約</a>　　
+				<%} else if ((this.IsRepeatPlus || this.IsRepeatFood) && string.IsNullOrEmpty(Constants.W2REPEAT_TERMS_OF_SERVICE_URL) == false ) {%>
+					<a id="terms_of_use" href="<%=Constants.SUPPORT_SITE_URL %><%=Constants.W2REPEAT_TERMS_OF_SERVICE_URL %>?al=on&rd=on" target="_blank">利用規約</a>　　
+				<%} %>
+					&copy; W2 Co.,Ltd.
+				</p>
+			<%} %>
+		</div>
+		<!-- /sidemenu -->
+
+		<!-- main contents -->
+		<div class="main-contents">
+		<div class="main-contents-inner">
+
+		<asp:ContentPlaceHolder id="ContentPlaceHolderBody" runat="server"></asp:ContentPlaceHolder>
+		
+		<%if (Constants.COOPERATION_SUPPORT_SITE) {%>
+		<div class="main-contents-inner-support"></div>
+		<%} %>
+		</div>
+		</div>
+		<!-- /main contents -->
+
+	</div>
+
+</form>
+
+
+<%-- GoogleAnaytics解析タグ(管理サイト) --%>
+<% if ((Constants.GOOGLEANALYTICS_ENABLED) && (Constants.SETTING_PRODUCTION_ENVIRONMENT)){ %>
+	<script async src="https://www.googletagmanager.com/gtag/js?id=<%= (string.IsNullOrEmpty(Constants.GOOGLEANALYTICS_PROFILE_ID) ? Constants.GOOGLEANALYTICS_MEASUREMENT_ID : Constants.GOOGLEANALYTICS_PROFILE_ID) %>"></script>
+	<script type="text/javascript">
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
+		<% if (string.IsNullOrEmpty(Constants.GOOGLEANALYTICS_PROFILE_ID) == false) { %>
+			gtag('config', '<%= Constants.GOOGLEANALYTICS_PROFILE_ID %>');
+		<% } %>
+		gtag('config', '<%= Constants.GOOGLEANALYTICS_MEASUREMENT_ID %>');
+	</script>
+<%} %>
+
+</body>
+</html>

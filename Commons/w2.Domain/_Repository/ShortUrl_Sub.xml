@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ショートURLマスタ系SQLサブステートメントXML (ShortUrl_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<ShortUrl_Sub>
+
+  <!-- 検索用WHERE文 -->
+  <SHORTURL_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+       WHERE  shop_id = @shop_id
+         AND  CASE 
+                WHEN short_url LIKE '%:%' THEN short_url 
+                ELSE @protocol_and_domain + short_url 
+              END LIKE '%' + @short_url_like_escaped + '%' ESCAPE '#'
+         AND  CASE 
+                WHEN long_url LIKE '%:%' THEN long_url 
+                ELSE @protocol_and_domain + long_url 
+              END LIKE '%' + @long_url_like_escaped + '%' ESCAPE '#'
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </SHORTURL_SEARCH_WHERE>
+  
+  <!-- 検索用ORDER BY -->
+  <SHORTURL_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN date_created
+            ELSE NULL
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  2 THEN short_url
+            ELSE '1'
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN date_created
+            ELSE NULL
+          END 
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          surl_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </SHORTURL_SEARCH_ORDER_BY>
+
+</ShortUrl_Sub>

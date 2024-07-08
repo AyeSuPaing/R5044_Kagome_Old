@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+-- 補正対象メニュー権限を一時保存するためのテーブル変数作成
+DECLARE @menu table(
+    menu_authority_level INT
+)
+
+-- 補正対象メニュー権限を抽出し、テーブル変数に保存
+INSERT INTO @menu
+SELECT  menu_authority_level
+  FROM  w2_MenuAuthority
+ WHERE  pkg_kbn = '1'
+   AND  default_disp_flg = '1'
+   AND  menu_path IN ('ContentsManager/','CSSDesign/','News/','PageDesign/','PartsDesign/','ProductGroup/','ProductListDispSetting/','ProductRanking/','SeoMetadatas/','ShortUrl/','SiteInformation/')
+
+-- 以降、補正対象メニュー権限が存在する場合のみ実行
+IF((SELECT COUNT(*) FROM @menu) > 0)
+BEGIN
+    -- Cursorを定義して補正対象メニュー権限に対してループ処理
+    DECLARE @menu_authority_level INT
+    DECLARE menu CURSOR FOR SELECT menu_authority_level FROM @menu
+    OPEN menu
+    FETCH NEXT FROM menu INTO @menu_authority_level
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        -- サポートサイトのメニュー権限を持っているかどうかで分岐
+        IF ((SELECT COUNT(*) FROM w2_MenuAuthority WHERE menu_authority_level = @menu_authority_level AND menu_path = 'Form/Support/') > 0)
+        BEGIN
+            -- サポートサイトのメニュー権限を持っている場合はサポートサイトをデフォルト表示に更新
+            UPDATE w2_MenuAuthority SET default_disp_flg = '0' WHERE menu_authority_level = @menu_authority_level
+            UPDATE w2_MenuAuthority SET default_disp_flg = '1' WHERE menu_authority_level = @menu_authority_level AND menu_path = 'Form/Support/'
+        END
+        ELSE
+        BEGIN
+            -- サポートサイトのメニュー権限を持っていない場合はサポートサイトの権限を追加し、デフォルト表示に
+            DECLARE @menu_authority_name NVARCHAR(20)
+            SELECT @menu_authority_name = menu_authority_name FROM w2_MenuAuthority WHERE menu_authority_level = @menu_authority_level
+            UPDATE w2_MenuAuthority SET default_disp_flg = '0' WHERE menu_authority_level = @menu_authority_level
+            INSERT INTO w2_MenuAuthority VALUES ('0', '1', @menu_authority_level , @menu_authority_name, 'Form/Support/', 0, '1', '0', GETDATE(), GETDATE(), 'migration')
+        END
+        FETCH NEXT FROM menu INTO @menu_authority_level
+    END
+END
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

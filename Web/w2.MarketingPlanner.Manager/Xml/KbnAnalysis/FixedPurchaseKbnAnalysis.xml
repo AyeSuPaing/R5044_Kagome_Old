@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期購構成分析セッティングXML(FixedPurchaseKbnAnalysis.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchaseKbnAnalysis>
+
+  <FixedPurchasePriceAnalysis>
+    <Title>定期情報累計購入金額分析</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        -- 分析データ取得（一時テーブルへ）
+        SELECT  *
+          INTO  #tableTemp
+          FROM  (
+                  SELECT  w2_FixedPurchase.fixed_purchase_id,
+                          SUM(w2_Order.order_price_total) AS fixed_purchase_price_total
+                    FROM  w2_FixedPurchase
+                          INNER JOIN w2_Order ON
+                          (
+                            w2_Order.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                          )
+                   WHERE  w2_Order.del_flg = '0'
+                     AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+                     AND  w2_FixedPurchase.valid_flg = '1'  -- 有効
+                     AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+                     AND  (
+                            @regular_type = 'all'
+                            OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '') 
+                            OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                          )
+                  GROUP BY w2_FixedPurchase.fixed_purchase_id
+                ) temp
+
+        -- totalデータ作成
+        DECLARE @total_count decimal
+        SELECT  @total_count = COUNT(1)
+          FROM  #tableTemp
+
+        -- 集計
+        SELECT  datas.name,
+                datas.count,
+                @total_count AS total
+          FROM  (
+                  (
+                    SELECT  1 AS no,
+                            '@@fixed_purchase_price_name_1@@' AS name,
+                            count(1) AS count
+                      FROM  #tableTemp
+                     WHERE  fixed_purchase_price_total >= @@fixed_purchase_price_from_1@@
+                  )
+                  UNION ALL
+                  (
+                    SELECT  2 AS no,
+                            '@@fixed_purchase_price_name_2@@' AS name,
+                            count(1) AS count
+                      FROM  #tableTemp
+                     WHERE  fixed_purchase_price_total < @@fixed_purchase_price_to_2@@
+                       AND  fixed_purchase_price_total >= @@fixed_purchase_price_from_2@@
+                  )
+                  UNION ALL
+                  (
+                    SELECT  3 AS no,
+                            '@@fixed_purchase_price_name_3@@' AS name,
+                            count(1) AS count
+                      FROM  #tableTemp
+                     WHERE  fixed_purchase_price_total < @@fixed_purchase_price_to_3@@
+                       AND  fixed_purchase_price_total >= @@fixed_purchase_price_from_3@@
+                  )
+                  UNION ALL
+                  (
+                    SELECT  4 AS no,
+                            '@@fixed_purchase_price_name_4@@' AS name,
+                            count(1) AS count
+                      FROM  #tableTemp
+                     WHERE  fixed_purchase_price_total < @@fixed_purchase_price_to_4@@
+                       AND  fixed_purchase_price_total >= @@fixed_purchase_price_from_4@@
+                  )
+                  UNION ALL
+                  (
+                    SELECT  5 AS no,
+                            '@@fixed_purchase_price_name_5@@' AS name,
+                            count(1) AS count
+                      FROM  #tableTemp
+                     WHERE  fixed_purchase_price_total < @@fixed_purchase_price_to_5@@
+                       AND  fixed_purchase_price_total >= @@fixed_purchase_price_from_5@@
+                  )
+                  UNION ALL
+                  (
+                    SELECT  6 AS no,
+                            '@@fixed_purchase_price_name_6@@' AS name,
+                            count(1) AS count
+                      FROM  #tableTemp
+                     WHERE  fixed_purchase_price_total < @@fixed_purchase_price_to_6@@
+                       AND  fixed_purchase_price_total >= @@fixed_purchase_price_from_6@@
+                  )
+                  UNION ALL
+                  (
+                    SELECT  7 AS no,
+                            '@@fixed_purchase_price_name_7@@' AS name,
+                            count(1) AS count
+                      FROM  #tableTemp
+                     WHERE  fixed_purchase_price_total < @@fixed_purchase_price_to_7@@
+                       AND  fixed_purchase_price_total >= @@fixed_purchase_price_from_7@@
+                  )
+                  UNION ALL
+                  (
+                    SELECT  8 AS no,
+                            '@@fixed_purchase_price_name_8@@' AS name,
+                            count(1) AS count
+                      FROM  #tableTemp
+                     WHERE  fixed_purchase_price_total < @@fixed_purchase_price_to_8@@
+                       AND  fixed_purchase_price_total >= @@fixed_purchase_price_from_8@@
+                  )
+                  UNION ALL
+                  (
+                    SELECT  9 AS no,
+                            '@@fixed_purchase_price_name_9@@' AS name,
+                            count(1) AS count
+                      FROM  #tableTemp
+                     WHERE  fixed_purchase_price_total < @@fixed_purchase_price_to_9@@
+                       AND  fixed_purchase_price_total >= @@fixed_purchase_price_from_9@@
+                  )
+                  UNION ALL
+                  (
+                    SELECT  10 AS no,
+                            '@@fixed_purchase_price_name_10@@' AS name,
+                            count(1) AS count
+                      FROM  #tableTemp
+                     WHERE  fixed_purchase_price_total < @@fixed_purchase_price_to_10@@
+                       AND  fixed_purchase_price_total >= @@fixed_purchase_price_from_10@@
+                  )
+                  UNION ALL
+                  (
+                    SELECT  11 AS no,
+                            '@@fixed_purchase_price_name_11@@' AS name,
+                            count(1) AS count
+                      FROM  #tableTemp
+                     WHERE  fixed_purchase_price_total < @@fixed_purchase_price_to_11@@
+                       AND  fixed_purchase_price_total >= @@fixed_purchase_price_from_11@@
+                  )
+                  UNION ALL
+                  (
+                    SELECT  12 AS no,
+                            '@@fixed_purchase_price_name_12@@' AS name,
+                            count(1) AS count
+                      FROM  #tableTemp
+                     WHERE  fixed_purchase_price_total < @@fixed_purchase_price_to_12@@
+                  )
+                ) datas
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_status" Type="nvarchar" Size="10" />
+      <Input Name="regular_type" Type="nvarchar" Size="30" />
+    </Parameter>
+  </FixedPurchasePriceAnalysis>
+
+  <FixedPurchaseKbnOrverviewAnalysis>
+    <Title>顧客区分分析(概要)</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+        -- totalデータ作成
+        DECLARE @total_count decimal
+        SELECT  @total_count = COUNT(fixed_purchase_id)
+          FROM  w2_FixedPurchase
+         WHERE  valid_flg = '1'  -- 有効
+           AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+           AND  (
+                  @regular_type = 'all'
+                  OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '')
+                  OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                )
+         
+      -- 分析データ集計
+      SELECT  datas.name,
+          SUM(datas.count) AS count,
+          @total_count AS total
+        FROM  (
+                (
+                  SELECT  1 AS no,
+                          '全ての会員' AS name,
+                          COUNT(w2_FixedPurchase.fixed_purchase_id) AS count
+                    FROM  w2_FixedPurchase
+                          INNER JOIN w2_User ON
+                          (
+                            w2_User.user_id = w2_FixedPurchase.user_id
+                          )
+                   WHERE  w2_User.user_kbn LIKE '%USER%' ESCAPE '#'
+                     AND  w2_FixedPurchase.valid_flg = '1'
+                     AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+                     AND  (
+                            @regular_type = 'all'
+                            OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '')
+                            OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '') 
+                          )
+                )
+                UNION ALL
+                (
+                  SELECT  2 AS no,
+                          '全てのゲスト' AS name,
+                          COUNT(w2_FixedPurchase.fixed_purchase_id) AS count
+                    FROM  w2_FixedPurchase
+                          INNER JOIN w2_User ON
+                          (
+                            w2_User.user_id = w2_FixedPurchase.user_id
+                          )
+                   WHERE  w2_User.user_kbn LIKE '%GEST%' ESCAPE '#'
+                     AND  w2_FixedPurchase.valid_flg = '1'
+                     AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+                     AND  (
+                            @regular_type = 'all'
+                            OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '')
+                            OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                          )
+                  )
+                ) datas
+        GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_status" Type="nvarchar" Size="10" />
+      <Input Name="regular_type" Type="nvarchar" Size="30" />
+    </Parameter>
+  </FixedPurchaseKbnOrverviewAnalysis>
+
+  <FixedPurchaseUserKbnDetailAnalysis>
+    <Title>顧客区分分析(詳細)</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        -- totalデータ作成
+        DECLARE @total_count decimal
+        SELECT  @total_count = COUNT(fixed_purchase_id)
+          FROM  w2_FixedPurchase
+         WHERE  valid_flg = '1'  -- 有効
+           AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+           AND  (
+                  @regular_type = 'all'
+                  OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '') 
+                  OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                )
+
+        -- 分析データ集計
+        SELECT  datas.name,
+                SUM(datas.count) AS count,
+                @total_count AS total
+          FROM  (
+                  (
+                    SELECT  1 AS no,
+                            @@ValueText:user_kbn:PC_USER@@ AS name,
+                            COUNT(w2_FixedPurchase.fixed_purchase_id) AS count
+                      FROM  w2_FixedPurchase
+                            INNER JOIN w2_User ON
+                            (
+                              w2_User.user_id = w2_FixedPurchase.user_id
+                            )
+                     WHERE  w2_User.user_kbn = 'PC_USER'
+                       AND  w2_FixedPurchase.valid_flg = '1'
+                       AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+                       AND  (
+                              @regular_type = 'all'
+                              OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '') 
+                              OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                            )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  2 AS no,
+                            @@ValueText:user_kbn:PC_GEST@@ AS name,
+                            COUNT(w2_FixedPurchase.fixed_purchase_id) AS count
+                      FROM  w2_FixedPurchase
+                            INNER JOIN w2_User ON
+                            (
+                              w2_User.user_id = w2_FixedPurchase.user_id
+                            )
+                     WHERE  w2_User.user_kbn = 'PC_GEST'
+                       AND  w2_FixedPurchase.valid_flg = '1'
+                       AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+                       AND  (
+                              @regular_type = 'all'
+                              OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '') 
+                              OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                            )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  3 AS no,
+                            @@ValueText:user_kbn:SP_USER@@ AS name,
+                            COUNT(w2_FixedPurchase.fixed_purchase_id) AS count
+                      FROM  w2_FixedPurchase
+                            INNER JOIN w2_User ON
+                            (
+                              w2_User.user_id = w2_FixedPurchase.user_id
+                            )
+                     WHERE  w2_User.user_kbn = 'SP_USER'
+                       AND  w2_FixedPurchase.valid_flg = '1'
+                       AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+                       AND  (
+                              @regular_type = 'all'
+                              OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '') 
+                              OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                            )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  4 AS no,
+                            @@ValueText:user_kbn:SP_GEST@@ AS name,
+                            COUNT(w2_FixedPurchase.fixed_purchase_id) AS count
+                      FROM  w2_FixedPurchase
+                            INNER JOIN w2_User ON
+                            (
+                              w2_User.user_id = w2_FixedPurchase.user_id
+                            )
+                     WHERE  w2_User.user_kbn = 'SP_GEST'
+                       AND  w2_FixedPurchase.valid_flg = '1'
+                       AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+                       AND  (
+                              @regular_type = 'all'
+                              OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '') 
+                              OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                            )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  5 AS no,
+                            @@ValueText:user_kbn:MB_USER@@ AS name,
+                            COUNT(w2_FixedPurchase.fixed_purchase_id) AS count
+                      FROM  w2_FixedPurchase
+                            INNER JOIN w2_User ON
+                            (
+                              w2_User.user_id = w2_FixedPurchase.user_id
+                            )
+                     WHERE  w2_User.user_kbn = 'MB_USER'
+                       AND  w2_FixedPurchase.valid_flg = '1'
+                       AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+                       AND  (
+                              @regular_type = 'all'
+                              OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '') 
+                              OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                            )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  6 AS no,
+                            @@ValueText:user_kbn:MB_GEST@@ AS name,
+                            COUNT(w2_FixedPurchase.fixed_purchase_id) AS count
+                      FROM  w2_FixedPurchase
+                            INNER JOIN w2_User ON
+                            (
+                              w2_User.user_id = w2_FixedPurchase.user_id
+                            )
+                     WHERE  w2_User.user_kbn = 'MB_GEST'
+                       AND  w2_FixedPurchase.valid_flg = '1'
+                       AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+                       AND  (
+                              @regular_type = 'all'
+                              OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '') 
+                              OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                            )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  7 AS no,
+                            @@ValueText:user_kbn:OFF_USER@@ AS name,
+                            COUNT(w2_FixedPurchase.fixed_purchase_id) AS count
+                      FROM  w2_FixedPurchase
+                            INNER JOIN w2_User ON
+                            (
+                              w2_User.user_id = w2_FixedPurchase.user_id
+                            )
+                     WHERE  w2_User.user_kbn = 'OFF_USER'
+                       AND  w2_FixedPurchase.valid_flg = '1'
+                       AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+                       AND  (
+                              @regular_type = 'all'
+                              OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '') 
+                              OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                            )
+                  )
+                  UNION ALL
+                  (
+                    SELECT  8 AS no,
+                            @@ValueText:user_kbn:OFF_GEST@@ AS name,
+                            COUNT(w2_FixedPurchase.fixed_purchase_id) AS count
+                      FROM  w2_FixedPurchase
+                            INNER JOIN w2_User ON
+                            (
+                              w2_User.user_id = w2_FixedPurchase.user_id
+                            )
+                     WHERE  w2_User.user_kbn = 'OFF_GEST'
+                       AND  w2_FixedPurchase.valid_flg = '1'
+                       AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+                       AND  (
+                              @regular_type = 'all'
+                              OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '') 
+                              OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                            )
+                  )
+                ) datas
+        GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_status" Type="nvarchar" Size="10" />
+      <Input Name="regular_type" Type="nvarchar" Size="30" />
+    </Parameter>
+  </FixedPurchaseUserKbnDetailAnalysis>
+
+  <FixedPurchasePaymentKbnAnalysis>
+    <Title>決済区分分析</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        -- totalデータ作成
+        DECLARE @total_count decimal
+        SELECT  @total_count = COUNT(fixed_purchase_id)
+          FROM  w2_FixedPurchase
+         WHERE  w2_FixedPurchase.valid_flg = '1'
+           AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+           AND  (
+                  @regular_type = 'all'
+                  OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '') 
+                  OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                )
+
+        -- 分析データ集計
+        SELECT  w2_Payment.payment_name  AS name,
+                ISNULL(SUM(datas.count),0) AS count,
+                @total_count AS total
+          FROM  w2_Payment
+                LEFT JOIN
+                (
+                  SELECT  w2_FixedPurchase.order_payment_kbn,
+                          COUNT(fixed_purchase_id) AS count
+                    FROM  w2_FixedPurchase
+                   WHERE  w2_FixedPurchase.valid_flg = '1'
+                     AND  (@fixed_purchase_status IS NULL OR w2_FixedPurchase.fixed_purchase_status = @fixed_purchase_status)
+                     AND  (
+                            @regular_type = 'all'
+                            OR  (@regular_type = 'fixed_purchase' AND w2_FixedPurchase.subscription_box_course_id = '') 
+                            OR  (@regular_type = 'subscription_box' AND w2_FixedPurchase.subscription_box_course_id != '')
+                          )
+                  GROUP BY w2_FixedPurchase.order_payment_kbn
+                ) datas ON
+                (
+                  w2_Payment.payment_id = datas.order_payment_kbn
+                )
+         WHERE  w2_Payment.valid_flg = '1'
+           AND  (
+                  '1' = '@@amazon_payment_option@@'
+                  OR
+                  w2_Payment.payment_id != '@@amazon_payment_id@@'
+                )
+        GROUP BY w2_Payment.payment_name
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_status" Type="nvarchar" Size="10" />
+      <Input Name="regular_type" Type="nvarchar" Size="30" />
+    </Parameter>
+  </FixedPurchasePaymentKbnAnalysis>
+
+</FixedPurchaseKbnAnalysis>

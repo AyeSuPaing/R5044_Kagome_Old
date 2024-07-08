@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : User Business Owner XML(UserBusinessOwner.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2022 All Rights Reserved.
+=========================================================================================================
+-->
+
+<UserBusinessOwner>
+  <!-- Get by user id -->
+  <GetByUserId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+        FROM    w2_UserBusinessOwnerGMO
+        WHERE   w2_UserBusinessOwnerGMO.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetByUserId>
+
+  <!-- Insert -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT INTO w2_UserBusinessOwnerGMO
+           (user_id
+           ,credit_status
+           ,gmo_shop_customer_id
+           ,owner_name1
+           ,owner_name2
+           ,owner_name_kana1
+           ,owner_name_kana2
+           ,owner_birth
+           ,request_budget
+           ,date_created
+           ,date_changed)
+        VALUES(@user_id
+           ,@credit_status
+           ,@gmo_shop_customer_id
+           ,@owner_name1
+           ,@owner_name2
+           ,@owner_name_kana1
+           ,@owner_name_kana2
+           ,@owner_birth
+           ,@request_budget
+           ,getdate()
+           ,getdate())
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="credit_status" Type="nvarchar" Size="30" />
+      <Input Name="gmo_shop_customer_id" Type="nvarchar" Size="50" />
+      <Input Name="owner_name1" Type="nvarchar" Size="21" />
+      <Input Name="owner_name2" Type="nvarchar" Size="21" />
+      <Input Name="owner_name_kana1" Type="nvarchar" Size="25" />
+      <Input Name="owner_name_kana2" Type="nvarchar" Size="25" />
+      <Input Name="owner_birth" Type="datetime" />
+      <Input Name="request_budget" Type="int" />
+    </Parameter>
+  </Insert>
+
+  <!-- Update -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE w2_UserBusinessOwnerGMO
+        SET credit_status = @credit_status
+            ,gmo_shop_customer_id = @gmo_shop_customer_id
+            ,owner_name1 = @owner_name1
+            ,owner_name2 = @owner_name2
+            ,owner_name_kana1 = @owner_name_kana1
+            ,owner_name_kana2 = @owner_name_kana2
+            ,owner_birth = @owner_birth
+            ,request_budget = @request_budget
+            ,date_changed = getdate()
+        WHERE w2_UserBusinessOwnerGMO.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="credit_status" Type="nvarchar" Size="30" />
+      <Input Name="gmo_shop_customer_id" Type="nvarchar" Size="50" />
+      <Input Name="owner_name1" Type="nvarchar" Size="21" />
+      <Input Name="owner_name2" Type="nvarchar" Size="21" />
+      <Input Name="owner_name_kana1" Type="nvarchar" Size="25" />
+      <Input Name="owner_name_kana2" Type="nvarchar" Size="25" />
+      <Input Name="owner_birth" Type="datetime" />
+      <Input Name="request_budget" Type="int" />
+    </Parameter>
+  </Update>
+
+  <!-- Update credit status -->
+  <UpdateCreditStatus>
+    <Statement>
+      <![CDATA[
+        UPDATE w2_UserBusinessOwnerGMO
+        SET credit_status = @credit_status
+            ,date_changed = @date_changed
+        WHERE w2_UserBusinessOwnerGMO.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="credit_status" Type="nvarchar" Size="30" />
+      <Input Name="date_changed" Type="datetime" />
+    </Parameter>
+  </UpdateCreditStatus>
+
+  <!-- Get by credit status -->
+  <GetByCreditStatus>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+        FROM    w2_UserBusinessOwnerGMO
+        WHERE   w2_UserBusinessOwnerGMO.credit_status = @credit_status
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="credit_status" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetByCreditStatus>
+
+  <!-- Get Frame Guarantee Need Update-->
+  <GetFrameGuaranteeNeedUpdate>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserBusinessOwnerGMO
+         WHERE  w2_UserBusinessOwnerGMO.credit_status != 'OK' 
+           AND  w2_UserBusinessOwnerGMO.credit_status != 'NG'
+           AND  w2_UserBusinessOwnerGMO.request_budget > 0
+          ]]>
+    </Statement>
+  </GetFrameGuaranteeNeedUpdate>
+</UserBusinessOwner>

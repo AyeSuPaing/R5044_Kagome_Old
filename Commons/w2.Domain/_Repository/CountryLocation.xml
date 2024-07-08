@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 国ISOコードのマスタテーブル系SQLステートメントXML (CountryLocation.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<CountryLocation>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+        
+        SELECT  *
+          FROM  w2_CountryLocation
+         WHERE  geoname_id = @geoname_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="geoname_id" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Get>
+
+  <!-- 国名リストを取得 -->
+  <GetCountryNames>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CountryLocation.*
+          FROM  w2_CountryLocation
+         WHERE  w2_CountryLocation.country_name <> ''   -- マスタに国名ブランクのデータがあるため判定する
+        ORDER BY w2_CountryLocation.country_name
+      ]]>
+    </Statement>
+  </GetCountryNames>
+  
+  <!-- 配送可能な国を取得 -->
+  <GetShippingAvailableCountry>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_CountryLocation.country_iso_code,
+                w2_CountryLocation.country_name
+          FROM  w2_CountryLocation
+                INNER JOIN w2_GlobalShippingSetting ON
+                (
+                  w2_GlobalShippingSetting.country_iso_code = w2_CountryLocation.country_iso_code
+                  AND
+                  w2_GlobalShippingSetting.shipping_availavle_flg = '1'
+                )
+        ORDER BY w2_CountryLocation.country_name
+      ]]>
+    </Statement>
+  </GetShippingAvailableCountry>
+
+</CountryLocation>

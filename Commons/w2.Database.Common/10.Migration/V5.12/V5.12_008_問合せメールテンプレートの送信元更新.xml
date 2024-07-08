@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        -- バグ2978対応
+        DECLARE @mail_to nvarchar(256)
+        DECLARE @mail_from nvarchar(256)
+
+        --①問合せメール【管理者向け】の送信元メールアドレスを取得
+        SET @mail_from =
+            (SELECT  mail_from
+               FROM  w2_MailTemplate
+              WHERE  mail_id = '00000022'
+            )
+
+        --②注文完了メールの送信元メールアドレスを取得する
+        SET @mail_to =
+            (SELECT  mail_from
+               FROM  w2_MailTemplate
+              WHERE  mail_id = '00000050'
+            )
+
+        --①の中で@@mail_addr@@が設定されている場合、@@mail_addr@@から②に置換する
+        SET @mail_from = REPLACE(@mail_from , '@@mail_addr@@' , @mail_to) 
+
+        --問合せメール【管理者向け】の送信元メールアドレスを更新
+        UPDATE  w2_MailTemplate
+           SET  mail_from = @mail_from
+         WHERE  mail_id = '00000022'
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

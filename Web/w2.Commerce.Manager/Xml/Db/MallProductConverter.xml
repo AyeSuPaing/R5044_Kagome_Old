@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品コンバータ系SQLステートメントXML(MallProductConverter.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MallProductConverter>
+  
+  <!-- 商品変換先一覧を取得 -->
+  <GetProductConverter>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_MallPrdcnv.adto_id), 0)
+          FROM  w2_MallPrdcnv
+                [[ MALLPRODUCTCONVERTER_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_MallPrdcnv.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_MallPrdcnv.adto_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MALLPRODUCTCONVERTER_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MallPrdcnv
+                          [[ MALLPRODUCTCONVERTER_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_MallPrdcnv ON
+                (
+                  RowIndex.adto_id = w2_MallPrdcnv.adto_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetProductConverter>
+
+  <!-- 商品変換先を全取得 -->
+  <GetAllProductConverter>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MallPrdcnv.*
+          FROM  w2_MallPrdcnv
+         WHERE  shop_id = @shop_id
+        ORDER BY  w2_MallPrdcnv.adto_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetAllProductConverter>
+  
+  <!-- 商品変換先１件分の情報取得 -->
+  <GetProductConverterOnce>
+    <Statement>
+      <![CDATA[
+        SELECT  *,
+                CASE
+                  WHEN  separater = ',' THEN 0
+                  WHEN  separater = CHAR(9) THEN 1 
+                  ELSE -1 
+                END AS separaterType
+          FROM  w2_MallPrdcnv 
+         WHERE  adto_id = @adto_id;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="adto_id" Type="int" />
+    </Parameter>
+  </GetProductConverterOnce>
+  
+  <!-- 商品変換先１件分の空レコード取得 -->
+  <GetProductConverterEmpty>
+    <Statement>
+      <![CDATA[
+        SELECT 
+          null AS adto_id,
+          '' AS adto_name,
+          ',' AS separater,
+          '' AS characterCodeType,
+          '' AS newLineType,
+          '"' AS quote,
+          convert(bit,0) AS isQuote,
+          convert(bit,0) AS isHeader,
+          0 AS separaterType
+        ;
+      ]]>
+    </Statement>
+  </GetProductConverterEmpty>
+  
+  <!-- ファイル一覧取得 -->
+  <GetProductConverterFiles>
+    <Statement>
+      <![CDATA[      
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  TOP 10000
+                @row_count = ISNULL(COUNT(w2_MallPrdcnvFiles.adfiles_id), 0)
+          FROM  w2_MallPrdcnvFiles
+                [[ MALLPRODUCTCONVERTERFILES_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  TOP 10000
+                w2_MallPrdcnvFiles.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_MallPrdcnvFiles.adfiles_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MALLPRODUCTCONVERTERFILES_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MallPrdcnvFiles
+                          [[ MALLPRODUCTCONVERTERFILES_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_MallPrdcnvFiles ON
+                (
+                  RowIndex.adfiles_id = w2_MallPrdcnvFiles.adfiles_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC     
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="adto_id" Type="int" />
+    </Parameter>
+  </GetProductConverterFiles>
+
+  <!-- 商品変換先ごとのテキスト変換ルール -->
+  <GetProductConverterConvert>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MallPrdcnvRule 
+         WHERE  adto_id = @adto_id;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="adto_id" Type="int" />
+    </Parameter>
+  </GetProductConverterConvert>
+
+  <!-- 商品変換先出力列の定義 -->
+  <GetProductConverterColumns>
+    <Statement>
+      <![CDATA[
+        SELECT  column_no,
+                adcolumn_id,
+                adto_id,
+                column_name,
+                output_format
+          FROM  w2_MallPrdcnvColumns 
+         WHERE  adto_id = @adto_id 
+        ORDER BY  column_no;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="adto_id" Type="int" />
+    </Parameter>
+  </GetProductConverterColumns>
+  
+  <!-- 商品変換先 更新 -->
+  <UpdateProductConverter>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MallPrdcnv
+           SET  adto_name = @adto_name,
+                separater = (
+                              CASE 
+                                WHEN  @separaterType = 0 THEN ','
+                                WHEN  @separaterType = 1 THEN CHAR(9) 
+                                ELSE ',' 
+                              END
+                            ),
+                characterCodeType = @characterCodeType,
+                newLineType = @newLineType,
+                quote = @quote,
+                isQuote = @isQuote,
+                isHeader = @isHeader,
+                path = @path,
+                filename = @filename,
+                sourceTableName = @sourceTableName,
+                extractionPattern = @extractionPattern
+         WHERE  adto_id = @adto_id;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="adto_name" Type="nvarchar" Size="100" />
+      <Input Name="separaterType" Type="int" Size="1" />
+      <Input Name="characterCodeType" Type="nvarchar" Size="10" />
+      <Input Name="newLineType" Type="nvarchar" Size="10" />
+      <Input Name="quote" Type="char" Size="1" />
+      <Input Name="isQuote" Type="bit" />
+      <Input Name="isHeader" Type="bit" />
+      <Input Name="adto_id" Type="int" />
+      <Input Name="path" Type="nvarchar" Size="256" />
+      <Input Name="filename" Type="nvarchar" Size="50" />
+      <Input Name="sourceTableName" Type="varchar" Size="256" />
+      <Input Name="extractionPattern" Type="int" />
+    </Parameter>
+  </UpdateProductConverter>
+
+  <!-- 商品変換先 登録 -->
+  <InsertProductConverter>
+    <Statement>
+      <![CDATA[
+        INSERT INTO 
+                w2_MallPrdcnv
+                (
+                  shop_id,
+                  adto_name,
+                  separater,
+                  characterCodeType,
+                  newLineType,
+                  quote,
+                  isQuote,
+                  isHeader,
+                  filename,
+                  path,
+                  sourceTableName,
+                  extractionPattern
+                )
+        VALUES  (
+                  @shop_id,
+                  @adto_name,
+                  (
+                    CASE 
+                      WHEN @separaterType=0 THEN ','
+                      WHEN @separaterType=1 THEN CHAR(9) 
+                      ELSE ',' 
+                    END
+                  ),
+                  @characterCodeType,
+                  @newLineType,
+                  @quote,
+                  @isQuote,
+                  @isHeader,
+                  @filename,
+                  @path,
+                  @sourceTableName,
+                  @extractionPattern
+                );
+        SELECT  @@IDENTITY;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="adto_name" Type="nvarchar" Size="100" />
+      <Input Name="separaterType" Type="int" Size="1" />
+      <Input Name="characterCodeType" Type="nvarchar" Size="10" />
+      <Input Name="newLineType" Type="nvarchar" Size="10" />
+      <Input Name="quote" Type="char" Size="1" />
+      <Input Name="isQuote" Type="bit" />
+      <Input Name="isHeader" Type="bit" />
+      <Input Name="adto_id" Type="int" />
+      <Input Name="path" Type="nvarchar" Size="256" />
+      <Input Name="filename" Type="nvarchar" Size="50" />
+      <Input Name="sourceTableName" Type="varchar" Size="256" />
+      <Input Name="extractionPattern" Type="int" />
+    </Parameter>
+  </InsertProductConverter>
+
+  <!-- 商品変換先ごとのテキスト変換ルール 削除 -->
+  <DeleteProductConverterConvert>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MallPrdcnvRule 
+         WHERE  adto_id = @adto_id;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="adto_id" Type="int" />
+    </Parameter>
+  </DeleteProductConverterConvert>
+
+  <!-- 商品変換先ごとのテキスト変換ルール 更新 -->
+  <InsertProductConverterConvert>
+    <Statement>
+      <![CDATA[
+        INSERT INTO 
+                w2_MallPrdcnvRule
+                (
+                  adto_id,
+                  convertFrom,
+                  convertTo,
+                  target
+                )
+        SELECT  @adto_id AS adto_id,
+                @convertFrom AS convertFrom,
+                @convertTo AS convertTo,
+                tgt.target AS target
+          FROM  (
+                  SELECT  CASE counted.cnt
+                            WHEN 0 THEN null
+                            ELSE  (
+                                    SELECT  adcolumn_id 
+                                      FROM  w2_MallPrdcnvColumns 
+                                     WHERE  adto_id = @adto_id 
+                                       AND  column_no = @target
+                                  )
+                          END AS target
+                  FROM  (
+                          SELECT  count(adcolumn_id) AS cnt 
+                            FROM  w2_MallPrdcnvColumns 
+                           WHERE  adto_id = @adto_id 
+                             AND column_no = @target
+                        ) AS counted
+                ) AS tgt
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="adto_id" Type="int" />
+      <Input Name="convertFrom" Type="nvarchar" Size="100" />
+      <Input Name="convertTo" Type="nvarchar" Size="100" />
+      <Input Name="target" Type="int" />
+    </Parameter>
+  </InsertProductConverterConvert>
+
+  <!-- 出力書式 削除 -->
+  <DeleteProductConverterColumns>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MallPrdcnvColumns
+         WHERE  adto_id = @adto_id;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="adto_id" Type="int" />
+    </Parameter>
+  </DeleteProductConverterColumns>
+
+  <!-- 出力書式 更新 -->
+  <InsertProductConverterColumns>
+    <Statement>
+      <![CDATA[
+        INSERT INTO 
+                w2_MallPrdcnvColumns
+                (
+                  adto_id,
+                  column_no,
+                  column_name,
+                  output_format
+                )
+        VALUES  (
+                  @adto_id,
+                  @column_no,
+                  @column_name,
+                  @output_format
+                );
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="adto_id" Type="int" />
+      <Input Name="column_no" Type="nchar" Size="10" />
+      <Input Name="column_name" Type="nvarchar" Size="50" />
+      <Input Name="output_format" Type="nvarchar" Size="512" />
+    </Parameter>
+  </InsertProductConverterColumns>
+
+  <!-- 商品変換先削除 -->
+  <DeleteProductConverter>
+    <Statement>
+      <![CDATA[
+        EXEC DeleteItAdto @adto_id;
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="adto_id" Type="int" />
+    </Parameter>
+  </DeleteProductConverter>
+
+</MallProductConverter>

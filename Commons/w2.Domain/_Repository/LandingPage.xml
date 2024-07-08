@@ -1,0 +1,815 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : Lpページデザイン系SQLステートメントXML (LandingPage.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<LandingPage>
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_LandingPageDesign.*
+          FROM  w2_LandingPageDesign
+         WHERE  1 = 1
+          <@@hasval:page_title@@>
+           AND  (
+                  w2_LandingPageDesign.page_title LIKE '%' + @page_title + '%' 
+                  OR
+                  w2_LandingPageDesign.page_file_name LIKE '%' + @page_title + '%' 
+                  OR
+                  w2_LandingPageDesign.management_title LIKE '%' + @page_title + '%' 
+                )
+          </@@hasval:page_title@@>
+          <@@notval:public_date_kbn:UNSELECTED@@>
+          AND  (
+                 <@@val:public_date_kbn:DAY@@>
+                 CAST(public_start_datetime AS DATE) >= DATEADD(DAY,-1,CAST(getdate() AS DATE))
+                 </@@val:public_date_kbn:DAY@@>
+                 <@@val:public_date_kbn:WEEK@@>
+                 CAST(public_start_datetime AS DATE) >= DATEADD(DAY,-7,CAST(getdate() AS DATE))
+                 </@@val:public_date_kbn:WEEK@@>
+                 <@@val:public_date_kbn:MONTH@@>
+                 CAST(public_start_datetime AS DATE) >= DATEADD(Month,-1,CAST(getdate() AS DATE))
+                 </@@val:public_date_kbn:MONTH@@>
+                 <@@val:public_date_kbn:THREEMONTH@@>
+                 CAST(public_start_datetime AS DATE) >= DATEADD(Month,-3,CAST(getdate() AS DATE))
+                 </@@val:public_date_kbn:THREEMONTH@@>
+                 <@@val:public_date_kbn:AFTERTHREEMONTH@@>
+                 CAST(public_start_datetime AS DATE) <= DATEADD(Month,-3,CAST(getdate() AS DATE))
+                 </@@val:public_date_kbn:AFTERTHREEMONTH@@>
+               )
+           </@@notval:public_date_kbn:UNSELECTED@@>
+           AND  (
+                  @public_status = ''
+                  OR (w2_LandingPageDesign.public_status = @public_status)
+                )
+          <@@hasval:design_mode@@>
+           AND  w2_LandingPageDesign.design_mode = @design_mode
+          </@@hasval:design_mode@@>
+        ORDER BY w2_LandingPageDesign.date_changed desc
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_title" Type="nvarchar" Size="256" />
+      <Input Name="public_date_kbn" Type="nvarchar" Size="20" />
+      <Input Name="public_status" Type="nvarchar" Size="20" />
+      <Input Name="design_mode" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Search>
+
+  <!-- ページ数分を検索 -->
+  <SearchByNumberOfPages>
+    <Statement>
+      <![CDATA[
+      
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = COUNT(*)
+          FROM  w2_LandingPageDesign
+         WHERE  1 = 1
+          <@@hasval:page_title@@>
+           AND  (
+                  w2_LandingPageDesign.page_title LIKE '%' + @page_title + '%' 
+                  OR
+                  w2_LandingPageDesign.page_file_name LIKE '%' + @page_title + '%' 
+                  OR
+                  w2_LandingPageDesign.management_title LIKE '%' + @page_title + '%' 
+                )
+          </@@hasval:page_title@@>
+          <@@notval:public_date_kbn:UNSELECTED@@>
+          AND  (
+                 <@@val:public_date_kbn:DAY@@>
+                 CAST(public_start_datetime AS DATE) >= DATEADD(DAY,-1,CAST(getdate() AS DATE))
+                 </@@val:public_date_kbn:DAY@@>
+                 <@@val:public_date_kbn:WEEK@@>
+                 CAST(public_start_datetime AS DATE) >= DATEADD(DAY,-7,CAST(getdate() AS DATE))
+                 </@@val:public_date_kbn:WEEK@@>
+                 <@@val:public_date_kbn:MONTH@@>
+                 CAST(public_start_datetime AS DATE) >= DATEADD(Month,-1,CAST(getdate() AS DATE))
+                 </@@val:public_date_kbn:MONTH@@>
+                 <@@val:public_date_kbn:THREEMONTH@@>
+                 CAST(public_start_datetime AS DATE) >= DATEADD(Month,-3,CAST(getdate() AS DATE))
+                 </@@val:public_date_kbn:THREEMONTH@@>
+                 <@@val:public_date_kbn:AFTERTHREEMONTH@@>
+                 CAST(public_start_datetime AS DATE) <= DATEADD(Month,-3,CAST(getdate() AS DATE))
+                 </@@val:public_date_kbn:AFTERTHREEMONTH@@>
+               )
+           </@@notval:public_date_kbn:UNSELECTED@@>
+           AND  (
+                  @public_status = ''
+                  OR (w2_LandingPageDesign.public_status = @public_status)
+                )
+          <@@hasval:design_mode@@>
+           AND  w2_LandingPageDesign.design_mode = @design_mode
+          </@@hasval:design_mode@@>
+          <@@val:is_cart_list_lp:0@@>
+           AND  UPPER(w2_LandingPageDesign.page_file_name) <> 'CARTLISTLP'
+          </@@val:is_cart_list_lp:0@@>
+      
+        SELECT  RowIndex.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_LandingPageDesign.*,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            ORDER BY w2_LandingPageDesign.date_changed desc
+                          ) AS row_num
+                    FROM  w2_LandingPageDesign
+                   WHERE  1 = 1
+                    <@@hasval:page_title@@>
+                     AND  (
+                            w2_LandingPageDesign.page_title LIKE '%' + @page_title + '%' 
+                            OR
+                            w2_LandingPageDesign.page_file_name LIKE '%' + @page_title + '%' 
+                            OR
+                            w2_LandingPageDesign.management_title LIKE '%' + @page_title + '%' 
+                          )
+                    </@@hasval:page_title@@>
+                    <@@notval:public_date_kbn:UNSELECTED@@>
+                    AND  (
+                           <@@val:public_date_kbn:DAY@@>
+                           CAST(public_start_datetime AS DATE) >= DATEADD(DAY,-1,CAST(getdate() AS DATE))
+                           </@@val:public_date_kbn:DAY@@>
+                           <@@val:public_date_kbn:WEEK@@>
+                           CAST(public_start_datetime AS DATE) >= DATEADD(DAY,-7,CAST(getdate() AS DATE))
+                           </@@val:public_date_kbn:WEEK@@>
+                           <@@val:public_date_kbn:MONTH@@>
+                           CAST(public_start_datetime AS DATE) >= DATEADD(Month,-1,CAST(getdate() AS DATE))
+                           </@@val:public_date_kbn:MONTH@@>
+                           <@@val:public_date_kbn:THREEMONTH@@>
+                           CAST(public_start_datetime AS DATE) >= DATEADD(Month,-3,CAST(getdate() AS DATE))
+                           </@@val:public_date_kbn:THREEMONTH@@>
+                           <@@val:public_date_kbn:AFTERTHREEMONTH@@>
+                           CAST(public_start_datetime AS DATE) <= DATEADD(Month,-3,CAST(getdate() AS DATE))
+                           </@@val:public_date_kbn:AFTERTHREEMONTH@@>
+                         )
+                     </@@notval:public_date_kbn:UNSELECTED@@>
+                     AND  (
+                            @public_status = ''
+                            OR (w2_LandingPageDesign.public_status = @public_status)
+                          )
+                    <@@hasval:design_mode@@>
+                     AND  w2_LandingPageDesign.design_mode = @design_mode
+                    </@@hasval:design_mode@@>
+                    <@@val:is_cart_list_lp:0@@>
+                     AND  UPPER(w2_LandingPageDesign.page_file_name) <> 'CARTLISTLP'
+                    </@@val:is_cart_list_lp:0@@>
+                ) AS RowIndex
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_title" Type="nvarchar" Size="256" />
+      <Input Name="public_date_kbn" Type="nvarchar" Size="20" />
+      <Input Name="public_status" Type="nvarchar" Size="20" />
+      <Input Name="design_mode" Type="nvarchar" Size="20" />
+      <Input Name="is_cart_list_lp" Type="nvarchar" Size="1" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchByNumberOfPages>
+  
+  <!-- 取得 -->
+  <GetPageData>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_LandingPageDesign
+         WHERE  page_id = @page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </GetPageData>
+
+  <!-- 取得 -->
+  <GetAllPage>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_LandingPageDesign
+      ]]>
+    </Statement>
+    <Parameter>
+      
+    </Parameter>
+  </GetAllPage>
+
+  <!-- ページファイル名を元に取得 -->
+  <GetPageByFileName>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_LandingPageDesign WITH(NOLOCK)
+         WHERE  page_file_name = @page_file_name
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_file_name" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetPageByFileName>
+
+  <!-- 取得 -->
+  <GetPageBlockData>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_LandingPageDesignBlock
+         WHERE  page_id = @page_id
+           AND  design_type = @design_type
+         ORDER BY page_id,design_type,block_index
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="design_type" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetPageBlockData>
+
+  <!-- 取得 -->
+  <GetPageElementData>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_LandingPageDesignElement
+         WHERE  page_id = @page_id
+           AND  design_type = @design_type
+         ORDER BY page_id,design_type,block_index,element_index
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="design_type" Type="nvarchar" Size="20" />
+    </Parameter>
+  </GetPageElementData>
+
+  <!-- 取得 -->
+  <GetPageAttributeData>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_LandingPageDesignAttribute
+         WHERE  page_id = @page_id
+           AND  design_type = @design_type
+         ORDER BY page_id,design_type,block_index,element_index,attribute
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="design_type" Type="nvarchar" Size="20" />
+      <Input Name="block_index" Type="int" />
+      <Input Name="element_index" Type="int" />
+      <Input Name="attribute" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetPageAttributeData>
+
+  <!-- 取得 -->
+  <GetPageProductSetData>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_LandingPageProductSet
+         WHERE  page_id = @page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </GetPageProductSetData>
+
+  <!-- 取得 -->
+  <GetPageProductData>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_LandingPageProduct
+         WHERE  page_id = @page_id
+        ORDER BY branch_no, variation_sort_number
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </GetPageProductData>
+
+  <!-- LP件数取得 -->
+  <GetCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_LandingPageDesign
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetCount>
+  
+  <!-- 登録 -->
+  <InsertPage>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_LandingPageDesign
+                (
+                  page_id
+                  ,page_title
+                  ,page_file_name
+                  ,public_status
+                  ,public_start_datetime
+                  ,public_end_datetime
+                  ,product_choose_type
+                  ,user_registration_type
+                  ,login_form_type
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,metadata_desc
+                  ,management_title
+                  ,social_login_use_type
+                  ,social_login_list
+                  ,efo_cube_use_flg
+                  ,order_confirm_page_skip_flg
+                  ,mail_address_confirm_form_use_flg
+                  ,unpermitted_payment_ids
+                  ,tag_setting_list
+                  ,default_payment_id
+                  ,novelty_use_flg
+                  ,design_mode
+                  ,personal_authentication_use_flg
+                )
+        VALUES  (
+                  @page_id
+                  ,@page_title
+                  ,@page_file_name
+                  ,@public_status
+                  ,@public_start_datetime
+                  ,@public_end_datetime
+                  ,@product_choose_type
+                  ,@user_registration_type
+                  ,@login_form_type
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@metadata_desc
+                  ,@management_title
+                  ,@social_login_use_type
+                  ,@social_login_list
+                  ,@efo_cube_use_flg
+                  ,@order_confirm_page_skip_flg
+                  ,@mail_address_confirm_form_use_flg
+                  ,@unpermitted_payment_ids
+                  ,@tag_setting_list
+                  ,@default_payment_id
+                  ,@novelty_use_flg
+                  ,@design_mode
+                  ,@personal_authentication_use_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="page_title" Type="nvarchar" Size="256" />
+      <Input Name="page_file_name" Type="nvarchar" Size="256" />
+      <Input Name="public_status" Type="nvarchar" Size="20" />
+      <Input Name="public_start_datetime" Type="datetime" />
+      <Input Name="public_end_datetime" Type="datetime" />
+      <Input Name="product_choose_type" Type="nvarchar" Size="20" />
+      <Input Name="user_registration_type" Type="nvarchar" Size="20" />
+      <Input Name="login_form_type" Type="nvarchar" Size="20" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="metadata_desc" Type="nvarchar" Size="200" />
+      <Input Name="management_title" Type="nvarchar" Size="256" />
+      <Input Name="social_login_use_type" Type="nvarchar" Size="20" />
+      <Input Name="social_login_list" Type="nvarchar" Size="MAX" />
+      <Input Name="efo_cube_use_flg" Type="nvarchar" Size="20" />
+      <Input Name="order_confirm_page_skip_flg" Type="nvarchar" Size="20" />
+      <Input Name="mail_address_confirm_form_use_flg" Type="nvarchar" Size="20" />
+      <Input Name="unpermitted_payment_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="tag_setting_list" Type="nvarchar" Size="MAX" />
+      <Input Name="default_payment_id" Type="nvarchar" Size="10" />
+      <Input Name="novelty_use_flg" Type="nvarchar" Size="20" />
+      <Input Name="design_mode" Type="nvarchar" Size="20" />
+      <Input Name="personal_authentication_use_flg" Type="nvarchar" Size="10" />
+    </Parameter>
+  </InsertPage>
+
+  <!-- 登録 -->
+  <InsertBlock>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_LandingPageDesignBlock
+                (
+                  page_id
+                  ,design_type
+                  ,block_index
+                  ,block_class_name
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @page_id
+                  ,@design_type
+                  ,@block_index
+                  ,@block_class_name
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="design_type" Type="nvarchar" Size="20" />
+      <Input Name="block_index" Type="int" />
+      <Input Name="block_class_name" Type="nvarchar" Size="512" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertBlock>
+
+  <!-- 登録 -->
+  <InsertElement>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_LandingPageDesignElement
+                (
+                  page_id
+                  ,design_type
+                  ,block_index
+                  ,element_index
+                  ,element_place_holder_name
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @page_id
+                  ,@design_type
+                  ,@block_index
+                  ,@element_index
+                  ,@element_place_holder_name
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="design_type" Type="nvarchar" Size="20" />
+      <Input Name="block_index" Type="int" />
+      <Input Name="element_index" Type="int" />
+      <Input Name="element_place_holder_name" Type="nvarchar" Size="256" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertElement>
+
+  <!-- 登録 -->
+  <InsertAttribute>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_LandingPageDesignAttribute
+                (
+                  page_id
+                  ,design_type
+                  ,block_index
+                  ,element_index
+                  ,attribute
+                  ,value
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @page_id
+                  ,@design_type
+                  ,@block_index
+                  ,@element_index
+                  ,@attribute
+                  ,@value
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="design_type" Type="nvarchar" Size="20" />
+      <Input Name="block_index" Type="int" />
+      <Input Name="element_index" Type="int" />
+      <Input Name="attribute" Type="nvarchar" Size="256" />
+      <Input Name="value" Type="nvarchar" Size="MAX" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertAttribute>
+
+  <!-- 登録 -->
+  <InsertProductSet>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_LandingPageProductSet
+                (
+                  page_id
+                  ,branch_no
+                  ,set_name
+                  ,valid_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,subscription_box_course_id
+                )
+        VALUES  (
+                  @page_id
+                  ,@branch_no
+                  ,@set_name
+                  ,@valid_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@subscription_box_course_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="set_name" Type="nvarchar" Size="256" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="subscription_box_course_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </InsertProductSet>
+
+  <!-- 登録 -->
+  <InsertProduct>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_LandingPageProduct
+                (
+                  page_id
+                  ,shop_id
+                  ,product_id
+                  ,variation_id
+                  ,quantity
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,branch_no
+                  ,variation_sort_number
+                  ,buy_type
+                )
+        VALUES  (
+                  @page_id
+                  ,@shop_id
+                  ,@product_id
+                  ,@variation_id
+                  ,@quantity
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@branch_no
+                  ,@variation_sort_number
+                  ,@buy_type
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="quantity" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="branch_no" Type="int" />
+      <Input Name="variation_sort_number" Type="int" />
+      <Input Name="buy_type" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertProduct>
+  
+  <!-- 更新 -->
+  <UpdatePage>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_LandingPageDesign
+           SET  page_title = @page_title
+                ,page_file_name = @page_file_name
+                ,public_status = @public_status
+                ,public_start_datetime = @public_start_datetime
+                ,public_end_datetime = @public_end_datetime
+                ,product_choose_type = @product_choose_type
+                ,user_registration_type = @user_registration_type
+                ,login_form_type = @login_form_type
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,metadata_desc = @metadata_desc
+                ,management_title = @management_title
+                ,social_login_use_type = @social_login_use_type
+                ,social_login_list = @social_login_list
+                ,efo_cube_use_flg = @efo_cube_use_flg
+                ,order_confirm_page_skip_flg = @order_confirm_page_skip_flg
+                ,mail_address_confirm_form_use_flg = @mail_address_confirm_form_use_flg
+                ,unpermitted_payment_ids = @unpermitted_payment_ids
+                ,tag_setting_list = @tag_setting_list
+                ,default_payment_id = @default_payment_id
+                ,novelty_use_flg = @novelty_use_flg
+                ,design_mode = @design_mode
+                ,payment_choose_type = @payment_choose_type
+                ,personal_authentication_use_flg = @personal_authentication_use_flg
+         WHERE  page_id = @page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="page_title" Type="nvarchar" Size="256" />
+      <Input Name="page_file_name" Type="nvarchar" Size="256" />
+      <Input Name="public_status" Type="nvarchar" Size="20" />
+      <Input Name="public_start_datetime" Type="datetime" />
+      <Input Name="public_end_datetime" Type="datetime" />
+      <Input Name="product_choose_type" Type="nvarchar" Size="20" />
+      <Input Name="user_registration_type" Type="nvarchar" Size="20" />
+      <Input Name="login_form_type" Type="nvarchar" Size="20" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="metadata_desc" Type="nvarchar" Size="200" />
+      <Input Name="management_title" Type="nvarchar" Size="256" />
+      <Input Name="social_login_use_type" Type="nvarchar" Size="20" />
+      <Input Name="social_login_list" Type="nvarchar" Size="MAX" />
+      <Input Name="efo_cube_use_flg" Type="nvarchar" Size="20" />
+      <Input Name="order_confirm_page_skip_flg" Type="nvarchar" Size="20" />
+      <Input Name="mail_address_confirm_form_use_flg" Type="nvarchar" Size="20" />
+      <Input Name="unpermitted_payment_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="tag_setting_list" Type="nvarchar" Size="MAX" />
+      <Input Name="default_payment_id" Type="nvarchar" Size="10" />
+      <Input Name="novelty_use_flg" Type="nvarchar" Size="20" />
+      <Input Name="design_mode" Type="nvarchar" Size="20" />
+      <Input Name="payment_choose_type" Type="nvarchar" Size="10" />
+      <Input Name="personal_authentication_use_flg" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdatePage>
+
+  <!-- 削除 -->
+  <DeletePage>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_LandingPageDesign
+         WHERE  page_id = @page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </DeletePage>
+
+  <!-- 削除 -->
+  <DeletePageBolocks>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_LandingPageDesignBlock
+         WHERE  page_id = @page_id
+           AND  (@design_type = '' OR design_type = @design_type)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="design_type" Type="nvarchar" Size="20" />
+    </Parameter>
+  </DeletePageBolocks>
+
+  <!-- 削除 -->
+  <DeletePageElements>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_LandingPageDesignElement
+         WHERE  page_id = @page_id
+           AND  (@design_type = '' OR design_type = @design_type)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="design_type" Type="nvarchar" Size="20" />
+    </Parameter>
+  </DeletePageElements>
+
+  <!-- 削除 -->
+  <DeletePageAttributes>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_LandingPageDesignAttribute
+         WHERE  page_id = @page_id
+           AND  (@design_type = '' OR design_type = @design_type)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+      <Input Name="design_type" Type="nvarchar" Size="20" />
+    </Parameter>
+  </DeletePageAttributes>
+
+  <!-- 削除 -->
+  <DeletePageProductSets>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_LandingPageProductSet
+         WHERE  page_id = @page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </DeletePageProductSets>
+
+  <!-- 削除 -->
+  <DeletePageProducts>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_LandingPageProduct
+         WHERE  page_id = @page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </DeletePageProducts>
+
+  <!-- パラメタ検索ヒット件数取得 -->
+  <GetCountOfSearchByParamModel>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_LandingPageDesign
+         WHERE  (
+                  1 = 1
+                  <@@hasval:page_id_like_escaped@@>
+                    AND
+                    -- ページID
+                    w2_LandingPageDesign.page_id LIKE '%' + @page_id_like_escaped + '%'  ESCAPE '#'
+                  </@@hasval:page_id_like_escaped@@>
+                  <@@hasval:name_like_escaped@@>
+                    AND
+                    -- 管理用ページ名
+                    w2_LandingPageDesign.management_title LIKE '%' + @name_like_escaped + '%'  ESCAPE '#'
+                    OR
+                    w2_LandingPageDesign.page_file_name LIKE '%' + @name_like_escaped + '%'  ESCAPE '#'
+                  </@@hasval:name_like_escaped@@>
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id_like_escaped" Type="nvarchar" />
+      <Input Name="name_like_escaped" Type="nvarchar" />
+    </Parameter>
+    </GetCountOfSearchByParamModel>
+
+  <!-- パラメタ検索 -->
+  <SearchByParamModel>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_LandingPageDesign
+         WHERE  (
+                  1 = 1
+                  <@@hasval:page_id_like_escaped@@>
+                    AND
+                    -- ページID
+                    w2_LandingPageDesign.page_id LIKE '%' + @page_id_like_escaped + '%'  ESCAPE '#'
+                  </@@hasval:page_id_like_escaped@@>
+                  <@@hasval:name_like_escaped@@>
+                    AND
+                    -- 管理用ページ名
+                    w2_LandingPageDesign.management_title LIKE '%' + @name_like_escaped + '%'  ESCAPE '#'
+                    OR
+                    w2_LandingPageDesign.page_file_name LIKE '%' + @name_like_escaped + '%'  ESCAPE '#'
+                  </@@hasval:name_like_escaped@@>
+                )
+        ORDER BY ROW_NUMBER() OVER(ORDER BY w2_LandingPageDesign.page_id) ASC
+        OFFSET @offset_num ROWS
+        FETCH NEXT @fetch_num ROWS ONLY
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id_like_escaped" Type="nvarchar" />
+      <Input Name="name_like_escaped" Type="nvarchar" />
+      <Input Name="offset_num" Type="int" />
+      <Input Name="fetch_num" Type="int" />
+    </Parameter>
+  </SearchByParamModel>
+
+  <!-- ABテストアイテム件数取得 -->
+  <GetCountInAbTestItemByPageId>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_AbTestItem
+         WHERE  page_id = @page_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="page_id" Type="nvarchar" Size="32" />
+    </Parameter>
+  </GetCountInAbTestItemByPageId>
+</LandingPage>

@@ -1,0 +1,355 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : アクセスログ取込SQLステートメントXML(ImportW3cLog.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ImportW3cLog>
+
+  <!-- ログファイル取込ステータス変更(取込チェックも行う) -->
+  <ChangeImportStatus>
+    <Statement>
+      <![CDATA[
+        -- チェック
+        DECLARE @check_result int
+        SELECT  @check_result = [dbo].w2_CheckAccessLogStatusFnc(
+                  @target_date,  -- 対象年月
+                  @import_files,  -- 取込ファイル番号
+                  1,        -- 「日次」取込は日次のみ
+                  @day_status    -- 要求ステータス（ここでは「取込中」のみ）
+                )
+
+        -- チェックOKならステータス変更
+        IF @check_result = 0
+        BEGIN
+          -- レコードの存在可否チェック
+          DECLARE @record_cnt int
+          SELECT  @record_cnt = count(*)
+            FROM  w2_AccessLogStatus
+            
+          IF @record_cnt = 0
+          BEGIN
+            -- インサート
+            INSERT  w2_AccessLogStatus
+                    (
+                      target_date,
+                      day_status,
+                      import_files,
+                      import_files_total,
+                      target_filename
+                    )
+            VALUES  (
+                      @target_date,
+                      @day_status,
+                      @import_files,
+                      @import_files_total,
+                      @target_filename
+                    )
+          END
+          ELSE
+          BEGIN
+            -- アップデート
+            UPDATE  w2_AccessLogStatus
+               SET  target_date = @target_date,
+                    day_status = @day_status,
+                    import_files = @import_files,
+                    import_files_total = @import_files_total,
+                    target_filename = @target_filename,
+                    date_changed = getdate()
+          END
+        END
+        
+        -- 結果返却
+        SELECT @check_result AS result      
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="target_date" Type="nvarchar" Size="10" />
+      <Input Name="day_status" Type="nvarchar" Size="2" />
+      <Input Name="import_files" Type="int" />
+      <Input Name="import_files_total" Type="int" />
+      <Input Name="target_filename" Type="nvarchar" Size="30" />
+    </Parameter>
+  </ChangeImportStatus>
+
+  <!-- ログ取込ステータス更新(成功) -->
+  <ChangeImportStatusSuccess>
+    <Statement>
+      <![CDATA[
+        DECLARE @day_status_change nvarchar(2)
+
+        -- 現在のステータス取得
+        DECLARE @st_import_files int
+        DECLARE @st_import_files_total int
+        SELECT  TOP 1
+                @st_import_files = import_files,
+                @st_import_files_total = import_files_total
+          FROM  w2_AccessLogStatus      
+
+        -- 「取込一時完了」ステータス変更 かつ 全取込完了の場合「加工待ち」へ
+        IF @st_import_files = @st_import_files_total
+          SET @day_status_change = '10'
+        ELSE
+          SET @day_status_change = '02'
+        
+        -- ステータス更新
+        UPDATE  w2_AccessLogStatus
+           SET  day_status = @day_status_change,
+                date_changed = getdate()
+      ]]>
+    </Statement>
+  </ChangeImportStatusSuccess>
+
+  <!-- PCアクセスログクリア -->
+  <ClearPCLog>
+    <Statement>
+      <![CDATA[
+        TRUNCATE TABLE w2_AccessLog
+      ]]>
+    </Statement>
+  </ClearPCLog>
+
+  <!-- アクセスログインサート -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_AccessLog
+                (
+                  access_date,
+                  access_time,
+                  client_ip,
+                  server_name,
+                  server_ip,
+                  server_port,
+                  protocol_status,
+                  user_agent,
+                  url_domain,
+                  url_page,
+                  url_param,
+                  account_id,
+                  access_user_id,
+                  session_id,
+                  real_user_id,
+                  access_interval,
+                  first_login_flg,
+                  referrer_domain,
+                  referrer_page,
+                  referrer_param,
+                  search_engine,
+                  search_words,
+                  action_kbn,
+                  s1,
+                  s2,
+                  s3,
+                  s4,
+                  s5,
+                  s6,
+                  s7,
+                  s8,
+                  s9,
+                  s10,
+                  s11,
+                  s12,
+                  s13,
+                  s14,
+                  s15,
+                  s16,
+                  s17,
+                  s18,
+                  s19,
+                  s20,
+                  p1,
+                  p2,
+                  p3,
+                  p4,
+                  p5,
+                  p6,
+                  p7,
+                  p8,
+                  p9,
+                  p10,
+                  p11,
+                  p12,
+                  p13,
+                  p14,
+                  p15,
+                  p16,
+                  p17,
+                  p18,
+                  p19,
+                  p20,
+                  user_agent_kbn
+                )
+        VALUES  (
+                  @access_date,
+                  @access_time,
+                  @client_ip,
+                  @server_name,
+                  @server_ip,
+                  @server_port,
+                  @protocol_status,
+                  @user_agent,
+                  @url_domain,
+                  @url_page,
+                  @url_param,
+                  @account_id,
+                  @access_user_id,
+                  @session_id,
+                  @real_user_id,
+                  @access_interval,
+                  @first_login_flg,
+                  @referrer_domain,
+                  @referrer_page,
+                  @referrer_param,
+                  @search_engine,
+                  @search_words,
+                  @action_kbn,
+                  @s1,
+                  @s2,
+                  @s3,
+                  @s4,
+                  @s5,
+                  @s6,
+                  @s7,
+                  @s8,
+                  @s9,
+                  @s10,
+                  @s11,
+                  @s12,
+                  @s13,
+                  @s14,
+                  @s15,
+                  @s16,
+                  @s17,
+                  @s18,
+                  @s19,
+                  @s20,
+                  @p1,
+                  @p2,
+                  @p3,
+                  @p4,
+                  @p5,
+                  @p6,
+                  @p7,
+                  @p8,
+                  @p9,
+                  @p10,
+                  @p11,
+                  @p12,
+                  @p13,
+                  @p14,
+                  @p15,
+                  @p16,
+                  @p17,
+                  @p18,
+                  @p19,
+                  @p20,
+                  @user_agent_kbn
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="log_no" Type="bigint" />
+      <Input Name="access_date" Type="nvarchar" Size="20" />
+      <Input Name="access_time" Type="nvarchar" Size="20" />
+      <Input Name="client_ip" Type="nvarchar" Size="20" />
+      <Input Name="server_name" Type="nvarchar" Size="20" />
+      <Input Name="server_ip" Type="nvarchar" Size="20" />
+      <Input Name="server_port" Type="int" />
+      <Input Name="protocol_status" Type="int" />
+      <Input Name="user_agent" Type="nvarchar" Size="512" />
+      <Input Name="url_domain" Type="nvarchar" Size="50" />
+      <Input Name="url_page" Type="nvarchar" Size="1000" />
+      <Input Name="url_param" Type="nvarchar" Size="1000" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="account_id" Type="nvarchar" Size="30" />
+      <Input Name="access_user_id" Type="nvarchar" Size="255" />
+      <Input Name="session_id" Type="nvarchar" Size="255" />
+      <Input Name="real_user_id" Type="nvarchar" Size="50" />
+      <Input Name="access_interval" Type="int" />
+      <Input Name="first_login_flg" Type="nvarchar" Size="2" />
+      <Input Name="referrer_domain" Type="nvarchar" Size="50" />
+      <Input Name="referrer_page" Type="nvarchar" Size="1000" />
+      <Input Name="referrer_param" Type="nvarchar" Size="1000" />
+      <Input Name="search_engine" Type="nvarchar" Size="30" />
+      <Input Name="search_words" Type="nvarchar" Size="1000" />
+      <Input Name="action_kbn" Type="nvarchar" Size="20" />
+      <Input Name="s1" Type="nvarchar" Size="20" />
+      <Input Name="s2" Type="nvarchar" Size="20" />
+      <Input Name="s3" Type="nvarchar" Size="20" />
+      <Input Name="s4" Type="nvarchar" Size="20" />
+      <Input Name="s5" Type="nvarchar" Size="20" />
+      <Input Name="s6" Type="nvarchar" Size="20" />
+      <Input Name="s7" Type="nvarchar" Size="20" />
+      <Input Name="s8" Type="nvarchar" Size="20" />
+      <Input Name="s9" Type="nvarchar" Size="20" />
+      <Input Name="s10" Type="nvarchar" Size="20" />
+      <Input Name="s11" Type="nvarchar" Size="50" />
+      <Input Name="s12" Type="nvarchar" Size="50" />
+      <Input Name="s13" Type="nvarchar" Size="50" />
+      <Input Name="s14" Type="nvarchar" Size="50" />
+      <Input Name="s15" Type="nvarchar" Size="50" />
+      <Input Name="s16" Type="nvarchar" Size="50" />
+      <Input Name="s17" Type="nvarchar" Size="50" />
+      <Input Name="s18" Type="nvarchar" Size="50" />
+      <Input Name="s19" Type="nvarchar" Size="50" />
+      <Input Name="s20" Type="nvarchar" Size="50" />
+      <Input Name="p1" Type="nvarchar" Size="20" />
+      <Input Name="p2" Type="nvarchar" Size="20" />
+      <Input Name="p3" Type="nvarchar" Size="20" />
+      <Input Name="p4" Type="nvarchar" Size="20" />
+      <Input Name="p5" Type="nvarchar" Size="20" />
+      <Input Name="p6" Type="nvarchar" Size="20" />
+      <Input Name="p7" Type="nvarchar" Size="20" />
+      <Input Name="p8" Type="nvarchar" Size="20" />
+      <Input Name="p9" Type="nvarchar" Size="20" />
+      <Input Name="p10" Type="nvarchar" Size="20" />
+      <Input Name="p11" Type="nvarchar" Size="50" />
+      <Input Name="p12" Type="nvarchar" Size="50" />
+      <Input Name="p13" Type="nvarchar" Size="50" />
+      <Input Name="p14" Type="nvarchar" Size="50" />
+      <Input Name="p15" Type="nvarchar" Size="50" />
+      <Input Name="p16" Type="nvarchar" Size="50" />
+      <Input Name="p17" Type="nvarchar" Size="50" />
+      <Input Name="p18" Type="nvarchar" Size="50" />
+      <Input Name="p19" Type="nvarchar" Size="50" />
+      <Input Name="p20" Type="nvarchar" Size="50" />
+      <Input Name="user_agent_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </Insert>
+
+  <!-- アクセスログへ識別ID発行 -->
+  <AssignDeptIdToAccessLog>
+    <Statement>
+      <![CDATA[
+        EXEC w2_AssignDeptIdToAccessLogSp
+      ]]>
+    </Statement>
+  </AssignDeptIdToAccessLog>
+
+  <!-- ログNOの最大値取得 -->
+  <GetLogNoMax>
+    <Statement>
+      <![CDATA[
+        SELECT  MAX(log_no)
+          FROM  w2_AccessLog
+      ]]>
+    </Statement>
+  </GetLogNoMax>
+
+  <!-- 指定ログNOよりあとのものを削除 -->
+  <DeleteLog>
+    <Statement>
+      <![CDATA[
+        DELETE	w2_AccessLog
+         WHERE	log_no > @log_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="log_no" Type="bigint" />
+    </Parameter>
+  </DeleteLog>
+  
+</ImportW3cLog>

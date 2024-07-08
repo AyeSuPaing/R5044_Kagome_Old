@@ -1,0 +1,267 @@
+﻿@*
+=========================================================================================================
+  Module      : デフォルトレイアウトクラス(_LayoutDefault.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using CommonConstants = w2.App.Common.Constants
+@using w2.App.Common.Manager.Menu
+@using w2.Cms.Manager.Codes
+@using w2.Cms.Manager.Codes.Extensions
+@using w2.Cms.Manager.Codes.Menu
+@using w2.Cms.Manager.Codes.Settings
+@using w2.Common.Util
+@using w2.Domain.MenuAuthority.Helper
+@{
+	var sessionWrapper = new SessionWrapper(this.Session);
+}
+@helper GetAppName(string name)
+{
+	@(((DesignSetting.IsW2Product) ? "Ｗ２" : "") + name)
+}
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+	<meta name="viewport" content="width=device-width" />
+	<title>
+		@if (DesignSetting.IsW2Cms) {
+			@:W2Unified
+		} else if (DesignSetting.IsRepeatPlus) {
+			@:W2Repeat
+		}else if (DesignSetting.IsRepeatFood){
+			@:W2Repeat Food
+		} else {
+			@Constants.MANAGER_DESIGN_SETTING
+		}
+		&nbsp;
+		@if (string.IsNullOrEmpty(ViewBag.Title) == false) {
+			@ViewBag.Title
+		} else {
+			@ManagerMenuCache.Instance.GetTitle(Request.FilePath)
+		}
+	</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link rel="stylesheet" href="~/Css/legacy_style.css?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="~/Lib/multiselect/css/jquery.multiselect.css" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="~/Css/w2style_cms_v2_1.css?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="~/Images/Icon/icomoon/style.css" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="~/Lib/jquery-ui-1.12.1.custom/jquery-ui.min.css" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="~/Lib/simplebar/simplebar.css" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="~/Lib/tags-input-autocomplete/jquery.tagsinput-revisited.css" media="screen,print" type="text/css" />
+	<link rel="stylesheet" href="~/Css/w2style.css?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED" media="screen,print" type="text/css"  />
+	<script type="text/javascript">
+		var root_path = "@Constants.PATH_ROOT";
+		var max_file_size = 16777216; // 最大ファイルサイズ(byte)
+		var disptext_not_setting = "設定なし";
+		var disptext_publish = "公開する";
+		var disptext_to_publish = "@@ 1 @@まで公開する";
+		var disptext_publish_for_all_periods = "（すべての期間で公開する）";
+		var disptext_from = "@@ 1 @@から";
+		var disptext_exact_start_date = "@(MessageManager.GetMessages(MessageManager.INPUTCHECK_DATE).Replace("@@ 1 @@", "公開開始日"))";
+		var disptext_exact_end_date = "@(MessageManager.GetMessages(MessageManager.INPUTCHECK_DATE).Replace("@@ 1 @@", "公開終了日"))";
+		var disptext_specific_member_rank = "特定の会員ランクに公開する";
+		var disptext_meet_any = "@@ 1 @@のどれかを満たすユーザに公開する";
+		var disptext_meet_all = "@@ 1 @@のすべてを満たすユーザに公開する";
+		var disptext_delete_img = "削除";
+		var disptext_file_size_message = "ファイルサイズは@@ 1 @@KBまでです。";
+		var disptext_file_format_message = "ファイル形式は@@ 1 @@となります。";
+		var disptext_file_not_select = "ファイルが選択されていません。";
+		var disptext_file_has_been_uploaded = "ファイルがアップロードされました";
+		var disptext_select_all = "全選択";
+		var disptext_deselect_all = "全選択解除";
+		var disptext_please_select = "選択してください";
+		var disptext_selecting = "@@ 1 @@個選択中";
+	</script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/jquery-3.3.1.min.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Lib/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Lib/tags-input-autocomplete/jquery.tagsinput-revisited.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/jquery.unobtrusive-ajax.min.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/cookie-utils.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/Manager.js?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/dateformat.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/menuaccordion.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/clipboard.min.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/knockout-3.5.0.js"></script>
+	<script type="text/javascript" charset="Shift_JIS" src="~/Js/Manager.chart.js"></script>
+	<script type="text/javascript" charset="UTF-8" src="~/Lib/simplebar/simplebar.min.js"></script>
+	<script type="text/javascript">
+		var root_path = "@w2.Common.Constants.PATH_ROOT";
+		var supportSiteUrl = "@w2.App.Common.Constants.SUPPORT_SITE_URL";
+	</script>
+	<script type="text/javascript" charset="UTF-8" src="~/Js/common.js?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED"></script>
+	<script type="text/javascript" charset="UTF-8" src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.4/ace.js"></script>
+	<script type="text/javascript" charset="UTF-8" src="~/Js/diff_match_patch.js"></script>
+	<script type="text/javascript" charset="UTF-8" src="~/Lib/multiselect/src/jquery.multiselect.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.js"></script>
+	<script type="text/javascript">
+		<!--
+		// ページロード処理
+		function pageLoad(sender, args) {
+			// デザインセット
+			set_disabled_class();
+
+			// body側のpageLoad実行
+			if (typeof bodyPageLoad == "function") bodyPageLoad(sender, args);
+		}
+//-->
+	</script>
+	@RenderSection("Style", false)
+</head>
+<body onload="@this.ViewBag.OnLoadEvents" style="background-image:url('@Url.Content("~/Images/Common/bg.gif")');" class="@DesignSetting.SiteCssClassName">
+<div>
+	<!-- Header START -->
+	<div id="header">
+		<div class="package-title-wrapper">
+			<div class="package-logo">
+				@if (DesignSetting.IsW2Cms) {
+				<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_Unified_logo.svg" alt="logo"/>
+				} else if (DesignSetting.IsRepeatPlus) {
+				<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_Repeat_logo.svg" alt="logo"/>
+				} else if (DesignSetting.IsRepeatFood) {
+				<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/W2_RepeatFood_logo.svg" alt="logo"/>
+				} else {
+				<img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/logo_login.png" alt="logo"/>
+				}
+			</div>
+			<div class="package-name"><img src="~/Images/Common/PKG_form/W2_CMS_name.svg" alt="CMS"/></div>
+			<div class="package-form">
+				<div class="header-site-label">
+					@if (string.IsNullOrEmpty(Constants.MANAGER_DESIGN_DECORATE_ICON_FILENAME) == false)
+					{
+						<span class="icon"><img src="~/Images/Common/@DesignSetting.ManagerDesignSettingDirName/@Constants.MANAGER_DESIGN_DECORATE_ICON_FILENAME" alt="" /></span>
+					}
+					@if (string.IsNullOrEmpty(Constants.MANAGER_DESIGN_DECORATE_MESSAGE) == false)
+					{
+						<span class="label">@Constants.MANAGER_DESIGN_DECORATE_MESSAGE</span>
+					}
+				</div>
+				<div class="operator-name">@sessionWrapper.LoginOperatorName 様</div>
+				<div class="btn-logout">
+					<a href="~/" data-popover-message="ログアウト"><span class="icon icon-logout"></span></a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Header End -->
+
+	<div class="content">
+
+		<!-- tabs package -->
+		<div class="tabs-packages-wrapper">
+			<ul class="tabs-packages">
+				@if (Constants.EC_OPTION_ENABLED) {
+					<li class="tab-ec"><a href="@Url.Action("Index", "SingleSignOn", new { ManagerSiteType = MenuAuthorityHelper.ManagerSiteType.Ec })" title='@GetAppName("Commerce")' data-popover-message='@GetAppName("Commerce")'><span class="label">EC</span></a></li>
+				}
+				@if (Constants.MP_OPTION_ENABLED) {
+					<li class="tab-mp"><a href="@Url.Action("Index", "SingleSignOn", new { ManagerSiteType = MenuAuthorityHelper.ManagerSiteType.Mp })" title='@GetAppName("MarketingPlanner")' data-popover-message='@GetAppName("MarketingPlanner")'><span class="label">MP</span></a></li>
+				}
+				@if (Constants.CS_OPTION_ENABLED) {
+					<li class="tab-cs"><a href="@Url.Action("Index", "SingleSignOn", new { ManagerSiteType = MenuAuthorityHelper.ManagerSiteType.Cs })" title='@GetAppName("CustomerSupport")' data-popover-message='@GetAppName("CustomerSupport")'><span class="label">CS</span></a></li>
+				}
+				@if (Constants.CMS_OPTION_ENABLED) {
+					<li class="tab-cms active"><a href="#" title='@GetAppName("CMS")'><span class="label">CMS</span></a></li>
+				}
+			</ul>
+			<ul class="packages-popmenu">
+				@if (Constants.EC_OPTION_ENABLED){
+					<li class="tab-ec"><a href="@Url.Action("Index", "SingleSignOn", new { ManagerSiteType = MenuAuthorityHelper.ManagerSiteType.Ec })" title='@GetAppName("Commerce")'><span class="label">@GetAppName("Commerce")</span></a></li>
+				}
+				@if (Constants.MP_OPTION_ENABLED){
+					<li class="tab-mp"><a href="@Url.Action("Index", "SingleSignOn", new { ManagerSiteType = MenuAuthorityHelper.ManagerSiteType.Mp })" title='@GetAppName("MarketingPlanner")'><span class="label">@GetAppName("MarketingPlanner")</span></a></li>
+				}
+				@if (Constants.CS_OPTION_ENABLED){
+					<li class="tab-cs"><a href="@Url.Action("Index", "SingleSignOn", new { ManagerSiteType = MenuAuthorityHelper.ManagerSiteType.Cs })" title='@GetAppName("CustomerSupport")'><span class="label">@GetAppName("CustomerSupport")</span></a></li>
+				}
+				@if (Constants.CMS_OPTION_ENABLED){
+					<li class="tab-cms active"><a href="#" title='@GetAppName("CMS")'><span class="label">@GetAppName("CMS")</span></a></li>
+				}
+			</ul>
+		</div>
+		<!-- /tabs package -->
+
+		<!-- sidemenu -->
+		<div class="sidemenu-wrapper">
+			<div class="sidemenu-btn-slimtoggle">
+				<span class="btn-slimtoggle-on" data-popover-message="メニューを閉じる"></span>
+				<span class="btn-slimtoggle-off" data-popover-message="メニューを開く"></span>
+			</div>
+			<div class="sidemenu-btns-alltoggle">
+				<span class="btn-alltoggle-open">すべて開く</span>
+				<span class="btn-alltoggle-close">すべて閉じる</span>
+			</div>
+			<ul class="sidemenu">
+				@{
+					ManagerMenuCache.Instance.RefreshMenuList();
+				}
+				@foreach (var lm in sessionWrapper.LoginOperatorMenus)
+				{
+					<li class="sidemenu-list open">
+						<p class="sidemenu-list-label">
+							<a href="javascript:void(0)"><span class="icon"><span class="@lm.IconCss"></span></span><span class="label">@lm.Name</span></a>
+							<a href="@lm.PageIndexListUrl" class="poplink" visible="@(string.IsNullOrEmpty(lm.Key) == false)" runat="server">機能一覧</a>
+						</p>
+						<ul class="sidemenu-child-list">
+							<li class="sidemenu-list-parent-label">
+								<p class="sidemenu-list-label"><a href="#"><span class="label">@lm.Name</span></a></p>
+							</li>
+							@foreach (var sm in lm.SmallMenus)
+							{
+								<li class="sidemenu-list @(Request.FilePath.Contains("/" + sm.MenuPath) ? "current" : "")">
+									<p class="sidemenu-list-label"><a href="@sm.Href">@sm.Name</a></p>
+								</li>
+							}
+						</ul>
+					</li>
+				}
+			</ul>
+			@if (DesignSetting.IsW2Product)
+			{
+				<p class="copyright">
+					@if (DesignSetting.IsW2Cms && string.IsNullOrEmpty(Constants.W2UNIFIED_TERMS_OF_SERVICE_URL) == false)
+					{
+						<a id="terms_of_use" href="@(Constants.SUPPORT_SITE_URL+Constants.W2UNIFIED_TERMS_OF_SERVICE_URL)?al=on&rd=on"target="_blank">利用規約</a>　　
+					}
+					else if ((DesignSetting.IsRepeatPlus || DesignSetting.IsRepeatFood) && string.IsNullOrEmpty(Constants.W2REPEAT_TERMS_OF_SERVICE_URL) == false)
+					{
+						<a id="terms_of_use" href="@(Constants.SUPPORT_SITE_URL+Constants.W2REPEAT_TERMS_OF_SERVICE_URL)?al=on&rd=on"target="_blank">利用規約</a>　　
+					}
+					&copy; W2 Co.,Ltd.
+				</p>
+			}
+		</div>
+		<!-- /sidemenu -->
+
+		<!-- main contents -->
+		<div class="main-contents">
+		<div class="main-contents-inner">
+		@RenderBody()
+		@if (Constants.COOPERATION_SUPPORT_SITE) {
+		<div class="main-contents-inner-support"></div>
+		}
+		</div>
+		</div>
+		<!-- /main contents -->
+	</div>
+</div>
+@LayoutHelper.AjaxErrorHandlerScript(Html)
+@RenderSection("JavaScript", false)
+
+@if (w2.App.Common.Constants.GOOGLEANALYTICS_ENABLED && w2.Common.Constants.SETTING_PRODUCTION_ENVIRONMENT)
+{
+	<script async src="https://www.googletagmanager.com/gtag/js?id='@(string.IsNullOrEmpty(CommonConstants.GOOGLEANALYTICS_PROFILE_ID) ? CommonConstants.GOOGLEANALYTICS_MEASUREMENT_ID : CommonConstants.GOOGLEANALYTICS_PROFILE_ID)'"></script>
+	<script type="text/javascript">
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
+		@if (string.IsNullOrEmpty(CommonConstants.GOOGLEANALYTICS_PROFILE_ID) == false)
+		{
+			@: gtag('config', '@CommonConstants.GOOGLEANALYTICS_PROFILE_ID');
+		}
+		gtag('config', '@CommonConstants.GOOGLEANALYTICS_MEASUREMENT_ID');
+	</script>
+}
+
+</body>
+</html>

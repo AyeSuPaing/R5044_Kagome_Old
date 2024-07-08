@@ -1,0 +1,441 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品同梱テーブル系SQLステートメントXML (ProductBundle.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductBundle>
+
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_ProductBundle
+                [[ PRODUCTBUNDLE_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_bundle_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="product_bundle_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="target_order_type" Type="nvarchar" Size="20" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="1" />
+      <Input Name="target_product_id_like_escaped" Type="nvarchar" Size="MAX" />
+      <Input Name="bundle_product_id_like_escaped" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetSearchHitCount>
+  
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductBundle.*
+          FROM  (
+                  SELECT  w2_ProductBundle.product_bundle_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ PRODUCTBUNDLE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_ProductBundle
+                          [[ PRODUCTBUNDLE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_ProductBundle ON
+                (
+                  RowIndex.product_bundle_id = w2_ProductBundle.product_bundle_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_bundle_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="product_bundle_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="target_order_type" Type="nvarchar" Size="20" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="1" />
+      <Input Name="target_product_id_like_escaped" Type="nvarchar" Size="MAX" />
+      <Input Name="bundle_product_id_like_escaped" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </Search>
+  
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductBundle
+         WHERE  product_bundle_id = @product_bundle_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_bundle_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- 子要素取得 -->
+  <GetItemsAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductBundleItem
+         WHERE  product_bundle_id = @product_bundle_id
+      ORDER BY  product_bundle_item_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_bundle_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetItemsAll>
+
+  <!-- カート内容に合致する同梱設定取得 -->
+  <GetProductBundleForCart>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductBundle.*
+          FROM  w2_ProductBundle WITH (NOLOCK)
+         WHERE  w2_ProductBundle.valid_flg = 'VALID'
+           -- 同梱設定の有効期間確認
+           AND  w2_ProductBundle.start_datetime <= GETDATE()
+           AND  (
+                  w2_ProductBundle.end_datetime is NULL
+                  OR
+                  w2_ProductBundle.end_datetime >= GETDATE()
+                )
+            -- 対象購入金額
+            AND  (
+                   w2_ProductBundle.target_order_price_subtotal_min IS NULL
+                   OR
+                   w2_ProductBundle.target_order_price_subtotal_min <= @order_price_subtotal
+                 )
+            -- 初回広告コード確認
+            AND  (
+                   w2_ProductBundle.target_advcodes_first = ''
+                   OR
+                   ((NCHAR(13) + NCHAR(10) + w2_ProductBundle.target_advcodes_first + NCHAR(13) + NCHAR(10)) LIKE '%' + NCHAR(13) + NCHAR(10) + @advcode_first + NCHAR(13) + NCHAR(10) + '%')
+                 )
+            -- 最新回広告コード確認
+            AND  (
+                   w2_ProductBundle.target_advcodes_new = ''
+                   OR
+                   ((NCHAR(13) + NCHAR(10) + w2_ProductBundle.target_advcodes_new + NCHAR(13) + NCHAR(10)) LIKE '%' + NCHAR(13) + NCHAR(10) + @advcode_new + NCHAR(13) + NCHAR(10) + '%')
+                 )
+            -- 対象注文種別
+            AND  (
+                   w2_ProductBundle.target_order_type = 'ALL'
+                   OR
+                   w2_ProductBundle.target_order_type = @target_order_type
+                 )
+            -- クーポンコード確認
+            AND  (
+                   w2_ProductBundle.target_coupon_codes = ''
+                   OR
+                   (
+                      (
+                         NCHAR(13) + NCHAR(10) + w2_ProductBundle.target_coupon_codes + NCHAR(13) + NCHAR(10)
+                      ) LIKE '%' + NCHAR(13) + NCHAR(10) + @target_coupon_codes + NCHAR(13) + NCHAR(10) + '%'
+                   )
+                 )
+      ORDER BY  w2_ProductBundle.apply_order,
+                w2_ProductBundle.product_bundle_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="advcode_first" Type="nvarchar" Size="30" />
+      <Input Name="advcode_new" Type="nvarchar" Size="30" />
+      <Input Name="order_price_subtotal" Type="nvarchar" Size="30" />
+      <Input Name="target_order_type" Type="nvarchar" Size="20" />
+      <Input Name="target_coupon_codes" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductBundleForCart>
+
+  <!-- 同梱商品取得 -->
+  <GetProductBundleItems>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductBundleItem.*
+          FROM  w2_ProductBundleItem
+         WHERE  w2_ProductBundleItem.product_bundle_id = @product_bundle_id
+           AND
+           (
+             w2_ProductBundleItem.ordered_product_except_flg = '0' -- 同梱対象
+             OR
+             (
+               w2_ProductBundleItem.ordered_product_except_flg = '1' -- 同梱除外
+               AND
+               NOT EXISTS(
+                 SELECT w2_Order.order_id
+                   FROM w2_Order
+                   INNER JOIN w2_OrderItem ON
+                   (
+                     w2_OrderItem.order_id = w2_Order.order_id
+                   )
+                  WHERE w2_OrderItem.product_id = w2_ProductBundleItem.grant_product_id
+                    AND w2_OrderItem.variation_id = w2_ProductBundleItem.grant_product_variation_id
+                    AND w2_OrderItem.product_bundle_id = w2_ProductBundleItem.product_bundle_id
+                    AND w2_Order.user_id = @user_id
+                    AND
+                    (
+                      (
+                        w2_Order.order_status NOT IN ('', 'ODR_CNSL', 'TMP_CNSL') -- 指定なし、キャンセル、仮注文キャンセル
+                        AND
+                        w2_Order.shipped_changed_kbn <> '02'  -- 出荷後変更有り
+                      )
+                      OR
+                        w2_Order.return_exchange_kbn NOT IN ('00', '01') -- 指定なし、返品
+                    )
+                    AND
+                    w2_Order.order_id NOT IN (@@ excludeOrderIds @@)
+               )
+             )
+           )
+      ORDER BY  product_bundle_item_no ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_bundle_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductBundleItems>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductBundle
+                (
+                  product_bundle_id,
+                  product_bundle_name,
+                  target_order_type,
+                  description,
+                  start_datetime,
+                  end_datetime,
+                  target_product_kbn,
+                  target_product_ids,
+                  target_order_fixed_purchase_count_from,
+                  target_order_fixed_purchase_count_to,
+                  usable_times_kbn,
+                  apply_type,
+                  valid_flg,
+                  multiple_apply_flg,
+                  apply_order,
+                  date_created,
+                  date_changed,
+                  last_changed,
+                  usable_times,
+                  target_product_category_ids,
+                  except_product_ids,
+                  except_product_category_ids,
+                  target_id,
+                  target_id_except_flg,
+                  target_order_price_subtotal_min,
+                  target_product_count_min,
+                  target_advcodes_first,
+                  target_advcodes_new,
+                  target_payment_ids,
+                  target_coupon_codes
+                )
+        VALUES  (
+                  @product_bundle_id,
+                  @product_bundle_name,
+                  @target_order_type,
+                  @description,
+                  @start_datetime,
+                  @end_datetime,
+                  @target_product_kbn,
+                  @target_product_ids,
+                  @target_order_fixed_purchase_count_from,
+                  @target_order_fixed_purchase_count_to,
+                  @usable_times_kbn,
+                  @apply_type,
+                  @valid_flg,
+                  @multiple_apply_flg,
+                  @apply_order,
+                  GETDATE(),
+                  GETDATE(),
+                  @last_changed,
+                  @usable_times,
+                  @target_product_category_ids,
+                  @except_product_ids,
+                  @except_product_category_ids,
+                  @target_id,
+                  @target_id_except_flg,
+                  @target_order_price_subtotal_min,
+                  @target_product_count_min,
+                  @target_advcodes_first,
+                  @target_advcodes_new,
+                  @target_payment_ids,
+                  @target_coupon_codes
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_bundle_id" Type="nvarchar" Size="30" />
+      <Input Name="product_bundle_name" Type="nvarchar" Size="100" />
+      <Input Name="target_order_type" Type="nvarchar" Size="20" />
+      <Input Name="description" Type="nvarchar" Size="MAX" />
+      <Input Name="start_datetime" Type="datetime" />
+      <Input Name="end_datetime" Type="datetime" Size="10" />
+      <Input Name="target_product_kbn" Type="nvarchar" Size="10" />
+      <Input Name="target_product_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="target_order_fixed_purchase_count_from" Type="int" />
+      <Input Name="target_order_fixed_purchase_count_to" Type="int" />
+      <Input Name="usable_times_kbn" Type="nvarchar" Size="20" />
+      <Input Name="apply_type" Type="nvarchar" Size="20" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="multiple_apply_flg" Type="nvarchar" Size="10" />
+      <Input Name="apply_order" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="usable_times" Type="int" />
+      <Input Name="target_product_category_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="except_product_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="except_product_category_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="target_id_except_flg" Type="nvarchar" Size="1" />
+      <Input Name="target_order_price_subtotal_min" Type="decimal" />
+      <Input Name="target_product_count_min" Type="decimal" />
+      <Input Name="target_advcodes_first" Type="nvarchar" Size="MAX" />
+      <Input Name="target_advcodes_new" Type="nvarchar" Size="MAX" />
+      <Input Name="target_payment_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="target_coupon_codes" Type="nvarchar" Size="MAX" />
+    </Parameter>
+  </Insert>
+
+  <!-- 同梱商品登録 -->
+  <InsertItem>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductBundleItem
+                (
+                  product_bundle_id
+                  ,product_bundle_item_no
+                  ,grant_product_id
+                  ,grant_product_variation_id
+                  ,grant_product_count
+                  ,date_created
+                  ,last_changed
+                  ,ordered_product_except_flg
+                )
+        VALUES  (
+                  @product_bundle_id
+                  ,@product_bundle_item_no
+                  ,@grant_product_id
+                  ,@grant_product_variation_id
+                  ,@grant_product_count
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@ordered_product_except_flg
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_bundle_id" Type="nvarchar" Size="30" />
+      <Input Name="product_bundle_item_no" Type="int" />
+      <Input Name="grant_product_id" Type="nvarchar" Size="30" />
+      <Input Name="grant_product_variation_id" Type="nvarchar" Size="60" />
+      <Input Name="grant_product_count" Type="int" />
+      <Input Name="sort_no" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="ordered_product_except_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </InsertItem>
+  
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductBundle
+           SET  product_bundle_name = @product_bundle_name,
+                target_order_type = @target_order_type,
+                description = @description,
+                start_datetime = @start_datetime,
+                end_datetime = @end_datetime,
+                target_product_kbn = @target_product_kbn,
+                target_product_ids = @target_product_ids,
+                target_order_fixed_purchase_count_from = @target_order_fixed_purchase_count_from,
+                target_order_fixed_purchase_count_to = @target_order_fixed_purchase_count_to,
+                usable_times_kbn = @usable_times_kbn,
+                apply_type = @apply_type,
+                valid_flg = @valid_flg,
+                multiple_apply_flg = @multiple_apply_flg,
+                apply_order = @apply_order,
+                date_changed = GETDATE(),
+                last_changed = @last_changed,
+                usable_times = @usable_times,
+                target_product_category_ids = @target_product_category_ids,
+                except_product_ids = @except_product_ids,
+                except_product_category_ids = @except_product_category_ids,
+                target_id = @target_id,
+                target_id_except_flg = @target_id_except_flg,
+                target_order_price_subtotal_min = @target_order_price_subtotal_min,
+                target_product_count_min = @target_product_count_min,
+                target_advcodes_first = @target_advcodes_first,
+                target_advcodes_new = @target_advcodes_new,
+                target_payment_ids = @target_payment_ids,
+                target_coupon_codes = @target_coupon_codes
+         WHERE  product_bundle_id = @product_bundle_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_bundle_id" Type="nvarchar" Size="30" />
+      <Input Name="product_bundle_name" Type="nvarchar" Size="100" />
+      <Input Name="target_order_type" Type="nvarchar" Size="20" />
+      <Input Name="description" Type="nvarchar" Size="MAX" />
+      <Input Name="start_datetime" Type="datetime" />
+      <Input Name="end_datetime" Type="datetime" Size="10" />
+      <Input Name="target_product_kbn" Type="nvarchar" Size="10" />
+      <Input Name="target_product_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="target_order_fixed_purchase_count_from" Type="int" />
+      <Input Name="target_order_fixed_purchase_count_to" Type="int" />
+      <Input Name="usable_times_kbn" Type="nvarchar" Size="20" />
+      <Input Name="apply_type" Type="nvarchar" Size="20" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="multiple_apply_flg" Type="nvarchar" Size="10" />
+      <Input Name="apply_order" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="usable_times" Type="int" />
+      <Input Name="target_product_category_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="except_product_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="except_product_category_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="target_id_except_flg" Type="nvarchar" Size="1" />
+      <Input Name="target_order_price_subtotal_min" Type="decimal" />
+      <Input Name="target_product_count_min" Type="decimal" />
+      <Input Name="target_advcodes_first" Type="nvarchar" Size="MAX" />
+      <Input Name="target_advcodes_new" Type="nvarchar" Size="MAX" />
+      <Input Name="target_payment_ids" Type="nvarchar" Size="MAX" />
+      <Input Name="target_coupon_codes" Type="nvarchar" Size="MAX" />
+    </Parameter>
+  </Update>
+
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductBundle
+         WHERE  product_bundle_id = @product_bundle_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_bundle_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- 同梱商品削除 -->
+  <DeleteItemsAll>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductBundleItem
+         WHERE  product_bundle_id = @product_bundle_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="product_bundle_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteItemsAll>
+
+</ProductBundle>

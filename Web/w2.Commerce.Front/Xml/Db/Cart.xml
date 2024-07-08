@@ -1,0 +1,509 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : カート系SQLステートメントXML(Cart.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<Cart>
+  <!-- カート情報取得(ユーザID条件) -->
+  <GetUserCart>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Cart.*,
+                w2_ProductView.*,
+                w2_ProductView.price * w2_Cart.product_count AS sub_total_price
+         FROM   w2_Cart
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_Cart.shop_id  = w2_ProductView.shop_id
+                  AND
+                  w2_Cart.product_id = w2_ProductView.product_id
+                  AND
+                  w2_Cart.variation_id = w2_ProductView.variation_id
+                )
+         WHERE  w2_Cart.user_id = @user_id
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+        ORDER BY w2_Cart.cart_id, w2_Cart.cart_item_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserCart>
+
+  <!-- カート情報取得(カートID条件) -->
+  <GetGuestUserCart>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Cart.*,
+                w2_ProductView.*,
+                w2_ProductView.price * w2_Cart.product_count AS sub_total_price
+         FROM   w2_Cart
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_Cart.shop_id  = w2_ProductView.shop_id
+                  AND
+                  w2_Cart.product_id = w2_ProductView.product_id
+                  AND
+                  w2_Cart.variation_id = w2_ProductView.variation_id
+                )
+         WHERE  w2_Cart.cart_id IN (@@ cart_id @@)
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+        ORDER BY w2_Cart.cart_id, w2_Cart.cart_item_no
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetGuestUserCart>
+
+  <!-- カート内商品情報取得(同一商品を重複して取得しない) -->
+  <GetCartProduct>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_ProductView.*
+          FROM  w2_Cart
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_Cart.shop_id  = w2_ProductView.shop_id
+                  AND
+                  w2_Cart.product_id = w2_ProductView.product_id
+                  AND
+                  w2_Cart.variation_id = w2_ProductView.variation_id
+                )
+         WHERE  w2_Cart.cart_id IN (@@ cart_ids @@)   -- アプリ側で置換
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+      ]]>
+    </Statement>
+  </GetCartProduct>
+
+  <!-- カート情報取得 -->
+  <GetCart>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        SELECT  w2_Cart.*,
+                w2_ProductView.*,
+                w2_ProductView.price * w2_Cart.product_count AS sub_total_price
+          FROM  w2_Cart
+                INNER JOIN w2_ProductView ON
+                (
+                  w2_Cart.shop_id  = w2_ProductView.shop_id
+                  AND
+                  w2_Cart.product_id = w2_ProductView.product_id
+                  AND
+                  w2_Cart.variation_id = w2_ProductView.variation_id
+                )
+         WHERE  w2_Cart.cart_id = @cart_id
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+    </Parameter>
+  </GetCart>
+
+  <!-- カートへの商品投入処理 -->
+  <AddProduct>
+    <Statement>
+      <![CDATA[
+        DECLARE  @cart_item_no int
+        DECLARE  @rec_count int
+  
+        -- カート内商品取得
+        SELECT  @rec_count = Count(cart_item_no)
+          FROM  w2_Cart
+         WHERE  cart_id = @cart_id
+           AND  user_id = @user_id
+           AND  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+           AND  productsale_id = @productsale_id
+           AND  fixed_purchase_flg = @fixed_purchase_flg
+           AND  gift_order_flg = @gift_order_flg
+           AND  product_set_id = ''
+           AND  product_set_no IS NULL
+           AND  mobile_kbn = '1'  -- PC
+           AND  w2_Cart.product_option_texts = @product_option_texts
+  
+        -- カート内に追加する商品が存在しない場合
+        IF @rec_count = 0
+          BEGIN
+            -- カートから枝番取得
+            SELECT  @cart_item_no = ISNULL(MAX(w2_Cart.cart_item_no), 0) + 1
+              FROM  w2_Cart
+             WHERE  w2_Cart.cart_id = @cart_id
+  
+            INSERT  w2_Cart
+                    (
+                      cart_id,
+                      cart_item_no,
+                      user_id,
+                      shop_id,
+                      product_id,
+                      variation_id,
+                      product_count,
+                      cart_div_type1,
+                      cart_div_type2,
+                      cart_div_type3,
+                      productsale_id,
+                      fixed_purchase_flg,
+                      mobile_kbn,
+                      date_created,
+                      date_changed,
+                      product_option_texts,
+                      gift_order_flg,
+                      novelty_id,
+                      recommend_id
+                    )
+            VALUES  (
+                      @cart_id,
+                      @cart_item_no,
+                      @user_id,
+                      @shop_id,
+                      @product_id,
+                      @variation_id,
+                      @product_count,
+                      @cart_div_type1,
+                      @cart_div_type2,
+                      @cart_div_type3,
+                      @productsale_id,
+                      @fixed_purchase_flg,
+                      '1',   -- PC
+                      getdate(),
+                      getdate(),
+                      @product_option_texts,
+                      @gift_order_flg,
+                      @novelty_id,
+                      @recommend_id
+                    )
+          END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="supplier_id" Type="nvarchar" Size="20" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="cart_div_type1" Type="nvarchar" Size="30" />
+      <Input Name="cart_div_type2" Type="nvarchar" Size="30" />
+      <Input Name="cart_div_type3" Type="nvarchar" Size="30" />
+      <Input Name="fixed_purchase_flg" Type="nvarchar" Size="2" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="product_option_texts" Type="nvarchar" Size="max" />
+      <Input Name="gift_order_flg" Type="nvarchar" Size="2" />
+      <Input Name="product_count" Type="int" />
+      <Input Name="novelty_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </AddProduct>
+
+  <!-- カートへの商品セット投入処理 -->
+  <AddProductSetItem>
+    <Statement>
+      <![CDATA[
+        DECLARE  @cart_item_no int
+  
+        -- カート内商品取得取得
+        DECLARE  @rec_count int
+        SELECT  @rec_count = Count(cart_item_no)
+          FROM  w2_Cart
+         WHERE  cart_id = @cart_id
+           AND   user_id = @user_id
+           AND  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+           AND  product_set_id = @product_set_id
+           AND  product_set_no = @product_set_no
+           AND  mobile_kbn = '1'  -- PC
+  
+        -- カート内に追加する商品が存在しない場合
+        IF @rec_count = 0
+        BEGIN
+          -- カートから枝番取得
+          SELECT  @cart_item_no = ISNULL(MAX(cart_item_no), 0) + 1
+            FROM  w2_Cart
+           WHERE  cart_id = @cart_id
+  
+          INSERT  w2_Cart
+                  (
+                    cart_id,
+                    cart_item_no,
+                    user_id,
+                    shop_id,
+                    product_id,
+                    variation_id,
+                    product_count,
+                    product_set_id,
+                    product_set_no,
+                    product_set_count,
+                    cart_div_type1,
+                    cart_div_type2,
+                    mobile_kbn,
+                    date_created,
+                    date_changed
+                  )
+          VALUES  (
+                    @cart_id,
+                    @cart_item_no,
+                    @user_id,
+                    @shop_id,
+                    @product_id,
+                    @variation_id,
+                    @product_count,
+                    @product_set_id,
+                    @product_set_no,
+                    @product_set_count,
+                    @cart_div_type1,
+                    @cart_div_type2,
+                    '1',   -- PC
+                    getdate(),
+                    getdate()
+                  )
+        END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="supplier_id" Type="nvarchar" Size="20" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="product_count" Type="int" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+      <Input Name="product_set_no" Type="int" />
+      <Input Name="product_set_count" Type="int" />
+      <Input Name="cart_div_type1" Type="nvarchar" Size="30" />
+      <Input Name="cart_div_type2" Type="nvarchar" Size="30" />
+    </Parameter>
+  </AddProductSetItem>
+
+  <!-- ユーザのカート削除処理 -->
+  <DeleteUserCart>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_Cart
+         WHERE  w2_Cart.user_id = @user_id
+           AND  w2_Cart.mobile_kbn = '1'   -- PC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteUserCart>
+
+  <!-- カート削除処理 -->
+  <DeleteCart>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_Cart
+         WHERE  w2_Cart.cart_id = @cart_id
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+    </Parameter>
+  </DeleteCart>
+
+  <!-- カートの商品削除処理 -->
+  <DeleteProduct>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_Cart
+         WHERE  cart_id = @cart_id
+           AND  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  variation_id = @variation_id
+           AND  fixed_purchase_flg = @fixed_purchase_flg
+           AND  (
+                  @productsale_id IS NULL
+                  OR
+                  productsale_id = @productsale_id
+                )
+           AND  product_set_id = ''
+           AND  product_set_no IS NULL
+           AND  mobile_kbn = '1'  -- PC
+           AND  w2_Cart.product_option_texts = @product_option_texts
+           AND  w2_Cart.gift_order_flg = @gift_order_flg
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="fixed_purchase_flg" Type="nvarchar" Size="2" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="product_option_texts" Type="nvarchar" Size="max" />
+      <Input Name="gift_order_flg" Type="nvarchar" Size="2" />
+    </Parameter>
+  </DeleteProduct>
+
+  <!-- カートの商品セット削除処理 -->
+  <DeleteProductSetItem>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_Cart
+         WHERE  w2_Cart.cart_id = @cart_id
+           AND  w2_Cart.shop_id = @shop_id
+           AND  w2_Cart.product_id = @product_id
+           AND  w2_Cart.variation_id = @variation_id
+           AND  w2_Cart.product_set_id = @product_set_id
+           AND  w2_Cart.product_set_no = @product_set_no
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+      <Input Name="product_set_no" Type="int" />
+    </Parameter>
+  </DeleteProductSetItem>
+
+  <!-- カートの商品注文数更新処理 -->
+  <UpdateProductCount>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Cart
+           SET  w2_Cart.product_count = @product_count,
+                w2_Cart.date_changed = getdate()         WHERE  w2_Cart.cart_id = @cart_id
+           AND  w2_Cart.shop_id = @shop_id
+           AND  w2_Cart.product_id = @product_id
+           AND  w2_Cart.variation_id = @variation_id
+           AND  w2_Cart.fixed_purchase_flg = @fixed_purchase_flg
+           AND  w2_Cart.productsale_id = @productsale_id
+           AND  w2_Cart.product_set_id = ''
+           AND  w2_Cart.product_set_no IS NULL
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+           AND  w2_Cart.product_option_texts = @product_option_texts
+           AND  w2_Cart.gift_order_flg = @gift_order_flg
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="fixed_purchase_flg" Type="nvarchar" Size="2" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+      <Input Name="product_count" Type="int" />
+      <Input Name="product_option_texts" Type="nvarchar" Size="max" />
+      <Input Name="gift_order_flg" Type="nvarchar" Size="2" />
+    </Parameter>
+  </UpdateProductCount>
+
+  <!-- カートの商品セット注文数更新処理 -->
+  <UpdateProductSetCount>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Cart
+           SET  product_set_count = @product_set_count,
+                date_changed = getdate()
+         WHERE  cart_id = @cart_id
+           AND  shop_id = @shop_id
+           AND  product_set_id = @product_set_id
+           AND  product_set_no = @product_set_no
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+      <Input Name="product_set_no" Type="int" />
+      <Input Name="product_set_count" Type="int" />
+    </Parameter>
+  </UpdateProductSetCount>
+
+  <!-- カートのユーザID更新処理-->
+  <UpdateUserId>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Cart
+           SET  w2_Cart.user_id = @user_id,
+                w2_Cart.date_changed = getdate()
+         WHERE  w2_Cart.cart_id = @cart_id
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UpdateUserId>
+
+  <!-- カートの商品セールID更新処理-->
+  <UpdateProductSaleId>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Cart
+           SET  w2_Cart.productsale_id = @productsale_id
+                ,w2_Cart.date_changed = getdate()
+         WHERE  w2_Cart.cart_id = @cart_id
+           AND  w2_Cart.shop_id = @shop_id
+           AND  w2_Cart.product_id = @product_id
+           AND  w2_Cart.variation_id = @variation_id
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="productsale_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </UpdateProductSaleId>
+
+  <!-- カートの商品セット取得処理（削除チェック用） -->
+  <GetProductSetItemForDeleteCheck>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Cart.*,
+                w2_Product.name
+          FROM  w2_Cart
+                LEFT JOIN w2_Product ON
+                (
+                  w2_Cart.shop_id  = w2_Product.shop_id
+                  AND
+                  w2_Cart.product_id = w2_Product.product_id
+                  AND
+                  w2_Product.mobile_disp_flg IN ('0','1') -- PC&モバイル OR PCのみ
+                  AND
+                  w2_Product.valid_flg = '1'
+                )
+         WHERE  w2_Cart.cart_id = @cart_id
+           AND  w2_Cart.product_set_id = @product_set_id
+           AND  w2_Cart.product_set_no = @product_set_no
+           AND  w2_Cart.mobile_kbn = '1'  -- PC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="cart_id" Type="nvarchar" Size="40" />
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_set_id" Type="nvarchar" Size="30" />
+      <Input Name="product_set_no" Type="int" />
+    </Parameter>
+  </GetProductSetItemForDeleteCheck>
+
+  <!-- カートに最後に投入された商品を取得（外部レコメンド用） -->
+  <GetLastAddedCartProduct>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1
+                w2_Cart.*
+          FROM  w2_Cart
+         WHERE  w2_Cart.cart_id IN (@@ cart_ids @@)
+        ORDER BY w2_Cart.date_created DESC
+      ]]>
+    </Statement>
+  </GetLastAddedCartProduct>
+</Cart>

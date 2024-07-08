@@ -1,0 +1,159 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 新着情報マスタ系SQLサブステートメントXML (News_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2016 All Rights Reserved.
+=========================================================================================================
+-->
+<News_Sub>
+  <!--  List WHERE -->
+  <NEWS_LIST_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_News.shop_id = @shop_id
+           AND  w2_News.display_date_from <= GETDATE()
+           AND  ISNULL(w2_News.display_date_to, GETDATE()) >= GETDATE()
+           AND  w2_News.disp_flg IN ('0','1')                          -- 新着一覧、TOPページどちらも表示 OR 新着一覧のみ表示
+           AND  w2_News.mobile_disp_flg IN ('0',@mobile_disp_flg)    -- PC、モバイルどちらも表示 OR モバイルのみ表示
+           AND  w2_News.valid_flg = '1'
+           AND  (
+                  @brand_id = ''
+                  OR
+                  w2_News.brand_id = @brand_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="mobile_disp_flg" Type="nvarchar" Size="2" />
+    </Parameter>
+  </NEWS_LIST_WHERE>
+
+  <!-- List ORDER_BY -->
+  <NEWS_LIST_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          w2_News.display_order ASC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_News.shop_id ASC, w2_News.news_id ASC
+      ]]>
+    </Statement>
+  </NEWS_LIST_ORDER_BY>
+
+  <!-- 検索用WHERE文 -->
+  <NEWS_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+          WHERE  w2_News.shop_id = @shop_id
+           AND  (
+                    @news_text_like_escaped = ''
+                    OR
+                    w2_News.news_text LIKE '%' + @news_text_like_escaped + '%' ESCAPE '#'           -- 本文
+                    OR
+                    w2_News.news_text_mobile LIKE '%' + @news_text_like_escaped + '%' ESCAPE '#'    -- モバイル本文
+                )
+                AND
+                -- 表示フラグ
+                (
+                    @disp_flg = ''
+                    OR
+                    w2_News.disp_flg = @disp_flg
+                )
+                AND
+                -- モバイル表示フラグ
+                (
+                    @mobile_disp_flg = ''
+                    OR
+                    w2_News.mobile_disp_flg = @mobile_disp_flg
+                )
+                AND
+                -- 有効フラグ
+                (
+                    @valid_flg = ''
+                    OR
+                    w2_News.valid_flg = @valid_flg
+                )
+                AND
+                (
+                  -- 開始日時
+                  (
+                    @display_date_from_from IS NULL
+                    OR
+                    w2_News.display_date_from >= @display_date_from_from
+                  )
+                  AND
+                  (
+                    @display_date_from_to IS NULL
+                    OR
+                    w2_News.display_date_from < DATEADD(day, 1, @display_date_from_to)
+                  )
+                )
+                AND
+                (
+                  -- 終了日時
+                  (
+                    @display_date_to_from IS NULL
+                    OR
+                    w2_News.display_date_to >= @display_date_to_from
+                  )
+                  AND
+                  (
+                    @display_date_to_to IS NULL
+                    OR
+                    w2_News.display_date_to < DATEADD(day, 1, @display_date_to_to)
+                  )
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="news_text_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="disp_flg" Type="nvarchar" Size="1" />
+      <Input Name="mobile_disp_flg" Type="nvarchar" Size="2" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="display_date_from_from" Type="datetime" />
+      <Input Name="display_date_from_to" Type="datetime" />
+      <Input Name="display_date_to_from" Type="datetime" />
+      <Input Name="display_date_to_to" Type="datetime" />
+    </Parameter>
+  </NEWS_SEARCH_WHERE>
+
+  <!-- 検索用ORDER BY -->
+  <NEWS_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+      ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN w2_News.display_date_from
+            WHEN  4 THEN w2_News.display_date_to
+            ELSE NULL
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  2 THEN w2_News.display_order
+            ELSE '1'
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_News.display_date_from
+            WHEN  5 THEN w2_News.display_date_to
+            ELSE NULL
+          END
+          DESC,
+          CASE @sort_kbn
+            WHEN  3 THEN w2_News.display_order
+            ELSE '1'
+          END
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_News.shop_id ASC, w2_News.news_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </NEWS_SEARCH_ORDER_BY>
+</News_Sub>

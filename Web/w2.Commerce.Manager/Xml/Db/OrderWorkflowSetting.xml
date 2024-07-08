@@ -1,0 +1,1016 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文ワークフロー設定系SQLステートメントXML(w2_OrderWorkflowSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderWorkflowSetting>
+
+  <!-- 注文ワークフロー設定情報該当件数取得 -->
+  <GetOrderWorkflowSettingCount>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        SELECT  ISNULL(COUNT(Workflow.workflow_no), 0) AS row_count
+          FROM  (
+                  SELECT  workflow_no 
+                    FROM  w2_OrderWorkflowSetting
+                  [[ ORDERWORKFLOWSETTING_SEARCH_WHERE ]]
+                  UNION ALL
+                  SELECT  workflow_no 
+                    FROM  w2_FixedPurchaseWorkflowSetting
+                  [[ FIXEDPURCHASEWORKFLOWSETTING_SEARCH_WHERE ]]
+                ) AS Workflow
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="workflow_detail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="additional_search_flg" Type="nvarchar" Size="10" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetOrderWorkflowSettingCount>
+
+  <!-- 注文ワークフロー設定情報一覧取得 -->
+  <GetOrderWorkflowSettingList>
+    <Statement>
+      <![CDATA[
+        -- 該当情報取得
+        SELECT  RowIndex.*
+          FROM  (
+                  SELECT  Workflow.*,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ ORDERWORKFLOWSETTING_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM
+                          (
+                            SELECT  'order' AS workflow_type,
+                                    w2_OrderWorkflowSetting.shop_id,
+                                    w2_OrderWorkflowSetting.workflow_kbn,
+                                    w2_OrderWorkflowSetting.workflow_no,
+                                    w2_OrderWorkflowSetting.display_order,
+                                    w2_OrderWorkflowSetting.date_created,
+                                    w2_OrderWorkflowSetting.date_changed,
+                                    w2_OrderWorkflowSetting.valid_flg,
+                                    w2_OrderWorkflowSetting.workflow_name
+                              FROM  w2_OrderWorkflowSetting
+                                    [[ ORDERWORKFLOWSETTING_SEARCH_WHERE ]]
+                            UNION ALL
+                            SELECT  'fixed_purchase' AS workflow_type,
+                                    w2_FixedPurchaseWorkflowSetting.shop_id,
+                                    w2_FixedPurchaseWorkflowSetting.workflow_kbn,
+                                    w2_FixedPurchaseWorkflowSetting.workflow_no,
+                                    w2_FixedPurchaseWorkflowSetting.display_order,
+                                    w2_FixedPurchaseWorkflowSetting.date_created,
+                                    w2_FixedPurchaseWorkflowSetting.date_changed,
+                                    w2_FixedPurchaseWorkflowSetting.valid_flg,
+                                    w2_FixedPurchaseWorkflowSetting.workflow_name
+                              FROM  w2_FixedPurchaseWorkflowSetting
+                                    [[ FIXEDPURCHASEWORKFLOWSETTING_SEARCH_WHERE ]]
+                          ) AS Workflow
+                ) AS RowIndex
+                LEFT JOIN w2_OrderWorkflowSetting ON
+                (
+                  RowIndex.workflow_type = 'order'
+                  AND
+                  RowIndex.shop_id = w2_OrderWorkflowSetting.shop_id
+                  AND
+                  RowIndex.workflow_kbn = w2_OrderWorkflowSetting.workflow_kbn
+                  AND
+                  RowIndex.workflow_no = w2_OrderWorkflowSetting.workflow_no
+                )
+                LEFT JOIN w2_FixedPurchaseWorkflowSetting ON
+                (
+                  RowIndex.workflow_type = 'fixed_purchase'
+                  AND
+                  RowIndex.shop_id = w2_FixedPurchaseWorkflowSetting.shop_id
+                  AND
+                  RowIndex.workflow_kbn = w2_FixedPurchaseWorkflowSetting.workflow_kbn
+                  AND
+                  RowIndex.workflow_no = w2_FixedPurchaseWorkflowSetting.workflow_no
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+        ORDER BY RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="workflow_detail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="additional_search_flg" Type="nvarchar" Size="10" />
+      <Input Name="sort_kbn" Type="nvarchar" Size="1" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetOrderWorkflowSettingList>
+
+  <!-- 注文ワークフロー設定情取得 -->
+  <GetOrderWorkflowSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_OrderWorkflowSetting.*, w2_MailTemplate.mail_name
+          FROM  w2_OrderWorkflowSetting
+                LEFT JOIN w2_MailTemplate ON
+                (
+                  w2_OrderWorkflowSetting.shop_id = w2_MailTemplate.shop_id
+                  AND
+                  w2_OrderWorkflowSetting.mail_id = w2_MailTemplate.mail_id
+                )
+         WHERE  w2_OrderWorkflowSetting.workflow_kbn = @workflow_kbn
+           AND  w2_OrderWorkflowSetting.workflow_no = @workflow_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+    </Parameter>
+  </GetOrderWorkflowSetting>
+
+  <!-- 注文ワークフロー設定情報追加 -->
+  <GetOrderWorkflowSettingAllList>
+    <Statement>
+      <![CDATA[
+        SELECT  Workflow.*
+          FROM  (
+          
+                  SELECT  'order' AS workflow_type,
+                          w2_OrderWorkflowSetting.workflow_kbn,
+                          w2_OrderWorkflowSetting.workflow_no,
+                          w2_OrderWorkflowSetting.workflow_name,
+                          w2_OrderWorkflowSetting.display_order
+                    FROM  w2_OrderWorkflowSetting
+                   WHERE  w2_OrderWorkflowSetting.workflow_kbn = @workflow_kbn
+                     AND  w2_OrderWorkflowSetting.valid_flg = '1'          -- 有効
+                  UNION ALL
+                  SELECT  'fixed_purchase' AS workflow_type,
+                          w2_FixedPurchaseWorkflowSetting.workflow_kbn,
+                          w2_FixedPurchaseWorkflowSetting.workflow_no,
+                          w2_FixedPurchaseWorkflowSetting.workflow_name,
+                          w2_FixedPurchaseWorkflowSetting.display_order
+                    FROM  w2_FixedPurchaseWorkflowSetting
+                   WHERE  w2_FixedPurchaseWorkflowSetting.workflow_kbn = @workflow_kbn
+                     AND  w2_FixedPurchaseWorkflowSetting.valid_flg = '1'          -- 有効
+                ) AS Workflow
+        ORDER BY Workflow.workflow_kbn ASC,
+                  Workflow.display_order ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetOrderWorkflowSettingAllList>
+
+  <!-- 注文ワークフロー枝番取得 -->
+  <GetNewWorkflowNo>
+    <Statement>
+      <![CDATA[
+        DECLARE @number INT =
+        (
+          SELECT  MAX(workflow_no)
+            FROM  w2_OrderWorkflowSetting
+           WHERE  w2_OrderWorkflowSetting.workflow_kbn = @workflow_kbn
+        )
+
+        SELECT  ISNULL(@number + 1, 1);
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetNewWorkflowNo>
+
+  <!-- 注文ワークフロー設定情報追加 -->
+  <InsertOrderWorkflowSetting>
+    <Statement>
+      <![CDATA[
+        -- 登録
+        INSERT  w2_OrderWorkflowSetting
+                (
+                  w2_OrderWorkflowSetting.shop_id,
+                  w2_OrderWorkflowSetting.workflow_kbn,
+                  w2_OrderWorkflowSetting.workflow_no,
+                  w2_OrderWorkflowSetting.workflow_name,
+                  w2_OrderWorkflowSetting.desc1,
+                  w2_OrderWorkflowSetting.display_order,
+                  w2_OrderWorkflowSetting.display_count,
+                  w2_OrderWorkflowSetting.valid_flg,
+                  w2_OrderWorkflowSetting.workflow_detail_kbn,
+                  w2_OrderWorkflowSetting.display_kbn,
+                  w2_OrderWorkflowSetting.additional_search_flg,
+                  w2_OrderWorkflowSetting.search_setting,
+                  w2_OrderWorkflowSetting.order_status_change,
+                  w2_OrderWorkflowSetting.product_realstock_change,
+                  w2_OrderWorkflowSetting.payment_status_change,
+                  w2_OrderWorkflowSetting.external_payment_action,
+                  w2_OrderWorkflowSetting.demand_status_change,
+                  w2_OrderWorkflowSetting.return_exchange_status_change,
+                  w2_OrderWorkflowSetting.repayment_status_change,
+                  w2_OrderWorkflowSetting.order_extend_status_change1,
+                  w2_OrderWorkflowSetting.order_extend_status_change2,
+                  w2_OrderWorkflowSetting.order_extend_status_change3,
+                  w2_OrderWorkflowSetting.order_extend_status_change4,
+                  w2_OrderWorkflowSetting.order_extend_status_change5,
+                  w2_OrderWorkflowSetting.order_extend_status_change6,
+                  w2_OrderWorkflowSetting.order_extend_status_change7,
+                  w2_OrderWorkflowSetting.order_extend_status_change8,
+                  w2_OrderWorkflowSetting.order_extend_status_change9,
+                  w2_OrderWorkflowSetting.order_extend_status_change10,
+                  w2_OrderWorkflowSetting.order_extend_status_change11,
+                  w2_OrderWorkflowSetting.order_extend_status_change12,
+                  w2_OrderWorkflowSetting.order_extend_status_change13,
+                  w2_OrderWorkflowSetting.order_extend_status_change14,
+                  w2_OrderWorkflowSetting.order_extend_status_change15,
+                  w2_OrderWorkflowSetting.order_extend_status_change16,
+                  w2_OrderWorkflowSetting.order_extend_status_change17,
+                  w2_OrderWorkflowSetting.order_extend_status_change18,
+                  w2_OrderWorkflowSetting.order_extend_status_change19,
+                  w2_OrderWorkflowSetting.order_extend_status_change20,
+                  w2_OrderWorkflowSetting.order_extend_status_change21,
+                  w2_OrderWorkflowSetting.order_extend_status_change22,
+                  w2_OrderWorkflowSetting.order_extend_status_change23,
+                  w2_OrderWorkflowSetting.order_extend_status_change24,
+                  w2_OrderWorkflowSetting.order_extend_status_change25,
+                  w2_OrderWorkflowSetting.order_extend_status_change26,
+                  w2_OrderWorkflowSetting.order_extend_status_change27,
+                  w2_OrderWorkflowSetting.order_extend_status_change28,
+                  w2_OrderWorkflowSetting.order_extend_status_change29,
+                  w2_OrderWorkflowSetting.order_extend_status_change30,
+                  w2_OrderWorkflowSetting.order_extend_status_change31,
+                  w2_OrderWorkflowSetting.order_extend_status_change32,
+                  w2_OrderWorkflowSetting.order_extend_status_change33,
+                  w2_OrderWorkflowSetting.order_extend_status_change34,
+                  w2_OrderWorkflowSetting.order_extend_status_change35,
+                  w2_OrderWorkflowSetting.order_extend_status_change36,
+                  w2_OrderWorkflowSetting.order_extend_status_change37,
+                  w2_OrderWorkflowSetting.order_extend_status_change38,
+                  w2_OrderWorkflowSetting.order_extend_status_change39,
+                  w2_OrderWorkflowSetting.order_extend_status_change40,
+                  w2_OrderWorkflowSetting.mail_id,
+                  w2_OrderWorkflowSetting.cassette_default_select,
+                  w2_OrderWorkflowSetting.cassette_no_update,
+                  w2_OrderWorkflowSetting.cassette_order_status_change,
+                  w2_OrderWorkflowSetting.cassette_product_realstock_change,
+                  w2_OrderWorkflowSetting.cassette_payment_status_change,
+                  w2_OrderWorkflowSetting.cassette_external_payment_action,
+                  w2_OrderWorkflowSetting.cassette_demand_status_change,
+                  w2_OrderWorkflowSetting.cassette_return_exchange_status_change,
+                  w2_OrderWorkflowSetting.cassette_repayment_status_change,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change1,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change2,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change3,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change4,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change5,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change6,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change7,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change8,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change9,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change10,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change11,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change12,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change13,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change14,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change15,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change16,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change17,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change18,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change19,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change20,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change21,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change22,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change23,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change24,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change25,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change26,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change27,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change28,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change29,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change30,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change31,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change32,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change33,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change34,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change35,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change36,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change37,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change38,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change39,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change40,
+                  w2_OrderWorkflowSetting.date_created,
+                  w2_OrderWorkflowSetting.date_changed,
+                  w2_OrderWorkflowSetting.last_changed,
+                  w2_OrderWorkflowSetting.scheduled_shipping_date_action,
+                  w2_OrderWorkflowSetting.shipping_date_action,
+                  w2_OrderWorkflowSetting.return_action,
+                  w2_OrderWorkflowSetting.return_reason_kbn,
+                  w2_OrderWorkflowSetting.return_reason_memo,
+                  w2_OrderWorkflowSetting.cassette_return_action,
+                  w2_OrderWorkflowSetting.receipt_output_flg_change,
+                  w2_OrderWorkflowSetting.cassette_receipt_output_flg_change,
+                  w2_OrderWorkflowSetting.tw_invoice_status_change,
+                  w2_OrderWorkflowSetting.tw_invoice_status_api,
+                  w2_OrderWorkflowSetting.tw_cassette_invoice_status_change,
+                  w2_OrderWorkflowSetting.tw_cassette_invoice_status_api,
+                  w2_OrderWorkflowSetting.tw_external_order_info_action,
+                  w2_OrderWorkflowSetting.tw_cassette_external_order_info_action,
+                  w2_OrderWorkflowSetting.order_extend_status_change41,
+                  w2_OrderWorkflowSetting.order_extend_status_change42,
+                  w2_OrderWorkflowSetting.order_extend_status_change43,
+                  w2_OrderWorkflowSetting.order_extend_status_change44,
+                  w2_OrderWorkflowSetting.order_extend_status_change45,
+                  w2_OrderWorkflowSetting.order_extend_status_change46,
+                  w2_OrderWorkflowSetting.order_extend_status_change47,
+                  w2_OrderWorkflowSetting.order_extend_status_change48,
+                  w2_OrderWorkflowSetting.order_extend_status_change49,
+                  w2_OrderWorkflowSetting.order_extend_status_change50,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change41,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change42,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change43,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change44,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change45,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change46,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change47,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change48,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change49,
+                  w2_OrderWorkflowSetting.cassette_order_extend_status_change50,
+                  w2_OrderWorkflowSetting.storepickup_status_change,
+                  w2_OrderWorkflowSetting.cassette_storepickup_status_change
+                )
+        VALUES  (
+                  @shop_id,
+                  @workflow_kbn,
+                  @workflow_no,
+                  @workflow_name,
+                  @desc1,
+                  @display_order,
+                  @display_count,
+                  @valid_flg,
+                  @workflow_detail_kbn,
+                  @display_kbn,
+                  @additional_search_flg,
+                  @search_setting,
+                  @order_status_change,
+                  @product_realstock_change,
+                  @payment_status_change,
+                  @external_payment_action,
+                  @demand_status_change,
+                  @return_exchange_status_change,
+                  @repayment_status_change,
+                  @order_extend_status_change1,
+                  @order_extend_status_change2,
+                  @order_extend_status_change3,
+                  @order_extend_status_change4,
+                  @order_extend_status_change5,
+                  @order_extend_status_change6,
+                  @order_extend_status_change7,
+                  @order_extend_status_change8,
+                  @order_extend_status_change9,
+                  @order_extend_status_change10,
+                  @order_extend_status_change11,
+                  @order_extend_status_change12,
+                  @order_extend_status_change13,
+                  @order_extend_status_change14,
+                  @order_extend_status_change15,
+                  @order_extend_status_change16,
+                  @order_extend_status_change17,
+                  @order_extend_status_change18,
+                  @order_extend_status_change19,
+                  @order_extend_status_change20,
+                  @order_extend_status_change21,
+                  @order_extend_status_change22,
+                  @order_extend_status_change23,
+                  @order_extend_status_change24,
+                  @order_extend_status_change25,
+                  @order_extend_status_change26,
+                  @order_extend_status_change27,
+                  @order_extend_status_change28,
+                  @order_extend_status_change29,
+                  @order_extend_status_change30,
+                  @order_extend_status_change31,
+                  @order_extend_status_change32,
+                  @order_extend_status_change33,
+                  @order_extend_status_change34,
+                  @order_extend_status_change35,
+                  @order_extend_status_change36,
+                  @order_extend_status_change37,
+                  @order_extend_status_change38,
+                  @order_extend_status_change39,
+                  @order_extend_status_change40,
+                  @mail_id,
+                  @cassette_default_select,
+                  @cassette_no_update,
+                  @cassette_order_status_change,
+                  @cassette_product_realstock_change,
+                  @cassette_payment_status_change,
+                  @cassette_external_payment_action,
+                  @cassette_demand_status_change,
+                  @cassette_return_exchange_status_change,
+                  @cassette_repayment_status_change,
+                  @cassette_order_extend_status_change1,
+                  @cassette_order_extend_status_change2,
+                  @cassette_order_extend_status_change3,
+                  @cassette_order_extend_status_change4,
+                  @cassette_order_extend_status_change5,
+                  @cassette_order_extend_status_change6,
+                  @cassette_order_extend_status_change7,
+                  @cassette_order_extend_status_change8,
+                  @cassette_order_extend_status_change9,
+                  @cassette_order_extend_status_change10,
+                  @cassette_order_extend_status_change11,
+                  @cassette_order_extend_status_change12,
+                  @cassette_order_extend_status_change13,
+                  @cassette_order_extend_status_change14,
+                  @cassette_order_extend_status_change15,
+                  @cassette_order_extend_status_change16,
+                  @cassette_order_extend_status_change17,
+                  @cassette_order_extend_status_change18,
+                  @cassette_order_extend_status_change19,
+                  @cassette_order_extend_status_change20,
+                  @cassette_order_extend_status_change21,
+                  @cassette_order_extend_status_change22,
+                  @cassette_order_extend_status_change23,
+                  @cassette_order_extend_status_change24,
+                  @cassette_order_extend_status_change25,
+                  @cassette_order_extend_status_change26,
+                  @cassette_order_extend_status_change27,
+                  @cassette_order_extend_status_change28,
+                  @cassette_order_extend_status_change29,
+                  @cassette_order_extend_status_change30,
+                  @cassette_order_extend_status_change31,
+                  @cassette_order_extend_status_change32,
+                  @cassette_order_extend_status_change33,
+                  @cassette_order_extend_status_change34,
+                  @cassette_order_extend_status_change35,
+                  @cassette_order_extend_status_change36,
+                  @cassette_order_extend_status_change37,
+                  @cassette_order_extend_status_change38,
+                  @cassette_order_extend_status_change39,
+                  @cassette_order_extend_status_change40,
+                  getdate(),
+                  getdate(),
+                  @last_changed,
+                  @scheduled_shipping_date_action,
+                  @shipping_date_action,
+                  @return_action,
+                  @return_reason_kbn,
+                  @return_reason_memo,
+                  @cassette_return_action,
+                  @receipt_output_flg_change,
+                  @cassette_receipt_output_flg_change,
+                  @tw_invoice_status_change,
+                  @tw_invoice_status_api,
+                  @tw_cassette_invoice_status_change,
+                  @tw_cassette_invoice_status_api,
+                  @tw_external_order_info_action,
+                  @tw_cassette_external_order_info_action,
+                  @order_extend_status_change41,
+                  @order_extend_status_change42,
+                  @order_extend_status_change43,
+                  @order_extend_status_change44,
+                  @order_extend_status_change45,
+                  @order_extend_status_change46,
+                  @order_extend_status_change47,
+                  @order_extend_status_change48,
+                  @order_extend_status_change49,
+                  @order_extend_status_change50,
+                  @cassette_order_extend_status_change41,
+                  @cassette_order_extend_status_change42,
+                  @cassette_order_extend_status_change43,
+                  @cassette_order_extend_status_change44,
+                  @cassette_order_extend_status_change45,
+                  @cassette_order_extend_status_change46,
+                  @cassette_order_extend_status_change47,
+                  @cassette_order_extend_status_change48,
+                  @cassette_order_extend_status_change49,
+                  @cassette_order_extend_status_change50,
+                  @storepickup_status_change,
+                  @cassette_storepickup_status_change
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+      <Input Name="workflow_name" Type="nvarchar" Size="50" />
+      <Input Name="desc1" Type="nvarchar" Size="250" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="display_count" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="workflow_detail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="display_kbn" Type="nvarchar" Size="10" />
+      <Input Name="additional_search_flg" Type="nvarchar" Size="10" />
+      <Input Name="search_setting" Type="ntext" />
+      <Input Name="order_status_change" Type="nvarchar" Size="30" />
+      <Input Name="product_realstock_change" Type="nvarchar" Size="2" />
+      <Input Name="payment_status_change" Type="nvarchar" Size="2" />
+      <Input Name="external_payment_action" Type="nvarchar" Size="2" />
+      <Input Name="demand_status_change" Type="nvarchar" Size="2" />
+      <Input Name="return_exchange_status_change" Type="nvarchar" Size="2" />
+      <Input Name="repayment_status_change" Type="nvarchar" Size="2" />
+      <Input Name="order_extend_status_change1" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change2" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change3" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change4" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change5" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change6" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change7" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change8" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change9" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change10" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change11" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change12" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change13" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change14" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change15" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change16" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change17" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change18" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change19" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change20" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change21" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change22" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change23" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change24" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change25" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change26" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change27" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change28" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change29" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change30" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change31" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change32" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change33" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change34" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change35" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change36" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change37" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change38" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change39" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change40" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="cassette_default_select" Type="nvarchar" Size="100" />
+      <Input Name="cassette_no_update" Type="nvarchar" Size="10" />
+      <Input Name="cassette_order_status_change" Type="ntext" />
+      <Input Name="cassette_product_realstock_change" Type="ntext" />
+      <Input Name="cassette_payment_status_change" Type="ntext" />
+      <Input Name="cassette_external_payment_action" Type="ntext" />
+      <Input Name="cassette_demand_status_change" Type="ntext" />
+      <Input Name="cassette_return_exchange_status_change" Type="ntext" />
+      <Input Name="cassette_repayment_status_change" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change1" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change2" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change3" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change4" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change5" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change6" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change7" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change8" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change9" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change10" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change11" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change12" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change13" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change14" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change15" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change16" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change17" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change18" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change19" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change20" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change21" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change22" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change23" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change24" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change25" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change26" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change27" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change28" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change29" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change30" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change31" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change32" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change33" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change34" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change35" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change36" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change37" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change38" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change39" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change40" Type="nvarchar" Size="max" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="scheduled_shipping_date_action" Type="nvarchar" Size="1" />
+      <Input Name="shipping_date_action" Type="nvarchar" Size="2" />
+      <Input Name="return_action" Type="nvarchar" Size="2" />
+      <Input Name="return_reason_kbn" Type="nvarchar" Size="2" />
+      <Input Name="return_reason_memo" Type="nvarchar" Size="max" />
+      <Input Name="cassette_return_action" Type="nvarchar" Size="30" />
+      <Input Name="receipt_output_flg_change" Type="nvarchar" Size="1" />
+      <Input Name="cassette_receipt_output_flg_change" Type="nvarchar" Size="30" />
+      <Input Name="tw_invoice_status_change" Type="nvarchar" Size="2" />
+      <Input Name="tw_invoice_status_api" Type="nvarchar" Size="2" />
+      <Input Name="tw_cassette_invoice_status_change" Type="ntext" />
+      <Input Name="tw_cassette_invoice_status_api" Type="ntext" />
+      <Input Name="tw_external_order_info_action" Type="nvarchar" Size="2" />
+      <Input Name="tw_cassette_external_order_info_action" Type="nvarchar" Size="max" />
+      <Input Name="order_extend_status_change41" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change42" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change43" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change44" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change45" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change46" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change47" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change48" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change49" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change50" Type="nvarchar" Size="10" />
+      <Input Name="cassette_order_extend_status_change41" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change42" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change43" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change44" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change45" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change46" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change47" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change48" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change49" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change50" Type="nvarchar" Size="max" />
+      <Input Name="storepickup_status_change" Type="nvarchar" Size="30" />
+      <Input Name="cassette_storepickup_status_change" Type="nvarchar" Size="max" />
+    </Parameter>
+  </InsertOrderWorkflowSetting>
+
+  <!-- 注文ワークフロー設定情報更新 -->
+  <UpdateOrderWorkflowSetting>
+    <Statement>
+      <![CDATA[
+         UPDATE  w2_OrderWorkflowSetting
+               SET  w2_OrderWorkflowSetting.workflow_kbn = @workflow_kbn
+                    ,w2_OrderWorkflowSetting.workflow_name = @workflow_name
+                    ,w2_OrderWorkflowSetting.desc1 = @desc1
+                    ,w2_OrderWorkflowSetting.display_order = @display_order
+                    ,w2_OrderWorkflowSetting.display_count = @display_count
+                    ,w2_OrderWorkflowSetting.valid_flg = @valid_flg
+                    ,w2_OrderWorkflowSetting.workflow_detail_kbn = @workflow_detail_kbn
+                    ,w2_OrderWorkflowSetting.display_kbn = @display_kbn
+                    ,w2_OrderWorkflowSetting.additional_search_flg = @additional_search_flg
+                    ,w2_OrderWorkflowSetting.search_setting = @search_setting
+                    ,w2_OrderWorkflowSetting.order_status_change = @order_status_change
+                    ,w2_OrderWorkflowSetting.product_realstock_change = @product_realstock_change
+                    ,w2_OrderWorkflowSetting.payment_status_change = @payment_status_change
+                    ,w2_OrderWorkflowSetting.external_payment_action = @external_payment_action
+                    ,w2_OrderWorkflowSetting.demand_status_change = @demand_status_change
+                    ,w2_OrderWorkflowSetting.return_exchange_status_change = @return_exchange_status_change
+                    ,w2_OrderWorkflowSetting.repayment_status_change = @repayment_status_change
+                    ,w2_OrderWorkflowSetting.order_extend_status_change1 = @order_extend_status_change1
+                    ,w2_OrderWorkflowSetting.order_extend_status_change2 = @order_extend_status_change2
+                    ,w2_OrderWorkflowSetting.order_extend_status_change3 = @order_extend_status_change3
+                    ,w2_OrderWorkflowSetting.order_extend_status_change4 = @order_extend_status_change4
+                    ,w2_OrderWorkflowSetting.order_extend_status_change5 = @order_extend_status_change5
+                    ,w2_OrderWorkflowSetting.order_extend_status_change6 = @order_extend_status_change6
+                    ,w2_OrderWorkflowSetting.order_extend_status_change7 = @order_extend_status_change7
+                    ,w2_OrderWorkflowSetting.order_extend_status_change8 = @order_extend_status_change8
+                    ,w2_OrderWorkflowSetting.order_extend_status_change9 = @order_extend_status_change9
+                    ,w2_OrderWorkflowSetting.order_extend_status_change10 = @order_extend_status_change10
+                    ,w2_OrderWorkflowSetting.order_extend_status_change11 = @order_extend_status_change11
+                    ,w2_OrderWorkflowSetting.order_extend_status_change12 = @order_extend_status_change12
+                    ,w2_OrderWorkflowSetting.order_extend_status_change13 = @order_extend_status_change13
+                    ,w2_OrderWorkflowSetting.order_extend_status_change14 = @order_extend_status_change14
+                    ,w2_OrderWorkflowSetting.order_extend_status_change15 = @order_extend_status_change15
+                    ,w2_OrderWorkflowSetting.order_extend_status_change16 = @order_extend_status_change16
+                    ,w2_OrderWorkflowSetting.order_extend_status_change17 = @order_extend_status_change17
+                    ,w2_OrderWorkflowSetting.order_extend_status_change18 = @order_extend_status_change18
+                    ,w2_OrderWorkflowSetting.order_extend_status_change19 = @order_extend_status_change19
+                    ,w2_OrderWorkflowSetting.order_extend_status_change20 = @order_extend_status_change20
+                    ,w2_OrderWorkflowSetting.order_extend_status_change21 = @order_extend_status_change21
+                    ,w2_OrderWorkflowSetting.order_extend_status_change22 = @order_extend_status_change22
+                    ,w2_OrderWorkflowSetting.order_extend_status_change23 = @order_extend_status_change23
+                    ,w2_OrderWorkflowSetting.order_extend_status_change24 = @order_extend_status_change24
+                    ,w2_OrderWorkflowSetting.order_extend_status_change25 = @order_extend_status_change25
+                    ,w2_OrderWorkflowSetting.order_extend_status_change26 = @order_extend_status_change26
+                    ,w2_OrderWorkflowSetting.order_extend_status_change27 = @order_extend_status_change27
+                    ,w2_OrderWorkflowSetting.order_extend_status_change28 = @order_extend_status_change28
+                    ,w2_OrderWorkflowSetting.order_extend_status_change29 = @order_extend_status_change29
+                    ,w2_OrderWorkflowSetting.order_extend_status_change30 = @order_extend_status_change30
+                    ,w2_OrderWorkflowSetting.order_extend_status_change31 = @order_extend_status_change31
+                    ,w2_OrderWorkflowSetting.order_extend_status_change32 = @order_extend_status_change32
+                    ,w2_OrderWorkflowSetting.order_extend_status_change33 = @order_extend_status_change33
+                    ,w2_OrderWorkflowSetting.order_extend_status_change34 = @order_extend_status_change34
+                    ,w2_OrderWorkflowSetting.order_extend_status_change35 = @order_extend_status_change35
+                    ,w2_OrderWorkflowSetting.order_extend_status_change36 = @order_extend_status_change36
+                    ,w2_OrderWorkflowSetting.order_extend_status_change37 = @order_extend_status_change37
+                    ,w2_OrderWorkflowSetting.order_extend_status_change38 = @order_extend_status_change38
+                    ,w2_OrderWorkflowSetting.order_extend_status_change39 = @order_extend_status_change39
+                    ,w2_OrderWorkflowSetting.order_extend_status_change40 = @order_extend_status_change40
+                    ,w2_OrderWorkflowSetting.mail_id = @mail_id
+                    ,w2_OrderWorkflowSetting.cassette_default_select = @cassette_default_select
+                    ,w2_OrderWorkflowSetting.cassette_no_update = @cassette_no_update
+                    ,w2_OrderWorkflowSetting.cassette_order_status_change = @cassette_order_status_change
+                    ,w2_OrderWorkflowSetting.cassette_product_realstock_change = @cassette_product_realstock_change
+                    ,w2_OrderWorkflowSetting.cassette_payment_status_change = @cassette_payment_status_change
+                    ,w2_OrderWorkflowSetting.cassette_external_payment_action = @cassette_external_payment_action
+                    ,w2_OrderWorkflowSetting.cassette_demand_status_change = @cassette_demand_status_change
+                    ,w2_OrderWorkflowSetting.cassette_return_exchange_status_change = @cassette_return_exchange_status_change
+                    ,w2_OrderWorkflowSetting.cassette_repayment_status_change = @cassette_repayment_status_change
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change1 = @cassette_order_extend_status_change1
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change2 = @cassette_order_extend_status_change2
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change3 = @cassette_order_extend_status_change3
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change4 = @cassette_order_extend_status_change4
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change5 = @cassette_order_extend_status_change5
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change6 = @cassette_order_extend_status_change6
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change7 = @cassette_order_extend_status_change7
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change8 = @cassette_order_extend_status_change8
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change9 = @cassette_order_extend_status_change9
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change10 = @cassette_order_extend_status_change10
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change11 = @cassette_order_extend_status_change11
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change12 = @cassette_order_extend_status_change12
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change13 = @cassette_order_extend_status_change13
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change14 = @cassette_order_extend_status_change14
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change15 = @cassette_order_extend_status_change15
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change16 = @cassette_order_extend_status_change16
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change17 = @cassette_order_extend_status_change17
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change18 = @cassette_order_extend_status_change18
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change19 = @cassette_order_extend_status_change19
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change20 = @cassette_order_extend_status_change20
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change21 = @cassette_order_extend_status_change21
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change22 = @cassette_order_extend_status_change22
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change23 = @cassette_order_extend_status_change23
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change24 = @cassette_order_extend_status_change24
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change25 = @cassette_order_extend_status_change25
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change26 = @cassette_order_extend_status_change26
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change27 = @cassette_order_extend_status_change27
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change28 = @cassette_order_extend_status_change28
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change29 = @cassette_order_extend_status_change29
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change30 = @cassette_order_extend_status_change30
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change31 = @cassette_order_extend_status_change31
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change32 = @cassette_order_extend_status_change32
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change33 = @cassette_order_extend_status_change33
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change34 = @cassette_order_extend_status_change34
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change35 = @cassette_order_extend_status_change35
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change36 = @cassette_order_extend_status_change36
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change37 = @cassette_order_extend_status_change37
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change38 = @cassette_order_extend_status_change38
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change39 = @cassette_order_extend_status_change39
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change40 = @cassette_order_extend_status_change40
+                    ,w2_OrderWorkflowSetting.date_changed = getdate()
+                    ,w2_OrderWorkflowSetting.last_changed = @last_changed
+                    ,w2_OrderWorkflowSetting.scheduled_shipping_date_action = @scheduled_shipping_date_action
+                    ,w2_OrderWorkflowSetting.shipping_date_action = @shipping_date_action
+                    ,w2_OrderWorkflowSetting.return_action = @return_action
+                    ,w2_OrderWorkflowSetting.return_reason_kbn = @return_reason_kbn
+                    ,w2_OrderWorkflowSetting.return_reason_memo = @return_reason_memo
+                    ,w2_OrderWorkflowSetting.cassette_return_action = @cassette_return_action
+                    ,w2_OrderWorkflowSetting.receipt_output_flg_change = @receipt_output_flg_change
+                    ,w2_OrderWorkflowSetting.cassette_receipt_output_flg_change = @cassette_receipt_output_flg_change
+                    ,w2_OrderWorkflowSetting.tw_invoice_status_change = @tw_invoice_status_change
+                    ,w2_OrderWorkflowSetting.tw_invoice_status_api = @tw_invoice_status_api
+                    ,w2_OrderWorkflowSetting.tw_cassette_invoice_status_change = @tw_cassette_invoice_status_change
+                    ,w2_OrderWorkflowSetting.tw_cassette_invoice_status_api = @tw_cassette_invoice_status_api
+                    ,w2_OrderWorkflowSetting.tw_external_order_info_action = @tw_external_order_info_action
+                    ,w2_OrderWorkflowSetting.tw_cassette_external_order_info_action = @tw_cassette_external_order_info_action
+                    ,w2_OrderWorkflowSetting.order_extend_status_change41 = @order_extend_status_change41
+                    ,w2_OrderWorkflowSetting.order_extend_status_change42 = @order_extend_status_change42
+                    ,w2_OrderWorkflowSetting.order_extend_status_change43 = @order_extend_status_change43
+                    ,w2_OrderWorkflowSetting.order_extend_status_change44 = @order_extend_status_change44
+                    ,w2_OrderWorkflowSetting.order_extend_status_change45 = @order_extend_status_change45
+                    ,w2_OrderWorkflowSetting.order_extend_status_change46 = @order_extend_status_change46
+                    ,w2_OrderWorkflowSetting.order_extend_status_change47 = @order_extend_status_change47
+                    ,w2_OrderWorkflowSetting.order_extend_status_change48 = @order_extend_status_change48
+                    ,w2_OrderWorkflowSetting.order_extend_status_change49 = @order_extend_status_change49
+                    ,w2_OrderWorkflowSetting.order_extend_status_change50 = @order_extend_status_change50
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change41 = @cassette_order_extend_status_change41
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change42 = @cassette_order_extend_status_change42
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change43 = @cassette_order_extend_status_change43
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change44 = @cassette_order_extend_status_change44
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change45 = @cassette_order_extend_status_change45
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change46 = @cassette_order_extend_status_change46
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change47 = @cassette_order_extend_status_change47
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change48 = @cassette_order_extend_status_change48
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change49 = @cassette_order_extend_status_change49
+                    ,w2_OrderWorkflowSetting.cassette_order_extend_status_change50 = @cassette_order_extend_status_change50
+                    ,w2_OrderWorkflowSetting.storepickup_status_change = @storepickup_status_change
+                    ,w2_OrderWorkflowSetting.cassette_storepickup_status_change = @cassette_storepickup_status_change
+             WHERE  w2_OrderWorkflowSetting.workflow_kbn = @workflow_kbn_old
+               AND  w2_OrderWorkflowSetting.workflow_no = @workflow_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_kbn_old" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+      <Input Name="workflow_name" Type="nvarchar" Size="50" />
+      <Input Name="desc1" Type="nvarchar" Size="250" />
+      <Input Name="display_order" Type="int" />
+      <Input Name="display_count" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="workflow_detail_kbn" Type="nvarchar" Size="10" />
+      <Input Name="display_kbn" Type="nvarchar" Size="10" />
+      <Input Name="additional_search_flg" Type="nvarchar" Size="10" />
+      <Input Name="search_setting" Type="ntext" />
+      <Input Name="order_status_change" Type="nvarchar" Size="30" />
+      <Input Name="product_realstock_change" Type="nvarchar" Size="2" />
+      <Input Name="payment_status_change" Type="nvarchar" Size="2" />
+      <Input Name="external_payment_action" Type="nvarchar" Size="2" />
+      <Input Name="demand_status_change" Type="nvarchar" Size="2" />
+      <Input Name="return_exchange_status_change" Type="nvarchar" Size="2" />
+      <Input Name="repayment_status_change" Type="nvarchar" Size="2" />
+      <Input Name="order_extend_status_change1" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change2" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change3" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change4" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change5" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change6" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change7" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change8" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change9" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change10" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change11" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change12" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change13" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change14" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change15" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change16" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change17" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change18" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change19" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change20" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change21" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change22" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change23" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change24" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change25" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change26" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change27" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change28" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change29" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change30" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change31" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change32" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change33" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change34" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change35" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change36" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change37" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change38" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change39" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change40" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="cassette_default_select" Type="nvarchar" Size="100" />
+      <Input Name="cassette_no_update" Type="nvarchar" Size="10" />
+      <Input Name="cassette_order_status_change" Type="ntext" />
+      <Input Name="cassette_product_realstock_change" Type="ntext" />
+      <Input Name="cassette_payment_status_change" Type="ntext" />
+      <Input Name="cassette_external_payment_action" Type="ntext" />
+      <Input Name="cassette_demand_status_change" Type="ntext" />
+      <Input Name="cassette_return_exchange_status_change" Type="ntext" />
+      <Input Name="cassette_repayment_status_change" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change1" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change2" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change3" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change4" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change5" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change6" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change7" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change8" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change9" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change10" Type="ntext" />
+      <Input Name="cassette_order_extend_status_change11" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change12" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change13" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change14" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change15" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change16" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change17" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change18" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change19" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change20" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change21" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change22" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change23" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change24" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change25" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change26" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change27" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change28" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change29" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change30" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change31" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change32" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change33" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change34" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change35" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change36" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change37" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change38" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change39" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change40" Type="nvarchar" Size="max" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="scheduled_shipping_date_action" Type="nvarchar" Size="1" />
+      <Input Name="shipping_date_action" Type="nvarchar" Size="2" />
+      <Input Name="return_action" Type="nvarchar" Size="2" />
+      <Input Name="return_reason_kbn" Type="nvarchar" Size="2" />
+      <Input Name="return_reason_memo" Type="nvarchar" Size="max" />
+      <Input Name="cassette_return_action" Type="nvarchar" Size="30" />
+      <Input Name="receipt_output_flg_change" Type="nvarchar" Size="1" />
+      <Input Name="cassette_receipt_output_flg_change" Type="nvarchar" Size="30" />
+      <Input Name="tw_invoice_status_change" Type="nvarchar" Size="2" />
+      <Input Name="tw_invoice_status_api" Type="nvarchar" Size="2" />
+      <Input Name="tw_cassette_invoice_status_change" Type="ntext" />
+      <Input Name="tw_cassette_invoice_status_api" Type="ntext" />
+      <Input Name="tw_external_order_info_action" Type="nvarchar" Size="2" />
+      <Input Name="tw_cassette_external_order_info_action" Type="nvarchar" Size="max" />
+      <Input Name="order_extend_status_change41" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change42" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change43" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change44" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change45" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change46" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change47" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change48" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change49" Type="nvarchar" Size="10" />
+      <Input Name="order_extend_status_change50" Type="nvarchar" Size="10" />
+      <Input Name="cassette_order_extend_status_change41" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change42" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change43" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change44" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change45" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change46" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change47" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change48" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change49" Type="nvarchar" Size="max" />
+      <Input Name="cassette_order_extend_status_change50" Type="nvarchar" Size="max" />
+      <Input Name="storepickup_status_change" Type="nvarchar" Size="30" />
+      <Input Name="cassette_storepickup_status_change" Type="nvarchar" Size="max" />
+    </Parameter>
+  </UpdateOrderWorkflowSetting>
+  
+  <!-- 注文ワークフロー設定情報削除 -->
+  <DeleteOrderWorkflowSetting>
+    <Statement>
+      <![CDATA[
+        -- 削除
+        DELETE  w2_OrderWorkflowSetting
+         WHERE  w2_OrderWorkflowSetting.workflow_kbn = @workflow_kbn
+           AND  w2_OrderWorkflowSetting.workflow_no = @workflow_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="workflow_kbn" Type="nvarchar" Size="10" />
+      <Input Name="workflow_no" Type="int" />
+    </Parameter>
+  </DeleteOrderWorkflowSetting>
+
+  <!-- Check Exist MailTemplateId at OrderWorkflow  -->
+  <CheckUsedMailId>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP 1 w2_OrderWorkflowSetting.workflow_no
+          FROM  w2_OrderWorkflowSetting
+         WHERE  w2_OrderWorkflowSetting.shop_id = @shop_id
+           AND  w2_OrderWorkflowSetting.workflow_detail_kbn = 'NORMAL'
+           AND  (
+                  (
+                    w2_OrderWorkflowSetting.display_kbn = 'LINE'
+                    AND
+                    w2_OrderWorkflowSetting.mail_id = @mail_id
+                  )
+                  OR
+                  (
+                    w2_OrderWorkflowSetting.display_kbn = 'CASSETTE'
+                    AND
+                    (
+                      w2_OrderWorkflowSetting.cassette_order_status_change like '%' + @mail_id + '%'
+                      OR
+                      w2_OrderWorkflowSetting.cassette_product_realstock_change like '%' + @mail_id + '%'
+                      OR
+                      w2_OrderWorkflowSetting.cassette_payment_status_change like '%' + @mail_id + '%'
+                      OR
+                      w2_OrderWorkflowSetting.cassette_external_payment_action like '%' + @mail_id + '%'
+                      OR
+                      w2_OrderWorkflowSetting.cassette_demand_status_change like '%' + @mail_id + '%'
+                      OR
+                      w2_OrderWorkflowSetting.cassette_return_exchange_status_change like '%' + @mail_id + '%'
+                      OR
+                      w2_OrderWorkflowSetting.cassette_repayment_status_change like '%' + @mail_id + '%'
+                      OR
+                      w2_OrderWorkflowSetting.cassette_receipt_output_flg_change like '%' + @mail_id + '%'
+                      @@ cassette_order_extend_status_change @@
+                    )
+                  )
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckUsedMailId>
+
+</OrderWorkflowSetting>

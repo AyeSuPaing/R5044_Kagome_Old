@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ＆mall系SQLステートメントXML(Andmall.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<Andmall>
+
+  <!-- SKU_IDに紐づく商品情報の取得 -->
+  <GetProduct>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Product.product_id AS product_id
+                ,w2_Product.product_id AS variation_id
+                ,w2_Product.andmall_reservation_flg AS andmall_reservation_flg
+          FROM  w2_Product
+     LEFT JOIN  w2_MallExhibitsConfig
+            ON  w2_Product.product_id = w2_MallExhibitsConfig.product_id
+         WHERE  w2_Product.product_id is not null
+           ## EXHIBITS_FLG ##
+           ## SKU_PRODUCT_ID ##
+         UNION
+            (
+             SELECT  w2_ProductVariation.product_id AS product_id
+                    ,w2_ProductVariation.variation_id AS variation_id
+                    ,w2_ProductVariation.variation_andmall_reservation_flg ASandmall_reservation_flg
+               FROM  w2_ProductVariation
+          LEFT JOIN  w2_MallExhibitsConfig
+                 ON  w2_ProductVariation.product_id = w2_MallExhibitsConfig.product_id
+              WHERE  w2_ProductVariation.variation_id is not null
+                ## EXHIBITS_FLG ##
+                ## SKU_VARIATION_ID ##
+            )
+      ]]>
+    </Statement>
+  </GetProduct>
+
+</Andmall>

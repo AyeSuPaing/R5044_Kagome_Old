@@ -1,0 +1,334 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 入荷通知メール情報系SQLステートメントXML(UserProductArrivalMail.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<UserProductArrivalMail>
+  <!-- 
+    入荷通知メール情報取得(サマリーCSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetUserProductArrivalMailMaster>
+    <Statement>
+      <![CDATA[      
+        -- 商品別区分別の登録件数テーブル作成（@arrival_mail_count）
+        [[ USERPRODUCTARRIVALMAIL_ARRIVAL_MAIL_COUNT_TABLE_CREATE ]]
+        
+        SELECT  @@ fields @@
+          FROM  @arrival_mail_count AS ArrivalMailCount
+                INNER JOIN w2_ProductView ON
+                (
+                  ArrivalMailCount.shop_id = w2_ProductView.shop_id
+                  AND
+                  ArrivalMailCount.product_id = w2_ProductView.product_id
+                  AND
+                  ArrivalMailCount.variation_id = w2_ProductView.variation_id
+                )
+                [[ USERPRODUCTARRIVALMAIL_SEARCH_WHERE ]]
+                [[ USERPRODUCTARRIVALMAIL_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetUserProductArrivalMailMaster>
+
+  <!-- 
+    送信先メールアドレス毎の入荷通知メール情報取得(明細CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetUserProductArrivalMailMasterAddMailAddr>
+    <Statement>
+      <![CDATA[        
+        -- 商品別区分別の登録件数テーブル作成（@arrival_mail_count）
+        [[ USERPRODUCTARRIVALMAIL_ARRIVAL_MAIL_COUNT_TABLE_CREATE ]]
+        
+        -- 商品毎の送信先メールアドレス取得
+        DECLARE @arrival_mail_addr TABLE(
+          shop_id nvarchar(10),
+          product_id nvarchar(30),
+          variation_id nvarchar(60),
+          user_id nvarchar(30),
+          pcmobile_kbn nvarchar(10),
+          arrival_mail_kbn nvarchar(10),
+          date_created datetime,
+          date_changed datetime,
+          last_changed nvarchar(20),
+          date_expired datetime,
+          send_mail_addr nvarchar(256)
+          )
+
+        INSERT INTO @arrival_mail_addr
+          (
+            shop_id,
+            product_id,
+            variation_id,
+            user_id,
+            pcmobile_kbn,
+            arrival_mail_kbn,
+            date_created,
+            date_changed,
+            last_changed,
+            date_expired,
+            send_mail_addr
+           )
+        SELECT  w2_UserProductArrivalMail.shop_id,
+                w2_UserProductArrivalMail.product_id,
+                w2_UserProductArrivalMail.variation_id,
+                w2_UserProductArrivalMail.user_id,
+                w2_UserProductArrivalMail.pcmobile_kbn,
+                w2_UserProductArrivalMail.arrival_mail_kbn,
+                w2_UserProductArrivalMail.date_created,
+                w2_UserProductArrivalMail.date_changed,
+                w2_UserProductArrivalMail.last_changed,
+                w2_UserProductArrivalMail.date_expired,
+                CASE WHEN (
+                            -- ゲストメールアドレスがある場合は、ゲスト扱い
+                            w2_UserProductArrivalMail.guest_mail_addr != ''
+                          ) THEN w2_UserProductArrivalMail.guest_mail_addr
+                     WHEN (
+                            -- PCで申込＆PCメールアドレス有効 → PC
+                            w2_UserProductArrivalMail.pcmobile_kbn = 'PC'
+                            AND
+                            w2_User.mail_addr <> ''
+                          ) THEN w2_User.mail_addr
+                     WHEN (
+                            -- PCで申込＆PCメールアドレス無効＆携帯メールアドレス有効 → モバイル
+                            w2_UserProductArrivalMail.pcmobile_kbn = 'PC'
+                            AND
+                            w2_User.mail_addr = ''
+                            AND
+                            w2_User.mail_addr2 <>''
+                          ) THEN w2_User.mail_addr2
+                     WHEN (
+                            -- モバイルで申込＆携帯メールアドレス有効 → モバイル
+                            w2_UserProductArrivalMail.pcmobile_kbn = 'MB'
+                            AND
+                            w2_User.mail_addr2 <> ''
+                          ) THEN w2_User.mail_addr2
+                     WHEN (
+                             -- モバイルで申込＆携帯メールアドレス無効＆PCメールアドレス有効 → PC
+                            w2_UserProductArrivalMail.pcmobile_kbn = 'MB'
+                            AND
+                            w2_User.mail_addr2 = ''
+                            AND
+                            w2_User.mail_addr <> ''
+                          ) THEN w2_User.mail_addr
+                     END AS send_mail_addr        
+          FROM  w2_UserProductArrivalMail 
+                LEFT JOIN w2_User ON
+                (
+                  w2_User.user_id = w2_UserProductArrivalMail.user_id
+                )
+         WHERE  w2_UserProductArrivalMail.mail_send_status = '0'
+           AND  w2_UserProductArrivalMail.date_expired >= GETDATE()
+                
+        SELECT  @@ fields @@
+          FROM  @arrival_mail_count AS ArrivalMailCount
+                INNER JOIN w2_ProductView ON
+                (
+                  ArrivalMailCount.shop_id = w2_ProductView.shop_id
+                  AND
+                  ArrivalMailCount.product_id = w2_ProductView.product_id
+                  AND
+                  ArrivalMailCount.variation_id = w2_ProductView.variation_id
+                )
+                INNER JOIN @arrival_mail_addr AS ArrivalMailAddr ON
+                (
+                  ArrivalMailCount.shop_id = ArrivalMailAddr.shop_id
+                  AND
+                  ArrivalMailCount.product_id = ArrivalMailAddr.product_id
+                  AND
+                  ArrivalMailCount.variation_id = ArrivalMailAddr.variation_id
+                )
+                [[ USERPRODUCTARRIVALMAIL_SEARCH_WHERE ]]
+                [[ USERPRODUCTARRIVALMAIL_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+  </GetUserProductArrivalMailMasterAddMailAddr>
+
+  <!-- 入荷通知メールマスタフィールドチェック（サマリー） -->
+  <CheckUserProductArrivalMailFields>
+    <Statement>
+      <![CDATA[
+        -- 一時テーブル作成
+        DECLARE @arrival_mail_count TABLE(
+          shop_id nvarchar(10),
+          product_id nvarchar(30),
+          variation_id nvarchar(60),
+          arrival_mail_count int,
+          release_mail_count int,
+          resale_mail_count int
+          )
+        
+        INSERT INTO @arrival_mail_count
+          (
+            shop_id,
+            product_id,
+            variation_id,
+            arrival_mail_count,
+            release_mail_count,
+            resale_mail_count
+           )
+        SELECT  TOP 1
+                w2_UserProductArrivalMail.shop_id,
+                w2_UserProductArrivalMail.product_id,
+                w2_UserProductArrivalMail.variation_id,
+                0,
+                0,
+                0
+          FROM  w2_UserProductArrivalMail
+         WHERE  w2_UserProductArrivalMail.shop_id = @shop_id 
+      
+        -- 商品毎の送信先メールアドレス取得
+        DECLARE @arrival_mail_addr TABLE(
+          shop_id nvarchar(10),
+          product_id nvarchar(30),
+          variation_id nvarchar(60)
+          )
+
+        INSERT INTO @arrival_mail_addr
+          (
+            shop_id,
+            product_id,
+            variation_id
+           )
+        SELECT  TOP 1
+                w2_UserProductArrivalMail.shop_id,
+                w2_UserProductArrivalMail.product_id,
+                w2_UserProductArrivalMail.variation_id
+          FROM  w2_UserProductArrivalMail
+         WHERE  w2_UserProductArrivalMail.shop_id = @shop_id
+         
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  @arrival_mail_count ArrivalMailCount
+                INNER JOIN 
+                w2_ProductView ON
+                (
+                  ArrivalMailCount.shop_id = w2_ProductView.shop_id
+                  AND
+                  ArrivalMailCount.product_id = w2_ProductView.product_id
+                  AND
+                  ArrivalMailCount.variation_id = w2_ProductView.variation_id
+                )
+                INNER JOIN @arrival_mail_addr AS ArrivalMailAddr ON
+                (
+                  ArrivalMailCount.shop_id = ArrivalMailAddr.shop_id
+                  AND
+                  ArrivalMailCount.product_id = ArrivalMailAddr.product_id
+                  AND
+                  ArrivalMailCount.variation_id = ArrivalMailAddr.variation_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckUserProductArrivalMailFields>
+
+  <!-- 入荷通知メールマスタフィールドチェック（明細） -->
+  <CheckUserProductArrivalMailDetailFields>
+    <Statement>
+      <![CDATA[
+        -- 一時テーブル作成
+        DECLARE @arrival_mail_count TABLE(
+          shop_id nvarchar(10),
+          product_id nvarchar(30),
+          variation_id nvarchar(60),
+          arrival_mail_count int,
+          release_mail_count int,
+          resale_mail_count int
+          )
+        
+        INSERT INTO @arrival_mail_count
+          (
+            shop_id,
+            product_id,
+            variation_id,
+            arrival_mail_count,
+            release_mail_count,
+            resale_mail_count
+           )
+        SELECT  TOP 1
+                w2_UserProductArrivalMail.shop_id,
+                w2_UserProductArrivalMail.product_id,
+                w2_UserProductArrivalMail.variation_id,
+                0,
+                0,
+                0
+          FROM  w2_UserProductArrivalMail
+         WHERE  w2_UserProductArrivalMail.shop_id = @shop_id 
+      
+        -- 商品毎の送信先メールアドレス取得
+        DECLARE @arrival_mail_addr TABLE(
+          shop_id nvarchar(10),
+          product_id nvarchar(30),
+          variation_id nvarchar(60),
+          user_id nvarchar(30),
+          pcmobile_kbn nvarchar(10),
+          arrival_mail_kbn nvarchar(10),
+          date_created datetime,
+          date_changed datetime,
+          last_changed nvarchar(20),
+          date_expired datetime,
+          send_mail_addr nvarchar(256)
+          )
+
+        INSERT INTO @arrival_mail_addr
+          (
+            shop_id,
+            product_id,
+            variation_id,
+            user_id,
+            pcmobile_kbn,
+            arrival_mail_kbn,
+            date_created,
+            date_changed,
+            last_changed,
+            date_expired,
+            send_mail_addr
+           )
+        SELECT  TOP 1
+                w2_UserProductArrivalMail.shop_id,
+                w2_UserProductArrivalMail.product_id,
+                w2_UserProductArrivalMail.variation_id,
+                w2_UserProductArrivalMail.user_id,
+                w2_UserProductArrivalMail.pcmobile_kbn,
+                w2_UserProductArrivalMail.arrival_mail_kbn,
+                w2_UserProductArrivalMail.date_created,
+                w2_UserProductArrivalMail.date_changed,
+                w2_UserProductArrivalMail.last_changed,
+                w2_UserProductArrivalMail.date_expired,
+                ''
+          FROM  w2_UserProductArrivalMail
+         WHERE  w2_UserProductArrivalMail.shop_id = @shop_id
+         
+        SELECT  TOP 1
+                @@ fields @@
+          FROM  @arrival_mail_count ArrivalMailCount
+                INNER JOIN 
+                w2_ProductView ON
+                (
+                  ArrivalMailCount.shop_id = w2_ProductView.shop_id
+                  AND
+                  ArrivalMailCount.product_id = w2_ProductView.product_id
+                  AND
+                  ArrivalMailCount.variation_id = w2_ProductView.variation_id
+                )
+                INNER JOIN @arrival_mail_addr AS ArrivalMailAddr ON
+                (
+                  ArrivalMailCount.shop_id = ArrivalMailAddr.shop_id
+                  AND
+                  ArrivalMailCount.product_id = ArrivalMailAddr.product_id
+                  AND
+                  ArrivalMailCount.variation_id = ArrivalMailAddr.variation_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckUserProductArrivalMailDetailFields>
+
+</UserProductArrivalMail>

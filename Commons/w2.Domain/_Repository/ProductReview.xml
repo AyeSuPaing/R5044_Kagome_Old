@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品レビュー系SQLステートメントXML(ProductReview.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductReview>
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_ProductReview
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+           AND  review_no = @review_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="review_no" Type="int"/>
+    </Parameter>
+  </Get>
+
+  <!-- 生成した新しいレビュー番号の取得 -->
+  <GetNewReviewNo>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MAX(review_no), 0) + 1
+          FROM  w2_ProductReview
+         WHERE  shop_id = @shop_id
+           AND  product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+    </GetNewReviewNo>
+
+  <!-- 
+    商品レビュー情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetProductReviewMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  @@ fields @@
+          FROM  w2_ProductReview
+                INNER JOIN w2_Product ON
+                (
+                  w2_ProductReview.shop_id = w2_Product.shop_id
+                  AND
+                  w2_ProductReview.product_id = w2_Product.product_id
+                )
+                [[ PRODUCTREVIEW_SEARCH_WHERE ]]
+                [[ PRODUCTREVIEW_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="name_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="user_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="nick_name_like_escaped" Type="nvarchar" Size="80" />
+      <Input Name="review_title_like_escaped" Type="ntext" />
+      <Input Name="review_comment_like_escaped" Type="ntext" />
+      <Input Name="open_flg" Type="nvarchar" Size="1" />
+      <Input Name="checked_flg" Type="nvarchar" Size="1" />
+      <Input Name="sort_kbn" Type="int" />
+    </Parameter>
+  </GetProductReviewMaster>
+
+  <!-- 商品レビューマスタフィールドチェック -->
+  <CheckProductReviewFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_ProductReview
+           WHERE  w2_ProductReview.shop_id = @shop_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckProductReviewFields>
+
+  <!-- 商品レビュー挿入 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductReview
+                (
+                  shop_id,
+                  product_id,
+                  review_no,
+                  user_id,
+                  nick_name,
+                  review_rating,
+                  review_title,
+                  review_comment,
+                  open_flg,
+                  date_opened,
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @shop_id,
+                  @product_id,
+                  @review_no,
+                  @user_id,
+                  @nick_name,
+                  @review_rating,
+                  @review_title,
+                  @review_comment,
+                  @open_flg,
+                  @date_opened,
+                  GETDATE(),
+                  GETDATE(),
+                  'user'
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="review_no" Type="int"/>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="nick_name" Type="nvarchar" Size="40" />
+      <Input Name="review_rating" Type="int" />
+      <Input Name="review_title" Type="ntext" />
+      <Input Name="review_comment" Type="ntext" />
+      <Input Name="open_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_opened" Type="datetime" />
+    </Parameter>
+  </Insert>
+
+  <!-- 商品レビュー更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_ProductReview
+           SET  w2_ProductReview.nick_name = @nick_name,
+                w2_ProductReview.review_rating = @review_rating,
+                w2_ProductReview.review_title = @review_title,
+                w2_ProductReview.review_comment = @review_comment,
+                w2_ProductReview.open_flg = @open_flg,
+                w2_ProductReview.date_opened = @date_opened,
+                w2_ProductReview.checked_flg = @checked_flg,
+                w2_ProductReview.date_checked = @date_checked,
+                w2_ProductReview.review_reward_point_flg = @review_reward_point_flg,
+                w2_ProductReview.date_changed = GETDATE(),
+                w2_ProductReview.last_changed = @last_changed
+         WHERE  w2_ProductReview.shop_id = @shop_id
+           AND  w2_ProductReview.product_id = @product_id
+           AND  w2_ProductReview.review_no = @review_no
+           AND  w2_ProductReview.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="review_no" Type="int"/>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="nick_name" Type="nvarchar" Size="40" />
+      <Input Name="review_rating" Type="int" />
+      <Input Name="review_title" Type="ntext" />
+      <Input Name="review_comment" Type="ntext" />
+      <Input Name="open_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_opened" Type="datetime" />
+      <Input Name="checked_flg" Type="nvarchar" Size="1" />
+      <Input Name="date_checked" Type="datetime" />
+      <Input Name="review_reward_point_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Update>
+
+</ProductReview>

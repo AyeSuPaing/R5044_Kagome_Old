@@ -1,0 +1,2201 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ポイントマスタ系SQLステートメントXML (Point.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<Point>
+
+  <!-- w2ポイントマスタ取得 -->
+  <GetPointMaster>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_Point
+      ]]>
+    </Statement>
+  </GetPointMaster>
+
+  <!-- ユーザポイント情報該当件数取得 -->
+  <GetCountOfSearchUserPoint>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        SELECT  ISNULL(COUNT(w2_User.user_id), 0) AS row_count
+          FROM  w2_User
+                LEFT JOIN w2_UserPoint ON
+                (
+                  w2_User.user_id = w2_UserPoint.user_id
+                  AND
+                  w2_UserPoint.point_type = '01'
+                  AND
+                  (
+                    @select_point_kbn = 'ALL'
+                    OR
+                    w2_UserPoint.point_kbn = @select_point_kbn
+                  )
+                )
+                [[ USERPOINT_SEARCH_WHERE ]]
+           AND  NOT
+                (
+                  -- 期間限定ポイントが指定された時は通常ポイントを表示しない
+                  @select_point_kbn = '02'
+                  AND
+                  w2_UserPoint.point IS NULL
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="select_point_kbn" Type="nvarchar" Size="10" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </GetCountOfSearchUserPoint>
+
+  <!-- ユーザーポイント履歴（概要）検索ヒット件数取得 -->
+  <GetSearchHitCountUserPointHistorySummary>
+    <Statement>
+      <![CDATA[
+         SELECT  COUNT(*)
+           FROM  (
+                   SELECT  history_group_no
+                     FROM  w2_UserPointHistory
+                    WHERE  user_id = @user_id
+                  GROUP BY history_group_no,
+                           kbn1,
+                           kbn2,
+                           point_type,
+                           point_inc_kbn,
+                           history_no
+                 ) AS tmp
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetSearchHitCountUserPointHistorySummary>
+
+  <!-- ユーザーポイント履歴（概要）検索 -->
+  <SearchUserPointHistorySummary>
+    <Statement>
+      <![CDATA[
+         SELECT  row_number,
+                 user_id,
+                 point_inc_kbn,
+                 point_type,
+                 point_total,
+                 date_created,
+                 history_group_no,
+                 kbn1,
+                 kbn2,
+                 history_no
+           FROM  (
+                   SELECT  ROW_NUMBER() OVER
+                           (
+                             ORDER BY history_group_no
+                           ) AS row_number,
+                           MAX(user_id) AS user_id,
+                           point_type,
+                           SUM(point_inc) AS point_total,
+                           MAX(date_created) AS date_created,
+                           kbn1,
+                           kbn2,
+                           history_group_no,
+                           point_inc_kbn,
+                           history_no
+                     FROM  w2_UserPointHistory
+                    WHERE  user_id = @user_id
+                  GROUP BY history_group_no,
+                           kbn1,
+                           kbn2,
+                           point_type,
+                           point_inc_kbn,
+                           history_no
+                 ) AS tmp
+          WHERE  @bgn_row_num <= row_number
+            AND  row_number <= @end_row_num
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchUserPointHistorySummary>
+
+  <!-- ユーザポイント情報検索 -->
+  <SearchUserPoint>
+    <Statement>
+      <![CDATA[
+        -- ポイント一覧取得し、ユーザーポイントテーブル変数に格納
+        DECLARE @table_temp TABLE(
+          row_num int IDENTITY(1, 1)
+          ,user_id nvarchar (30) NOT NULL
+          ,name nvarchar (40) NOT NULL
+          ,point_kbn nvarchar (10) NOT NULL
+          ,point_kbn_no int NOT NULL
+          ,point decimal
+          ,point_temp decimal 
+          ,point_exp datetime
+          ,kbn1 nvarchar (100)
+        )
+
+        INSERT  @table_temp
+                (
+                  user_id,
+                  name,
+                  point_kbn,
+                  point_kbn_no,
+                  point,
+                  point_exp,
+                  kbn1
+                )
+        SELECT  point_info.user_id,
+                point_info.name,
+                point_info.point_kbn,
+                point_info.point_kbn_no,
+                point_info.point,
+                point_info.point_exp,
+                point_info.kbn1
+          FROM  (
+                   SELECT  w2_User.user_id,
+                           name,
+                           ISNULL(point_kbn, '01') AS point_kbn,
+                           ISNULL(point_kbn_no, 0) AS point_kbn_no,
+                           point,
+                           point_exp,
+                           kbn1
+                     FROM  w2_User
+                           LEFT JOIN w2_UserPoint ON
+                           (
+                              w2_User.user_id = w2_UserPoint.user_id
+                              AND
+                              w2_UserPoint.point_type = '01'
+                              AND
+                              w2_UserPoint.point_kbn = '01'
+                           )
+                    [[ USERPOINT_SEARCH_WHERE ]]
+                  UNION ALL
+                   SELECT  w2_UserPoint.user_id,
+                           name,
+                           point_kbn,
+                           point_kbn_no,
+                           point,
+                           point_exp,
+                           kbn1
+                     FROM  w2_UserPoint
+                           INNER JOIN w2_User ON
+                           (
+                             w2_User.user_id = w2_UserPoint.user_id
+                             AND
+                             w2_UserPoint.point_kbn = '02'
+                           )
+                      [[ USERPOINT_SEARCH_WHERE ]]
+                      AND  point_type = '01'
+              ) AS point_info
+       WHERE  (
+                @select_point_kbn = 'ALL'
+                OR
+                @select_point_kbn = point_kbn
+              )
+        [[ USERPOINT_SEARCH_ORDER_BY ]]
+
+        -- 変数宣言
+        DECLARE @return_table TABLE
+        (
+          row_num int
+          ,user_id nvarchar (30) NOT NULL
+          ,name nvarchar (40) NOT NULL
+          ,point_kbn nvarchar (10) NOT NULL
+          ,point_kbn_no int NOT NULL
+          ,point decimal
+          ,point_temp decimal 
+          ,point_exp datetime
+          ,kbn1 nvarchar (100)
+        )
+        DECLARE @user_id_temp nvarchar(30)
+        
+        -- 初期化
+        SET @user_id_temp = ''
+        
+        -- 本ポイント一覧の取得範囲分取得し、返却用テーブルに格納
+         INSERT  @return_table 
+         SELECT  * 
+           FROM  @table_temp 
+          WHERE  @bgn_row_num <= row_num
+            AND  row_num <= @end_row_num
+
+        -- ユーザーポイントマスタから仮ポイント合計を取得
+        DECLARE cur_point CURSOR FOR SELECT user_id FROM @return_table 
+        OPEN cur_point
+        
+        FETCH NEXT FROM cur_point
+        INTO @user_id_temp 
+        
+        WHILE @@FETCH_STATUS = 0
+          BEGIN 
+            -- ユーザーポイントテーブル変数の仮ポイント格納フィールド
+            -- に仮ポイント合計を設定
+            UPDATE @return_table
+            SET point_temp = 
+            (
+              SELECT  SUM(point) 
+                FROM  w2_UserPoint 
+               WHERE  user_id = @user_id_temp 
+                 AND  point_type = '00'      -- 仮ポイント
+            )
+            WHERE  user_id = @user_id_temp 
+              AND  point_kbn = '01' -- 通常ポイントのレコードにのみ仮ポイントを格納する
+          
+            FETCH NEXT FROM cur_point
+            INTO @user_id_temp 
+          END
+        CLOSE cur_point
+        DEALLOCATE cur_point
+        
+        -- 結果出力
+        SELECT * FROM @return_table
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="select_point_kbn" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </SearchUserPoint>
+
+  <!-- ユーザーポイント取得 -->
+  <GetUserPoint>
+    <Statement>
+      <![CDATA[
+        SELECT  user_id,
+                point_kbn,
+                point_kbn_no,
+                dept_id,
+                point_rule_id,
+                point_rule_kbn,
+                point_type,
+                point_inc_kbn,
+                point,
+                point_exp,
+                history_no,
+                kbn1,
+                kbn2,
+                kbn3,
+                kbn4,
+                kbn5,
+                date_created,
+                date_changed,
+                last_changed,
+                effective_date
+          FROM  w2_UserPoint
+         WHERE  user_id = @user_id
+        <@@hasval:cart_id@@>
+        UNION ALL
+        SELECT  user_id,
+                '01' AS point_kbn,
+                (SELECT (MAX(point_kbn_no) + 1) FROM w2_UserPoint WHERE user_id = @user_id) AS point_kbn_no,
+                '0' AS dept_id,
+                '' AS point_rule_id,
+                '' AS point_rule_kbn,
+                '01' AS point_type,
+                '' AS point_inc_kbn,
+                (0 - point_inc) AS point,
+                user_point_exp AS point_exp,
+                NULL AS history_no,
+                '' AS kbn1,
+                '' AS kbn2,
+                '' AS kbn3,
+                '' AS kbn4,
+                '' AS kbn5,
+                GETDATE() AS date_created,
+                GETDATE() AS date_changed,
+                '' AS last_changed,
+                NULL AS effective_date
+          FROM  w2_UserPointHistory
+         WHERE  user_id = @user_id
+           AND  cart_id = @cart_id
+        </@@hasval:cart_id@@>
+        ORDER BY point_kbn_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="cart_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserPoint>
+
+  <!-- ユーザーポイント出力情報一覧取得 -->
+  <GetUserPointDetailListExport>
+    <Statement>
+      <![CDATA[
+        -- 本ポイント一覧取得し、ユーザーポイントテーブル変数に格納
+        SELECT  @@ fields @@
+          FROM  (
+                SELECT  w2_UserPoint.user_id,
+                        ISNULL(NULLIF(w2_UserPoint.point_type,''),'01') AS point_type,
+                        ISNULL(w2_UserPoint.point_kbn, '01') AS point_kbn,
+                        ISNULL(w2_UserPoint.point,0) AS point,
+                        w2_UserPoint.effective_date,
+                        ISNULL(NULLIF(w2_UserPoint.point_exp,''),DATEADD(year,1,GETDATE())) AS point_exp,
+                        w2_UserPoint.kbn1
+                  FROM  w2_UserPoint
+                ) AS w2_UserPoint
+                LEFT JOIN w2_User ON
+                (
+                  w2_User.user_id = w2_UserPoint.user_id
+                )
+        [[ USERPOINTDETAIL_SEARCH_WHERE ]]
+        <@@notval:select_point_kbn:ALL@@>
+        AND point_kbn = @select_point_kbn
+        </@@notval:select_point_kbn:ALL@@>
+        [[ USERPOINTDETAIL_SEARCH_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="select_point_kbn" Type="int" />
+    </Parameter>
+  </GetUserPointDetailListExport>
+
+  <!-- ユーザーポイント出力情報一覧取得 -->
+  <GetUserPointListExport>
+    <Statement>
+      <![CDATA[
+        -- 本ポイント一覧取得し、ユーザーポイントテーブル変数に格納
+        WITH UserPoint_CTE
+        AS
+        (
+          SELECT  w2_UserPoint.user_id,
+                  w2_UserPoint.point_exp,
+                  SUM(w2_UserPoint.point) point,
+                  w2_UserPoint.point_kbn
+            FROM  dbo.w2_UserPoint
+           WHERE  w2_UserPoint.point_type = '01'
+         GROUP BY w2_UserPoint.user_id, w2_UserPoint.point_type, w2_UserPoint.point_exp, w2_UserPoint.point_kbn
+        ),
+        UserPointTemp_CTE
+        AS
+        (
+          SELECT  w2_UserPoint.user_id,
+                  SUM(w2_UserPoint.point) point_temp,
+                  w2_UserPoint.point_kbn AS 'point_kbn_temp'
+          FROM    dbo.w2_UserPoint
+          WHERE   w2_UserPoint.point_type = '00'
+         GROUP BY w2_UserPoint.user_id, w2_UserPoint.point_type, w2_UserPoint.point_kbn
+        )
+        SELECT  w2_User.user_id,
+                w2_User.name,
+                UserPoint_CTE.point,
+                UserPointTemp_CTE.point_temp,
+                UserPoint_CTE.point_exp
+          FROM  w2_User
+                LEFT JOIN UserPoint_CTE ON
+                (
+                  w2_User.user_id = UserPoint_CTE.user_id
+                )
+                LEFT JOIN UserPointTemp_CTE ON
+                (
+                  w2_User.user_id = UserPointTemp_CTE.user_id
+                )
+        [[ USERPOINT_SEARCH_WHERE ]]
+        <@@val:select_point_kbn:01@@>
+        AND (
+              UserPoint_CTE.point_kbn = @select_point_kbn
+              OR
+              UserPoint_CTE.point_kbn IS NULL
+              OR
+              UserPointTemp_CTE.point_kbn_temp = @select_point_kbn
+              OR
+              UserPointTemp_CTE.point_kbn_temp IS NULL
+            )
+        </@@val:select_point_kbn:01@@>
+        <@@val:select_point_kbn:02@@>
+        AND (
+              UserPoint_CTE.point_kbn = @select_point_kbn
+              OR
+              UserPointTemp_CTE.point_kbn_temp = @select_point_kbn
+            )
+        </@@val:select_point_kbn:02@@>
+        [[ USERPOINT_EXPORT_ORDER_BY ]]
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="select_point_kbn" Type="int" />
+    </Parameter>
+  </GetUserPointListExport>
+
+  <!--Check UserPointDetail Fields-->
+  <CheckUserPointDetailFields>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_UserPoint
+                  LEFT JOIN w2_User ON
+                  (
+                    w2_UserPoint.user_id = w2_User.user_id
+                  )
+      ]]>
+    </Statement>
+  </CheckUserPointDetailFields>
+
+  <!-- ユーザーポイント削除 -->
+  <DeleteUserPoint>
+    <Statement>
+      <![CDATA[
+        DELETE 
+          FROM  w2_UserPoint
+         WHERE  user_id = @user_id
+           AND  point_kbn_no = @point_kbn_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="point_kbn_no" Type="int"/>
+    </Parameter>
+  </DeleteUserPoint>
+
+  <!-- 注文IDに紐づくユーザーポイント削除 -->
+  <DeleteUserPointByOrderId>
+    <Statement>
+      <![CDATA[
+        DELETE 
+          FROM  w2_UserPoint
+         WHERE  kbn1 = @kbn1
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="kbn1" Type="nvarchar" Size="100" />
+    </Parameter>
+  </DeleteUserPointByOrderId>
+
+  <!-- ユーザーポイント履歴をポイント復元処理実施済みとしてマーク -->
+  <MarkRestoredFlgByOrderId>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserPointHistory
+           SET  restored_flg = '1'
+         WHERE  tgt_year = @tgt_year
+           AND  tgt_month = @tgt_month
+           AND  tgt_day = @tgt_day
+           AND  user_id = @user_id
+           AND  history_no = @history_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="tgt_year" Type="int" />
+      <Input Name="tgt_month" Type="int" />
+      <Input Name="tgt_day" Type="int" />
+      <Input Name="user_id" Type="nvarchar" Size="60" />
+      <Input Name="history_no" Type="int" />
+    </Parameter>
+  </MarkRestoredFlgByOrderId>
+
+  <!-- ユーザーポイントUpsert -->
+  <UpsertUserPoint>
+    <Statement>
+      <![CDATA[
+      MERGE  w2_UserPoint
+      USING
+      (
+        SELECT  @user_id as user_id
+                ,@point_kbn as point_kbn
+                ,@point_kbn_no as point_kbn_no
+                ,@dept_id as dept_id
+                ,@point_rule_id as point_rule_id
+                ,@point_rule_kbn as point_rule_kbn
+                ,@point_type as point_type
+                ,@point_inc_kbn as point_inc_kbn
+                ,@point as point
+                ,@effective_date as effective_date
+                ,@point_exp as point_exp
+                ,@kbn1 as kbn1
+                ,@kbn2 as kbn2
+                ,@kbn3 as kbn3
+                ,@kbn4 as kbn4
+                ,@kbn5 as kbn5
+                ,getdate() as date_created
+                ,getdate() as date_changed
+                ,@last_changed as last_changed
+      ) AS tmp
+      ON
+      (
+        w2_UserPoint.user_id = tmp.user_id
+        AND
+        w2_UserPoint.point_kbn_no = tmp.point_kbn_no
+      )
+      -- 一致する場合 楽観ロックのための更新日条件あり
+      WHEN MATCHED AND w2_UserPoint.date_changed = @date_changed THEN
+        UPDATE 
+           SET  point = tmp.point
+                ,effective_date = tmp.effective_date
+                ,point_exp = tmp.point_exp
+                ,date_changed = tmp.date_changed
+                ,last_changed = tmp.last_changed
+      
+      -- 一致しない場合
+      WHEN NOT MATCHED THEN
+        INSERT
+        (
+          user_id
+          ,point_kbn
+          ,point_kbn_no
+          ,dept_id
+          ,point_rule_id
+          ,point_rule_kbn
+          ,point_type
+          ,point_inc_kbn
+          ,point
+          ,effective_date
+          ,point_exp
+          ,kbn1
+          ,kbn2
+          ,kbn3
+          ,kbn4
+          ,kbn5
+          ,date_created
+          ,date_changed
+          ,last_changed
+        )
+        VALUES
+        (
+          tmp.user_id
+          ,tmp.point_kbn
+          ,tmp.point_kbn_no
+          ,tmp.dept_id
+          ,tmp.point_rule_id
+          ,tmp.point_rule_kbn
+          ,tmp.point_type
+          ,tmp.point_inc_kbn
+          ,tmp.point
+          ,tmp.effective_date
+          ,tmp.point_exp
+          ,tmp.kbn1
+          ,tmp.kbn2
+          ,tmp.kbn3
+          ,tmp.kbn4
+          ,tmp.kbn5
+          ,tmp.date_created
+          ,tmp.date_changed
+          ,tmp.last_changed
+        );
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_kbn_no" Type="int" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+      <Input Name="point_rule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="point_type" Type="nvarchar" Size="10" />
+      <Input Name="point_inc_kbn" Type="nvarchar" Size="10" />
+      <Input Name="point" Type="decimal" />
+      <Input Name="effective_date" Type="datetime" />
+      <Input Name="point_exp" Type="datetime" />
+      <Input Name="kbn1" Type="nvarchar" Size="100" />
+      <Input Name="kbn2" Type="nvarchar" Size="100" />
+      <Input Name="kbn3" Type="nvarchar" Size="100" />
+      <Input Name="kbn4" Type="nvarchar" Size="100" />
+      <Input Name="kbn5" Type="nvarchar" Size="100" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpsertUserPoint>
+
+  <!-- ユーザーポイント追加 -->
+  <RegisterUserPoint>
+    <Statement>
+      <![CDATA[
+        INSERT w2_UserPoint
+        (
+          user_id
+          ,point_kbn
+          ,point_kbn_no
+          ,dept_id
+          ,point_rule_id
+          ,point_rule_kbn
+          ,point_type
+          ,point_inc_kbn
+          ,point
+          ,point_exp
+          ,kbn1
+          ,kbn2
+          ,kbn3
+          ,kbn4
+          ,kbn5
+          ,date_created
+          ,date_changed
+          ,last_changed
+          ,effective_date
+        )
+        VALUES
+        (
+          @user_id
+          ,@point_kbn
+          ,@point_kbn_no
+          ,@dept_id
+          ,@point_rule_id
+          ,@point_rule_kbn
+          ,@point_type
+          ,@point_inc_kbn
+          ,@point
+          ,@point_exp
+          ,@kbn1
+          ,@kbn2
+          ,@kbn3
+          ,@kbn4
+          ,@kbn5
+          ,getdate()
+          ,getdate()
+          ,@last_changed
+          ,@effective_date
+        )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_kbn_no" Type="int" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+      <Input Name="point_rule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="point_type" Type="nvarchar" Size="10" />
+      <Input Name="point_inc_kbn" Type="nvarchar" Size="10" />
+      <Input Name="point" Type="decimal" />
+      <Input Name="point_exp" Type="datetime" />
+      <Input Name="kbn1" Type="nvarchar" Size="100" />
+      <Input Name="kbn2" Type="nvarchar" Size="100" />
+      <Input Name="kbn3" Type="nvarchar" Size="100" />
+      <Input Name="kbn4" Type="nvarchar" Size="100" />
+      <Input Name="kbn5" Type="nvarchar" Size="100" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="effective_date" Type="datetime" />
+    </Parameter>
+  </RegisterUserPoint>
+
+  <!-- ユーザーポイント更新 -->
+  <!-- 更新日による楽観ロックあり -->
+  <UpdateUserPoint>
+    <Statement>
+      <![CDATA[
+      UPDATE  w2_UserPoint
+         SET  dept_id = @dept_id
+              ,point_rule_id = @point_rule_id
+              ,point_rule_kbn = @point_rule_kbn
+              ,point_type = @point_type
+              ,point_inc_kbn = @point_inc_kbn
+              ,point = @point
+              ,point_exp = @point_exp
+              ,history_no = @history_no
+              ,kbn1 = @kbn1
+              ,kbn2 = @kbn2
+              ,kbn3 = @kbn3
+              ,kbn4 = @kbn4
+              ,kbn5 = @kbn5
+              ,date_changed = getdate()
+              ,last_changed = @last_changed
+              ,effective_date = @effective_date
+       WHERE  user_id = @user_id
+         AND  point_kbn_no = @point_kbn_no
+         AND  date_changed = @date_changed
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+      <Input Name="point_kbn_no" Type="int" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+      <Input Name="point_rule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="point_type" Type="nvarchar" Size="10" />
+      <Input Name="point_inc_kbn" Type="nvarchar" Size="10" />
+      <Input Name="point" Type="decimal" />
+      <Input Name="point_exp" Type="datetime" />
+      <Input Name="history_no" Type="int" />
+      <Input Name="kbn1" Type="nvarchar" Size="100" />
+      <Input Name="kbn2" Type="nvarchar" Size="100" />
+      <Input Name="kbn3" Type="nvarchar" Size="100" />
+      <Input Name="kbn4" Type="nvarchar" Size="100" />
+      <Input Name="kbn5" Type="nvarchar" Size="100" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="effective_date" Type="datetime" />
+    </Parameter>
+  </UpdateUserPoint>
+
+  <!-- ユーザーポイント履歴登録 -->
+  <RegisterHistory>
+    <Statement>
+      <![CDATA[
+        DECLARE @history_no int
+        SELECT @history_no = ISNULL(MAX(history_no), 0) + 1 FROM w2_UserPointHistory WHERE w2_UserPointHistory.user_id = @user_id
+
+        INSERT  w2_UserPointHistory
+                (
+                  user_id
+                  ,history_no
+                  ,dept_id
+                  ,point_rule_id
+                  ,point_rule_kbn
+                  ,point_kbn
+                  ,point_type
+                  ,point_inc_kbn
+                  ,point_inc
+                  ,point_exp_extend
+                  ,user_point_exp
+                  ,kbn1
+                  ,kbn2
+                  ,kbn3
+                  ,kbn4
+                  ,kbn5
+                  ,memo
+                  ,date_created
+                  ,last_changed
+                  ,effective_date
+                  ,restored_flg
+                  ,history_group_no
+                  ,cart_id
+                )
+        SELECT  @user_id
+                ,ISNULL(MAX(w2_UserPointHistory.history_no), 0) + 1
+                ,@dept_id
+                ,@point_rule_id
+                ,@point_rule_kbn
+                ,@point_kbn
+                ,@point_type
+                ,@point_inc_kbn
+                ,@point_inc
+                ,@point_exp_extend
+                ,@user_point_exp
+                ,@kbn1
+                ,@kbn2
+                ,@kbn3
+                ,@kbn4
+                ,@kbn5
+                ,@memo
+                ,ISNULL(@date_created, getdate())
+                ,@last_changed
+                ,@effective_date
+                ,@restored_flg
+                ,@history_group_no
+                ,@cart_id
+          FROM  w2_UserPointHistory
+         WHERE  w2_UserPointHistory.user_id = @user_id
+
+        -- 枝番を返す
+        SELECT @history_no AS history_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+      <Input Name="point_rule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+      <Input Name="point_type" Type="nvarchar" Size="10" />
+      <Input Name="point_inc_kbn" Type="nvarchar" Size="10" />
+      <Input Name="point_inc" Type="decimal" />
+      <Input Name="point_exp_extend" Type="nvarchar" Size="10" />
+      <Input Name="user_point_exp" Type="datetime" />
+      <Input Name="kbn1" Type="nvarchar" Size="100" />
+      <Input Name="kbn2" Type="nvarchar" Size="100" />
+      <Input Name="kbn3" Type="nvarchar" Size="100" />
+      <Input Name="kbn4" Type="nvarchar" Size="100" />
+      <Input Name="kbn5" Type="nvarchar" Size="100" />
+      <Input Name="memo" Type="nvarchar" Size="200" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="effective_date" Type="datetime" />
+      <Input Name="restored_flg" Type="nvarchar" Size="2" />
+      <Input Name="history_group_no" Type="int" />
+      <Input Name="cart_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </RegisterHistory>
+
+  <!-- ユーザーポイント履歴一覧取得 -->
+  <SearchUserPointHistory>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_UserPointHistory.history_no), 0)
+          FROM  w2_UserPointHistory
+                INNER JOIN w2_User ON
+                (
+                  w2_UserPointHistory.user_id = w2_User.user_id
+                )
+                [[ USERPOINTHISTORY_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_UserPointHistory.*
+                ,w2_User.name
+                ,SUBSTRING(w2_UserPointHistory.point_exp_extend,1,1) AS point_exp_extend_operator                 -- プラスマイナス(+-)
+                ,CONVERT(nvarchar,CONVERT(int, SUBSTRING(w2_UserPointHistory.point_exp_extend, 2, 2))) AS point_exp_extend_year -- 年
+                ,CONVERT(nvarchar,CONVERT(int, SUBSTRING(w2_UserPointHistory.point_exp_extend, 4, 2))) AS point_exp_extend_month -- 月
+                ,CONVERT(nvarchar,CONVERT(int, SUBSTRING(w2_UserPointHistory.point_exp_extend, 6, 2))) AS point_exp_extend_day -- 日
+                ,@row_count AS row_count
+          FROM  (
+                  SELECT  w2_UserPointHistory.user_id
+                          ,w2_UserPointHistory.history_no
+                          ,ROW_NUMBER()
+                          OVER
+                          (
+                            [[ USERPOINTHISTORY_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_UserPointHistory
+                          INNER JOIN w2_User ON
+                          (
+                            w2_UserPointHistory.user_id = w2_User.user_id
+                          )
+                          [[ USERPOINTHISTORY_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_UserPointHistory ON
+                (
+                  RowIndex.user_id = w2_UserPointHistory.user_id
+                  AND
+                  RowIndex.history_no = w2_UserPointHistory.history_no
+                )
+                INNER JOIN w2_User ON
+                (
+                  w2_UserPointHistory.user_id = w2_User.user_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchUserPointHistory>
+
+  <!-- ポイントルール一覧を取得 -->
+  <SearchPointRuleList>
+    <Statement>
+      <![CDATA[
+        DECLARE @current_date datetime 
+        SET @current_date = getdate()
+
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_PointRule.point_rule_id), 0)
+          FROM  w2_PointRule
+                [[ POINTRULE_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_PointRule.*
+                ,CASE WHEN Campaign_Valid.point_inc_kbn IS NULL  -- キャンペーン有効フラグ(1:有効 0:無効)
+                  THEN '0'
+                  ELSE '1'
+                END AS campaign_valid_flg
+                ,@row_count AS row_count
+          FROM  (
+                  SELECT  w2_PointRule.dept_id
+                          ,w2_PointRule.point_rule_id
+                          ,ROW_NUMBER()
+                          OVER
+                          (
+                            [[ POINTRULE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_PointRule
+                          [[ POINTRULE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_PointRule ON
+                (
+                  RowIndex.dept_id = w2_PointRule.dept_id
+                  AND
+                  RowIndex.point_rule_id = w2_PointRule.point_rule_id
+                )
+                LEFT JOIN
+                (
+                    SELECT  DISTINCT                      -- サブクエリが複数行返さないようにDISTINCT指定
+                            w2_PointRule.point_inc_kbn
+                      FROM  w2_PointRule
+                     WHERE  w2_PointRule.dept_id = @dept_id 
+                       AND  w2_PointRule.point_rule_kbn = '02'       -- キャンペーン
+                       AND  w2_PointRule.valid_flg = '1'         -- 有効フラグ
+                       AND  (
+                              w2_PointRule.exp_bgn <= @current_date     -- 有効期間内(yyyy/mm/dd 00:00:00 <= 現在日付 <= yyyy/mm/dd 23:59:59)
+                              AND 
+                              @current_date <= w2_PointRule.exp_end
+                            )
+                ) AS Campaign_Valid
+                ON
+                (
+                  w2_PointRule.point_inc_kbn = Campaign_Valid.point_inc_kbn
+                )                
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word" Type="nvarchar" Size="4000" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchPointRuleList>
+
+  <!-- ポイントルール情報取得 -->
+  <GetPointRule>
+    <Statement>
+      <![CDATA[
+        SELECT  
+            *
+          FROM  w2_PointRule 
+         WHERE  
+            dept_id = @dept_id
+           AND  
+            point_rule_id = @point_rule_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetPointRule>
+
+  <!-- ポイントルール情報取得 -->
+  <GetAllPointRules>
+    <Statement>
+      <![CDATA[
+        SELECT  
+            *
+          FROM  w2_PointRule 
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetAllPointRules>
+
+  <!-- 全ポイントルール情報取得 -->
+  <GetAllPointRule>
+    <Statement>
+      <![CDATA[
+        SELECT  
+            *
+          FROM  w2_PointRule 
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetAllPointRule>
+
+  <!-- ポイントルール登録 -->
+  <RegisterPointRule>
+    <Statement>
+      <![CDATA[
+        INSERT 
+          w2_PointRule
+          (
+            dept_id
+            ,point_rule_id
+            ,point_rule_name
+            ,point_rule_kbn
+            ,use_temp_flg
+            ,point_kbn
+            ,point_inc_kbn
+            ,inc_type
+            ,inc_num
+            ,inc_rate
+            ,point_exp_extend
+            ,exp_bgn
+            ,exp_end
+            ,priority
+            ,valid_flg
+            ,date_created
+            ,date_changed
+            ,last_changed  
+            ,effective_offset
+            ,effective_offset_type
+            ,term
+            ,term_type
+            ,period_begin
+            ,period_end
+            ,allow_duplicate_apply_flg
+            ,fixed_purchase_inc_type
+            ,fixed_purchase_inc_num
+            ,fixed_purchase_inc_rate
+          ) 
+          VALUES
+          (
+            @dept_id
+            ,@point_rule_id
+            ,@point_rule_name
+            ,@point_rule_kbn
+            ,@use_temp_flg
+            ,@point_kbn
+            ,@point_inc_kbn
+            ,@inc_type
+            ,@inc_num
+            ,@inc_rate
+            ,@point_exp_extend
+            ,CONVERT(datetime, @exp_bgn)
+            ,CONVERT(datetime, @exp_end)
+            ,@priority
+            ,@valid_flg
+            ,getdate()
+            ,getdate()
+            ,@last_changed
+            ,@effective_offset
+            ,@effective_offset_type
+            ,@term
+            ,@term_type
+            ,CONVERT(datetime, @period_begin)
+            ,CONVERT(datetime, @period_end)
+            ,@allow_duplicate_apply_flg
+            ,@fixed_purchase_inc_type
+            ,@fixed_purchase_inc_num
+            ,@fixed_purchase_inc_rate
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+      <Input Name="point_rule_name" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="use_temp_flg" Type="nvarchar" Size="2" />
+      <Input Name="point_kbn" Type="nvarchar" Size="2" />
+      <Input Name="point_inc_kbn" Type="nvarchar" Size="10" />
+      <Input Name="inc_type" Type="nvarchar" Size="10" />
+      <Input Name="inc_num" Type="decimal" />
+      <Input Name="inc_rate" Type="decimal" />
+      <Input Name="point_exp_extend" Type="nvarchar" Size="10" />
+      <Input Name="exp_bgn" Type="datetime" />
+      <Input Name="exp_end" Type="datetime" />
+      <Input Name="priority" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="effective_offset" Type="int" />
+      <Input Name="effective_offset_type" Type="nvarchar" Size="2" />
+      <Input Name="term" Type="int" />
+      <Input Name="term_type" Type="nvarchar" Size="2" />
+      <Input Name="period_begin" Type="datetime" />
+      <Input Name="period_end" Type="datetime" />
+      <Input Name="allow_duplicate_apply_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_inc_type" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_inc_num" Type="decimal" />
+      <Input Name="fixed_purchase_inc_rate" Type="decimal" />
+    </Parameter>
+  </RegisterPointRule>
+
+  <!-- ポイントルール更新 -->
+  <UpdatePointRule>
+    <Statement>
+      <![CDATA[
+        UPDATE 
+            w2_PointRule 
+        SET  
+            point_rule_name = @point_rule_name
+            ,point_rule_kbn = @point_rule_kbn
+            ,use_temp_flg = @use_temp_flg
+            ,point_kbn = @point_kbn
+            ,point_inc_kbn = @point_inc_kbn
+            ,inc_type = @inc_type
+            ,inc_num = @inc_num
+            ,inc_rate = @inc_rate
+            ,point_exp_extend = @point_exp_extend
+            ,exp_bgn = CONVERT(datetime, @exp_bgn)
+            ,exp_end = CONVERT(datetime, @exp_end)
+            ,priority = @priority
+            ,valid_flg = @valid_flg
+            ,date_changed = getdate()
+            ,last_changed = @last_changed
+            ,effective_offset = @effective_offset
+            ,effective_offset_type = @effective_offset_type
+            ,term = @term
+            ,term_type = @term_type
+            ,period_begin = CONVERT(datetime, @period_begin)
+            ,period_end = CONVERT(datetime, @period_end)
+            ,allow_duplicate_apply_flg = @allow_duplicate_apply_flg
+            ,fixed_purchase_inc_type = @fixed_purchase_inc_type
+            ,fixed_purchase_inc_num = @fixed_purchase_inc_num
+            ,fixed_purchase_inc_rate = @fixed_purchase_inc_rate
+         WHERE
+            dept_id = @dept_id
+           AND
+            point_rule_id = @point_rule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+      <Input Name="point_rule_name" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="use_temp_flg" Type="nvarchar" Size="2" />
+      <Input Name="point_kbn" Type="nvarchar" Size="2" />
+      <Input Name="point_inc_kbn" Type="nvarchar" Size="10" />
+      <Input Name="inc_type" Type="nvarchar" Size="10" />
+      <Input Name="inc_num" Type="decimal" />
+      <Input Name="inc_rate" Type="decimal" />
+      <Input Name="point_exp_extend" Type="nvarchar" Size="10" />
+      <Input Name="exp_bgn" Type="datetime" />
+      <Input Name="exp_end" Type="datetime" />
+      <Input Name="priority" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="effective_offset" Type="int" />
+      <Input Name="effective_offset_type" Type="nvarchar" Size="2" />
+      <Input Name="term" Type="int" />
+      <Input Name="term_type" Type="nvarchar" Size="2" />
+      <Input Name="period_begin" Type="datetime" />
+      <Input Name="period_end" Type="datetime" />
+      <Input Name="allow_duplicate_apply_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_inc_type" Type="nvarchar" Size="10" />
+      <Input Name="fixed_purchase_inc_num" Type="decimal" />
+      <Input Name="fixed_purchase_inc_rate" Type="decimal" />
+    </Parameter>
+  </UpdatePointRule>
+
+  <!-- ポイントルール削除 -->
+  <DeletePointRule>
+    <Statement>
+      <![CDATA[
+        DELETE 
+          FROM 
+            w2_PointRule
+         WHERE  
+            dept_id = @dept_id
+           AND  
+            point_rule_id = @point_rule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeletePointRule>
+
+  <!-- ポイントルール日付情報取得 -->
+  <GetPointRuleDate>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PointRuleDate 
+         WHERE  
+            dept_id = @dept_id
+           AND  
+            point_rule_id = @point_rule_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetPointRuleDate>
+
+  <!-- ポイントルール日付追加 -->
+  <RegisterPointRuleDate>
+    <Statement>
+      <![CDATA[
+        INSERT 
+          w2_PointRuleDate
+          (
+            dept_id
+            ,point_rule_id
+            ,tgt_date
+          ) 
+          VALUES
+          (
+            @dept_id
+            ,@point_rule_id
+            ,@tgt_date
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+      <Input Name="tgt_date" Type="datetime" />
+    </Parameter>
+  </RegisterPointRuleDate>
+
+  <!-- ポイントキャンペーンルール日付削除 -->
+  <DeletePointRuleDate>
+    <Statement>
+      <![CDATA[
+        DELETE 
+          FROM 
+            w2_PointRuleDate
+         WHERE  
+            dept_id = @dept_id
+           AND  
+            point_rule_id = @point_rule_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeletePointRuleDate>
+
+  <!-- ポイントキャンペーンルール日付削除 -->
+  <GetPointRuleMaxKey>
+    <Statement>
+      <![CDATA[
+        SELECT
+            MAX(point_rule_id)
+          FROM 
+            w2_PointRule
+         WHERE  
+            dept_id = @dept_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetPointRuleMaxKey>
+
+  <!-- ポイント推移レポート(日別レポート) -->
+  <PointTransitionReportDay>
+    <Statement>
+      <![CDATA[
+        ;WITH CAL AS
+        (
+          SELECT  CONVERT(DATE, @year + '/' + @month + '/' + '1') as dt
+                  ,DATEPART(YEAR,CONVERT(DATE, @year + '/' + @month + '/' + '1')) as tgt_year
+                  ,DATEPART(MONTH,CONVERT(DATE, @year + '/' + @month + '/' + '1')) as tgt_month
+                  ,DATEPART(DAY,CONVERT(DATE, @year + '/' + @month + '/' + '1')) as tgt_day
+          UNION ALL
+          SELECT  DATEADD(DAY,1,dt) as dt
+                  ,DATEPART(YEAR,DATEADD(DAY,1,dt)) as tgt_year
+                  ,DATEPART(MONTH,DATEADD(DAY,1,dt)) as tgt_month
+                  ,DATEPART(DAY,DATEADD(DAY,1,dt)) as tgt_day
+            FROM  CAL
+           WHERE  DATEPART(MONTH,DATEADD(DAY,1,dt)) = @month
+        ),
+        SUMMAY AS
+        (
+          SELECT  @year AS tgt_year
+                  ,@month AS tgt_month
+                  ,w2_UserPointHistory.tgt_day
+                  -- 発行ポイント取得
+                  ,SUM(
+                    CASE
+                      WHEN  point_inc >= 0 THEN point_inc
+                      ELSE  0
+                    END)  AS add_point
+
+                  -- 発行人数取得
+                  ,ISNULL( COUNT( DISTINCT
+                    CASE
+                      WHEN  point_inc >= 0 THEN user_id
+                      ELSE  NULL 
+                    END), 0) AS add_count
+
+                  -- 回収ポイント取得
+                  ,SUM(
+                    CASE
+                      WHEN  point_inc < 0
+                       AND  point_inc_kbn != '11' -- ポイント有効期限切れ削除以外
+                        THEN  point_inc
+                      ELSE  0
+                    END)  AS use_point
+
+                  -- 回収人数取得
+                  ,ISNULL( COUNT( DISTINCT
+                    CASE
+                      WHEN  point_inc < 0
+                       AND  point_inc_kbn != '11' -- ポイント有効期限切れ削除以外
+                        THEN  user_id
+                      ELSE  NULL
+                    END), 0) AS use_count
+
+                  -- 有効期限切れポイント取得
+                  ,SUM(
+                    CASE
+                      WHEN  point_inc_kbn = '11' THEN point_inc
+                      ELSE  0
+                    END)  AS exp_point
+
+                  -- 有効期限切れ人数取得
+                  ,ISNULL( COUNT( DISTINCT 
+                    CASE
+                      WHEN  w2_UserPointHistory.point_inc_kbn = '11'
+                       AND  w2_UserPointHistory.point_inc <> 0
+                        THEN  user_id
+                      ELSE NULL
+                    END), 0) AS exp_count
+
+                  -- 小計ポイント
+                  ,SUM(point_inc) AS subtotal_point
+               
+            FROM  w2_UserPointHistory
+           WHERE  w2_UserPointHistory.point_type = '01'  -- 本ポイント
+             AND  w2_UserPointHistory.tgt_year = @year
+             AND  w2_UserPointHistory.tgt_month = @month
+        GROUP BY  w2_UserPointHistory.tgt_day
+      )
+      ,UNUSE_SUMMARY AS
+      (
+        SELECT  tgt_year
+                ,tgt_month
+                ,tgt_day
+                ,CONVERT(decimal, counts) AS unused_point
+                FROM  w2_DispSummaryAnalysis
+               WHERE  dept_id = @dept_id
+                 AND  summary_kbn = 'pnt_unused'          -- 未利用ポイント
+                 AND  tgt_year = RIGHT('0000' +  @year, 4)
+                 AND  tgt_month = RIGHT('00' +  @month, 2)
+      )
+      SELECT  CAL.*
+              ,SUMMAY.add_point
+              ,SUMMAY.add_count
+              ,SUMMAY.use_point
+              ,SUMMAY.use_count
+              ,SUMMAY.exp_point
+              ,SUMMAY.exp_count
+              ,SUMMAY.subtotal_point
+              ,UNUSE_SUMMARY.unused_point
+        FROM  CAL
+   LEFT JOIN  SUMMAY 
+          ON  (
+                CAL.tgt_year = SUMMAY.tgt_year
+                AND CAL.tgt_month = SUMMAY.tgt_month
+                AND CAL.tgt_day = SUMMAY.tgt_day
+              )
+   LEFT JOIN  UNUSE_SUMMARY
+              ON
+              (
+                CAL.tgt_year = UNUSE_SUMMARY.tgt_year
+                AND CAL.tgt_month = UNUSE_SUMMARY.tgt_month
+                AND CAL.tgt_day = UNUSE_SUMMARY.tgt_day 
+              )
+    ORDER BY  CAL.tgt_day
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="10" />
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="month" Type="nvarchar" Size="2" />
+    </Parameter>
+  </PointTransitionReportDay>
+
+  <!-- ポイント推移レポート(月別レポート) -->
+  <PointTransitionReportMonth>
+    <Statement>
+      <![CDATA[
+        ;WITH CAL AS
+        (
+          SELECT  @year AS tgt_year
+                  ,1 AS tgt_month
+                  ,0 AS tgt_day
+          UNION ALL
+          SELECT  tgt_year
+                  ,tgt_month + 1 as tgt_month
+                  ,0 AS tgt_day
+            FROM  CAL
+           WHERE  CONVERT(int,tgt_month) + 1 < 13
+         ),
+         SUMMAY AS
+         (
+           SELECT  @year AS tgt_year
+                   ,tgt_month
+                   ,0 AS tgt_day
+
+                   -- 発行ポイント取得
+                  ,SUM(
+                    CASE
+                      WHEN  point_inc >= 0 THEN point_inc
+                      ELSE  0
+                    END)  AS add_point
+
+                  -- 発行件数取得
+                  ,ISNULL( COUNT( DISTINCT
+                    CASE
+                      WHEN  point_inc >= 0 THEN user_id
+                      ELSE  NULL 
+                    END), 0) AS add_count
+
+                  -- 回収ポイント取得
+                  ,SUM(
+                    CASE
+                      WHEN  point_inc < 0
+                       AND  point_inc_kbn != '11' -- ポイント有効期限切れ削除以外
+                        THEN  point_inc
+                      ELSE  0
+                    END)  AS use_point
+
+                  -- 回収件数取得
+                  ,ISNULL( COUNT( DISTINCT
+                    CASE
+                      WHEN  point_inc < 0
+                       AND  point_inc_kbn != '11' -- ポイント有効期限切れ削除以外
+                        THEN  user_id
+                      ELSE  NULL
+                    END), 0) AS use_count
+
+                  -- 有効期限切れポイント取得
+                  ,SUM(
+                    CASE
+                      WHEN  point_inc_kbn = '11' THEN point_inc
+                      ELSE  0
+                    END)  AS exp_point
+
+                  -- 有効期限切れ人数取得
+                  ,ISNULL( COUNT( DISTINCT
+                    CASE
+                      WHEN  w2_UserPointHistory.point_inc_kbn = '11'
+                       AND  w2_UserPointHistory.point_inc <> 0
+                        THEN  user_id
+                      ELSE NULL
+                    END), 0) AS exp_count
+
+                  -- 小計ポイント
+                  ,SUM(point_inc) AS subtotal_point
+
+            FROM  w2_UserPointHistory
+           WHERE  w2_UserPointHistory.point_type = '01'  -- 本ポイント
+             AND  tgt_year = @year
+        GROUP BY  tgt_month
+      ),
+      UNUSE_SUMMARY AS
+      (
+        SELECT  tgt_year
+                ,tgt_month
+                ,0 AS tgt_day
+                ,CONVERT(decimal, counts) AS unused_point
+          FROM  w2_DispSummaryAnalysis
+         WHERE  dept_id = @dept_id
+           AND  summary_kbn = 'pnt_unused'          -- 未利用ポイント
+           AND  tgt_year = RIGHT('0000' +  @year, 4)
+      GROUP BY tgt_year, tgt_month, [counts]
+       HAVING MAX(tgt_day) = DATEPART(day, DATEADD(day, -1, DATEADD(month, 1, tgt_year + '/'+ tgt_month + '/1')))
+      )
+      SELECT  CAL.*
+              ,SUMMAY.add_point
+              ,SUMMAY.add_count
+              ,SUMMAY.use_point
+              ,SUMMAY.use_count
+              ,SUMMAY.exp_point
+              ,SUMMAY.exp_count
+              ,SUMMAY.subtotal_point
+              ,UNUSE_SUMMARY.unused_point
+        FROM  CAL
+   LEFT JOIN  SUMMAY 
+          ON  (
+                CAL.tgt_year = SUMMAY.tgt_year
+                AND CAL.tgt_month = SUMMAY.tgt_month
+                AND CAL.tgt_day = SUMMAY.tgt_day
+              )
+   LEFT JOIN  UNUSE_SUMMARY
+              ON
+              (
+                CAL.tgt_year = UNUSE_SUMMARY.tgt_year
+                AND CAL.tgt_month = UNUSE_SUMMARY.tgt_month
+                AND CAL.tgt_day = UNUSE_SUMMARY.tgt_day 
+              )
+    ORDER BY  CAL.tgt_month
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="10" />
+      <Input Name="year" Type="nvarchar" Size="4" />
+      <Input Name="month" Type="nvarchar" Size="2" />
+    </Parameter>
+  </PointTransitionReportMonth>
+
+  <!-- ユーザーポイント履歴取得 -->
+  <GetUserPointHistories>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserPointHistory
+         WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserPointHistories>
+
+  <!-- ポイント加算区分によるユーザーポイント履歴取得 -->
+  <GetUserHistoriesByPointIncKbn>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserPointHistory
+         WHERE 
+         user_id = @user_id
+           AND  point_inc_kbn = @point_inc_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="point_inc_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+    </GetUserHistoriesByPointIncKbn>
+
+  <!-- 指定注文IDのユーザーポイント履歴取得 -->
+  <GetUserPointHistoryByOrderId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserPointHistory
+         WHERE  user_id = @user_id
+           AND  kbn1 = @kbn1
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="kbn1" Type="nvarchar" Size="100" />
+    </Parameter>
+  </GetUserPointHistoryByOrderId>
+
+  <!-- 注文IDを元にユーザーポイント履歴削除（注文失敗時のロールバックで利用） -->
+  <DeleteUserPointHistoryByOrderID>
+    <Statement>
+      <![CDATA[
+        DELETE  
+          FROM  w2_UserPointHistory
+         WHERE  user_id = @user_id
+           AND  kbn1 = @kbn1
+           AND  point_kbn = @point_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="kbn1" Type="nvarchar" Size="100" />
+      <Input Name="point_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </DeleteUserPointHistoryByOrderID>
+
+  <!-- ポイント移行対象の仮ポイント取得 -->
+  <!-- 出荷完了日から指定した日数が経過したものを対象とする -->
+  <GetTargetUserTempPointToReal>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserPoint.*
+          FROM  w2_UserPoint
+                INNER JOIN  w2_Order ON
+                (
+                  w2_UserPoint.point_type = '00'
+                  AND  w2_UserPoint.user_id = w2_Order.user_id
+                  AND  w2_UserPoint.kbn1 = w2_Order.order_id
+                  -- 出荷完了 または 配送完了
+                  AND  (w2_Order.order_status IN ('SHP_COMP', 'DLV_COMP'))
+                  -- 出荷日からX日以上経ったもの
+                  AND  GETDATE() >= DATEADD
+                       (
+                         dd,
+                         CASE point_kbn
+                           WHEN '01' THEN @point_temp_to_comp_days
+                           WHEN '02' THEN @point_temp_to_comp_limited_term_point_days
+                         END,
+                         w2_Order.order_shipped_date
+                       )
+                )
+         WHERE  w2_UserPoint.point_type = '00'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_temp_to_comp_days" Type="int" />
+      <Input Name="point_temp_to_comp_limited_term_point_days" Type="int" />
+    </Parameter>
+  </GetTargetUserTempPointToReal>
+
+  <!-- 有効期限切れポイント取得（退会ユーザ含む） -->
+  <GetExpiredUserPoints>
+    <Statement>
+      <![CDATA[
+        -- 有効期限切れポイント
+        SELECT  *
+          FROM  w2_UserPoint
+         WHERE  point_exp < GETDATE()
+           AND  point_type = '01'
+         UNION 
+        -- 退会ユーザのポイント
+        SELECT  *
+          FROM  w2_UserPoint
+         WHERE  EXISTS 
+                (
+                  SELECT  'X'
+                    FROM  w2_User
+                   WHERE  w2_User.user_id = w2_UserPoint.user_id
+                     AND  w2_User.del_flg = 1
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetExpiredUserPoints>
+
+  <!-- ユーザポイント更新ロック取得(ポイントバッチ利用) -->
+  <GetUpdLockForUserPoint>
+    <Statement>
+      <![CDATA[
+          -- 更新ロック取得
+          SELECT  MAX(point_exp)
+            FROM  w2_UserPoint WITH (UPDLOCK)
+           WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUpdLockForUserPoint>
+
+  <!-- ユーザポイント履歴更新ロック取得(ポイントバッチ利用) -->
+  <GetUpdLockForUserPointHistory>
+    <Statement>
+      <![CDATA[
+          SELECT  MAX(history_no)
+            FROM  w2_UserPointHistory WITH (UPDLOCK)
+           WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUpdLockForUserPointHistory>
+
+  <!-- 優先度の高いポイントキャンペーンルール情報取得 -->
+  <GetHightPriorityCampaignRule>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PointRule, w2_PointRuleDate
+         WHERE  w2_PointRule.dept_id = @dept_id
+           AND  w2_PointRule.point_rule_kbn = '02'
+           AND  w2_PointRule.valid_flg = '1'
+           AND  w2_PointRule.exp_bgn <= @current_date  AND  @current_date <= w2_PointRule.exp_end
+           AND  w2_PointRule.point_rule_id = w2_PointRuleDate.point_rule_id
+           AND  CONVERT(varchar,w2_PointRuleDate.tgt_date, 111) = CONVERT(varchar,@current_date, 111)
+        ORDER BY w2_PointRule.priority ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="current_date" Type="datetime" />
+    </Parameter>
+  </GetHightPriorityCampaignRule>
+
+  <!-- 基本ルール情報取得 -->
+  <GetBasicRule>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PointRule
+         WHERE  w2_PointRule.dept_id = @dept_id
+           AND  w2_PointRule.point_rule_kbn = '01'
+           AND  w2_PointRule.valid_flg = '1'
+           AND  w2_PointRule.exp_bgn <= @current_date
+           AND  @current_date <= w2_PointRule.exp_end
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="current_date" Type="datetime" />
+    </Parameter>
+  </GetBasicRule>
+
+  <!-- ポイントルールスケジュール検索 -->
+  <SearchPointRuleSchedule>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_PointRuleSchedule.point_rule_schedule_id), 0)
+          FROM  w2_PointRuleSchedule
+                [[ POINTRULESCHEDULE_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_PointRuleSchedule.*
+                ,@row_count AS row_count
+          FROM  (
+                  SELECT  w2_PointRuleSchedule.point_rule_schedule_id
+                          ,ROW_NUMBER()
+                          OVER
+                          (
+                            [[ POINTRULESCHEDULE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_PointRuleSchedule
+                          [[ POINTRULESCHEDULE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_PointRuleSchedule ON
+                (
+                  RowIndex.point_rule_schedule_id = w2_PointRuleSchedule.point_rule_schedule_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num DESC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_rule_schedule_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_schedule_name" Type="nvarchar" Size="100" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </SearchPointRuleSchedule>
+
+  <!-- ポイントルールスケジュール取得（すべて） -->
+  <GetAllPointRuleSchedule>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PointRuleSchedule
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetAllPointRuleSchedule>
+
+  <!-- ポイントルールスケジュール取得 -->
+  <GetPointRuleSchedule>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PointRuleSchedule
+         WHERE  w2_PointRuleSchedule.point_rule_schedule_id = @point_rule_schedule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_rule_schedule_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetPointRuleSchedule>
+
+  <!-- ポイントルールスケジュール登録 -->
+  <InsertPointRuleSchedule>
+    <Statement>
+      <![CDATA[
+        INSERT 
+          w2_PointRuleSchedule
+          (
+            point_rule_schedule_id
+            ,point_rule_schedule_name
+            ,status
+            ,last_count
+            ,last_exec_date
+            ,target_id
+            ,target_extract_flg
+            ,point_rule_id
+            ,mail_id
+            ,exec_timing
+            ,schedule_kbn
+            ,schedule_day_of_week
+            ,schedule_year
+            ,schedule_month
+            ,schedule_day
+            ,schedule_hour
+            ,schedule_minute
+            ,schedule_second
+            ,valid_flg
+            ,date_created
+            ,date_changed
+            ,last_changed
+          ) 
+          VALUES
+          (
+            @point_rule_schedule_id
+            ,@point_rule_schedule_name
+            ,@status
+            ,@last_count
+            ,@last_exec_date
+            ,@target_id
+            ,@target_extract_flg
+            ,@point_rule_id
+            ,@mail_id
+            ,@exec_timing
+            ,@schedule_kbn
+            ,@schedule_day_of_week
+            ,@schedule_year
+            ,@schedule_month
+            ,@schedule_day
+            ,@schedule_hour
+            ,@schedule_minute
+            ,@schedule_second
+            ,@valid_flg
+            ,getdate()
+            ,getdate()
+            ,@last_changed
+          )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_rule_schedule_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_schedule_name" Type="nvarchar" Size="100" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="last_count" Type="nvarchar" Size="30" />
+      <Input Name="last_exec_date" Type="datetime" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg" Type="nvarchar" Size="10" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="schedule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="schedule_day_of_week" Type="nvarchar" Size="10" />
+      <Input Name="schedule_year" Type="int" />
+      <Input Name="schedule_month" Type="int" />
+      <Input Name="schedule_day" Type="int" />
+      <Input Name="schedule_hour" Type="int" />
+      <Input Name="schedule_minute" Type="int" />
+      <Input Name="schedule_second" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertPointRuleSchedule>
+
+  <!-- ポイントルールスケジュール削除 -->
+  <DeletePointRuleSchedule>
+    <Statement>
+      <![CDATA[
+        DELETE  
+          FROM  w2_PointRuleSchedule
+         WHERE  w2_PointRuleSchedule.point_rule_schedule_id = @point_rule_schedule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_rule_schedule_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeletePointRuleSchedule>
+
+  <!-- ポイントルールスケジュール更新 -->
+  <UpdatePointRuleSchedule>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_PointRuleSchedule
+           SET  
+                point_rule_schedule_name = @point_rule_schedule_name
+                ,status = @status
+                ,last_count = @last_count
+                ,last_exec_date = @last_exec_date
+                ,target_id = @target_id
+                ,target_extract_flg = @target_extract_flg
+                ,point_rule_id = @point_rule_id
+                ,mail_id = @mail_id
+                ,exec_timing = @exec_timing
+                ,schedule_kbn = @schedule_kbn
+                ,schedule_day_of_week = @schedule_day_of_week
+                ,schedule_year = @schedule_year
+                ,schedule_month = @schedule_month
+                ,schedule_day = @schedule_day
+                ,schedule_hour = @schedule_hour
+                ,schedule_minute = @schedule_minute
+                ,schedule_second = @schedule_second
+                ,valid_flg = @valid_flg
+                ,date_changed = getdate()
+                ,last_changed = @last_changed
+         WHERE  w2_PointRuleSchedule.point_rule_schedule_id = @point_rule_schedule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_rule_schedule_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_schedule_name" Type="nvarchar" Size="100" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="last_count" Type="nvarchar" Size="30" />
+      <Input Name="last_exec_date" Type="datetime" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg" Type="nvarchar" Size="10" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="schedule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="schedule_day_of_week" Type="nvarchar" Size="10" />
+      <Input Name="schedule_year" Type="int" />
+      <Input Name="schedule_month" Type="int" />
+      <Input Name="schedule_day" Type="int" />
+      <Input Name="schedule_hour" Type="int" />
+      <Input Name="schedule_minute" Type="int" />
+      <Input Name="schedule_second" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdatePointRuleSchedule>
+
+  <!-- ポイントルールスケジュールステータス更新（※ステータスは同一ステータスで更新し、最終付与人数・日時も更新） -->
+  <UpdatePointRuleScheduleStatus>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_PointRuleSchedule
+           SET  
+                status = @status
+                ,last_count = @last_count
+                ,last_exec_date = @last_exec_date
+                ,date_changed = getdate()
+                ,last_changed = @last_changed
+         WHERE  w2_PointRuleSchedule.point_rule_schedule_id = @point_rule_schedule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_rule_schedule_id" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="10" />
+      <Input Name="last_count" Type="nvarchar" Size="30" />
+      <Input Name="last_exec_date" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdatePointRuleScheduleStatus>
+
+  <!-- ターゲットリスト削除前使用チェック -->
+  <CheckTargetListUsed>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_PointRuleSchedule
+         WHERE  target_id = @target_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CheckTargetListUsed>
+
+  <!-- 履歴グループ番号で取得 -->
+  <GetHistoriesByGroupNo>
+    <Statement>
+      <![CDATA[
+         SELECT  *
+           FROM  w2_UserPointHistory
+          WHERE  user_id = @user_id
+            AND  history_group_no = @history_group_no
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="history_group_no" Type="int" />
+    </Parameter>
+  </GetHistoriesByGroupNo>
+
+  <!-- 履歴グループ番号を採番 -->
+  <IssueHistoryGroupNoForUser>
+    <Statement>
+      <![CDATA[
+         DECLARE @history_group_no INT
+         SET @history_group_no = 
+         (
+            SELECT  ISNULL(MAX(history_group_no), 0)
+              FROM  w2_UserPointHistory
+             WHERE  user_id = @user_id
+         )
+         
+         SELECT  @history_group_no + 1
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </IssueHistoryGroupNoForUser>
+
+  <!-- ユーザーポイント枝番を採番 -->
+  <IssuePointKbnNoForUser>
+    <Statement>
+      <![CDATA[
+         DECLARE @point_kbn_no INT
+         SET @point_kbn_no = 
+         (
+            SELECT  ISNULL(MAX(point_kbn_no), 0)
+              FROM  w2_UserPoint
+             WHERE  user_id = @user_id
+         )
+         
+         SELECT  @point_kbn_no + 1
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </IssuePointKbnNoForUser>
+
+  <!-- Get Point Rule Schedule By Point Rule Id -->
+  <GetPointRuleScheduleByPointRuleId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_PointRuleSchedule.*
+          FROM  w2_PointRuleSchedule
+         WHERE  w2_PointRuleSchedule.point_rule_id = @point_rule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetPointRuleScheduleByPointRuleId>
+
+  <!-- ポイント履歴一覧 -->
+  <GetUserPointHistoriesOnFront>
+    <Statement>
+      <![CDATA[
+        WITH PointList AS
+        (
+          SELECT  point_inc_kbn,
+                  point_kbn,
+                  point_type,
+                  point,
+                  date_created AS point_date_created_tmp,
+                  kbn1 AS point_order_id,
+                  kbn2 AS point_fixed_purchase_id,
+                  0 AS history_no
+            FROM  w2_UserPoint
+           WHERE  w2_UserPoint.user_id = @user_id
+             AND  w2_UserPoint.point_type = '00'
+             AND  w2_UserPoint.point <> 0
+          UNION ALL
+          SELECT  point_inc_kbn,
+                  '00' AS point_kbn, -- フロント表示には利用しないので0固定（でないとhistory_group_noでのグループ化ができない
+                  point_type,
+                  SUM(point_inc) AS point,
+                  MAX(date_created) AS point_date_created_tmp,
+                  kbn1 AS point_order_id,
+                  kbn2 AS point_fixed_purchase_id,
+                  MAX(history_no)
+            FROM  w2_UserPointHistory
+           WHERE  w2_UserPointHistory.user_id = @user_id
+             AND  w2_UserPointHistory.point_type = '01'
+             AND  w2_UserPointHistory.point_inc <> 0
+             --ポイント利用調整（次回定期購入分） を表示しない
+             AND  w2_UserPointHistory.point_inc_kbn <> '21'
+             --定期から通常注文に利用ポイント履歴を表示しない
+             AND  (
+                    w2_UserPointHistory.point_inc_kbn <> '10'
+                    OR
+                    w2_UserPointHistory.kbn2 = ''
+                  )
+          GROUP BY  history_group_no,
+                    point_kbn,
+                    point_type,
+                    point_inc_kbn,
+                    kbn1,
+                    kbn2
+        )
+
+        SELECT  w2_Order.*,
+                PointList.history_no,
+                PointList.point_kbn,
+                PointList.point_type,
+                PointList.point_inc_kbn,
+                PointList.point,
+                PointList.point_date_created_tmp,
+                (
+                  CASE
+                    WHEN w2_Order.order_id_org = '' THEN w2_Order.order_id
+                    ELSE w2_Order.order_id_org
+                  END
+                ) AS point_order_id,
+                PointList.point_fixed_purchase_id,
+                PointList.point_date_created_tmp AS point_date_created,
+                (
+                  SELECT  COUNT(*)
+                    FROM  w2_Order
+                   WHERE  PointList.point_order_id = w2_Order.order_id_org
+                     AND  w2_Order.return_exchange_kbn = '01'
+                     AND  w2_Order.order_id_org <> ''
+                ) AS return_order_count,
+                (
+                  SELECT  COUNT(*)
+                    FROM  w2_Order
+                   WHERE  PointList.point_order_id IN
+                          (
+                            w2_Order.order_id_org,
+                            w2_Order.order_id
+                          )
+                     AND  w2_Order.return_exchange_kbn = '10'
+                     AND  w2_Order.order_id_org <> ''
+                ) AS exchange_order_count
+          FROM  PointList
+                LEFT JOIN w2_Order ON
+                (
+                  PointList.point_order_id = w2_Order.order_id
+                )
+                LEFT JOIN w2_FixedPurchase ON
+                (
+                  PointList.point_fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+                )
+         WHERE  PointList.point_order_id = ''
+                OR
+                w2_Order.order_status NOT IN ('TMP', 'TMP_CNSL')	-- 仮注文、仮注文キャンセル以外
+                OR
+                w2_FixedPurchase.fixed_purchase_status IN ('10', '30')
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserPointHistoriesOnFront>
+
+  <!-- ユーザーポイント履歴Noを取得 -->
+  <GetNextHistoryNo>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(MAX(history_no), 0) + 1
+          FROM  w2_UserPointHistory
+         WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetNextHistoryNo>
+
+  <!-- ユーザーポイント履歴更新(ユーザー統合用) -->
+  <UpdateUserPointHistoryForIntegration>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserPointHistory
+           SET  user_id = @user_id,
+                history_no = @history_no,
+                history_group_no = @history_group_no
+         WHERE  user_id = @user_id_old
+           AND  history_no = @history_no_old
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id_old" Type="nvarchar" Size="30" />
+      <Input Name="history_no" Type="int" />
+      <Input Name="history_no_old" Type="int" />
+      <Input Name="history_group_no" Type="int" />
+    </Parameter>
+  </UpdateUserPointHistoryForIntegration>
+
+  <!-- ユーザーポイント履歴削除 -->
+  <DeleteUserPointHistory>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserPointHistory
+         WHERE  user_id = @user_id
+           AND  history_no = @history_no
+           AND  tgt_year = @tgt_year
+           AND  tgt_month = @tgt_month
+           AND  tgt_day = @tgt_day
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="history_no" Type="int" />
+      <Input Name="tgt_year" Type="int" />
+      <Input Name="tgt_month" Type="int" />
+      <Input Name="tgt_day" Type="int" />
+    </Parameter>
+  </DeleteUserPointHistory>
+
+</Point>

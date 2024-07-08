@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        -- 定期会員フラグの追加
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_User' AND column_name = 'fixed_purchase_member_flg')
+          ALTER TABLE [w2_User] ADD [fixed_purchase_member_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+        GO
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_WorkUser' AND column_name = 'fixed_purchase_member_flg')
+          ALTER TABLE [w2_WorkUser] ADD [fixed_purchase_member_flg] [nvarchar] (1) NOT NULL DEFAULT (N'0');
+        GO
+        
+        -- 定期会員割引額の追加
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_Order' AND column_name = 'fixed_purchase_member_discount_amount')
+          ALTER TABLE [w2_Order] ADD [fixed_purchase_member_discount_amount] [decimal] NOT NULL DEFAULT (0);
+        GO
+        
+        -- 定期会員割引率の追加
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_MemberRank' AND column_name = 'fixed_purchase_discount_rate')
+          ALTER TABLE [w2_MemberRank] ADD [fixed_purchase_discount_rate] [decimal] NOT NULL DEFAULT (0);
+        GO
+        
+        -- ユーザマスタの定期会員フラグONを付与
+        UPDATE  w2_User
+           SET  fixed_purchase_member_flg = '1'
+          FROM  w2_User
+                INNER JOIN w2_FixedPurchase ON
+                (
+                  w2_User.user_id = w2_FixedPurchase.user_id
+                )
+         WHERE  fixed_purchase_status <> '30'
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

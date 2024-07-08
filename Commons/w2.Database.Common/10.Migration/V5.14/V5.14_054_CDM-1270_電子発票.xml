@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        -- w2_OrderWorkflowSetting
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_OrderWorkflowSetting' AND COLUMN_NAME = 'tw_invoice_status_change')
+            ALTER TABLE [w2_OrderWorkflowSetting] ADD [tw_invoice_status_change] [nvarchar] (2) NOT NULL DEFAULT (N'');
+        GO
+
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_OrderWorkflowSetting' AND COLUMN_NAME = 'tw_invoice_status_api')
+            ALTER TABLE [w2_OrderWorkflowSetting] ADD [tw_invoice_status_api] [nvarchar] (2) NOT NULL DEFAULT (N'');
+        GO
+
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_OrderWorkflowSetting' AND COLUMN_NAME = 'tw_cassette_invoice_status_change')
+            ALTER TABLE [w2_OrderWorkflowSetting] ADD [tw_cassette_invoice_status_change] [ntext] NOT NULL DEFAULT (N'');
+        GO
+
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_OrderWorkflowSetting' AND COLUMN_NAME = 'tw_cassette_invoice_status_api')
+            ALTER TABLE [w2_OrderWorkflowSetting] ADD [tw_cassette_invoice_status_api] [ntext] NOT NULL DEFAULT (N'');
+        GO
+
+        -- w2_UserDefaultOrderSetting
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_UserDefaultOrderSetting' AND COLUMN_NAME = 'user_invoice_no')
+            ALTER TABLE [w2_UserDefaultOrderSetting] ADD [user_invoice_no] [int];
+        GO
+
+        /*
+        =========================================================================================================
+          Module      : 定期購入電子発票情報 (w2_TwFixedPurchaseInvoice.sql)
+          ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+          Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+        =========================================================================================================
+        */
+        IF NOT EXISTS (SELECT * FROM dbo.sysobjects WHERE id = object_id(N'[dbo].[w2_TwFixedPurchaseInvoice]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+        BEGIN
+            CREATE TABLE [dbo].[w2_TwFixedPurchaseInvoice] (
+                [fixed_purchase_id] [nvarchar] (30) NOT NULL,
+                [fixed_purchase_shipping_no] [int] NOT NULL DEFAULT (1),
+                [tw_uniform_invoice] [nvarchar] (10) NOT NULL DEFAULT (N'PERSONAL'),
+                [tw_uniform_invoice_option1] [nvarchar] (10) NOT NULL DEFAULT (N''),
+                [tw_uniform_invoice_option2] [nvarchar] (20) NOT NULL DEFAULT (N''),
+                [tw_carry_type] [nvarchar] (16) NOT NULL DEFAULT (N''),
+                [tw_carry_type_option] [nvarchar] (16) NOT NULL DEFAULT (N''),
+                [date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+                [date_changed] [datetime] NOT NULL DEFAULT (GETDATE())
+            ) ON [PRIMARY]
+        
+            ALTER TABLE [dbo].[w2_TwFixedPurchaseInvoice] WITH NOCHECK ADD
+                CONSTRAINT [PK_w2_TwFixedPurchaseInvoice] PRIMARY KEY  CLUSTERED
+                (
+                    [fixed_purchase_id],
+                    [fixed_purchase_shipping_no]
+                ) ON [PRIMARY]
+        END
+
+        /*
+        =========================================================================================================
+          Module      : 電子発票情報 (w2_TwInvoice.sql)
+          ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+          Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+        =========================================================================================================
+        */
+        IF NOT EXISTS (SELECT * FROM dbo.sysobjects WHERE id = OBJECT_ID(N'[dbo].[w2_TwInvoice]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+        BEGIN
+            CREATE TABLE [dbo].[w2_TwInvoice] (
+                [tw_invoice_id] [nvarchar] (50) NOT NULL,
+                [tw_invoice_date_start] [datetime] NOT NULL,
+                [tw_invoice_date_end] [datetime] NOT NULL,
+                [tw_invoice_code] [nvarchar] (10) NOT NULL DEFAULT (N''),
+                [tw_invoice_type_name] [nvarchar] (50) NOT NULL DEFAULT (N''),
+                [tw_invoice_code_name] [nvarchar] (10) NOT NULL DEFAULT (N''),
+                [tw_invoice_no_start] [decimal] NOT NULL,
+                [tw_invoice_no_end] [decimal] NOT NULL,
+                [tw_invoice_no] [decimal],
+                [tw_invoice_alert_count] [int] NOT NULL DEFAULT (100),
+                [date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+                [date_changed] [datetime] NOT NULL DEFAULT (GETDATE())
+            ) ON [PRIMARY]
+
+            ALTER TABLE [dbo].[w2_TwInvoice] WITH NOCHECK ADD
+                CONSTRAINT [PK_w2_TwInvoice] PRIMARY KEY  CLUSTERED
+                (
+                    [tw_invoice_id]
+                ) ON [PRIMARY]
+        END
+
+        /*
+        =========================================================================================================
+          Module      : 注文電子発票情報 (w2_TwOrderInvoice.sql)
+          ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+          Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+        =========================================================================================================
+        */
+        IF NOT EXISTS (SELECT * FROM dbo.sysobjects WHERE id = object_id(N'[dbo].[w2_TwOrderInvoice]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+        BEGIN
+            CREATE TABLE [dbo].[w2_TwOrderInvoice] (
+                [order_id] [nvarchar] (30) NOT NULL,
+                [order_shipping_no] [int] NOT NULL DEFAULT (1),
+                [tw_uniform_invoice] [nvarchar] (10) NOT NULL DEFAULT (N'PERSONAL'),
+                [tw_uniform_invoice_option1] [nvarchar] (10) NOT NULL DEFAULT (N''),
+                [tw_uniform_invoice_option2] [nvarchar] (20) NOT NULL DEFAULT (N''),
+                [tw_carry_type] [nvarchar] (16) NOT NULL DEFAULT (N''),
+                [tw_carry_type_option] [nvarchar] (16) NOT NULL DEFAULT (N''),
+                [tw_invoice_no] [nvarchar] (15) NOT NULL DEFAULT (N''),
+                [tw_invoice_date] [datetime],
+                [tw_invoice_status] [nvarchar] (2) NOT NULL DEFAULT (N''),
+                [date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+                [date_changed] [datetime] NOT NULL DEFAULT (GETDATE())
+            ) ON [PRIMARY]
+
+            ALTER TABLE [dbo].[w2_TwOrderInvoice] WITH NOCHECK ADD
+                CONSTRAINT [PK_w2_TwOrderInvoice] PRIMARY KEY  CLUSTERED
+                (
+                    [order_id],
+                    [order_shipping_no]
+                ) ON [PRIMARY]
+        
+            CREATE INDEX [IX_w2_TwOrderInvoice_1] ON [dbo].[w2_TwOrderInvoice]([tw_invoice_status]) ON [PRIMARY]
+        END
+
+        /*
+        =========================================================================================================
+          Module      : ユーザ電子発票管理情報 (w2_TwUserInvoice.sql)
+          ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+          Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+        =========================================================================================================
+        */
+        IF NOT EXISTS (SELECT * FROM dbo.sysobjects WHERE id = object_id(N'[dbo].[w2_TwUserInvoice]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+        BEGIN
+            CREATE TABLE [dbo].[w2_TwUserInvoice] (
+                [user_id] [nvarchar] (30) NOT NULL,
+                [tw_invoice_no] [int] NOT NULL DEFAULT (1),
+                [tw_invoice_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+                [tw_uniform_invoice] [nvarchar] (10) NOT NULL DEFAULT (N'PERSONAL'),
+                [tw_uniform_invoice_option1] [nvarchar] (10) NOT NULL DEFAULT (N''),
+                [tw_uniform_invoice_option2] [nvarchar] (20) NOT NULL DEFAULT (N''),
+                [tw_carry_type] [nvarchar] (16) NOT NULL DEFAULT (N''),
+                [tw_carry_type_option] [nvarchar] (16) NOT NULL DEFAULT (N''),
+                [date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+                [date_changed] [datetime] NOT NULL DEFAULT (GETDATE())
+            ) ON [PRIMARY]
+
+            ALTER TABLE [dbo].[w2_TwUserInvoice] WITH NOCHECK ADD
+                CONSTRAINT [PK_w2_TwUserInvoice] PRIMARY KEY  CLUSTERED
+                (
+                    [user_id],
+                    [tw_invoice_no]
+                ) ON [PRIMARY]
+        END
+
+        /*
+        =========================================================================================================
+          Module      : ユーザ電子発票管理情報 (w2_TwWorkUserInvoice.sql)
+          ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+          Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+        =========================================================================================================
+        */
+        IF NOT EXISTS (SELECT * FROM dbo.sysobjects WHERE id = object_id(N'[dbo].[w2_TwWorkUserInvoice]') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)
+        BEGIN
+            CREATE TABLE [dbo].[w2_TwWorkUserInvoice] (
+                [user_id] [nvarchar] (30) NOT NULL,
+                [tw_invoice_no] [int] NOT NULL DEFAULT (1),
+                [tw_invoice_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+                [tw_uniform_invoice] [nvarchar] (10) NOT NULL DEFAULT (N'PERSONAL'),
+                [tw_uniform_invoice_option1] [nvarchar] (10) NOT NULL DEFAULT (N''),
+                [tw_uniform_invoice_option2] [nvarchar] (20) NOT NULL DEFAULT (N''),
+                [tw_carry_type] [nvarchar] (16) NOT NULL DEFAULT (N''),
+                [tw_carry_type_option] [nvarchar] (16) NOT NULL DEFAULT (N''),
+                [date_created] [datetime] NOT NULL DEFAULT (GETDATE()),
+                [date_changed] [datetime] NOT NULL DEFAULT (GETDATE())
+            ) ON [PRIMARY]
+
+            ALTER TABLE [dbo].[w2_TwWorkUserInvoice] WITH NOCHECK ADD
+                CONSTRAINT [PK_w2_TwWorkUserInvoice] PRIMARY KEY  CLUSTERED
+                (
+                    [user_id],
+                    [tw_invoice_no]
+                ) ON [PRIMARY]
+        END
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

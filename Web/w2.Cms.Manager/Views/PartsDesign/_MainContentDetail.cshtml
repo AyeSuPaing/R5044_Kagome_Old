@@ -1,0 +1,85 @@
+﻿@*
+=========================================================================================================
+  Module      : パーツ管理 パーツ詳細(パーシャルビュー)(_MainContentDetail.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+
+@using w2.Cms.Manager.Codes.PageDesign
+@model w2.Cms.Manager.ViewModels.PartsDesign.PartsDetailViewModel
+
+<div class="main-content-detail-inner">
+	<a class="main-content-detail-btn-close"><span class="icon icon-close"></span>閉じる</a>
+	@Html.Partial("_PartsDesignContentDetail", Model)
+</div>
+
+<script type="text/javascript">
+	$(function () {
+		var partsId = "@this.Model.Input.PartsId";
+		history.replaceState("", "", "#parts" + partsId);
+	});
+	/**
+	* パーツ詳細更新
+	*/
+	function parts_main_content_detail_update() {
+		loading_animation.start();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("UpdateDetailParts", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)",
+			data: $('#parts_detail_form').serializeArray()
+		}).done(function(errorMessage) {
+			setTimeout(function() { loading_animation.end(); }, 200);
+			// 警告表示を削除
+			$('.notification-message-warning').remove();
+			if (errorMessage === "") {
+				group_list_redraw();
+				open_parts(@Model.Input.PartsId);
+				notification.show('パーツを更新しました。', 'info', 'fadeout');
+			} else {
+				notification.show(errorMessage, 'warning', 'fixed');
+			}
+		}).fail(function() {
+		});
+	}
+
+	/**
+	* パーツ新規登録
+	*/
+	function parts_main_content_detail_register() {
+		loading_animation.start();
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("RegisterDetailParts", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)",
+			data: $('#parts_detail_form').serializeArray()
+		}).done(function (data) {
+			setTimeout(function () { loading_animation.end(); }, 200);
+			// 警告表示を削除
+			$('.notification-message-warning').remove();
+			if (data.errorMessage === "") {
+				group_list_redraw();
+				open_parts(data.partsId);
+				notification.show('パーツを登録しました。', 'info', 'fadeout');
+			} else {
+				notification.show(data.errorMessage, 'warning', 'fixed');
+			}
+		}).fail(function () {
+		});
+	}
+
+	/**
+	 * コピー新規
+	 * param {} partsId コピー対象パーツID
+	 */
+	function custom_parts_copy(partsId) {
+		$.ajax({
+			type: "POST",
+			url: "@Url.Action("MainContentDetailCopy", w2.App.Common.Constants.CONTROLLER_W2CMS_MANAGER_PARTS_DESIGN)",
+			data: { 'partsId': partsId }
+		}).done(function(viewHTML) {
+			group_list_redraw();
+			open_main_content_detail_success(viewHTML);
+		}).fail(function() {
+		});
+	}
+</script>

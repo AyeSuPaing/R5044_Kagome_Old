@@ -1,0 +1,325 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : レコメンド設定系SQLサブステートメントXML (Recommend_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<Recommend_Sub>
+
+  <!-- 検索用WHERE文 -->
+  <RECOMMEND_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+                  w2_Recommend.shop_id = @shop_id
+                  AND
+                  (@recommend_id_like_escaped = '' OR w2_Recommend.recommend_id LIKE @recommend_id_like_escaped + '%'  ESCAPE '#')
+                  AND
+                  (@recommend_name_like_escaped = '' OR w2_Recommend.recommend_name LIKE '%' + @recommend_name_like_escaped + '%' ESCAPE '#')
+                  AND
+                  (@recommend_kbn = '' OR w2_Recommend.recommend_kbn = @recommend_kbn)
+                  AND
+                  (
+                    @status = ''
+                    OR
+                    (
+                      @status = 'Preparing'
+                      AND
+                      w2_Recommend.date_begin > GETDATE()
+                    )
+                    OR
+                    (
+                      @status = 'OnGoing'
+                      AND
+                      w2_Recommend.valid_flg = '1'
+                      AND
+                      w2_Recommend.date_begin <= GETDATE()
+                      AND
+                      (
+                        w2_Recommend.date_end >= GETDATE()
+                        OR
+                        w2_Recommend.date_end IS NULL
+                      )
+                    )
+                    OR
+                    (
+                      @status = 'Suspended'
+                      AND
+                      w2_Recommend.valid_flg = '0'
+                      AND
+                      w2_Recommend.date_begin <= GETDATE()
+                      AND
+                      (
+                        w2_Recommend.date_end >= GETDATE()
+                        OR
+                        w2_Recommend.date_end IS NULL
+                      )
+                    )
+                    OR
+                    (
+                      @status = 'Finished'
+                      AND
+                      w2_Recommend.date_end < GETDATE()
+                    )
+                  )
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="recommend_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="recommend_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="recommend_kbn" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="20"/>
+    </Parameter>
+  </RECOMMEND_SEARCH_WHERE>
+
+  <!-- 検索用ORDER BY -->
+  <RECOMMEND_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN '0' THEN
+              CASE
+                WHEN  (
+                        w2_Recommend.date_begin > GETDATE()
+                      ) THEN '0'
+                WHEN  (
+                        w2_Recommend.valid_flg = '1'
+                        AND
+                        w2_Recommend.date_begin <= GETDATE()
+                        AND
+                        (
+                          w2_Recommend.date_end >= GETDATE()
+                          OR
+                          w2_Recommend.date_end IS NULL
+                        )
+                      ) THEN '1'
+                WHEN  (
+                        w2_Recommend.valid_flg = '0'
+                        AND
+                        w2_Recommend.date_begin <= GETDATE()
+                        AND
+                        (
+                          w2_Recommend.date_end >= GETDATE()
+                          OR
+                          w2_Recommend.date_end IS NULL
+                        )
+                      ) THEN '2'
+                WHEN  (
+                        w2_Recommend.date_end < GETDATE()
+                      ) THEN '3'
+              END
+            WHEN 1 THEN w2_Recommend.recommend_id
+            WHEN 3 THEN w2_Recommend.recommend_name
+            ELSE '1'
+            END ASC,
+
+          CASE @sort_kbn
+            WHEN 2 THEN w2_Recommend.recommend_id
+            WHEN 4 THEN w2_Recommend.recommend_name
+            ELSE '1'
+            END DESC,
+
+          CASE @sort_kbn
+            WHEN '5' THEN w2_Recommend.priority
+            ELSE NULL
+            END ASC,
+
+          CASE @sort_kbn
+            WHEN '6' THEN w2_Recommend.priority
+            ELSE NULL
+            END DESC,
+
+          CASE @sort_kbn
+            WHEN '7' THEN w2_Recommend.date_begin
+            WHEN '9' THEN ISNULL(w2_Recommend.date_end, '9999/12/31')
+            ELSE NULL
+            END ASC,
+
+          CASE @sort_kbn
+            WHEN '8' THEN w2_Recommend.date_begin
+            WHEN '10' THEN ISNULL(w2_Recommend.date_end, '9999/12/31')
+            ELSE NULL
+            END DESC,
+          w2_Recommend.recommend_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sort_kbn" Type="nvarchar" Size="2"/>
+    </Parameter>
+  </RECOMMEND_SEARCH_ORDER_BY>
+
+  <!-- レコメンドレポート検索用WHERE文 -->
+  <RECOMMEND_REPORT_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE  (
+                 w2_Recommend.shop_id = @shop_id
+                 <@@hasval:recommend_id_like_escaped@@>
+                 AND
+                 (
+                   w2_Recommend.recommend_id LIKE @recommend_id_like_escaped + '%' ESCAPE '#'
+                 )
+                 </@@hasval:recommend_id_like_escaped@@>
+                 <@@hasval:recommend_name_like_escaped@@>
+                 AND
+                 (
+                   w2_Recommend.recommend_name LIKE '%' + @recommend_name_like_escaped + '%' ESCAPE '#'
+                 )
+                 </@@hasval:recommend_name_like_escaped@@>
+                 <@@hasval:recommend_kbn@@>
+                 AND
+                 (
+                   w2_Recommend.recommend_kbn = @recommend_kbn
+                 )
+                 </@@hasval:recommend_kbn@@>
+                 <@@hasval:valid_flg@@>
+                 AND
+                 (
+                   w2_Recommend.valid_flg = @valid_flg
+                 )
+                 </@@hasval:valid_flg@@>
+                 <@@hasval:status@@>
+                 AND
+                 (
+                   (
+                     @status = 'Preparing'
+                     AND
+                     w2_Recommend.date_begin > GETDATE()
+                   )
+                   OR
+                   (
+                     @status = 'OnGoing'
+                     AND
+                     w2_Recommend.valid_flg = '1'
+                     AND
+                     w2_Recommend.date_begin <= GETDATE()
+                     AND
+                     (
+                       w2_Recommend.date_end >= GETDATE()
+                       OR
+                       w2_Recommend.date_end IS NULL
+                     )
+                   )
+                   OR
+                   (
+                     @status = 'Suspended'
+                     AND
+                     w2_Recommend.valid_flg = '0'
+                     AND
+                     w2_Recommend.date_begin <= GETDATE()
+                     AND
+                     (
+                       w2_Recommend.date_end >= GETDATE()
+                       OR
+                       w2_Recommend.date_end IS NULL
+                     )
+                   )
+                   OR
+                   (
+                     @status = 'Finished'
+                     AND
+                     w2_Recommend.date_end < GETDATE()
+                   )
+                 )
+                 </@@hasval:status@@>
+               )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="recommend_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="recommend_kbn" Type="nvarchar" Size="30" />
+      <Input Name="status" Type="nvarchar" Size="20"/>
+      <Input Name="valid_flg" Type="nvarchar" Size="20"/>
+    </Parameter>
+  </RECOMMEND_REPORT_SEARCH_WHERE>
+
+  <!-- レコメンドレポート検索用ORDER BY -->
+  <RECOMMEND_REPORT_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @report_sort_kbn
+            WHEN '0' THEN
+              CASE
+                WHEN  (
+                        date_begin > GETDATE()
+                      ) THEN '0'
+                WHEN  (
+                        valid_flg = '1'
+                        AND
+                        date_begin <= GETDATE()
+                        AND
+                        (
+                          date_end >= GETDATE()
+                          OR
+                          date_end IS NULL
+                        )
+                      ) THEN '1'
+                WHEN  (
+                        valid_flg = '0'
+                        AND
+                        date_begin <= GETDATE()
+                        AND
+                        (
+                          date_end >= GETDATE()
+                          OR
+                          date_end IS NULL
+                        )
+                      ) THEN '2'
+                WHEN  (
+                        date_end < GETDATE()
+                      ) THEN '3'
+              END
+            WHEN '1' THEN recommend_name
+            ELSE '1'
+            END ASC,
+
+          CASE @report_sort_kbn
+            WHEN 2 THEN recommend_name
+            ELSE '1'
+            END DESC,
+
+          CASE @report_sort_kbn
+            WHEN '3' THEN pv_number
+            ELSE '1'
+            END ASC,
+
+          CASE @report_sort_kbn
+            WHEN '5' THEN cv_number
+            ELSE '1'
+            END ASC,
+
+          CASE @report_sort_kbn
+            WHEN '7' THEN cv_rate
+            ELSE '1'
+            END ASC,
+
+          CASE @report_sort_kbn
+            WHEN '4' THEN pv_number
+            ELSE '1'
+            END DESC,
+
+          CASE @report_sort_kbn
+            WHEN '6' THEN cv_number
+            ELSE '1'
+            END DESC,
+
+          CASE @report_sort_kbn
+            WHEN '8' THEN cv_rate
+            ELSE '1'
+            END DESC,
+          recommend_name ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="report_sort_kbn" Type="nvarchar" Size="2"/>
+    </Parameter>
+  </RECOMMEND_REPORT_SEARCH_ORDER_BY>
+</Recommend_Sub>

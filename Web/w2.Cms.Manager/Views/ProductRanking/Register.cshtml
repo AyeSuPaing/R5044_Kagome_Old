@@ -1,0 +1,540 @@
+﻿@*
+=========================================================================================================
+  Module      : 商品ランキング設定編集ページ(Register.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Extensions.Currency
+@using w2.App.Common.Global.Region.Currency
+@using w2.App.Common.Manager
+@using w2.App.Common.Option
+@using w2.Cms.Manager.Codes
+@using w2.Common.Web
+@using w2.Domain.MenuAuthority.Helper
+@{
+	ViewBag.Title = "商品ランキング設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+	var sessionWrapper = new SessionWrapper(this.Session);
+	var textRowsNormal = 5;
+	var textRowsLarge = 20;
+	var categorySearchUrl = SingleSignOnUrlCreator.CreateForMvc(MenuAuthorityHelper.ManagerSiteType.Ec, Constants.PAGE_MANAGER_PRODUCT_CATEGORY_SEARCH);
+	var productSearchUrl = SingleSignOnUrlCreator.CreateForMvc(
+		MenuAuthorityHelper.ManagerSiteType.Ec,
+		new UrlCreator(Constants.PAGE_MANAGER_PRODUCT_SEARCH)
+			.AddParam(Constants.REQUEST_KEY_PRODUCT_SEARCH_KBN, Constants.KBN_PRODUCT_SEARCH_PRODUCT)
+			.AddParam(Constants.REQUEST_KEY_PRODUCT_VALID_FLG, Constants.FLG_PRODUCT_VALID_FLG_VALID)
+			.CreateUrl());
+
+}
+@model w2.Cms.Manager.ViewModels.ProductRanking.RegisterViewModel
+@helper TopButtomControls()
+{
+	<input type="submit" value="  戻る  " name="Back" class="btn btn-main"/>
+	<input type="submit" value="  確認する  " name="ToConfirm" class="btn btn-main"/>
+}
+<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr><td><h1 class="page-title">商品ランキング設定</h1></td></tr>
+	@LayoutHelper.PaddingTr(10)
+	@if (Model.IsActionStatusUpdate)
+	{
+		<tr id="trEdit" runat="server">
+			<td><h2 class="cmn-hed-h2">商品ランキング設定編集</h2></td>
+		</tr>
+	}
+	@if (Model.IsActionStatusInsert)
+	{
+		<tr id="trRegister" runat="server">
+			<td><h2 class="cmn-hed-h2">商品ランキング設定登録</h2></td>
+		</tr>
+	}
+
+	<tr>
+	<td>
+	<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+	<tr>
+	<td>
+	<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+	<tr>
+	<td align="center">
+	<table cellspacing="0" cellpadding="0" border="0">
+	@LayoutHelper.PaddingTr(10)
+	<tr>
+	<td>
+	@using (Html.BeginForm("Register", Constants.CONTROLLER_W2CMS_MANAGER_PRODUCT_RANKING, new
+	{
+		Model.ActionStatus,
+		Model.Input.RankingId,
+	}, FormMethod.Post, new
+	{
+		name = "Register",
+	}))
+	{
+		<div class="action_part_top">
+			@TopButtomControls()
+		</div>
+
+		<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+			<tr>
+				<td class="edit_title_bg" align="center" colspan="2">基本情報</td>
+			</tr>
+			@Html.Hidden("Input.ShopId", Model.Input.ShopId)
+			@if (Model.IsActionStatusUpdate)
+			{
+				<tr id="trRankingIdEdit" runat="server">
+					<td class="edit_title_bg" align="left" width="25%">商品ランキングID<span class="notice">*</span></td>
+					<td class="edit_item_bg" align="left">
+						@Model.Input.RankingId
+						@Html.Hidden("Input.RankingId", Model.Input.RankingId)
+					</td>
+				</tr>
+			}
+			@if (Model.IsActionStatusInsert)
+			{
+				<tr id="trRankingIdRegister" runat="server">
+					<td class="edit_title_bg" align="left" width="25%">商品ランキングID<span class="notice">*</span></td>
+					<td class="edit_item_bg" align="left">
+						@Html.TextBox("Input.RankingId", Model.Input.RankingId, new
+						{
+							maxlength = "10",
+							style = "width: 200px"
+						})
+					</td>
+				</tr>
+			}
+			<tr>
+				<td class="edit_title_bg" align="left">集計タイプ<span class="notice">*</span></td>
+				<td class="edit_item_bg" align="left">
+					@Html.DropDownListFor(model => Model.Input.TotalType, new SelectList(Model.TotalTypes, "Value", "Text", Model.Input.TotalType), "", new
+					{
+						Name = "Input.TotalType"
+					})
+				</td>
+			</tr>
+			<tr>
+				<td class="edit_title_bg" align="left">説明文</td>
+				<td class="edit_item_bg" align="left">
+				@Html.TextBox("Input.Desc1", Model.Input.Desc1, new
+				{
+					maxlength = "60",
+					style = "width: 480px",
+					textmode = "MultiLine",
+					columns = "80",
+					rows = textRowsNormal
+				})
+			</tr>
+			<!-- ▽集計タイプが自動の場合に表示▽ -->
+			<tbody id="tbodyTotalTypeAutoArea">
+			<tr>
+				<td class="edit_title_bg" align="left">カテゴリID指定</td>
+				<td class="edit_item_bg" align="left">
+					@Html.TextBox("Input.CategoryId", Model.Input.CategoryId, new
+					{
+						maxlength = "30",
+						style = "width: 200px"
+					})
+					<br/>
+					<span id="spSearchCategory" runat="server">
+						<input type="button" value="  検索  " onclick="javascript:open_category_list('category');" class="btn btn-main"/>
+					</span>
+				</td>
+			</tr>
+			<tr>
+				<td class="edit_title_bg" align="left">カテゴリID除外指定</td>
+				<td class="edit_item_bg" align="left">
+				<div id="divInputExcludeCategoryIds" runat="server">
+					@Html.TextArea("Input.ExcludeCategoryIds", Model.Input.ExcludeCategoryIds, new
+					{
+						maxlength = "30",
+						style = "width: 480px",
+						rows = "5",
+					})<br/>
+					<div style="margin-top: 5px; margin-right: 10px; float: left;">
+						<a id="sizeUp" href="javascript:sizeUp()" style="display: block">拡大する</a>
+						<a id="sizeDown" href="javascript:sizeDown()" style="display: none">縮小する</a>
+					</div>
+					<br/>
+					<br/>
+					<span id="spSearchCategoryExclusion" runat="server">
+						<input type="button" value="  検索  " onclick="javascript:open_category_list('exclusionCategory');" class="btn btn-main"/>
+					</span>
+				</div>
+				</td>
+			</tr>
+			@if (Constants.PRODUCT_BRAND_ENABLED)
+			{
+				<tr>
+					<td class="detail_title_bg" align="left">ブランド指定</td>
+					<td class="edit_item_bg" align="left">
+						@Html.RadioButton("Input.BrandKbn", Constants.FLG_PRODUCTRANKING_BRAND_KBN_INVALID, (Model.Input.IsBrand == false), new
+						{
+							Id = "valid"
+						})
+						@Html.Label("valid", "しない")<br/>
+						@Html.RadioButton("Input.BrandKbn", Constants.FLG_PRODUCTRANKING_BRAND_KBN_VALID, Model.Input.IsBrand, new
+						{
+							Id = "invalid"
+						})
+						@Html.Label("invalid", "する")&nbsp;&nbsp;&nbsp;&nbsp;
+						ブランドID：
+						@Html.DropDownListFor(m => m.Input.BrandId, new SelectList(Model.Brands, "Value", "Text", Model.Input.BrandId), "", new
+						{
+							Name = "Input.BrandId"
+						})
+					</td>
+				</tr>
+			}
+			<tr>
+				<td class="edit_title_bg" align="left">在庫切れ商品<span class="notice">*</span></td>
+				<td class="edit_item_bg" align="left">
+					@Html.DropDownListFor(m => m.Input.StockKbn, new SelectList(Model.StockKbns, "Value", "Text", Model.Input.StockKbn), "", new
+					{
+						Name = "Input.StockKbn"
+					})
+				</td>
+			</tr>
+			<tr>
+				<td class="edit_title_bg" align="left" width="200">集計期間</td>
+				<td class="edit_item_bg" align="left">
+					<table>
+					<tbody>
+					<tr>
+						<td>
+							@Html.RadioButton("Input.TotalKbn", Constants.FLG_PRODUCTRANKING_TOTAL_KBN_PERIOD, Model.Input.IsTotalKbnPeriod, new
+							{
+								Id = "rbTotalKbn"
+							})
+							@Html.Label("rbTotalKbn", "期間指定")
+						</td>
+						<td class="edit_item_bg" align="left" width="85%">
+							@Html.Partial("_DateTimeInput", Model.Input.TotalFrom)
+							～ <br/>
+							@Html.Partial("_DateTimeInput", Model.Input.TotalTo)
+						</td>
+					</tr>
+					<tr>
+						<td>
+							@Html.RadioButton("Input.TotalKbn", Constants.FLG_PRODUCTRANKING_TOTAL_KBN_DAYS, (Model.Input.IsTotalKbnPeriod == false), new
+							{
+								Id = "rbTotalDays"
+							})
+							@Html.Label("rbTotalDays", "日数指定")
+						</td>
+						<td>
+							@Html.TextBox("Input.TotalDays", Model.Input.TotalDays, new
+							{
+								maxlength = "3",
+								style = "width: 100px"
+							}) 日前～前日まで
+						</td>
+					</tr>
+					</tbody>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td class="edit_title_bg" align="left">有効フラグ</td>
+				<td class="edit_item_bg" align="left">
+				@Html.CheckBox("Input.ValidFlg", Model.Input.IsValid)
+				@Html.Label("Input_ValidFlg", "有効")
+			</tr>
+			</tbody>
+			<!-- △集計タイプが自動の場合に表示△ -->
+		</table>
+		<br/>
+		<table class="edit_table" cellspacing="1" cellpadding="3" width="758" border="0">
+			<tr>
+				<td class="edit_title_bg" align="center" width="35">ランク</td>
+				<td class="edit_title_bg" align="center" width="148">商品ID</td>
+				<td class="edit_title_bg" align="left" width="270">商品名</td>
+				<td class="edit_title_bg" align="right" width="160">商品表示価格（@TaxCalculationUtility.GetTaxTypeText()）<br/>(商品表示特別価格（@TaxCalculationUtility.GetTaxTypeText()）)</td>
+				<td class="edit_title_bg" align="center" width="50">固定<br/>フラグ</td>
+				<td class="edit_title_bg" align="center" width="40"><input type="button" value="  削除  " onclick="deleteItem()" class="btn btn-main"/></td>
+			</tr>
+			@for (var index = 0; index < Model.Input.ProductRankingItems.Length; index++)
+			{
+				<tr>
+					<td class="edit_item_bg" align="center">
+						@(index + 1) 位
+						@Html.HiddenFor(m => m.Input.ProductRankingItems[index].RankingId, new
+						{
+							Name = string.Format("productRankingItems[{0}].RankingId", index)
+						})<br/>
+						@Html.HiddenFor(m => m.Input.ProductRankingItems[index].Rank, new
+						{
+							Name = string.Format("productRankingItems[{0}].Rank", index)
+						})<br/>
+					</td>
+					<td class="edit_item_bg" align="left">
+						@Html.TextBoxFor(m => m.Input.ProductRankingItems[index].ProductId, new
+						{
+							Name = string.Format("productRankingItems[{0}].ProductId", index)
+						})<br/>
+						<input id="inputSearchProduct" type="button" value="商品選択" onclick="javascript:open_product_list('@index');" class="btn btn-main"/>
+					</td>
+					<td class="edit_item_bg" align="left">
+						<p id="@(index)_productRankingItem_Name">@Model.Input.ProductRankingItems[index].Name</p>
+						@Html.HiddenFor(m => m.Input.ProductRankingItems[index].Name, new
+						{
+							Name = string.Format("productRankingItems[{0}].Name", index)
+						})
+					</td>
+					<td class="edit_item_bg" align="right">
+						<p id="@(index)_productRankingItem_DisplayPrice">@Model.Input.ProductRankingItems[index].DisplayPrice.ToPriceString(true)
+						</p>
+						<p id="@(index)_productRankingItem_DisplaySpecialPrice">@((Model.Input.ProductRankingItems[index].DisplaySpecialPrice.ToPriceString(true) != "") ? "(" + Model.Input.ProductRankingItems[index].DisplaySpecialPrice.ToPriceString(true) + ")" : "")
+						</p>
+						@Html.HiddenFor(m => m.Input.ProductRankingItems[index].DisplayPrice, new
+						{
+							Name = string.Format("productRankingItems[{0}].DisplayPrice", index)
+						})
+						@Html.HiddenFor(m => m.Input.ProductRankingItems[index].DisplaySpecialPrice, new
+						{
+							Name = string.Format("productRankingItems[{0}].DisplaySpecialPrice", index)
+						})
+					</td>
+					<td class="edit_item_bg" align="center">
+						@Html.CheckBox(string.Format("productRankingItems[{0}].IsFixation", index), Model.Input.ProductRankingItems[index].IsFixation)
+					</td>
+					<td class="edit_item_bg" align="center">
+						@Html.CheckBox("cbItemDelete_" + index)
+					</td>
+				</tr>
+			}
+		</table>
+		<div class="action_part_bottom">
+			@TopButtomControls()
+		</div>
+	}
+	</td>
+	</tr>
+	@LayoutHelper.PaddingTr(10)
+	<tr>
+		<td>
+			<table class="info_table" cellspacing="1" cellpadding="3" width="758" border="0">
+				<tr class="info_item_bg">
+					<td align="left">備考<br />
+						■商品ランキング基本情報<br />
+						・集計タイプ ・・・商品ランキングの集計タイプを指定<br />
+						・カテゴリ指定 ・・・集計タイプに『自動』を選択したとき、任意の商品カテゴリを絞込んで集計する場合に商品カテゴリIDを指定<br />
+						・在庫切れ商品 ・・・集計タイプに『自動』を選択したとき、在庫が切れている商品も含めて集計するか否かを指定<br />
+						・集計期間 ・・・集計タイプに『自動』を選択したとき、注文日時を絞り込んで集計する場合に期間または日数を指定<br />
+						・有効フラグ ・・・集計タイプに『自動』を選択したとき、毎日の集計対象に含めるか否かを指定<br />
+						<br />
+						※1.集計タイプで『手動』を選択した場合、任意の商品を登録してフロントサイトへ表示します。<br />
+						集計タイプで『自動』を選択した場合、以下情報を加味して集計処理を行います。<br />
+						商品ランキング設定の「カテゴリ指定」、「在庫切れ商品」、「集計期間」と 商品情報の「商品表示区分」、「表示期間」、「有効フラグ」<br />
+						※2.商品カテゴリIDは指定したカテゴリID配下に属する全ての商品を対象に絞り込みます。<br />
+						※3.在庫切れ商品で『含めない』を選択した場合、商品情報の「在庫管理方法」、在庫情報の「論理在庫」から判断します。<br />
+						(例1) 在庫管理方法で『在庫管理しない』『在庫０以下の場合でも表示する。購入可能』を選択した場合、在庫が無くても表示対象になります<br />
+						(例2) 在庫管理方法で『在庫０以下の場合でも表示する。購入不可』を選択した場合、在庫が無いとき表示対象になりません<br />
+						また、バリエーション情報を管理する場合、各商品バリエーション何れか1つでも在庫があれば表示対象になります。<br />
+						※4.集計期間で『日数指定』を選択した場合、集計処理日のｎ日前～前日の注文情報を対象に絞込みます。<br />
+						また、集計処理日当日分の注文情報は含みません。<br />
+						(例1) 入力値が1の場合：集計処理日の前日の注文情報が対象になります<br />
+						(例2) 入力値が2の場合：集計処理日の前日～前々日の注文情報が対象になります<br />
+						※5.有効フラグはランキング情報を表示するか否かではなく、毎日の集計対象に含めるか否かの設定です。<br />
+						※6.固定フラグが有効になっている商品は、自動集計後もランキング位置は固定となります。<br />
+						集計処理結果と固定フラグを有効にした商品が重複する場合は固定フラグを設定した商品を優先して表示します。<br />
+						また、固定フラグが有効であっても上位ランクに商品が無い場合は、フロントサイトで表示する際にランキングを繰り上げて表示します。<br />
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	@LayoutHelper.PaddingTr(10)
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	</table>
+	</td>
+	</tr>
+	<!--△ 詳細 △-->
+	@LayoutHelper.PaddingTr(10)
+</table>
+
+@section JavaScript
+{
+	<script>
+		// 集計区分の変更時処理
+		$('#Input_TotalType').change(typeDisplay);
+
+		// 初期表示処理
+		$(document).ready(function() {
+			typeDisplay();
+			setProductDisplays();
+		});
+
+		// 拡大
+		function sizeUp() {
+			document.getElementById('Input_ExcludeCategoryIds').rows = @textRowsLarge;
+			$('#sizeUp').css("display", "none");
+			$('#sizeDown').css("display", "block");
+		}
+
+		// 縮小
+		function sizeDown() {
+			document.getElementById('Input_ExcludeCategoryIds').rows = @textRowsNormal;
+			$('#sizeUp').css("display", "block");
+			$('#sizeDown').css("display", "none");
+		}
+
+		// 集計区分による画面描画変更
+		function typeDisplay() {
+			var totalType = $('#Input_TotalType').val();
+			if (totalType == '@(Constants.FLG_PRODUCTRANKING_TOTAL_TYPE_MANUAL)') {
+				$('#tbodyTotalTypeAutoArea').css("display", "none");
+			} else {
+				$('#tbodyTotalTypeAutoArea').removeAttr('style');
+			}
+		}
+
+		// 金額表示制御
+		function priceDisplay(index) {
+			if (document.getElementById('Input_ProductRankingItems_' + index + '__Name').value == "") {
+				$('#' + index + '_productRankingItem_DisplayPrice').css("display", "none");
+				$('#' + index + '_productRankingItem_DisplaySpecialPrice').css("display", "none");
+			} else {
+				$('#' + index + '_productRankingItem_DisplayPrice').css("display", "block");
+			}
+
+			var displaySecialPrice =
+				document.getElementById('Input_ProductRankingItems_' + index + '__DisplaySpecialPrice').value;
+			if ((displaySecialPrice != null) && (displaySecialPrice != "")) {
+				$('#' + index + '_productRankingItem_DisplaySpecialPrice').css("display", "block");
+			} else {
+				$('#' + index + '_productRankingItem_DisplaySpecialPrice').css("display", "none");
+			}
+		}
+
+		// 画面の描画を整える
+		function setProductDisplays() {
+			for (var index = 0; index < @(Model.Input.ProductRankingItems.Length); index++) {
+				priceDisplay(index);
+				setProductDisplay(index);
+			}
+		}
+
+		// 削除処理
+		function deleteItem() {
+			for (var index = 0; index < @(Model.Input.ProductRankingItems.Length); index++) {
+				if ($('#cbItemDelete_' + index).prop('checked') == false) continue;
+
+				document.getElementById('Input_ProductRankingItems_' + index + '__ProductId').value = "";
+				$('#cbItemDelete_' + index).prop('checked', false);
+
+				document.getElementById(index + '_productRankingItem_Name').innerHTML = "";
+				document.getElementById(index + '_productRankingItem_DisplayPrice').innerHTML = "";
+				document.getElementById(index + '_productRankingItem_DisplaySpecialPrice').innerHTML = "";
+
+				document.getElementById('Input_ProductRankingItems_' + index + '__ProductId').value = "";
+				document.getElementById('Input_ProductRankingItems_' + index + '__Name').value = "";
+				document.getElementById('Input_ProductRankingItems_' + index + '__DisplayPrice').value = 0;
+				document.getElementById('Input_ProductRankingItems_' + index + '__DisplaySpecialPrice').value = "";
+			}
+			setProductDisplays();
+		}
+
+		// 選択商品
+		var selected_product_index = 0;
+
+		// 商品一覧画面表示
+		function open_product_list(index) {
+			// 選択商品を格納
+			selected_product_index = index;
+
+			// ウィンドウ表示
+			open_window('@Html.Raw(productSearchUrl)',
+				'product_search',
+				'width=850,height=700,top=120,left=420,status=NO,scrollbars=yes');
+		}
+
+		// 選択カテゴリ
+		var selected_category = "";
+
+		// カテゴリ一覧画面表示
+		function open_category_list(specified_type) {
+			// 選択カテゴリを格納
+			selected_category = specified_type;
+
+			// ウィンドウ表示
+			open_window('@Html.Raw(categorySearchUrl)',
+				'product_search',
+				'width=850,height=700,top=120,left=420,status=NO,scrollbars=yes');
+		}
+
+		// カテゴリ一覧で選択されたカテゴリを設定
+		function set_categoryinfo(category_id, name) {
+			if (selected_category == "category") {
+				document.getElementById('Input_CategoryId').value = category_id;
+			} else {
+				// カテゴリ除外一覧で選択されたカテゴリを設定
+				var excludeCategoryIdsValue = document.getElementById('Input_ExcludeCategoryIds').value;
+				if (excludeCategoryIdsValue != null && excludeCategoryIdsValue != "") {
+					excludeCategoryIdsValue += "\r\n" + category_id;
+				} else {
+					excludeCategoryIdsValue = category_id;
+				}
+				document.getElementById('Input_ExcludeCategoryIds').value = excludeCategoryIdsValue;
+			}
+		}
+
+		// 商品一覧で選択された商品情報を設定
+		function set_productinfo(product_id,
+			supplier_id,
+			v_id,
+			product_name,
+			display_price,
+			display_special_price,
+			product_price,
+			sale_id,
+			fixed_purchase_id,
+			limitedfixedpurchasekbn1setting,
+			limitedfixedpurchasekbn3setting,
+			tax_rate) {
+
+			document.getElementById('Input_ProductRankingItems_' + selected_product_index + '__ProductId').value =
+				product_id;
+			document.getElementById('Input_ProductRankingItems_' + selected_product_index + '__Name').value =
+				product_name;
+			document.getElementById('Input_ProductRankingItems_' + selected_product_index + '__DisplayPrice').value =
+				display_price;
+			document.getElementById('Input_ProductRankingItems_' + selected_product_index + '__DisplaySpecialPrice')
+				.value = display_special_price;
+			setProductDisplay(selected_product_index);
+			priceDisplay(selected_product_index);
+		}
+
+		// 商品の情報を追加
+		function setProductDisplay(index) {
+			var displaySpecialPrice = $('#Input_ProductRankingItems_' + index + '__DisplaySpecialPrice').val();
+			if ((displaySpecialPrice != null) && (displaySpecialPrice != "")) {
+				document.getElementById(index + '_productRankingItem_DisplaySpecialPrice').innerHTML =
+					"(" + formatter.format(displaySpecialPrice) + ")";
+			}
+
+			document.getElementById(index + '_productRankingItem_Name').innerHTML =
+				$('#Input_ProductRankingItems_' + index + '__Name').val();
+			document.getElementById(index + '_productRankingItem_DisplayPrice').innerHTML =
+				formatter.format($('#Input_ProductRankingItems_' + index + '__DisplayPrice').val());
+		}
+
+		// 基軸通貨桁数
+		var digits = '@CurrencyManager.DigitsByKeyCurrency';
+		// 基軸通貨フォーマット
+		var formatter = new Intl.NumberFormat('@Constants.GLOBAL_CONFIGS.GlobalSettings.KeyCurrency.LocaleId',
+			{
+				style: 'currency',
+				minimumFractionDigits: digits,
+				maximumFractionDigits: digits,
+				currencyDisplay: 'symbol',
+				currency: '@Constants.GLOBAL_CONFIGS.GlobalSettings.KeyCurrency.Code'
+			});
+
+		// エンターキーによるsubmit禁止
+		prohibit_submission();
+	</script>
+}

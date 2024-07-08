@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+	<Up>
+		<Statement>
+			<![CDATA[
+			  -- w2_UserPointHistoryのカラム追加
+			  IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'w2_UserPointHistory' AND COLUMN_NAME = 'history_group_no')
+			  BEGIN
+				ALTER TABLE w2_UserPointHistory ADD history_group_no INT
+			  END
+			  GO
+
+			  IF EXISTS (SELECT * FROM w2_UserPointHistory WHERE history_group_no IS NULL)
+			  BEGIN
+				UPDATE  w2_UserPointHistory
+				   SET  history_group_no = w2_UserPointHistory.history_no
+
+				ALTER TABLE w2_UserPointHistory ALTER COLUMN history_group_no INT NOT NULL
+			  END
+			  GO
+
+			  -- w2_UserPointの主キー変更
+			  IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME = 'w2_UserPoint' AND COLUMN_NAME = 'point_kbn')
+			  BEGIN
+				ALTER TABLE w2_UserPoint DROP CONSTRAINT PK_w2_UserPoint
+				ALTER TABLE w2_UserPoint ADD CONSTRAINT PK_w2_UserPoint PRIMARY KEY CLUSTERED (user_id, point_kbn_no)
+			  END
+
+			  -- w2_WorkUserPointの主キー変更
+			  IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME = 'w2_WorkUserPoint' AND COLUMN_NAME = 'point_kbn')
+			  BEGIN
+				ALTER TABLE w2_WorkUserPoint DROP CONSTRAINT PK_w2_WorkUserPoint
+				ALTER TABLE w2_WorkUserPoint ADD CONSTRAINT PK_w2_WorkUserPoint PRIMARY KEY CLUSTERED (user_id, point_kbn_no);
+			  END
+			]]>
+		</Statement>
+	</Up>
+</Migration>

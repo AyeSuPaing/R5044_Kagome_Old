@@ -1,0 +1,170 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品価格系SQLステートメントXML(ProductPrice.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductPrice>
+
+  <!-- 会員ランク価格をバリエーション分すべて取得 -->
+  <GetMemberRankPricesAll>
+    <Statement>
+      <![CDATA[
+        SELECT  @shop_id AS shop_id,
+                @product_id AS product_id,
+                w2_ProductPrice.variation_id,
+                w2_ProductPrice.member_rank_price,
+                w2_MemberRank.member_rank_id,
+                w2_MemberRank.member_rank_name
+          FROM  w2_MemberRank
+                LEFT JOIN w2_ProductPrice ON
+                (
+                  w2_MemberRank.member_rank_id = w2_ProductPrice.member_rank_id
+                  AND
+                  w2_ProductPrice.shop_id = @shop_id
+                  AND
+                  w2_ProductPrice.product_id = @product_id
+                )
+         WHERE  w2_MemberRank.valid_flg = 'ON'
+        ORDER BY w2_MemberRank.member_rank_order
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMemberRankPricesAll>
+
+  <!-- 商品価格インサート -->
+  <InsertProductPrice>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_ProductPrice
+                (
+                  w2_ProductPrice.shop_id, 
+                  w2_ProductPrice.product_id, 
+                  w2_ProductPrice.variation_id, 
+                  w2_ProductPrice.member_rank_id, 
+                  w2_ProductPrice.member_rank_price, 
+                  w2_ProductPrice.date_created, 
+                  w2_ProductPrice.date_changed, 
+                  w2_ProductPrice.last_changed
+                ) 
+        VALUES  (
+                  @shop_id, 
+                  @product_id, 
+                  @variation_id, 
+                  @member_rank_id, 
+                  @member_rank_price, 
+                  getdate(),
+                  getdate(), 
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_price" Type="decimal" Size="18,3" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertProductPrice>
+
+  <!-- 商品価格アップデート -->
+  <InsertUpdateProductPrice>
+    <Statement>
+      <![CDATA[
+        DECLARE @count int
+        SELECT  @count = COUNT(member_rank_id)
+          FROM  w2_ProductPrice
+         WHERE  w2_ProductPrice.shop_id = @shop_id
+           AND  w2_ProductPrice.product_id = @product_id
+           AND  w2_ProductPrice.variation_id = @variation_id
+           AND  w2_ProductPrice.member_rank_id = @member_rank_id
+      
+        IF @count = 0 
+        BEGIN
+          INSERT  w2_ProductPrice
+                  (
+                    w2_ProductPrice.shop_id, 
+                    w2_ProductPrice.product_id, 
+                    w2_ProductPrice.variation_id, 
+                    w2_ProductPrice.member_rank_id, 
+                    w2_ProductPrice.member_rank_price, 
+                    w2_ProductPrice.last_changed
+                  )
+          VALUES  (
+                    @shop_id,
+                    @product_id,
+                    @variation_id,
+                    @member_rank_id,
+                    @member_rank_price,
+                    @last_changed
+                  )
+        END
+        ELSE
+        BEGIN
+          UPDATE  w2_ProductPrice 
+             SET  w2_ProductPrice.shop_id = @shop_id, 
+                  w2_ProductPrice.product_id = @product_id, 
+                  w2_ProductPrice.variation_id = @variation_id, 
+                  w2_ProductPrice.member_rank_id = @member_rank_id, 
+                  w2_ProductPrice.member_rank_price = @member_rank_price, 
+                  w2_ProductPrice.date_changed = getdate(), 
+                  w2_ProductPrice.last_changed = @last_changed
+           WHERE  w2_ProductPrice.shop_id = @shop_id
+             AND  w2_ProductPrice.product_id = @product_id
+             AND  w2_ProductPrice.variation_id = @variation_id
+             AND  w2_ProductPrice.member_rank_id = @member_rank_id
+        END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_price" Type="decimal" Size="18,3" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertUpdateProductPrice>
+
+  <!-- 商品価格削除 -->
+  <DeleteProductPriceByMemberRank>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductPrice 
+         WHERE  w2_ProductPrice.shop_id = @shop_id 
+           AND  w2_ProductPrice.product_id = @product_id
+           AND  w2_ProductPrice.variation_id = @variation_id
+           AND  w2_ProductPrice.member_rank_id = @member_rank_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+      <Input Name="variation_id" Type="nvarchar" Size="60" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductPriceByMemberRank>
+  
+  <!-- 商品価格削除（商品単位） -->
+  <DeleteProductPrice>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_ProductPrice 
+         WHERE  w2_ProductPrice.shop_id = @shop_id 
+           AND  w2_ProductPrice.product_id = @product_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="product_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductPrice>
+
+</ProductPrice>

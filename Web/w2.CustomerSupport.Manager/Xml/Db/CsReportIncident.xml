@@ -1,0 +1,426 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : インシデント集計SQLステートメントXML(CsReportIncident.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsReportIncident>
+  
+  <!-- ステータス毎の現在の件数取得 -->
+  <GetStatusCount>
+    <Statement>
+      <![CDATA[
+        SELECT  (
+                  SELECT  COUNT(1)
+                    FROM  w2_CsIncident
+                   WHERE  w2_CsIncident.dept_id = @dept_id
+                     AND  w2_CsIncident.status = 'NONE'
+                     AND  w2_CsIncident.valid_flg = '1'
+                ) AS NONE,
+                (
+                  SELECT  COUNT(1)
+                    FROM  w2_CsIncident
+                   WHERE  w2_CsIncident.dept_id = @dept_id
+                     AND  w2_CsIncident.status = 'ACTIVE'
+                     AND  w2_CsIncident.valid_flg = '1'
+                ) AS ACTIVE,
+                (
+                  SELECT  COUNT(1)
+                    FROM  w2_CsIncident
+                   WHERE  w2_CsIncident.dept_id = @dept_id
+                     AND  w2_CsIncident.status = 'SUSPEND'
+                     AND  w2_CsIncident.valid_flg = '1'
+                ) AS SUSPEND,
+                (
+                  SELECT  COUNT(1)
+                    FROM  w2_CsIncident
+                   WHERE  w2_CsIncident.dept_id = @dept_id
+                     AND  w2_CsIncident.status = 'URGENT'
+                     AND  w2_CsIncident.valid_flg = '1'
+                ) AS URGENT
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetStatusCount>
+
+  <!-- 期間内のアクション件数取得 -->
+  <GetActionCountByTerm>
+    <Statement>
+      <![CDATA[
+        SELECT  (
+                  SELECT  COUNT(1)
+                    FROM  w2_CsIncident
+                   WHERE  w2_CsIncident.dept_id = @dept_id
+                     AND  w2_CsIncident.date_created BETWEEN @begin AND @end
+                     AND  w2_CsIncident.valid_flg = '1'
+                ) AS Occurred,
+                (
+                  SELECT  COUNT(1)
+                    FROM  w2_CsIncident
+                   WHERE  w2_CsIncident.dept_id = @dept_id
+                     AND  w2_CsIncident.status = 'COMPLETE'
+                     AND  w2_CsIncident.date_completed BETWEEN @begin AND @end
+                     AND  w2_CsIncident.valid_flg = '1'
+                ) AS Completed
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="begin" Type="datetime" />
+      <Input Name="end" Type="datetime" />
+    </Parameter>
+  </GetActionCountByTerm>
+  
+  <!-- グループ毎レポート取得 -->
+  <GetGroupReport>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(incident_count.cs_group_id, '') AS [Id],
+                ISNULL(w2_CsGroup.cs_group_name, '') AS [Name],
+                ISNULL(incident_count.Count, 0) AS [Count],
+                ISNULL(w2_CsGroup.valid_flg, CASE WHEN incident_count.cs_group_id = '' THEN '1' ELSE '0' END) AS [valid_flg],
+                ISNULL(incident_count.cs_group_id, '') AS [TargetId]
+          FROM  (
+                  SELECT  w2_CsIncident.dept_id,
+                          w2_CsIncident.cs_group_id,
+                          COUNT(1) AS [Count]
+                    FROM  w2_CsIncident
+                   WHERE  [[ IncidentReport_Wehre ]]
+                  GROUP BY w2_CsIncident.dept_id, w2_CsIncident.cs_group_id
+                ) incident_count
+                FULL OUTER JOIN w2_CsGroup
+                ON
+                (
+                  incident_count.dept_id = w2_CsGroup.dept_id
+                  AND
+                  incident_count.cs_group_id = w2_CsGroup.cs_group_id
+                )
+        ORDER BY ISNULL(w2_CsGroup.display_order, '999999'), [Id]
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetGroupReport>
+
+  <!-- オペレータ毎レポート取得 -->
+  <GetOperatorReport>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(incident_count.operator_id, '') AS [Id],
+                ISNULL(operator.name, '') AS [Name],
+                ISNULL(incident_count.Count, 0)AS [Count],
+                ISNULL(operator.valid_flg, CASE WHEN incident_count.operator_id = '' THEN '1' ELSE '0' END) AS [valid_flg],
+                ISNULL(incident_count.operator_id, '') AS [TargetId]
+          FROM  (
+                  SELECT  w2_CsIncident.dept_id,
+                          w2_CsIncident.operator_id,
+                          COUNT(1) AS [Count]
+                    FROM  w2_CsIncident
+                   WHERE  [[ IncidentReport_Wehre ]]
+                  GROUP BY w2_CsIncident.dept_id, w2_CsIncident.operator_id
+                ) incident_count
+                FULL OUTER JOIN
+                ( 
+                  SELECT  w2_CsOperator.dept_id,
+                          w2_ShopOperator.operator_id,
+                          w2_ShopOperator.name,
+                          w2_ShopOperator.valid_flg,
+                          w2_CsOperator.display_order
+                    FROM  w2_ShopOperator
+                          INNER JOIN w2_CsOperator ON
+                          (
+                            w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                            AND
+                            w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                          )
+                ) operator ON
+                (
+                  incident_count.dept_id = operator.dept_id
+                  AND
+                  incident_count.operator_id = operator.operator_id
+                )
+                LEFT JOIN w2_ShopOperator ON
+                (
+                  operator.dept_id = w2_ShopOperator.shop_id
+                  AND
+                  operator.operator_id = w2_ShopOperator.operator_id
+                )
+        ORDER BY ISNULL(operator.display_order, '999999'), operator.operator_id
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetOperatorReport>
+  
+  <!-- グループ - オペレータ 毎レポート取得 -->
+  <GetGroupOperatorReport>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(incident_count.operator_id, '') AS [Id],
+                ISNULL(incident_count.cs_group_id, '') AS [Id2],
+                ISNULL(operator.name, '') AS [Name],
+                ISNULL(w2_CsGroup.cs_group_name, '') AS [Name2],
+                ISNULL(incident_count.Count, 0) AS [Count],
+                ISNULL(operator.valid_flg, CASE WHEN incident_count.operator_id = '' THEN '1' ELSE '0' END) AS [valid_flg],
+                ISNULL(w2_CsGroup.valid_flg, CASE WHEN incident_count.cs_group_id = '' THEN '1' ELSE '0' END) AS [valid_flg2]
+          FROM  (
+                  SELECT  w2_CsIncident.dept_id,
+                          w2_CsIncident.cs_group_id,
+                          w2_CsIncident.operator_id,
+                          COUNT(1) AS [Count]
+                    FROM  w2_CsIncident
+                   WHERE  [[ IncidentReport_Wehre ]]
+                  GROUP BY w2_CsIncident.dept_id, w2_CsIncident.cs_group_id, w2_CsIncident.operator_id
+                ) incident_count
+                LEFT JOIN w2_CsGroup ON
+                (
+                  incident_count.dept_id = w2_CsGroup.dept_id
+                  AND
+                  incident_count.cs_group_id = w2_CsGroup.cs_group_id
+                )
+                LEFT JOIN
+                ( 
+                  SELECT  w2_CsOperator.dept_id,
+                          w2_ShopOperator.operator_id,
+                          w2_ShopOperator.name,
+                          w2_CsOperator.display_order,
+                          w2_ShopOperator.valid_flg
+                    FROM  w2_ShopOperator
+                          LEFT JOIN w2_CsOperator ON
+                          (
+                            w2_CsOperator.dept_id = w2_ShopOperator.shop_id
+                            AND
+                            w2_CsOperator.operator_id = w2_ShopOperator.operator_id
+                          )
+                ) operator ON
+                (
+                  operator.dept_id = incident_count.dept_id
+                  AND
+                  operator.operator_id = incident_count.operator_id
+                )
+        ORDER BY ISNULL(w2_CsGroup.display_order, '999999'), [Id]
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetGroupOperatorReport>
+
+  <!-- カテゴリ毎レポート取得 -->
+  <GetCategoryReport>
+    <Statement>
+      <![CDATA[
+        WITH  categories
+          AS  (
+                SELECT  cat1.dept_id,
+                        cat1.category_id,
+                        cast(0 as int) as rank_no,
+                        cast(RIGHT('00' + CONVERT(nvarchar, cat1.display_order), 3) + cat1.category_id as varchar(60)) as ranked_display_order,
+                        cast(cat1.valid_flg as nvarchar(10)) as ranked_valid_flg
+                  FROM  w2_CsIncidentCategory as cat1
+                 WHERE  cat1.parent_category_id = ''
+              UNION ALL
+                SELECT  cat2.dept_id,
+                        cat2.category_id,
+                        categories.rank_no + 1,
+                        cast(categories.ranked_display_order + RIGHT('00' + CONVERT(nvarchar, cat2.display_order), 3) + cat2.category_id as  varchar(60)),
+                        CASE ranked_valid_flg WHEN '1' THEN cast(cat2.valid_flg as nvarchar(10)) ELSE '0' END
+                  FROM  w2_CsIncidentCategory cat2
+                        INNER JOIN categories ON
+                        (
+                          categories.category_id = cat2.parent_category_id
+                        )
+              )
+              
+        SELECT  RIGHT('　　　　　　　　　　' + ISNULL(w2_CsIncidentCategory.category_name, ''), LEN(ISNULL(w2_CsIncidentCategory.category_name, '')) + categories.rank_no) AS [Name],
+                ISNULL(incident_count.Count, 0)AS [Count],
+                ISNULL(w2_CsIncidentCategory.valid_flg, CASE WHEN incident_count.incident_category_id = '' THEN '1' ELSE '0' END) AS [valid_flg],
+                ISNULL(categories.rank_no, 0) AS rank_no,
+                categories.ranked_valid_flg
+          FROM  (
+                  SELECT  w2_CsIncident.dept_id,
+                          w2_CsIncident.incident_category_id,
+                          COUNT(1) AS [Count]
+                    FROM  w2_CsIncident
+                   WHERE  [[ IncidentReport_Wehre ]]
+                  GROUP BY w2_CsIncident.dept_id, w2_CsIncident.incident_category_id
+                ) incident_count
+                FULL OUTER JOIN w2_CsIncidentCategory
+                ON
+                (
+                  incident_count.dept_id = w2_CsIncidentCategory.dept_id
+                  AND
+                  incident_count.incident_category_id = w2_CsIncidentCategory.category_id
+                )
+                LEFT JOIN categories ON
+                (
+                  categories.dept_id = w2_CsIncidentCategory.dept_id
+                  AND
+                  categories.category_id = w2_CsIncidentCategory.category_id
+                )
+        ORDER BY ISNULL(categories.ranked_display_order, '999999')
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetCategoryReport>
+
+  <!-- VOC毎レポート取得 -->
+  <GetVocReport>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(w2_CsIncidentVoc.voc_text, '') AS [Name],
+                ISNULL(incident_count.Count, 0) AS [Count],
+                ISNULL(w2_CsIncidentVoc.valid_flg, CASE WHEN incident_count.voc_id = '' THEN '1' ELSE '0' END) AS [valid_flg]
+          FROM  (
+                  SELECT  w2_CsIncident.dept_id,
+                          w2_CsIncident.voc_id,
+                          COUNT(1) AS [Count]
+                    FROM  w2_CsIncident
+                   WHERE  [[ IncidentReport_Wehre ]]
+                  GROUP BY w2_CsIncident.dept_id, w2_CsIncident.voc_id
+                ) incident_count
+                FULL OUTER JOIN w2_CsIncidentVoc
+                ON
+                (
+                  incident_count.dept_id = w2_CsIncidentVoc.dept_id
+                  AND
+                  incident_count.voc_id = w2_CsIncidentVoc.voc_id
+                )
+        ORDER BY ISNULL(w2_CsIncidentVoc.display_order, '999999')
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetVocReport>
+
+  <!-- 集計区分毎レポート取得 -->
+  <GetSummaryKbnReport>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(w2_CsSummarySettingItem.summary_setting_item_text, incident_count.value) AS [Name],
+                ISNULL(incident_count.Count, 0) AS [Count],
+                1  AS [valid_flg]
+          FROM  (
+                  SELECT  w2_CsIncidentSummaryValue.dept_id,
+                          w2_CsIncidentSummaryValue.summary_no,
+                          w2_CsIncidentSummaryValue.value,
+                          COUNT(1) AS [Count]
+                    FROM  w2_CsIncident
+                          INNER JOIN w2_CsIncidentSummaryValue ON
+                          (
+                            w2_CsIncident.dept_id = w2_CsIncidentSummaryValue.dept_id
+                            AND
+                            w2_CsIncident.incident_id = w2_CsIncidentSummaryValue.incident_id
+                          )
+                   WHERE  w2_CsIncidentSummaryValue.summary_no = @summary_no
+                     AND  ([[ IncidentReport_Wehre ]])
+                  GROUP BY w2_CsIncidentSummaryValue.dept_id, w2_CsIncidentSummaryValue.summary_no, w2_CsIncidentSummaryValue.value
+                ) incident_count
+                FULL OUTER JOIN w2_CsSummarySettingItem ON
+                (
+                  incident_count.dept_id = w2_CsSummarySettingItem.dept_id
+                  AND
+                  incident_count.summary_no = w2_CsSummarySettingItem.summary_setting_no
+                  AND
+                  incident_count.value = w2_CsSummarySettingItem.summary_setting_item_id
+                )
+         WHERE  incident_count.summary_no = @summary_no
+        ORDER BY ISNULL(w2_CsSummarySettingItem.display_order, '999999')
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="summary_no" Type="int" />
+    </Parameter>
+  </GetSummaryKbnReport>
+
+  <!-- 月毎レポート取得 -->
+  <GetMonthReport>
+    <Statement>
+      <![CDATA[
+        SELECT  DatePart(month, [[ IncidentReport_TargetDate ]]) AS [Month],
+                COUNT(1) AS [Count],
+                1 AS [valid_flg]
+          FROM  w2_CsIncident
+         WHERE  [[ IncidentReport_Wehre ]]
+        GROUP BY w2_CsIncident.dept_id, DatePart(month, [[ IncidentReport_TargetDate ]])
+        ORDER BY DatePart(month, [[ IncidentReport_TargetDate ]])
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetMonthReport>
+
+  <!-- 月-日毎レポート取得 -->
+  <GetMonthDayReport>
+    <Statement>
+      <![CDATA[
+        SELECT  Convert(NVARCHAR, [[ IncidentReport_TargetDate ]], 111) AS [MonthDay],
+                COUNT(1) AS [Count],
+                1 AS [valid_flg]
+          FROM  w2_CsIncident
+         WHERE  [[ IncidentReport_Wehre ]]
+        GROUP BY w2_CsIncident.dept_id, Convert(NVARCHAR, [[ IncidentReport_TargetDate ]], 111)
+        ORDER BY [MonthDay]
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetMonthDayReport>
+
+  <!-- 曜日毎レポート取得 -->
+  <GetWeekdayReport>
+    <Statement>
+      <![CDATA[
+        SELECT  DatePart(weekday, [[ IncidentReport_TargetDate ]]) - 1 AS [Weekday],  -- 曜日はC#にあわせる
+                COUNT(1) AS [Count],
+                1 AS [valid_flg]
+          FROM  w2_CsIncident
+         WHERE  [[ IncidentReport_Wehre ]]
+        GROUP BY w2_CsIncident.dept_id, DatePart(weekday, [[ IncidentReport_TargetDate ]])
+        ORDER BY DatePart(weekday, [[ IncidentReport_TargetDate ]])
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetWeekdayReport>
+
+  <!-- 時間帯毎レポート取得 -->
+  <GetTimeReport>
+    <Statement>
+      <![CDATA[
+        SELECT  DatePart(hour, [[ IncidentReport_TargetDate ]]) AS [Hour],
+                COUNT(1) AS [Count],
+                1 AS [valid_flg]
+          FROM  w2_CsIncident
+         WHERE  [[ IncidentReport_Wehre ]]
+        GROUP BY w2_CsIncident.dept_id, DatePart(hour, [[ IncidentReport_TargetDate ]])
+        ORDER BY DatePart(hour, [[ IncidentReport_TargetDate ]])
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetTimeReport>
+
+  <!-- 曜日-時間帯毎レポート取得 -->
+  <GetWeekdayTimeReport>
+    <Statement>
+      <![CDATA[
+        SELECT  DatePart(weekday, [[ IncidentReport_TargetDate ]]) - 1 AS [Weekday],  -- 曜日はC#にあわせる
+                DatePart(hour, [[ IncidentReport_TargetDate ]]) AS [Hour],
+                COUNT(1) AS [Count],
+                1 AS [valid_flg]
+          FROM  w2_CsIncident
+         WHERE  [[ IncidentReport_Wehre ]]
+        GROUP BY w2_CsIncident.dept_id, DatePart(weekday, [[ IncidentReport_TargetDate ]]), DatePart(hour, [[ IncidentReport_TargetDate ]])
+        ORDER BY DatePart(weekday, [[ IncidentReport_TargetDate ]]), DatePart(hour, [[ IncidentReport_TargetDate ]])
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetWeekdayTimeReport>
+
+</CsReportIncident>

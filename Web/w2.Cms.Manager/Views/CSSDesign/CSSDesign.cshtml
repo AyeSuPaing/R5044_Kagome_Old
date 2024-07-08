@@ -1,0 +1,555 @@
+﻿@*
+=========================================================================================================
+  Module      : CSSデザインページ(CSSDesign.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using System.Web.UI.WebControls
+@using w2.App.Common.Util
+@using w2.Cms.Manager.Codes
+
+@model w2.Cms.Manager.ViewModels.ProgramFileDesignSetting.ProgramFileDesignSettingViewModel
+@{
+	ViewBag.Title = "CSSデザイン設定";
+	Layout = Constants.LAYOUT_PATH_DEFAULT;
+}
+@section Style
+{
+	<style>
+		#tree_view {
+			height: 50vh;
+			width: 57vw;
+		}
+		.contents_manager_scrollbar {
+			height: 50vh;
+			width: 55vw;
+		}
+	</style>
+}
+
+	<table cellspacing="0" cellpadding="0" width="791" border="0">
+	<tr>
+		<td><h1 class="page-title">CSSデザイン設定</h1></td>
+	</tr>
+	<tr>
+		@LayoutHelper.PaddingTr(10)
+	</tr>
+	<!--▽ CSSツリー ▽-->
+	<tr>
+		<td>
+			<table class="box_border" cellspacing="1" cellpadding="3" width="784" border="0">
+				<tr>
+					<td>
+						<table class="list_box_bg" cellspacing="0" cellpadding="0" border="0" width="100%">
+							<tr>
+								<td align="center" style="width: 782px">
+									<table cellspacing="0" cellpadding="0" border="0">
+										<tr>
+											@LayoutHelper.PaddingTr(10)
+										</tr>
+										<tr>
+											<td>
+												<table class="info_table" width="758" border="0" cellspacing="1" cellpadding="3">
+													<tr>
+														<td class="info_item_bg">
+															<table class="list_title_bg" width="750px">
+																<tr>
+																	<td class="search_item_bg" style="vertical-align: top;">
+																		@using (Ajax.BeginForm("Click", Constants.CONTROLLER_W2CMS_MANAGER_CSS_DESIGN, new AjaxOptions
+																		{
+																			HttpMethod = "POST",
+																			UpdateTargetId = "tree_view",
+																			OnSuccess = "updateTargetPath();"
+																		}, new
+																		{
+																			Name = "treeView",
+																			@class = "tree_table contents_manager_scrollbar"
+																		}))
+																		{
+																			<div id="tree_view">
+																				@Html.Partial("_DesignSettingTreeView", Model.Root)
+																			</div>
+																			@Html.Hidden("openDirPathList")
+																			@Html.Hidden("clickPath")
+																			@Html.Hidden("clickDir", "false")
+																			<input type="submit" value="" style="display: none;"/>
+																		}
+																	</td>
+																	<td class="search_item_bg" align="left" style="vertical-align:top; width:375px;">
+																		<table class="list_table" cellspacing="1" cellpadding="3" width="100%" border="0">
+																			<tr>
+																				<td class="detail_title_bg" style="width:60px">
+																					編集<br />サイト
+																				</td>
+																				<td class="edit_item_bg">
+																					<label><input type="radio" name="Type" value=@Constants.PATH_ROOT_FRONT_PC id="PC">PCサイト</label>
+																					@foreach (var spss in SmartPhoneUtility.SmartPhoneSiteSettings)
+																					{
+																						var li = new ListItem(spss.Name, Path.Combine(Constants.PATH_ROOT_FRONT_PC + spss.RootPath.Replace("~/", "")));
+																						if (li.Enabled)
+																						{
+																							<br><label><input type="radio" name="Type" value=@li.Value>@li.Text</label>
+																						}
+																					}
+																				</td>
+																			</tr>
+																			<tr class="list_title_bg">
+																				<td class="detail_title_bg">
+																					対象
+																				</td>
+																				<td id = "targetPath" class="edit_item_bg" style="word-break:break-all;width:345px">
+																				</td>
+																			</tr>
+																			<tr>
+																				<td class="edit_item_bg" colspan="2">
+																					<div>
+																						<input type="button" class="btn btn-sub" value="  ファイル作成  " onclick="if (confirm('編集中の内容がクリアされます。よろしいですか？')) makeCssFile();" />
+																						<input type="button" class="btn btn-sub" value="  フォルダ作成  " onclick="if (confirm('編集中の内容がクリアされます。よろしいですか？')) makeDirectory();" />
+																						<input type="button" class="btn btn-sub" value="  削除  " onclick="if (confirm('選択ファイル/ディレクトリを削除します。よろしいですか？')) deleteClick();" id="deleteButton" />
+																						<input type="button" class="btn btn-sub" value="  コピー新規登録する  " onclick="if (confirm('編集中の内容がクリアされます。よろしいですか？')) copyFileClick();" id="copyFileButton" style="display: none;"/>
+																						@using (Ajax.BeginForm("Rename", Constants.CONTROLLER_W2CMS_MANAGER_Contents_Manager, new AjaxOptions
+																						{
+																							HttpMethod = "POST",
+																							UpdateTargetId = "divErrorMessageTop",
+																							OnSuccess = "if (document.getElementById('divErrorMessageTop').innerText == '') renameClick();",
+																						}, new
+																						{
+																							Name = "Rename",
+																						}))
+																						{
+																							@Html.TextBox("rename")
+																							<input type="button" class="btn btn-sub" value="  リネーム  " onclick="if (confirm('選択ファイル/ディレクトリをリネームします。よろしいですか？')) $('form[name=\'Rename\']').submit();" id="renameButton" />
+																							<input type="submit" value="" style="display: none;"/>
+																						}
+																					</div>
+																				</td>
+																			</tr>
+																		</table>
+																		<table>
+																			<tr>
+																				<td width="215"></td>
+																				<td width="160">
+																					<a class="btn btn-txt btn-size-s" href="@Url.Action("DownloadAll", Constants.CONTROLLER_W2CMS_MANAGER_PAGE_DESIGN)">全ページ・パーツ ダウンロード</a>
+																				</td>
+																			</tr>
+																		</table>
+																		<div id="divErrorMessageTop" align="center" style="text-align: center; margin-top: 10px; margin-bottom: -18px; color:Red;"></div>	
+																	</td>
+																</tr>
+															</table>
+														</td>
+													</tr>
+												</table>
+											</td>
+										</tr>
+										<tr>
+											@LayoutHelper.PaddingTr(10)
+										</tr>
+									</table>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<!--△ CSSツリー △-->
+	<tr>
+		@LayoutHelper.PaddingTr(10)
+	</tr>
+	<!--▽ CSS編集 ▽-->
+	<tr>
+		<td><h2 class="cmn-hed-h2">CSS編集</h2></td>
+	</tr>
+	<tr>
+		<td>
+			<table class="box_border" cellspacing="1" cellpadding="0" width="784" border="0">
+				<tr>
+					<td align="center">
+						<table class="info_box_bg" cellspacing="0" cellpadding="0" width="100%" border="0">
+							<tr>
+								<td align="center">
+									<table cellspacing="0" cellpadding="0" border="0">
+										<tr>
+											<td>
+												<div id="divComp" Visible="False" class="action_part_top">
+												<table class="info_table" cellspacing="1" cellpadding="3" width="100%" border="0">
+													<tr class="info_item_bg">
+														<td align="left">CSSファイルを更新しました。</td>
+													</tr>
+												</table>
+												</div>
+												<div class="action_part_top">
+													<div id="divErrorMessage" align="center" style="text-align:center; color:Red;">
+													</div>
+													@* 更新時にスクロールをTOPに移動*@
+													<input type="submit" name="UpdateBottom" id="updateCssTopButton" class="btn btn-main" value=" 更新する " onclick="updateCss();" style="display: none;"/>
+												</div>
+													<table class="list_table" cellspacing="1" cellpadding="3" width="100%" border="0">
+														<tr class="list_title_bg" id ="CssTextArea">
+															<td class="detail_title_bg" style="text-align: center; font-weight:bold;">
+																<div style="margin-bottom: 7px;">CSS編集領域（<span class="edit_site_name">PCサイト</span>）</div>
+																<div id = "cssText" class="codeeditor";></div>
+															</td>
+														</tr>
+														<tr id="trEdit" visible="false">
+															<td class="detail_title_bg" style="text-align: center; font-weight:bold;">
+																CSS編集領域（<span class="edit_site_name">PCサイト</span>）
+															</td>
+														</tr>
+														<tr id="trEditMessagetrEditMessage">
+															<td class="edit_item_bg">
+																<div align="center">
+																	CSSファイルを選択してください。
+																</div>
+															</td>
+														</tr>
+													</table>
+												<div class="action_part_bottom">
+													@* 更新時にスクロールをTOPに移動*@
+													<input type="submit" name="UpdateBottom" id="updateCssBottomButton" class="btn btn-main" value=" 更新する " onclick="updateCss();" style="display: none;"/>
+												</div>
+											</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+			@LayoutHelper.PaddingTr(10)
+		</td>
+	</tr>
+	<!--△ CSS編集 △-->
+</table>
+<table class="info_table" cellspacing="1" cellpadding="3" width="784" border="0">
+	<tr class="info_item_bg">
+		<td align="left">備考<br />
+			・CSSファイルの更新処理は「後勝ち」ルールになりますので、複数人で同時に作業を行わないでください。<br/>
+			・「全ページ・パーツダウンロード」リンクから、フロントサイトのディレクトリ構造に合わせた形で全ページ・パーツ・CSS（ファイル）をダウンロードできます。<br />
+			　（バックアップ及び、本番環境リリース時等にご利用ください。）<br/>
+			・CSSファイルのアップロードは、コンテンツマネージャーから行ってください。<br />
+			・CSSデザイン画面では、セッション切れが発生しないよう制御しています。<br />
+		</td>
+	</tr>
+</table>
+@section JavaScript
+{
+	@* セッションタイムアウト防止 *@
+	<script type="text/javascript" src="~/Js/UpdateSessionTimeout.aspx?@Constants.QUERY_STRING_FOR_UPDATE_EXTERNAL_FILE_URLENCODED"></script>
+
+	<script type="text/javascript">
+
+	// 初期表示はROOTが選択状態なのでダウンロードと削除とリネームをdisabledに
+	window.onload = function() {
+		set_disabled_attribute(true);
+		$("#CssTextArea").hide();
+		$("#divComp").hide();
+		set_checked_attribute();
+	}
+	/*======================= NameSpaceを作成するScript ===========================*/
+	if (typeof (w2) == 'undefined') w2 = {};
+	if (typeof (w2.ClientScript) == 'undefined') w2.ClientScript = {};
+	if (typeof (w2.ClientScript.Common) == 'undefined') w2.ClientScript.Common = {};
+	if (typeof (w2.ClientScript.Common.Config) == 'undefined') w2.ClientScript.Common.Config = {};
+	w2.ClientScript.Common.Config = {
+		"CookiesExpire": 7,
+		"PrefixCookiesName": "w2.ClientScript.Common.ResizeObject.",
+		"UpDownHeight": 100,
+		"MaxHeight": 500,
+		"MinHeight": 200
+	};
+
+	/*=========================== 枠の拡大・縮小・デフォルトする処理 ===========================*/
+	w2.ClientScript.Common.ResizeObject = function() {
+		this.Config = w2.ClientScript.Common.Config;
+		var thisInstance = this;
+		this.SetAllowResizeHeight = function(option) {
+			var targetObj = $("#" + option.controlID);
+			targetObj.height(thisInstance.Config.MinHeight);
+		};
+	};
+
+	var idTreeView = "divScrollable";
+	var resizeObject = new w2.ClientScript.Common.ResizeObject();
+
+	function EndUpdatePanel(sender, args) {
+		$("#" + idTreeView).find("a.selected_link").focus();
+		resizeObject.SetAllowResizeHeight({
+			controlID: idTreeView
+		});
+	}
+
+	EndUpdatePanel();
+
+	updateTargetPath();
+
+
+	// PCサイト、SPサイトのラジオボタンのchecked属性を設定
+	function set_checked_attribute() {
+		var itemValue = localStorage.getItem("CssDesignEditType");
+		if (itemValue !== null) {
+			$("input[value=\"" + itemValue + "\"]").click();
+		} else {
+			$("#PC").click();
+		}
+	}
+
+	// 削除、リネームのボタンのdisabled属性を設定
+	function set_disabled_attribute(value) {
+		$('#deleteButton').prop("disabled", value);
+		$('#renameButton').prop("disabled", value);
+	}
+
+	// Css編集エリアの有効無効を切り替える
+	function setCssEditStatus(status) {
+		if (status) {
+			$('#trEditMessagetrEditMessage').hide();
+			$("#copyFileButton").show();
+			$("#updateCssTopButton").show();
+			$("#updateCssBottomButton").show();
+		} else {
+			$('#trEditMessagetrEditMessage').show();
+			$("#copyFileButton").hide();
+			$("#updateCssTopButton").hide();
+			$("#updateCssBottomButton").hide();
+		}
+	}
+
+	// 対象パス取得処理
+	function updateTargetPath() {
+		$.ajax({
+				url: 'UpdateTargetPath',
+				type: 'POST',
+				dataType: "json",
+				data: {
+				}
+			})
+				.done(function(data) {
+					$('#targetPath').html(data);
+					var fileWithPathDecomposed = data.match(/(.*)(?:\.([^.]+$))/);
+					if (fileWithPathDecomposed !== null) {
+						updateCssText();
+					} else {
+						set_disabled_attribute(false);
+						$("#CssTextArea").hide();
+						$("#divComp").hide();
+					}
+				});
+	}
+
+	var cssTimer;
+	// CSSファイル取得処理
+	function updateCssText() {
+		$("#divErrorMessage").text("");
+		$("#divComp").hide();
+		$("#CssTextArea").hide();
+		setCssEditStatus(false);
+		clearInterval(cssTimer);
+		$.ajax({
+				url: 'GetCssText',
+				type: 'POST',
+				dataType: "json",
+				data: {
+				}
+			})
+			.done(function(data) {
+				if (data !== "NG") {
+					checkOtherOperatorFileOpening($('#targetPath').html()).done(function (result) {
+						$('.btn.btn-main').attr('disabled', false);
+						$('#renameButton').attr('disabled', false);
+						$('#deleteButton').attr('disabled', false);
+						if (result !== "") {
+							notification.show(result, 'warning', 'fixed');
+							$('.btn.btn-main').attr('disabled', true);
+							$('#renameButton').attr('disabled', true);
+							$('#deleteButton').attr('disabled', true);
+						} else {
+							sendOpeningFileName($('#targetPath').html());
+							cssTimer = setInterval(function () { sendOpeningFileName($('#targetPath').html()) }, 50 * 1000);
+						}
+					});
+					setCssEditStatus(true);
+					$("#CssTextArea").show();
+					$("#cssText").css("height", 400 + "px");
+					var editor = ace.edit("cssText");
+					editor.getSession().setMode("ace/mode/css");
+					editor.setValue(data, -1);
+					editor.setOptions({
+						fontSize: "13pt"
+					});
+					editor.resize();
+				}
+			});
+	}
+
+	// CSSファイル更新処理
+	function updateCss() {
+		var editor = ace.edit("cssText");
+		var text = editor.getValue();
+		$.ajax({
+			url: 'UpdateCss',
+			type: 'POST',
+			dataType: "json",
+			data: {
+						'text': text
+			}
+			})
+				.done(function(data) {
+				$("#divErrorMessage").text(data);
+				window.scrollTo(0, 0);
+				if (data !== "") {
+					return;
+				}
+				$("#divComp").show();
+			});
+	}
+
+	// フォルダ作成
+	function makeDirectory() {
+		$.ajax({
+				url: 'MakeDirectory',
+				type: 'POST',
+				data: {
+				}
+			})
+				.done(function (data) {
+				if (data.data[0] !== "") {
+					notification.show(data.data[0], 'warning', 'fixed');
+				} else {
+				setItems(data.data[1]);
+				// TreeView更新
+				$('form[name="treeView"]').submit();
+				set_disabled_attribute(false);
+					}
+			});
+	}
+
+	// ファイル作成
+	function makeCssFile() {
+		$.ajax({
+				url: 'CreateCssFile',
+				type: 'POST',
+				data: {
+					isNew: true
+				}
+			})
+				.done(function (data) {
+				if (data.data[0] !== "") {
+					notification.show(data.data[0], 'warning', 'fixed');
+				} else {
+					setItems(data.data[1]);
+					// TreeView更新
+					$('form[name="treeView"]').submit();
+
+					set_disabled_attribute(false);
+				}
+			});
+	}
+
+	// コピー新規作成
+	function copyFileClick() {
+		$.ajax({
+				url: 'CreateCssFile',
+				type: 'POST',
+				data: {
+					isNew: false
+				}
+			})
+				.done(function (data) {
+				if (data.data[0] !== "") {
+					notification.show(data.data[0], 'warning', 'fixed');
+				} else {
+					setItems(data.data[1]);
+					// TreeView更新
+					$('form[name="treeView"]').submit();
+					set_disabled_attribute(false);
+				}
+			});
+	}
+
+	// 削除ボタンクリック
+	function deleteClick() {
+		$.ajax({
+				url: 'Delete',
+				type: 'POST',
+				data: {
+				}
+			})
+				.done(function (data) {
+				if (data.data[0] !== "") {
+					notification.show(data.data[0], 'warning', 'fixed');
+				} else {
+					setItems(data.data[1]);
+					// TreeView更新
+					$('form[name="treeView"]').submit();
+				}
+			});
+	}
+
+	// リネームボタンクリック
+	function renameClick() {
+		var current = $('input[name="clickPath"]').val();
+		var rename = $('input[name="rename"]').val();
+
+		var regexp = /([^\\]+?)?\\$/;
+		var name = regexp.exec(current);
+
+		if (name == null) {
+			regexp = /([^\\]+?)?$/;
+			name = current.replace(regexp, rename);
+			$('input[name="clickPath"]').val(name);
+		} else {
+			name = current.replace(regexp, rename + "\\");
+			$('input[name="clickPath"]').val(name);
+		}
+
+		// TreeView更新
+		$('form[name="treeView"]').submit();
+	}
+
+	// ラジオボタン変更イベント
+	$('input[name="Type"]').change(function() {
+		var result = $(this).val();
+		$.ajax({
+				url: 'ChangeDirectory',
+				type: 'POST',
+				data: {
+						path: (result)
+				}
+			})
+				.done(function (data) {
+					localStorage.setItem("CssDesignEditType", result);
+					$('input[name="clickPath"]').val(data);
+					$('form[name="treeView"]').submit();
+					var editSiteName = '';
+					if (result === '@Constants.PATH_ROOT_FRONT_PC') {
+						editSiteName = 'PCサイト';
+					}
+					else{
+						editSiteName = 'SmartPhone用サイト';
+					}
+					$('.edit_site_name').text(editSiteName);
+			});
+	});
+
+	// 選択フォルダ、ディレクトリ、対象を更新
+	function setItems(data) {
+		$('input[name="clickPath"]').val(data);
+
+		var regexp = /([^\\]+?)?\\$/;
+		var name = regexp.exec(data);
+
+		if (name == null) {
+			regexp = /([^\\]+?)?$/;
+			name = regexp.exec(data);
+			$('#rename').val(name[0]);
+		} else {
+			$('#rename').val(name[1]);
+		}
+	}
+</script>
+}

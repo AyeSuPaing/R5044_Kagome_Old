@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        /*
+          w2_OrderWorkflowExecHistory
+        */
+        if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_OrderWorkflowExecHistory]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+        drop table [dbo].[w2_OrderWorkflowExecHistory]
+        GO
+        CREATE TABLE [dbo].[w2_OrderWorkflowExecHistory] (
+          [order_workflow_exec_history_id] [bigint] IDENTITY (1, 1) NOT NULL,
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [workflow_kbn] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [workflow_no] [int] NOT NULL,
+          [scenario_setting_id] [nvarchar] (30) DEFAULT (N''),
+          [workflow_name] [nvarchar] (50) NOT NULL DEFAULT (N''),
+          [scenario_name] [nvarchar] (50) DEFAULT (N''),
+          [exec_status] [nvarchar] (30) NOT NULL DEFAULT (N''),
+          [success_rate] [nvarchar] (30) NOT NULL DEFAULT (N''),
+          [workflow_type] [nvarchar] (30) NOT NULL DEFAULT (N''),
+          [exec_place] [nvarchar] (20) NOT NULL DEFAULT (N''),
+          [exec_timing] [nvarchar] (10) NOT NULL DEFAULT (N'01'),
+          [message] [nvarchar] (max) NOT NULL DEFAULT (N''),
+          [date_begin] [datetime],
+          [date_end] [datetime],
+          [date_created] [datetime] NOT NULL DEFAULT (getdate()),
+          [last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+        ) ON [PRIMARY]
+        GO
+        ALTER TABLE [dbo].[w2_OrderWorkflowExecHistory] WITH NOCHECK ADD
+          CONSTRAINT [PK_w2_OrderWorkflowExecHistory] PRIMARY KEY  CLUSTERED
+          (
+            [order_workflow_exec_history_id]
+          ) ON [PRIMARY]
+        GO
+        CREATE INDEX [IX_w2_OrderWorkflowExecHistory_1] ON [dbo].[w2_OrderWorkflowExecHistory]([date_created]) ON [PRIMARY]
+        GO
+
+        /*
+          w2_OrderWorkflowScenarioSettingItem
+        */
+        if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_OrderWorkflowScenarioSettingItem]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+        drop table [dbo].[w2_OrderWorkflowScenarioSettingItem]
+        GO
+        CREATE TABLE [dbo].[w2_OrderWorkflowScenarioSettingItem] (
+          [scenario_setting_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+          [scenario_no] [int] NOT NULL,
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [workflow_kbn] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [workflow_no] [int] NOT NULL
+        ) ON [PRIMARY]
+        GO
+        ALTER TABLE [dbo].[w2_OrderWorkflowScenarioSettingItem] WITH NOCHECK ADD
+          CONSTRAINT [PK_w2_OrderWorkflowScenarioSettingItem] PRIMARY KEY  CLUSTERED
+          (
+            [scenario_setting_id],
+            [scenario_no]
+          ) ON [PRIMARY]
+        GO
+        
+        /*
+          w2_OrderWorkflowScenarioSetting
+        */
+        if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_OrderWorkflowScenarioSetting]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+        drop table [dbo].[w2_OrderWorkflowScenarioSetting]
+        GO
+        CREATE TABLE [dbo].[w2_OrderWorkflowScenarioSetting] (
+          [scenario_setting_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+          [scenario_name] [nvarchar] (50) NOT NULL DEFAULT (N''),
+          [exec_timing] [nvarchar] (10) NOT NULL DEFAULT (N'01'),
+          [schedule_kbn] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [schedule_day_of_week] [nvarchar] (10) DEFAULT (N''),
+          [schedule_year] [int],
+          [schedule_month] [int],
+          [schedule_day] [int],
+          [schedule_hour] [int],
+          [schedule_minute] [int],
+          [schedule_second] [int],
+          [valid_flg] [nvarchar] (10) NOT NULL DEFAULT (N'OFF'),
+          [date_created] [datetime] NOT NULL DEFAULT (getdate()),
+          [date_changed] [datetime] NOT NULL DEFAULT (getdate()),
+          [last_changed] [nvarchar] (20) NOT NULL DEFAULT (N'')
+        ) ON [PRIMARY]
+        GO
+        ALTER TABLE [dbo].[w2_OrderWorkflowScenarioSetting] WITH NOCHECK ADD
+          CONSTRAINT [PK_w2_OrderWorkflowScenarioSetting] PRIMARY KEY  CLUSTERED
+          (
+            [scenario_setting_id]
+          ) ON [PRIMARY]
+        GO
+
+        /*
+          メールテンプレート追加
+        */
+        if not exists (
+         select * 
+					 from [w2_MailTemplate]
+					where shop_id = '0'
+					  and mail_id = '00000180'
+        )
+        INSERT  w2_MailTemplate
+                (
+                  shop_id
+                  ,mail_id
+                  ,mail_name
+                  ,mail_from
+                  ,mail_to
+                  ,mail_subject
+                  ,mail_body
+                  ,del_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,mail_category
+                  ,auto_send_flg
+                  ,sms_use_flg
+                )
+        VALUES  (
+                  '0'
+                  ,'00000180'
+                  ,'シナリオ実行報告メール【管理者向け】'
+                  ,'bh@w2s.xyz'
+                  ,'bh@w2s.xyz'
+                  ,'【シナリオ実行 - @@ mail_type @@】@@ exec_status @@ @@ scenario_name @@'
+                  ,'@@ message @@'
+                  ,'0'
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,'ｗ２ユーザー'
+                  ,'Order'
+                  ,'1'
+                  ,'0'
+                )
+        GO
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

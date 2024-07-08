@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ＆モール系SQLステートメントXML(Andmall.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+-->
+<Andmall>
+
+  <!-- Andmall連携用在庫データ取得 -->
+  <GetStockList>
+    <Statement>
+      <![CDATA[
+        SELECT  ## SKU_PRODUCT_ID ## AS sku_id,
+                w2_ProductStock.stock AS stock,
+                w2_Product.andmall_reservation_flg AS reservation_flg,
+                w2_Product.product_id AS product_id
+          FROM  w2_ProductStock
+     LEFT JOIN  w2_Product
+            ON  w2_ProductStock.product_id = w2_Product.product_id
+     LEFT JOIN  w2_MallExhibitsConfig
+            ON  w2_ProductStock.product_id = w2_MallExhibitsConfig.product_id
+         WHERE  w2_ProductStock.stock > 0
+           AND  w2_ProductStock.product_id = w2_ProductStock.variation_id
+           AND  w2_Product.product_id IS NOT NULL
+           ## EXHIBITS_FLG ##
+         UNION
+             (
+              SELECT  ## SKU_VARIATION_ID ## AS sku_id,
+                      w2_ProductStock.stock AS stock,
+                      w2_ProductVariation.variation_andmall_reservation_flg AS reservation_flg,
+                      w2_ProductVariation.variation_id AS product_id
+                FROM  w2_ProductStock
+           LEFT JOIN  w2_ProductVariation
+                  ON  w2_ProductStock.variation_id = w2_ProductVariation.variation_id
+           LEFT JOIN  w2_MallExhibitsConfig
+                  ON  w2_ProductStock.product_id  = w2_MallExhibitsConfig.product_id
+               WHERE  w2_ProductStock.stock > 0
+                 AND  w2_ProductStock.product_id != w2_ProductStock.variation_id
+                 AND  w2_ProductVariation.variation_id IS NOT NULL
+                 ## EXHIBITS_FLG ##
+             )
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetStockList>
+
+</Andmall>

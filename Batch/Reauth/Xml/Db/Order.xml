@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文系SQLステートメントXML(Order.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<Order>
+
+  <!-- 決済手数料取得 -->
+  <GetPaymentPrice>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_Payment.shop_id,
+                w2_Payment.payment_id,
+                w2_Payment.payment_name,
+                w2_Payment.payment_price_kbn,
+                w2_PaymentPrice.*
+          FROM  w2_Payment, w2_PaymentPrice
+         WHERE  w2_Payment.shop_id = @shop_id
+           AND  w2_Payment.payment_id = @payment_id
+           AND  w2_Payment.shop_id = w2_PaymentPrice.shop_id
+           AND  w2_Payment.payment_id = w2_PaymentPrice.payment_id
+           AND  (
+                  w2_Payment.payment_price_kbn = '0'
+                  OR
+                  (
+                    w2_Payment.payment_price_kbn = '1'
+                    AND
+                    w2_PaymentPrice.tgt_price_bgn <= @sub_total_price
+                    AND
+                    w2_PaymentPrice.tgt_price_end >= @sub_total_price
+                  )
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="payment_id" Type="nvarchar" Size="10" />
+      <Input Name="sub_total_price" Type="decimal" />
+    </Parameter>
+  </GetPaymentPrice>
+
+</Order>

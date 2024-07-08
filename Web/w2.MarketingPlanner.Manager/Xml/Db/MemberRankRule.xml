@@ -1,0 +1,289 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 会員ランク変動ルール系SQLステートメントXML(MemberRankRule.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<MemberRankRule>
+
+  <!-- 会員ランク変動ルール一覧を取得 -->
+  <GetMemberRankRuleList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(member_rank_rule_id), 0)
+          FROM  w2_MemberRankRule
+                [[ MEMBERRANKRULE_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_MemberRankRule.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_MemberRankRule.member_rank_rule_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MEMBERRANKRULE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MemberRankRule
+                          [[ MEMBERRANKRULE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_MemberRankRule ON
+                (
+                  RowIndex.member_rank_rule_id = w2_MemberRankRule.member_rank_rule_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_rule_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="member_rank_rule_name_like_escaped" Type="nvarchar" Size="200" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetMemberRankRuleList>
+
+  <!-- 会員ランク変動ルール取得 -->
+  <GetMemberRankRule>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MemberRankRule.*
+          FROM  w2_MemberRankRule
+         WHERE  w2_MemberRankRule.member_rank_rule_id = @member_rank_rule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_rule_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMemberRankRule>
+
+  <!-- 会員ランク変動ルール登録(IDをかえす) -->
+  <InsertMemberRankRule>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_MemberRankRule
+                (
+                member_rank_rule_id,
+                member_rank_rule_name,
+                status,
+                last_count,
+                last_exec_date,
+                target_extract_type,
+                target_extract_start,
+                target_extract_end,
+                target_extract_days_ago,
+                target_extract_total_price_from,
+                target_extract_total_price_to,
+                target_extract_total_count_from,
+                target_extract_total_count_to,
+                target_extract_old_rank_flg,
+                rank_change_type,
+                rank_change_rank_id,
+                mail_id,
+                exec_timing,
+                schedule_kbn,
+                schedule_day_of_week,
+                schedule_year,
+                schedule_month,
+                schedule_day,
+                schedule_hour,
+                schedule_minute,
+                schedule_second,
+                valid_flg,
+                last_changed,
+                target_id,
+                target_extract_flg,
+                target_id2,
+                target_extract_flg2,
+                target_id3,
+                target_extract_flg3,
+                target_id4,
+                target_extract_flg4,
+                target_id5,
+                target_extract_flg5
+                )
+        VALUES  (
+                @member_rank_rule_id,
+                @member_rank_rule_name,
+                '00',           -- 通常
+                -1,
+                NULL,
+                @target_extract_type,
+                @target_extract_start,
+                @target_extract_end,
+                @target_extract_days_ago,
+                @target_extract_total_price_from,
+                @target_extract_total_price_to,
+                @target_extract_total_count_from,
+                @target_extract_total_count_to,
+                @target_extract_old_rank_flg,
+                @rank_change_type,
+                @rank_change_rank_id,
+                @mail_id,
+                @exec_timing,
+                @schedule_kbn,
+                @schedule_day_of_week,
+                @schedule_year,
+                @schedule_month,
+                @schedule_day,
+                @schedule_hour,
+                @schedule_minute,
+                @schedule_second,
+                @valid_flg,
+                @last_changed,
+                @target_id,
+                @target_extract_flg,
+                @target_id2,
+                @target_extract_flg2,
+                @target_id3,
+                @target_extract_flg3,
+                @target_id4,
+                @target_extract_flg4,
+                @target_id5,
+                @target_extract_flg5
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_rule_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_rule_name" Type="nvarchar" Size="100" />
+      <Input Name="target_extract_type" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_start" Type="datetime" />
+      <Input Name="target_extract_end" Type="datetime" />
+      <Input Name="target_extract_days_ago" Type="int" />
+      <Input Name="target_extract_total_price_from" Type="decimal" Size="18,3" />
+      <Input Name="target_extract_total_price_to" Type="decimal" Size="18,3" />
+      <Input Name="target_extract_total_count_from" Type="int" />
+      <Input Name="target_extract_total_count_to" Type="int" />
+      <Input Name="target_extract_old_rank_flg" Type="nvarchar" Size="10" />
+      <Input Name="rank_change_type" Type="nvarchar" Size="10" />
+      <Input Name="rank_change_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="schedule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="schedule_day_of_week" Type="nvarchar" Size="10" />
+      <Input Name="schedule_year" Type="int" />
+      <Input Name="schedule_month" Type="int" />
+      <Input Name="schedule_day" Type="int" />
+      <Input Name="schedule_hour" Type="int" />
+      <Input Name="schedule_minute" Type="int" />
+      <Input Name="schedule_second" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg" Type="nvarchar" Size="1" />
+      <Input Name="target_id2" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg2" Type="nvarchar" Size="1" />
+      <Input Name="target_id3" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg3" Type="nvarchar" Size="1" />
+      <Input Name="target_id4" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg4" Type="nvarchar" Size="1" />
+      <Input Name="target_id5" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg5" Type="nvarchar" Size="1" />
+    </Parameter>
+  </InsertMemberRankRule>
+
+  <!-- 会員ランク変動ルール更新 -->
+  <UpdateMemberRankRule>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MemberRankRule
+           SET  member_rank_rule_name = @member_rank_rule_name,
+                --status = @status,
+                --last_count = @last_count,
+                --last_exec_date = @last_exec_date,
+                target_extract_type = @target_extract_type,
+                target_extract_start = @target_extract_start,
+                target_extract_end = @target_extract_end,
+                target_extract_days_ago = @target_extract_days_ago,
+                target_extract_total_price_from = @target_extract_total_price_from,
+                target_extract_total_price_to = @target_extract_total_price_to,
+                target_extract_total_count_from = @target_extract_total_count_from,
+                target_extract_total_count_to = @target_extract_total_count_to,
+                target_extract_old_rank_flg = @target_extract_old_rank_flg,
+                rank_change_type = @rank_change_type,
+                rank_change_rank_id = @rank_change_rank_id,
+                mail_id = @mail_id,
+                exec_timing = @exec_timing,
+                schedule_kbn = @schedule_kbn,
+                schedule_day_of_week = @schedule_day_of_week,
+                schedule_year = @schedule_year,
+                schedule_month = @schedule_month,
+                schedule_day = @schedule_day,
+                schedule_hour = @schedule_hour,
+                schedule_minute = @schedule_minute,
+                schedule_second = @schedule_second,
+                valid_flg = @valid_flg,
+                last_changed = @last_changed,
+                target_id = @target_id,
+                target_extract_flg = @target_extract_flg,
+                target_id2 = @target_id2,
+                target_extract_flg2 = @target_extract_flg2,
+                target_id3 = @target_id3,
+                target_extract_flg3 = @target_extract_flg3,
+                target_id4 = @target_id4,
+                target_extract_flg4 = @target_extract_flg4,
+                target_id5 = @target_id5,
+                target_extract_flg5 = @target_extract_flg5
+         WHERE  member_rank_rule_id = @member_rank_rule_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_rule_id" Type="nvarchar" Size="30" />
+      <Input Name="member_rank_rule_name" Type="nvarchar" Size="100" />
+      <Input Name="target_extract_type" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_start" Type="datetime" />
+      <Input Name="target_extract_end" Type="datetime" />
+      <Input Name="target_extract_days_ago" Type="int" />
+      <Input Name="target_extract_total_price_from" Type="decimal" Size="18,3" />
+      <Input Name="target_extract_total_price_to" Type="decimal" Size="18,3" />
+      <Input Name="target_extract_total_count_from" Type="int" />
+      <Input Name="target_extract_total_count_to" Type="int" />
+      <Input Name="target_extract_old_rank_flg" Type="nvarchar" Size="10" />
+      <Input Name="rank_change_type" Type="nvarchar" Size="10" />
+      <Input Name="rank_change_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="exec_timing" Type="nvarchar" Size="10" />
+      <Input Name="schedule_kbn" Type="nvarchar" Size="10" />
+      <Input Name="schedule_day_of_week" Type="nvarchar" Size="10" />
+      <Input Name="schedule_year" Type="int" />
+      <Input Name="schedule_month" Type="int" />
+      <Input Name="schedule_day" Type="int" />
+      <Input Name="schedule_hour" Type="int" />
+      <Input Name="schedule_minute" Type="int" />
+      <Input Name="schedule_second" Type="int" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="target_id" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg" Type="nvarchar" Size="1" />
+      <Input Name="target_id2" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg2" Type="nvarchar" Size="1" />
+      <Input Name="target_id3" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg3" Type="nvarchar" Size="1" />
+      <Input Name="target_id4" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg4" Type="nvarchar" Size="1" />
+      <Input Name="target_id5" Type="nvarchar" Size="10" />
+      <Input Name="target_extract_flg5" Type="nvarchar" Size="1" />
+    </Parameter>
+  </UpdateMemberRankRule>
+
+  <!-- 会員ランク変動ルール削除 -->
+  <DeleteMemberRankRule>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MemberRankRule
+         WHERE  w2_MemberRankRule.member_rank_rule_id = @member_rank_rule_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_rule_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteMemberRankRule>
+  
+  
+</MemberRankRule>

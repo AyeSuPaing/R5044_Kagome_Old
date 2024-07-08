@@ -1,0 +1,130 @@
+﻿@*
+=========================================================================================================
+  Module      : 画像リストから選択するモーダル(_ImageListModal.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common
+@using w2.Cms.Manager.Input
+@model w2.Cms.Manager.ViewModels.Shared.ImageModalViewModel
+
+<div class="modal-content-hide">
+	<div id="modal-imagelist-select">
+		<p class="modal-inner-ttl">画像リストから選択する</p>
+
+		<div class="imagelist-list">
+			<div class="list-tools">
+				<div class="list-tools-row">
+					@if (Model.ImageType != ImageType.Normal)
+					{
+						<div class="list-tools-col">
+							<div class="form-element-group form-element-group-vertical">
+								<div class="form-element-group-title">
+									<label for="form-select-005" style="padding: 0 10px;">グループ</label>
+									@Html.DropDownListFor(m => m.ParamModel.GroupId, Model.GroupItems, new
+									{
+										Name = "group",
+									})
+								</div>
+							</div>
+						</div>
+					}
+					<div class="list-tools-col ta-right">
+						<div class="keyword-search">
+							@Html.TextBox("keyword", "", new
+							{
+								Id = "image_keyword"
+							})
+							<a href="javascript:void(0)" class="keyword-search-submit" onclick="imageSearch();"><span class="icon-search"></span></a>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="list">
+				<div class="list-head">
+					<div class="list-head-row">
+						<div class="list-head-col ta-left">
+							<div class="list-style-switch">
+								<div class="list-style-switch-inner">
+									<input type="radio" name="image-list-style" id="modal-list-style-1" value="list" checked="">
+									<label for="modal-list-style-1" class="btn-switch"><span class="icon icon-list"></span><span class="label hide-list-detail">リスト</span></label>
+									<input type="radio" name="image-list-style" id="modal-list-style-2" value="thumb">
+									<label for="modal-list-style-2" class="btn-switch"><span class="icon icon-thumbnail"></span><span class="label hide-list-detail">サムネイル</span></label>
+								</div>
+							</div>
+						</div>
+						<div class="list-head-col w15">
+							<p>アップロード日</p>
+						</div>
+						<div class="list-head-col w15">
+							<p>ファイル容量</p>
+						</div>
+						<div class="list-head-col w15">
+							<p>ファイルサイズ</p>
+						</div>
+						<div class="list-head-col w15">
+						</div>
+					</div>
+				</div>
+				<div id="image-list-content"></div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /モーダル：画像リストから選択 -->
+
+<script type="text/javascript">
+	$(function () {
+		imageSearch(true);
+	});
+
+	$('[name=group]').change(function () {
+		imageSearch(false);
+	});
+
+	$('#image_keyword').keypress(function (e) {
+		if (e.which === 13) {
+			imageSearch(false);
+		}
+	});
+
+	function imageSearch(isDefault) {
+		$('#image-list-content').html('');
+		block_loading_animation.start('#image-list-content');
+
+		Promise
+			.all([new Promise((resolve, reject) => {
+				var gid = $('[name=group]').val();
+				var keyword = $('#image_keyword').val();
+				var url = isDefault
+					? "@Url.Action("DefaultImageSearch", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE)"
+					: "@Url.Action("ImageSearch", Constants.CONTROLLER_W2CMS_MANAGER_FEATURE_IMAGE)";
+				$.ajax({
+					url: url,
+					type: 'POST',
+					data: {
+						groupId : gid,
+						keyword: keyword,
+						imageType: "@ImageType.Search"
+					}
+				}).done(function(viewHTML) {
+					$('#image-list-content').html(viewHTML);
+					list_group_toggle.ini();
+					list.ini();
+					image_file_select.ini();
+					custom_scroll.ini();
+				}).always(function () {
+					resolve();
+				});
+			})])
+			.finally(() => {
+				setTimeout(
+					function () {
+						block_loading_animation.end('#image-list-content');
+					},
+					1000);
+			});
+	}
+</script>

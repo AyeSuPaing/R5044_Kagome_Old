@@ -1,0 +1,161 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 商品同梱テーブル系SQLサブステートメントXML (ProductBundle_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2017 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductBundle_Sub>
+
+  <!-- 検索用WHERE文 -->
+  <PRODUCTBUNDLE_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        WHERE (
+                (
+                  (@product_bundle_id_like_escaped = '')
+                  OR
+                  (w2_ProductBundle.product_bundle_id LIKE @product_bundle_id_like_escaped + '%' ESCAPE '#')
+                )
+                AND
+                (
+                  (@product_bundle_name_like_escaped = '')
+                  OR
+                  (w2_ProductBundle.product_bundle_name LIKE @product_bundle_name_like_escaped + '%' ESCAPE '#')
+                )
+                AND
+                (
+                  (
+                    (@target_order_type = '')
+                    OR
+                    (w2_ProductBundle.target_order_type = @target_order_type)
+                  )
+                  AND
+                  w2_ProductBundle.target_order_type NOT IN (@@ excludeTargetOrderType @@)
+                )
+                AND
+                (
+                  (@target_product_id_like_escaped = '')
+                  OR
+                  (NCHAR(13) + NCHAR(10) + w2_ProductBundle.target_product_ids LIKE '%' + NCHAR(13) + NCHAR(10) + @target_product_id_like_escaped + '%' ESCAPE '#')
+                  OR
+                  EXISTS
+                  (
+                    SELECT  *
+                      FROM  w2_Product
+                     WHERE  product_id LIKE @target_product_id_like_escaped + '%' ESCAPE '#'
+                            AND
+                            (
+                              (
+                                NCHAR(13) + NCHAR(10) + w2_ProductBundle.target_product_category_ids LIKE '%' + NCHAR(13) + NCHAR(10) + w2_Product.category_id1 + '%' ESCAPE '#'
+                                AND
+                                w2_Product.category_id1 <> ''
+                              )
+                              OR
+                              (
+                                NCHAR(13) + NCHAR(10) + w2_ProductBundle.target_product_category_ids LIKE '%' + NCHAR(13) + NCHAR(10) + w2_Product.category_id2 + '%' ESCAPE '#'
+                                AND
+                                w2_Product.category_id2 <> ''
+                              )
+                              OR
+                              (
+                                NCHAR(13) + NCHAR(10) + w2_ProductBundle.target_product_category_ids LIKE '%' + NCHAR(13) + NCHAR(10) + w2_Product.category_id3 + '%' ESCAPE '#'
+                              AND
+                                w2_Product.category_id3 <> ''
+                              )
+                              OR
+                              (
+                                NCHAR(13) + NCHAR(10) + w2_ProductBundle.target_product_category_ids LIKE '%' + NCHAR(13) + NCHAR(10) + w2_Product.category_id4 + '%' ESCAPE '#'
+                                AND
+                                w2_Product.category_id4 <> ''
+                              )
+                              OR
+                              (
+                                NCHAR(13) + NCHAR(10) + w2_ProductBundle.target_product_category_ids LIKE '%' + NCHAR(13) + NCHAR(10) + w2_Product.category_id5 + '%' ESCAPE '#'
+                              AND
+                                w2_Product.category_id5 <> ''
+                              )
+                            )
+                  )
+                )
+                
+                AND
+                (
+                  (@bundle_product_id_like_escaped = '')
+                  OR
+                  (
+                    w2_ProductBundle.product_bundle_id IN
+                    (
+                      SELECT  w2_ProductBundleItem.product_bundle_id
+                        FROM  w2_ProductBundleItem
+                       WHERE  w2_ProductBundleItem.grant_product_id LIKE @bundle_product_id_like_escaped + '%' ESCAPE '#'
+                      GROUP BY w2_ProductBundleItem.product_bundle_id
+                    )
+                  )
+                )
+              )
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </PRODUCTBUNDLE_SEARCH_WHERE>
+  
+  <!-- 検索用ORDER BY -->
+  <PRODUCTBUNDLE_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  8 THEN 
+              CASE
+                WHEN  (
+                        w2_ProductBundle.Valid_flg = 'VALID'
+                      ) THEN '0'
+                WHEN  (
+                        w2_ProductBundle.Valid_flg = 'INVALID'
+                      ) THEN '1'
+              END
+          END 
+          ASC,
+          CASE @sort_kbn
+            WHEN  0 THEN w2_ProductBundle.product_bundle_id
+            WHEN  2 THEN w2_ProductBundle.product_bundle_name
+            ELSE  '1'
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  4 THEN w2_ProductBundle.start_datetime
+            WHEN  6 THEN w2_ProductBundle.end_datetime
+            ELSE  NULL
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN w2_ProductBundle.product_bundle_id
+            WHEN  3 THEN w2_ProductBundle.product_bundle_name
+            ELSE  '1'
+          END
+          DESC,
+          CASE @sort_kbn
+            WHEN  5 THEN w2_ProductBundle.start_datetime
+            WHEN  7 THEN w2_ProductBundle.end_datetime
+            ELSE  NULL
+          END
+          DESC,
+          CASE @sort_kbn
+            WHEN  8 THEN w2_ProductBundle.apply_order
+            ELSE  NULL
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  9 THEN w2_ProductBundle.apply_order
+            ELSE  NULL
+          END
+          DESC
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </PRODUCTBUNDLE_SEARCH_ORDER_BY>
+
+</ProductBundle_Sub>

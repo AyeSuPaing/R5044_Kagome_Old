@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 発注入庫系SQLサブステートメントXML(StockOrder_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+-->
+<StockOrder_Sub>
+
+  <!-- 発注情報一覧取得用WHERE文 -->
+  <STOCKORDER_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  w2_StockOrder.shop_id = @shop_id
+           AND  (
+                  (@stock_order_id_like_escaped = '' OR w2_StockOrder.stock_order_id LIKE @stock_order_id_like_escaped + '%' ESCAPE '#')
+                  AND
+                  (@relation_id_like_escaped = '' OR w2_StockOrder.relation_id LIKE @relation_id_like_escaped + '%' ESCAPE '#')
+                  AND
+                  (@order_status = '' OR @order_status = w2_StockOrder.order_status)
+                  AND
+                  (@delivery_status = '' OR @delivery_status = w2_StockOrder.delivery_status)
+                  AND
+                  (@order_date_from IS NULL OR w2_StockOrder.order_date >= @order_date_from)
+                  AND
+                  (@order_date_to IS NULL OR w2_StockOrder.order_date < @order_date_to)
+                  AND
+                  (@delivery_date_from IS NULL OR w2_StockOrder.delivery_date >= @delivery_date_from)
+                  AND
+                  (@delivery_date_to IS NULL OR w2_StockOrder.delivery_date < @delivery_date_to)
+                  AND
+                  (@product_id_like_escaped = '' OR w2_StockOrder.stock_order_id IN
+                                                               (
+                                                                  SELECT  w2_StockOrderItem.stock_order_id
+                                                                    FROM  w2_StockOrderItem
+                                                                   WHERE  w2_StockOrderItem.shop_id = @shop_id 
+                                                                     AND  (w2_StockOrderItem.product_id LIKE @product_id_like_escaped + '%' ESCAPE '#'
+                                                                           OR
+                                                                           w2_StockOrderItem.variation_id LIKE @product_id_like_escaped+ '%' ESCAPE '#')
+                                                                          )
+                                                               )
+                )
+      ]]>
+    </Statement>
+  </STOCKORDER_SEARCH_WHERE>
+
+  <!-- 発注情報一覧取得用ORDER_BY -->
+  <STOCKORDER_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN 1 THEN w2_StockOrder.stock_order_id
+            ELSE 1
+          END ASC, 
+          CASE @sort_kbn
+            WHEN 2 THEN w2_StockOrder.stock_order_id
+            ELSE 1
+          END DESC,
+          CASE @sort_kbn
+            WHEN 3 THEN w2_StockOrder.order_date
+            WHEN 5 THEN w2_StockOrder.delivery_date
+            ELSE NULL
+          END ASC, 
+          CASE @sort_kbn
+            WHEN 4 THEN w2_StockOrder.order_date
+            WHEN 6 THEN w2_StockOrder.delivery_date
+            ELSE NULL
+          END DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_StockOrder.shop_id ASC, w2_StockOrder.stock_order_id ASC
+      ]]>
+    </Statement>
+  </STOCKORDER_SEARCH_ORDER_BY>
+
+</StockOrder_Sub>

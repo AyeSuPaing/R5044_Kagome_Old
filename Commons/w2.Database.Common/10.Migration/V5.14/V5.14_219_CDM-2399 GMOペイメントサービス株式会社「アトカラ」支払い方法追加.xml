@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_DeliveryCompany' AND column_name = 'delivery_company_type_gmo_atokara_payment')
+        BEGIN
+          ALTER TABLE [w2_DeliveryCompany] ADD [delivery_company_type_gmo_atokara_payment] [nvarchar] (3) NOT NULL DEFAULT (N'');
+        END
+        GO
+        
+        IF NOT EXISTS (SELECT * FROM w2_Payment WHERE payment_id = 'K40')
+        BEGIN
+          INSERT INTO w2_Payment
+          (
+            shop_id,
+            payment_group_id,
+            payment_id,
+            payment_alt_id,
+            payment_name,
+            payment_name_mobile,
+            payment_price_kbn,
+            payment_price,
+            usable_price_min,
+            usable_price_max,
+            mobile_disp_flg,
+            display_order,
+            valid_flg,
+            del_flg,
+            date_created,
+            date_changed,
+            last_changed,
+            user_management_level_not_use,
+            order_owner_kbn_not_use
+          )
+          values
+          (
+            '0',
+            '',
+            'K40',
+            '',
+            'アトカラ',
+            '',
+            '0',
+            0,
+            1,
+            null,
+            '0',
+            40,
+            '0',
+            '0',
+            GETDATE(),
+            GETDATE(),
+            'Migration',
+            '',
+            ''
+          )
+        END
+        GO
+
+        IF NOT EXISTS (SELECT * FROM w2_PaymentPrice WHERE payment_id = 'K40')
+        BEGIN
+          INSERT INTO w2_PaymentPrice
+          (
+            shop_id,
+            payment_group_id,
+            payment_id,
+            payment_price_no,
+            tgt_price_bgn,
+            tgt_price_end,
+            payment_price,
+            del_flg,
+            date_created,
+            date_changed,
+            last_changed
+          )
+          VALUES
+          (
+            '0',
+            '',
+            'K40',
+            1,
+            0,
+            0,
+            0,
+            '0',
+            GETDATE(),
+            GETDATE(),
+            'Migration'
+          )
+        END
+        GO
+      ]]>
+    </Statement>
+  </Up>
+</Migration>

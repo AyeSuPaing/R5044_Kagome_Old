@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザーポイント系SQLサブステートメントXML(UserPoint_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<UserPoint_Sub>
+
+  <!-- ユーザーポイント情報一覧取得用WHERE文 -->
+  <USERPOINT_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+         WHERE  (
+            @srch_key = 0 AND w2_User.user_id like @srch_word_like_escaped + '%'  ESCAPE '#'  -- ユーザーID
+            OR
+            @srch_key = 1 AND w2_User.name like '%' + @srch_word_like_escaped + '%' ESCAPE '#'      -- 氏名
+            OR
+            @srch_key = 2 AND w2_User.name_kana like '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- フリガナ
+            OR
+            @srch_key = 3
+            AND
+            (
+              w2_User.tel1 LIKE @srch_word_like_escaped + '%' ESCAPE '#'
+              OR
+              w2_User.tel1_1 + w2_User.tel1_2 + w2_User.tel1_3 LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'      -- 電話番号
+            )
+            OR
+            @srch_key = 4 AND w2_User.mail_addr like '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- メールアドレス
+            OR
+            @srch_key = 4 AND w2_User.mail_addr2 like '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- モバイルメールアドレス
+            OR
+            @srch_key = 5
+            AND
+            (
+              w2_User.zip LIKE @srch_word_like_escaped + '%' ESCAPE '#'
+              OR
+              w2_User.zip1 + w2_User.zip2 LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'      -- 郵便番号
+            )
+            OR
+            @srch_key = 6 AND w2_User.addr like '%' + @srch_word_like_escaped + '%' ESCAPE '#'      -- 住所
+            OR
+            @srch_key = 7 AND w2_User.company_name LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- 企業名
+            OR
+            @srch_key = 8 AND w2_User.company_post_name LIKE '%' + @srch_word_like_escaped + '%' ESCAPE '#'  -- 部署名
+            OR
+            @srch_key = 99 AND  @srch_word_like_escaped = ''                                      -- 条件なし
+            )     
+            AND w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+      ]]>
+    </Statement>
+  </USERPOINT_SEARCH_WHERE>
+
+  <!-- ユーザーポイント情報一覧出力用ORDER_BY -->
+  <USERPOINT_EXPORT_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN  0 THEN point
+            ELSE '1'
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN  2 THEN point_exp
+            ELSE NULL
+          END 
+          ASC, 
+          CASE @sort_kbn
+            WHEN  8 THEN w2_User.user_id
+            ELSE '1'
+          END
+          ASC,
+          CASE @sort_kbn
+            WHEN  1 THEN point
+            ELSE '1'
+          END 
+          DESC, 
+          CASE @sort_kbn
+            WHEN  3 THEN point_exp
+            ELSE NULL
+          END 
+          DESC,
+          CASE @sort_kbn
+            WHEN  9 THEN w2_User.user_id
+            ELSE '1'
+          END
+          DESC,
+          -- 常に一定の結果セットを得るため、主キー（昇順）ソート
+          w2_User.user_id ASC
+      ]]>
+    </Statement>
+  </USERPOINT_EXPORT_ORDER_BY>
+</UserPoint_Sub>

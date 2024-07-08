@@ -1,0 +1,53 @@
+﻿@*
+=========================================================================================================
+  Module      : 商品並び替え(_ProductInput.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@model w2.Cms.Manager.ViewModels.Coordinate.ProductSortModel
+@{
+	var parentName = Model.BaseName + ".";
+}
+@{ var productIndex = 0;}
+@foreach (var product in Model.ProductList)
+{
+	<div class="feature-selected-item-list-item" data-list-id="@product.Id">
+		<div class="feature-selected-item-list-item-drag"><span class="icon-drag"></span></div>
+		<div class="feature-selected-item-list-item-order">@Html.TextBoxFor(model => product.SortNo, new
+			{
+				Name = parentName + "ProductList[" + productIndex + "].SortNo",
+				@style="display:none"
+			})
+		</div>
+		<div class="feature-selected-item-list-item-id">@product.Id</div>
+		<div class="feature-selected-item-list-item-variation">
+			@if (product.VariationList.Count != 0)
+			{
+				@Html.DropDownListFor(model=>product.VariationId, product.VariationList,new
+				{
+					Name = parentName + "ProductList[" + productIndex + "].VariationId",
+					selected = product.VariationId,
+					onchange ="change_variation();"
+				})
+			}
+			else
+			{
+				<p>-</p>
+			}
+		</div>
+		<div class="feature-selected-item-list-item-image"><img src="@product.ImagePath" alt="商品画像"></div>
+		<div class="feature-selected-item-list-item-name">@product.Name</div>
+		@Html.HiddenFor(model => product.Name, new
+		{
+			Name = parentName + "ProductList[" + productIndex + "].Name"
+		})
+		@Html.HiddenFor(model => product.Id, new
+		{
+			Name = parentName + "ProductList[" + productIndex + "].Id"
+		})
+		<div class="feature-selected-item-list-item-stock">@product.Stock</div>
+		<div class="feature-selected-item-list-item-delete"><input id="sample_checkbox1" type="checkbox" name="delete_checkbox"></div>
+	</div>
+	productIndex++;
+}

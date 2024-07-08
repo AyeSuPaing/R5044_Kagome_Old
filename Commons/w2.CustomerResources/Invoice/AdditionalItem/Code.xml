@@ -1,0 +1,351 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2008/01/reportdefinition">
+  <Code>
+    <![CDATA[
+      ' 最初のページの最大行数
+Public m_iMaxFirstPageRows = 10
+
+' ２ページ目以降の最大行数
+Public m_iMaxRows = 19
+
+' モール区分
+Public Enum eMallKbn
+	OwnSite
+	Rakuten
+	Yahoo
+End Enum
+
+'=======================================================
+' モール区分取得
+'=======================================================
+Public Function GetMallKbn(strMallKbn As String) As eMallKbn
+
+	Select Case strMallKbn
+		Case "R"
+			GetMallKbn = eMallKbn.Rakuten
+		Case "Y"
+			GetMallKbn = eMallKbn.Yahoo
+		Case Else
+			GetMallKbn = eMallKbn.OwnSite
+	End Select
+
+End Function
+
+'=======================================================
+' 表示非表示が切り替わる行のうち、表示される行の数を返す
+'=======================================================
+Private Function GetExtendOptionRowCount( _
+		ByVal blPointEnabled As Boolean, _
+		ByVal blCouponEnabled As Boolean, _
+		ByVal blMemberRankEnabled As Boolean, _
+		ByVal setPromotionEnabled As Boolean, _
+		ByVal strMallKbn As String) As Integer
+
+	' 変数宣言
+	Dim mallKbn As eMallKbn
+	mallKbn = GetMallKbn(strMallKbn)
+
+	' 初期値代入
+	GetExtendOptionRowCount = 0
+
+	' ポイント系が表示される場合
+	If IsDisplayOptionArea(mallKbn, blPointEnabled) Then
+		GetExtendOptionRowCount = GetExtendOptionRowCount + 1
+	End If
+
+	' クーポン系が表示される場合
+	If IsDisplayOptionArea(mallKbn, blCouponEnabled) Then
+		GetExtendOptionRowCount = GetExtendOptionRowCount + 1
+	End If
+
+	' 会員ランク系が表示される場合
+	If IsDisplayOwnSiteOptionArea(mallKbn, blMemberRankEnabled) Then
+		GetExtendOptionRowCount = GetExtendOptionRowCount + 1
+	End If
+
+	' セットプロモーション系が表示される場合
+	If IsDisplayOwnSiteOptionArea(mallKbn, setPromotionEnabled) Then
+		GetExtendOptionRowCount = GetExtendOptionRowCount + 1
+	End If
+
+	' 備考欄を表示する必要がある場合
+	If IsDisplayNotes(mallKbn) Then
+		GetExtendOptionRowCount = GetExtendOptionRowCount + 1
+	End If
+
+End Function
+
+'=======================================================
+' 備考欄表示判定
+'=======================================================
+Public Function IsDisplayNotes(mallKbn As eMallKbn) As Boolean
+	' 自社以外の場合は備考欄を表示する
+        IsDisplayNotes = mallKbn <> eMallKbn.OwnSite
+
+End Function
+
+'=======================================================
+' オプション系表示判定
+'=======================================================
+Public Function IsDisplayOptionArea(mallKbn As eMallKbn, blOptionEnabled As Boolean) As Boolean
+	' オプションが有効な場合、かつ自社サイトまたは楽天サイトで購入された場合
+	IsDisplayOptionArea = blOptionEnabled _
+						  And (mallKbn = eMallKbn.Rakuten Or mallKbn = eMallKbn.OwnSite)
+
+End Function
+
+'=======================================================
+' オプション系表示判定
+'=======================================================
+Public Function IsDisplayOwnSiteOptionArea(mallKbn As eMallKbn, blOptionEnabled As Boolean) As Boolean
+	' オプションが有効な場合、かつ自社サイで購入された場合
+	IsDisplayOwnSiteOptionArea = (blOptionEnabled _
+						And mallKbn = eMallKbn.OwnSite)
+
+End Function
+
+'=======================================================
+' 最初に改ページが発生する最小の行数を取得
+'=======================================================
+Public Function GetMinRowCountUntilFirstChangingPage( _
+		ByVal blPointEnabled As Boolean, _
+		ByVal blCouponEnabled As Boolean, _
+		ByVal blMemberRankEnabled As Boolean, _
+		ByVal setPromotionEnabled As Boolean, _
+		ByVal strMallKbn As String, _
+		ByVal blGiftFlg As Boolean) As Integer
+
+	GetMinRowCountUntilFirstChangingPage = 0
+	Select Case GetExtendOptionRowCount(blPointEnabled, blCouponEnabled, blMemberRankEnabled, setPromotionEnabled, strMallKbn)
+		Case 0
+			GetMinRowCountUntilFirstChangingPage = 6
+		Case 1
+			GetMinRowCountUntilFirstChangingPage = 5
+		Case 2
+			GetMinRowCountUntilFirstChangingPage = 4
+		Case 3
+			GetMinRowCountUntilFirstChangingPage = 3
+		Case 4
+			GetMinRowCountUntilFirstChangingPage = 2
+		Case 5
+			GetMinRowCountUntilFirstChangingPage = 1
+	End Select
+
+    If blGiftFlg Then ' 複数配送の場合、「配送商品合計」を表示するため1行分追加
+       GetMinRowCountUntilFirstChangingPage = GetMinRowCountUntilFirstChangingPage - 1
+    End If
+
+End Function
+
+'=======================================================
+' 最初に改ページが発生する最小の行数を取得
+'=======================================================
+Public Function GetMinRowCountUntilLastChangingPage( _
+		ByVal blPointEnabled As Boolean, _
+		ByVal blCouponEnabled As Boolean, _
+		ByVal blMemberRankEnabled As Boolean, _
+		ByVal setPromotionEnabled As Boolean, _
+		ByVal strMallKbn As String, _
+		ByVal blGiftFlg As Boolean) As Integer
+
+	Dim iFirstChangingPageRowCount As Integer
+        iFirstChangingPageRowCount = GetMinRowCountUntilFirstChangingPage(blPointEnabled, blCouponEnabled, blMemberRankEnabled, setPromotionEnabled, strMallKbn, blGiftFlg)
+	GetMinRowCountUntilLastChangingPage = m_iMaxRows - (m_iMaxFirstPageRows - iFirstChangingPageRowCount)
+
+End Function
+
+'=======================================================
+' 最初に改ページが発生する行数を取得
+'=======================================================
+Public Function GetNumberOfFirstChangingPage( _
+		ByVal iRowCount As Integer, _
+		ByVal blPointEnabled As Boolean, _
+		ByVal blCouponEnabled As Boolean, _
+		ByVal blMemberRankEnabled As Boolean, _
+		ByVal setPromotionEnabled As Boolean, _
+		ByVal strMallKbn As String, _
+		ByVal blGiftFlg As Boolean) As Integer
+
+	Dim iMinRowCount As Integer
+        iMinRowCount = GetMinRowCountUntilFirstChangingPage(blPointEnabled, blCouponEnabled, blMemberRankEnabled, setPromotionEnabled, strMallKbn, blGiftFlg)
+	GetNumberOfFirstChangingPage = GetNumberOfChangingPage(iRowCount, iMinRowCount, m_iMaxFirstPageRows)
+
+End Function
+
+'=======================================================
+' 初回以降に改ページが発生する行数を取得
+'=======================================================
+Public Function GetNumberOfLastChangingPage( _
+		ByVal iRowCount As Integer, _
+		ByVal blPointEnabled As Boolean, _
+		ByVal blCouponEnabled As Boolean, _
+		ByVal blMemberRankEnabled As Boolean, _
+		ByVal setPromotionEnabled As Boolean, _
+		ByVal strMallKbn As String, _
+		ByVal blGiftFlg As Boolean) As Integer
+
+	Dim iMinRowCount As Integer
+	iMinRowCount = GetMinRowCountUntilLastChangingPage(blPointEnabled, blCouponEnabled, blMemberRankEnabled, setPromotionEnabled, strMallKbn, blGiftFlg)
+	GetNumberOfLastChangingPage = GetNumberOfLastChangingPage(iRowCount, iMinRowCount, m_iMaxRows)
+
+End Function
+
+'=======================================================
+' 改ページのタイミングを設定する為に必要な値を取得
+'=======================================================
+Public Function GetNumberOfChangingPage( _
+		ByVal iRowCount As Integer, _
+		ByVal iMinRowCount As Integer, _
+		ByVal iMaxRowCount As Integer) As Integer
+
+        If iRowCount < iMinRowCount Then
+		' グループの行数が最初のページに改行が発生する最小行数よりも小さい場合、
+		' 最低行数をセットする
+		GetNumberOfChangingPage = iMinRowCount
+
+        ElseIf iRowCount < m_iMaxFirstPageRows Then
+		' グループの行数が最初のページの最大行数よりも小さい場合、
+		' グループの行数をセットする
+		' ※合計金額等の表示欄を全て同じページ内に表示するため
+		GetNumberOfChangingPage = iRowCount
+
+	Else
+		' 最初のページの最大行数をセットする
+		GetNumberOfChangingPage = iMaxRowCount
+	End If
+
+End Function
+
+'=======================================================
+' 改ページのタイミングを設定する為に必要な値を取得
+'=======================================================
+Public Function GetNumberOfLastChangingPage( _
+		ByVal iRowCount As Integer, _
+		ByVal iMinRowCount As Integer, _
+		ByVal iMaxRowCount As Integer) As Integer
+
+	Dim iRowCountMod As Integer
+    iRowCountMod = iRowCount Mod m_iMaxRows
+
+	If iRowCountMod = 0 Then
+		' 最大行数で割った余りがゼロの場合は最大行数をセットする
+		GetNumberOfLastChangingPage = iMaxRowCount
+
+    ElseIf iRowCount < iMinRowCount Then
+		' グループの行数が最初のページに改行が発生する最小行数よりも小さい場合、
+		' 最低行数をセットする
+		GetNumberOfLastChangingPage = iMinRowCount
+
+    ElseIf iRowCount < m_iMaxRows Then
+		' グループの行数が最初のページの最大行数よりも小さい場合、
+		' グループの行数をセットする
+		' ※合計金額等の表示欄を全て同じページ内に表示するため
+		GetNumberOfLastChangingPage = iRowCountMod
+
+	Else
+		' 最初のページの最大行数をセットする
+		GetNumberOfLastChangingPage = iMaxRowCount
+	End If
+
+End Function
+
+'=======================================================
+' 改ページの為のグループを作成する為のメソッド
+'=======================================================
+Public Function CalculateNewPageRowGroup( _
+		ByVal iRowCount As Integer, _
+		ByVal iRowNumber As Integer, _
+		ByVal blPointEnabled As Boolean, _
+		ByVal blCouponEnabled As Boolean, _
+		ByVal blMemberRankEnabled As Boolean, _
+		ByVal setPromotionEnabled As Boolean, _
+		ByVal strMallKbn As String, _
+		ByVal blGiftFlg As Boolean) As Integer
+
+
+	Dim iNumberOfFirstChangingPage As Integer
+	iNumberOfFirstChangingPage = GetNumberOfFirstChangingPage(iRowCount, blPointEnabled, blCouponEnabled, blMemberRankEnabled, setPromotionEnabled, strMallKbn, blGiftFlg)
+
+	' 最初のページのみ表示回数が指定の回数になる様に調整
+	CalculateNewPageRowGroup = Int((m_iMaxRows - iNumberOfFirstChangingPage + iRowNumber - 1) / m_iMaxRows)
+
+End Function
+
+'=======================================================
+' 複数配送の注文か判定表示
+'=======================================================
+Public Function IsMultiShippingArea(ByVal blGiftFlg As Boolean) As Boolean
+    IsMultiShippingArea = blGiftFlg
+End Function
+
+'=======================================================
+' 複数配送の注文時に注文者or送り主を切替る為のメソッド
+'=======================================================
+Public Function GetOwnerOrSenderAddr( _
+  ByVal blGiftFlg As Boolean, _
+  ByVal strOwnerAddr1 As String, _
+  ByVal strOwnerAddr2 As String, _
+  ByVal strSenderAddr1 As String, _
+  ByVal strSenderAddr2 As String) As String
+
+    If IsMultiShippingArea(blGiftFlg) Then
+          GetOwnerOrSenderAddr = strSenderAddr1 + strSenderAddr2 
+    Else
+          GetOwnerOrSenderAddr = strOwnerAddr1 + strOwnerAddr2
+    End If
+End Function
+
+'=======================================================
+' 複数配送の注文時に注文者or送り主を切替る為のメソッド
+'=======================================================
+Public Function GetOwnerOrSenderName( _
+  ByVal blGiftFlg As Boolean, _
+  ByVal strOwnerName As String, _
+  ByVal strSenderName As String) As String
+
+    If IsMultiShippingArea(blGiftFlg) Then
+        GetOwnerOrSenderName = strSenderName 
+    Else
+        GetOwnerOrSenderName = strOwnerName 
+    End If
+End Function
+
+'=======================================================
+' メソッド
+'=======================================================
+Public Function IsDetailPriceArea( _
+  ByVal blGiftFlg As Boolean, _
+  ByVal strShippingNo As String, _
+  ByVal strShippingNoMax As String) As Boolean
+
+  IsDetailPriceArea = (IsMultiShippingArea(blGiftFlg) And (strShippingNo = strShippingNoMax))
+
+End Function
+
+'=======================================================
+' 別出荷フラグ
+'=======================================================
+Public Function IsAnotherShippingFlg(anotherShippingFlg As String) As Boolean
+  IsAnotherShippingFlg = anotherShippingFlg.Equals("1")
+      End Function
+
+'=======================================================
+' 商品名セルで表示する適当な情報を作成
+'=======================================================
+Public Function CreateDisplayInfoForProductNameCell( _
+  ByVal productName As String, _
+  ByVal setpromotionName As String, _
+  ByVal productOptionText As String) As String
+
+  '商品名セルに入れる最大の文字数
+  Const maxCharacterInCell As Integer = 93
+
+  Dim rawInfo = productName _
+    + IIf(setpromotionName <> "", "　「" + setpromotionName + "」対象商品", "") _
+    + IIf(productOptionText <> "", "　" + productOptionText, "")
+
+  CreateDisplayInfoForProductNameCell = IIf(Len(rawInfo) <= maxCharacterInCell, rawInfo, Left(rawInfo, maxCharacterInCell - 3) + "・・・")
+End Function
+    ]]>
+</Code>
+</Report>

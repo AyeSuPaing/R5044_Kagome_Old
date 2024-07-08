@@ -1,0 +1,76 @@
+﻿@*
+=========================================================================================================
+  Module      : 商品バリエーション検索結果パーツ(_ProductVariationSearchResult.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.App.Common.Web.Page
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.Shared.ProductSearchResultModel[]
+<p class="mb20">絞り込み条件に一致する商品一覧</p>
+<div class="pager-content">
+	<p class="pager-content-info hide-list-detail">@((Model.Any()) ? Model[0].CountHtml : string.Empty)</p>
+	<span id="previous" class="pager-content-previous icon-arrow-left" onclick="before_page();"></span>
+	<span id="next" class="pager-content-next icon-arrow-right" onclick="next_page();"></span>
+</div>
+<div class="item-search-result-head">
+	<div class="item-search-result-head-all" style="width: 60px;">
+	@if (Model.Any() && Model[0].Controller != Constants.CONTROLLER_W2CMS_MANAGER_SCORING_SALE)
+	{
+		<input type="checkbox" id="all"><label for="all">@CommonPage.ReplaceTag("@@ScoringSale.all_text.name@@")</label>
+	}
+	</div>
+	<div class="item-search-result-head-item-id">
+		<span>商品ID</span>
+		<br/><span>バリエーション</span>
+	</div>
+	<div class="item-search-result-head-item-name">
+		<span>商品名</span>
+		<br/><span>バリエーション</span>
+	</div>
+	<div class="item-search-result-head-category">カテゴリ名</div>
+	<div class="item-search-result-head-price">商品表示価格</div>
+	<div class="item-search-result-head-date">販売開始日</div>
+</div>
+<div class="item-search-result-contents custom-scroll-area">
+	@foreach (var product in Model)
+	{
+		<div class="item-search-result-content">
+			<div class="item-search-result-content-all">
+				<input type="@((Model[0].Controller == Constants.CONTROLLER_W2CMS_MANAGER_SCORING_SALE) ? "radio" : "checkbox")" name="productId" id="@product.ProductId|@product.VariationId" value="@product.ToJson()" onclick="productVariationClick(this)">
+			</div>
+			<div class="item-search-result-content-item-id">
+				<span>@product.ProductId</span>
+				<br/><span>@product.VariationId</span>
+			</div>
+			<div class="item-search-result-content-item-name">
+				<span>@product.ProductName</span>
+				<br/><span>@product.VariationName</span>
+			</div>
+			<div class="item-search-result-content-category">@product.CategoryName</div>
+			<div class="item-search-result-content-price">@product.Price</div>
+			<div class="item-search-result-content-date">@product.SellStartDate</div>
+		</div>
+	}
+</div>
+<script type="text/javascript">
+	$('#all').on('change', function() {
+		$('input[name=productId]').prop('checked', this.checked);
+
+		var productIds = $('input[name=productId]')
+			.prop('checked', this.checked)
+			.map(function () { return $(this).attr('id'); })
+			.get();
+
+		$.each(productIds, function (i, value) {
+			if ($('input[name=productId]').prop("checked")) {
+				var addedDelimiter = ($('#productVariationHidden').val().length === 0) ? "\"" : ",\"";
+				$('#productVariationHidden').val($('#productVariationHidden').val() + addedDelimiter + value + "\"");
+			} else {
+				var removedDelimiter = ($('#productVariationHidden').val().split(',').length === 1) ? "\"" : ",\"";
+				$('#productVariationHidden').val($('#productVariationHidden').val().replace(removedDelimiter + value + "\"", ""));
+			}
+		})
+	})
+</script>

@@ -1,0 +1,697 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 購買構成分析セッティングXML(OrderKbnAnalysis.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderKbnAnalysis>
+  <!--
+    構成分析のStatementへはname、count、total（各レコード共通）が取得できるSQLを記述する。
+
+    （例）
+
+    ========================================
+    [name]         [count]         [total]
+    ========================================
+    男             35              68
+    女             32              68
+    不明           1               68
+    ========================================
+  -->
+  <OrderFrequencyAnalysis>
+    <Title>購入回数による新規/リピート分析</Title>
+    <Unit>人</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- 分析データ取得（一時テーブルへ）
+
+      SELECT  *
+        INTO  #tableTemp 
+        FROM  (
+          SELECT  user_id,
+                  COUNT(order_id) AS buy_count
+            FROM  w2_Order
+           WHERE  del_flg = '0'
+             AND  return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+             AND  order_status NOT IN ('ODR_CNSL', 'TMP_CNSL') -- キャンセル・仮注文キャンセルは含めない
+          GROUP BY w2_Order.user_id
+          ) temp
+
+      -- totalデータ作成
+      DECLARE @total_count decimal
+      SELECT  @total_count = COUNT(*)
+        FROM  #tableTemp
+      
+      -- 集計
+
+      SELECT  datas.name,
+          datas.count,
+          @total_count AS total
+        FROM  (
+            (
+            SELECT  1 AS no,
+                '10回以上' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  buy_count >= 10
+            ) 
+            UNION ALL
+            (
+            SELECT  2 AS no,
+                '9回' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  buy_count = 9
+            )
+            UNION ALL
+            (
+            SELECT  3 AS no,
+                '8回' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  buy_count = 8
+            )
+            UNION ALL
+            (
+            SELECT  4 AS no,
+                '7回' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  buy_count = 7
+            )
+            UNION ALL
+            (
+            SELECT  5 AS no,
+                '6回' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  buy_count = 6
+            )
+            UNION ALL
+            (
+            SELECT  6 AS no,
+                '5回' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  buy_count = 5
+            )
+            UNION ALL
+            (
+            SELECT  7 AS no,
+                '4回' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  buy_count = 4
+            )
+            UNION ALL
+            (
+            SELECT  8 AS no,
+                '3回' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  buy_count = 3
+            )
+            UNION ALL
+            (
+            SELECT  9 AS no,
+                '2回' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  buy_count = 2
+            )
+            UNION ALL
+            (
+            SELECT  10 AS no,
+                '1回' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  buy_count = 1
+            )
+          ) datas
+      ]]>
+    </Statement>
+  </OrderFrequencyAnalysis>
+  
+  <OrderItemCountAnalysis>
+    <Title>購入数量分析</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- 分析データ取得（一時テーブルへ）
+
+      SELECT  *
+        INTO  #tableTemp 
+        FROM  (
+          SELECT  w2_Order.order_id,
+              SUM(w2_OrderItem.item_quantity) AS item_count
+          FROM  w2_Order,
+              w2_OrderItem
+          WHERE  w2_Order.order_id = w2_OrderItem.order_id
+            AND  w2_Order.del_flg = '0'
+            AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+          GROUP BY w2_Order.order_id
+          ) temp
+
+      -- totalデータ作成
+      DECLARE @total_count decimal
+      SELECT  @total_count = COUNT(*)
+        FROM  #tableTemp
+      
+      -- 集計
+
+      SELECT  datas.name,
+          datas.count,
+          @total_count AS total
+        FROM  (
+            (
+            SELECT  1 AS no,
+                '5個以上' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  item_count >= 5
+            )
+            UNION ALL
+            (
+            SELECT  2 AS no,
+                '4個' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  item_count = 4
+            )
+            UNION ALL
+            (
+            SELECT  3 AS no,
+                '3個' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  item_count = 3
+            )
+            UNION ALL
+            (
+            SELECT  4 AS no,
+                '2個' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  item_count = 2
+            )
+            UNION ALL
+            (
+            SELECT  5 AS no,
+                '1個' AS name,
+                count(*) AS count
+              FROM  #tableTemp
+             WHERE  item_count = 1
+            )
+          ) datas
+      ]]>
+    </Statement>
+  </OrderItemCountAnalysis>
+  
+  <OrderPriceAnalysis>
+    <Title>購入金額分析</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+      WITH AllData AS
+      (
+         SELECT  order_id,
+                 order_price_total
+           FROM  w2_Order
+          WHERE  del_flg = '0'
+            AND  return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+      ),
+      TotalCount AS
+      (
+         SELECT  COUNT(order_id) total
+           FROM  AllData
+      ),
+      GroupedData AS
+      (
+         SELECT  (
+                    CASE
+                      WHEN order_price_total >= @@order_price_from_1@@ THEN '@@order_price_name_1@@'
+                      WHEN order_price_total < @@order_price_to_2@@ AND order_price_total >= @@order_price_from_2@@ THEN '@@order_price_name_2@@'
+                      WHEN order_price_total < @@order_price_to_3@@ AND order_price_total >= @@order_price_from_3@@ THEN '@@order_price_name_3@@'
+                      WHEN order_price_total < @@order_price_to_4@@ AND order_price_total >= @@order_price_from_4@@ THEN '@@order_price_name_4@@'
+                      WHEN order_price_total < @@order_price_to_5@@ AND order_price_total >= @@order_price_from_5@@ THEN '@@order_price_name_5@@'
+                      WHEN order_price_total < @@order_price_to_6@@ AND order_price_total >= @@order_price_from_6@@ THEN '@@order_price_name_6@@'
+                      WHEN order_price_total < @@order_price_to_7@@ AND order_price_total >= @@order_price_from_7@@ THEN '@@order_price_name_7@@'
+                      WHEN order_price_total < @@order_price_to_8@@ AND order_price_total >= @@order_price_from_8@@ THEN '@@order_price_name_8@@'
+                      WHEN order_price_total < @@order_price_to_9@@ AND order_price_total >= @@order_price_from_9@@ THEN '@@order_price_name_9@@'
+                      WHEN order_price_total < @@order_price_to_10@@ AND order_price_total >= @@order_price_from_10@@ THEN '@@order_price_name_10@@'
+                      WHEN order_price_total < @@order_price_to_11@@ AND order_price_total >= @@order_price_from_11@@ THEN '@@order_price_name_11@@'
+                      WHEN order_price_total < @@order_price_to_12@@ THEN '@@order_price_name_12@@'
+                    END
+                 ) AS price_name,
+                 (
+                    CASE
+                      WHEN order_price_total >= @@order_price_from_1@@ THEN 1
+                      WHEN order_price_total < @@order_price_to_2@@ AND order_price_total >= @@order_price_from_2@@ THEN 2
+                      WHEN order_price_total < @@order_price_to_3@@ AND order_price_total >= @@order_price_from_3@@ THEN 3
+                      WHEN order_price_total < @@order_price_to_4@@ AND order_price_total >= @@order_price_from_4@@ THEN 4
+                      WHEN order_price_total < @@order_price_to_5@@ AND order_price_total >= @@order_price_from_5@@ THEN 5
+                      WHEN order_price_total < @@order_price_to_6@@ AND order_price_total >= @@order_price_from_6@@ THEN 6
+                      WHEN order_price_total < @@order_price_to_7@@ AND order_price_total >= @@order_price_from_7@@ THEN 7
+                      WHEN order_price_total < @@order_price_to_8@@ AND order_price_total >= @@order_price_from_8@@ THEN 8
+                      WHEN order_price_total < @@order_price_to_9@@ AND order_price_total >= @@order_price_from_9@@ THEN 9
+                      WHEN order_price_total < @@order_price_to_10@@ AND order_price_total >= @@order_price_from_10@@ THEN 10
+                      WHEN order_price_total < @@order_price_to_11@@ AND order_price_total >= @@order_price_from_11@@ THEN 11
+                      WHEN order_price_total < @@order_price_to_12@@ THEN 12
+                    END
+                 ) AS no
+          FROM  AllData
+      )
+      SELECT  GroupedData.price_name AS name,
+              COUNT(GroupedData.price_name) AS count,
+              TotalCount.total
+        FROM  GroupedData
+              CROSS JOIN TotalCount
+      GROUP BY TotalCount.total, GroupedData.price_name, GroupedData.no
+      ORDER BY no
+      ]]>
+    </Statement>
+  </OrderPriceAnalysis>
+
+  <OrderUserKbnOrverviewAnalysis>
+    <Title>顧客区分分析(概要)</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- totalデータ作成
+      DECLARE @total_count decimal
+      SELECT  @total_count = COUNT(order_id)
+        FROM  w2_Order
+       WHERE  del_flg = '0'
+         AND  return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+         
+      -- 分析データ集計
+      SELECT  datas.name,
+          SUM(datas.count) AS count,
+          @total_count AS total
+        FROM  (
+            (
+            SELECT  1 AS no,
+                '全ての会員' AS name,
+                COUNT(w2_Order.order_id) AS count
+              FROM  w2_Order LEFT JOIN w2_User
+                ON  w2_Order.user_id = w2_User.user_id
+             WHERE  w2_User.user_kbn LIKE '%USER%' ESCAPE '#'
+               AND  w2_Order.del_flg = '0'
+               AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)                      
+            )
+            UNION ALL
+            (
+            SELECT  2 AS no,
+                '全てのゲスト' AS name,
+                COUNT(w2_Order.order_id) AS count
+              FROM  w2_Order LEFT JOIN w2_User
+                ON  w2_Order.user_id = w2_User.user_id
+             WHERE  w2_User.user_kbn LIKE '%GEST%' ESCAPE '#'
+               AND  w2_Order.del_flg = '0'
+               AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)                      
+            )
+          ) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+  </OrderUserKbnOrverviewAnalysis>
+
+  <OrderUserKbnDetailAnalysis>
+    <Title>顧客区分分析(詳細)</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- totalデータ作成
+      DECLARE @total_count decimal
+      SELECT  @total_count = COUNT(order_id)
+        FROM  w2_Order
+       WHERE  del_flg = '0'
+         AND  return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+         
+      -- 分析データ集計
+      SELECT  datas.name,
+          SUM(datas.count) AS count,
+          @total_count AS total
+        FROM  (
+            (
+            SELECT  1 AS no,
+                @@ValueText:user_kbn:PC_USER@@ AS name,
+                COUNT(w2_Order.order_id) AS count
+              FROM  w2_Order LEFT JOIN w2_User
+                ON  w2_Order.user_id = w2_User.user_id
+             WHERE  w2_User.user_kbn = 'PC_USER'
+               AND  w2_Order.del_flg = '0'
+               AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)                      
+            )
+            UNION ALL
+            (
+            SELECT  2 AS no,
+                @@ValueText:user_kbn:PC_GEST@@ AS name,
+                COUNT(w2_Order.order_id) AS count
+              FROM  w2_Order LEFT JOIN w2_User
+                ON  w2_Order.user_id = w2_User.user_id
+             WHERE  w2_User.user_kbn = 'PC_GEST'
+               AND  w2_Order.del_flg = '0'
+               AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)                      
+            )
+            UNION ALL
+            (
+            SELECT  3 AS no,
+                @@ValueText:user_kbn:SP_USER@@ AS name,
+                COUNT(w2_Order.order_id) AS count
+              FROM  w2_Order LEFT JOIN w2_User
+                ON  w2_Order.user_id = w2_User.user_id
+             WHERE  w2_User.user_kbn = 'SP_USER'
+               AND  w2_Order.del_flg = '0'
+               AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+            )
+            UNION ALL
+            (
+            SELECT  4 AS no,
+                @@ValueText:user_kbn:SP_GEST@@ AS name,
+                COUNT(w2_Order.order_id) AS count
+              FROM  w2_Order LEFT JOIN w2_User
+                ON  w2_Order.user_id = w2_User.user_id
+             WHERE  w2_User.user_kbn = 'SP_GEST'
+               AND  w2_Order.del_flg = '0'
+               AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+            UNION ALL
+            (
+            SELECT  5 AS no,
+                @@ValueText:user_kbn:MB_USER@@ AS name,
+                COUNT(w2_Order.order_id) AS count
+              FROM  w2_Order LEFT JOIN w2_User
+                ON  w2_Order.user_id = w2_User.user_id
+             WHERE  w2_User.user_kbn = 'MB_USER'
+               AND  w2_Order.del_flg = '0'
+               AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+            )
+            UNION ALL
+            (
+            SELECT  6 AS no,
+                @@ValueText:user_kbn:MB_GEST@@ AS name,
+                COUNT(w2_Order.order_id) AS count
+              FROM  w2_Order LEFT JOIN w2_User
+                ON  w2_Order.user_id = w2_User.user_id
+             WHERE  w2_User.user_kbn = 'MB_GEST'
+               AND  w2_Order.del_flg = '0'
+               AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+            )
+            UNION ALL
+            (
+            SELECT  7 AS no,
+                @@ValueText:user_kbn:OFF_USER@@ AS name,
+                COUNT(w2_Order.order_id) AS count
+              FROM  w2_Order LEFT JOIN w2_User
+                ON  w2_Order.user_id = w2_User.user_id
+             WHERE  w2_User.user_kbn = 'OFF_USER'
+               AND  w2_Order.del_flg = '0'
+               AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+            )
+            UNION ALL
+            (
+            SELECT  8 AS no,
+                @@ValueText:user_kbn:OFF_GEST@@ AS name,
+                COUNT(w2_Order.order_id) AS count
+              FROM  w2_Order LEFT JOIN w2_User
+                ON  w2_Order.user_id = w2_User.user_id
+             WHERE  w2_User.user_kbn = 'OFF_GEST'
+               AND  w2_Order.del_flg = '0'
+               AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+            )
+            )
+          ) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+  </OrderUserKbnDetailAnalysis>
+
+  <OrderOrderKbnAnalysis>
+    <Title>注文区分分析</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- totalデータ作成
+      DECLARE @total_count decimal
+      SELECT  @total_count = COUNT(order_id)
+        FROM  w2_Order
+       WHERE  del_flg = '0'
+         AND  return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)
+         
+      -- 分析データ集計
+      SELECT  datas.name,
+              SUM(datas.count) AS count,
+              @total_count AS total
+        FROM  (@@ValueText:order_kbn@@) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+  </OrderOrderKbnAnalysis>
+
+  <OrderPaymentKbnAnalysis>
+    <Title>決済区分分析</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- totalデータ作成
+      DECLARE @total_count decimal
+      SELECT  @total_count = COUNT(order_id)
+        FROM  w2_Order
+       WHERE  del_flg = '0'
+         AND  return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)      
+
+      -- 分析データ集計
+      SELECT  w2_Payment.payment_name  AS name,
+          ISNULL(SUM(datas.count),0) AS count,
+          @total_count AS total
+        FROM  w2_Payment LEFT JOIN
+          (
+          SELECT  w2_Order.order_payment_kbn,
+              COUNT(order_id) AS count
+            FROM  w2_Order
+           WHERE  w2_Order.del_flg = '0'
+             AND  w2_Order.return_exchange_kbn = '00' -- 元注文のみ(返品交換分は含めない)                
+          GROUP BY w2_Order.order_payment_kbn
+          ) datas
+          ON  w2_Payment.payment_id = datas.order_payment_kbn
+       WHERE  w2_Payment.valid_flg = '1'
+         AND  ( '1' = '@@amazon_payment_option@@' OR w2_Payment.payment_id != '@@amazon_payment_id@@' )
+      GROUP BY w2_Payment.payment_name
+      ]]>
+    </Statement>
+  </OrderPaymentKbnAnalysis>
+
+  <OrderCancelAnalysis>
+    <Title>キャンセル/返品/交換区分分析</Title>
+    <Unit>件</Unit>
+    <Statement>
+      <![CDATA[
+      /* ダーティリードを許可して共有ロックを掛けなくする */
+      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      
+      -- totalデータ作成
+      DECLARE @total_count decimal
+      SELECT  @total_count = COUNT(order_id)
+        FROM  w2_Order
+       WHERE  del_flg = '0'
+
+      -- 分析データ集計         
+      SELECT  datas.name,
+          SUM(datas.count) AS count,
+          @total_count AS total
+        FROM  (
+            (
+            SELECT  1 AS no,
+                'キャンセル' AS name,
+                COUNT(order_id) AS count
+              FROM  w2_Order
+             WHERE  order_status = 'ODR_CNSL'   -- キャンセル
+               AND  return_exchange_kbn = '00'  -- 元注文のみ(返品交換分は含めない)
+               AND  del_flg = '0'
+            )
+            UNION ALL
+            (
+            SELECT  2 AS no,
+                '返品' AS name,
+                COUNT(order_id) AS count
+              FROM  w2_Order
+             WHERE  return_exchange_kbn = '01'  -- 返品
+               AND  del_flg = '0'
+            )
+            UNION ALL
+            (
+            SELECT  2 AS no,
+                '交換' AS name,
+                COUNT(order_id) AS count
+              FROM  w2_Order
+             WHERE  return_exchange_kbn = '10'  -- 交換
+               AND  del_flg = '0'
+            )
+          ) datas
+      GROUP BY datas.name, datas.no
+      ]]>
+    </Statement>
+  </OrderCancelAnalysis>
+
+  <CountryIsCoodeAnalysis>
+    <Title>アクセス国ISOコード</Title>
+    <Unit>回</Unit>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- テンポラリテーブル作成
+        DECLARE @tableTemp table(no int IDENTITY(1,1), access_country_iso_code varchar(10))
+        INSERT INTO @tableTemp (access_country_iso_code)
+        SELECT  access_country_iso_code
+          FROM  w2_User
+         WHERE  access_country_iso_code != ''
+        GROUP BY w2_User.access_country_iso_code
+      
+        -- totalデータ作成
+        DECLARE @total_count decimal
+        SELECT  @total_count = COUNT(order_id)
+          FROM  w2_OrderOwner
+         WHERE  access_country_iso_code != ''
+         
+        -- 分析データ集計
+
+        SELECT  temp.access_country_iso_code as name,
+                ISNULL(SUM(datas.count),0) AS count,
+                @total_count AS total
+          FROM  @tableTemp temp 
+                LEFT JOIN 
+                (
+                  (
+                  SELECT  1 AS no,
+                          access_country_iso_code AS name,
+                          COUNT(order_id) AS count
+                    FROM  w2_OrderOwner
+                  GROUP BY access_country_iso_code
+                  )
+                ) datas ON
+                (
+                  temp.access_country_iso_code = datas.name
+                )
+        GROUP BY temp.access_country_iso_code, temp.no
+      ]]>
+    </Statement>
+  </CountryIsCoodeAnalysis>
+
+  <LanguageCodeAnalysis>
+    <Title>表示言語コード</Title>
+    <Unit>回</Unit>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- テンポラリテーブル作成
+        DECLARE @tableTemp table(no int IDENTITY(1,1), disp_language_code varchar(10))
+        INSERT INTO @tableTemp (disp_language_code)
+        SELECT  disp_language_code 
+          FROM  w2_User
+         WHERE  disp_language_code != ''
+       GROUP BY w2_User.disp_language_code
+       
+        -- totalデータ作成
+        DECLARE @total_count decimal
+        SELECT  @total_count = COUNT(order_id)
+          FROM  w2_OrderOwner
+         WHERE  disp_language_code != ''
+         
+        -- 分析データ集計
+       
+        SELECT  temp.disp_language_code as name,
+                ISNULL(SUM(datas.count),0) AS count,
+                @total_count AS total
+          FROM  @tableTemp temp 
+                LEFT JOIN 
+                (
+                  (
+                  SELECT  1 AS no,
+                          disp_language_code AS name,
+                          COUNT(order_id) AS count
+                    FROM  w2_OrderOwner
+                  GROUP BY disp_language_code
+                  )
+                ) datas ON
+                (
+                  temp.disp_language_code = datas.name
+                )
+        GROUP BY temp.disp_language_code, temp.no
+      ]]>
+    </Statement>
+  </LanguageCodeAnalysis>
+
+  <CurrencyCodeAnalysis>
+    <Title>表示通貨コード</Title>
+    <Unit>回</Unit>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        -- テンポラリテーブル作成
+        DECLARE @tableTemp table(no int IDENTITY(1,1), disp_currency_code varchar(10))
+        INSERT INTO @tableTemp (disp_currency_code)
+        SELECT  disp_currency_code
+          FROM  w2_User
+         WHERE  disp_currency_code != ''
+       GROUP BY w2_User.disp_currency_code
+       
+        -- totalデータ作成
+        DECLARE @total_count decimal
+        SELECT  @total_count = COUNT(order_id)
+          FROM  w2_OrderOwner
+         WHERE  disp_currency_code != ''
+         
+        -- 分析データ集計
+       
+        SELECT  temp.disp_currency_code as name,
+                ISNULL(SUM(datas.count),0) AS count,
+                @total_count AS total
+          FROM  @tableTemp temp 
+                LEFT JOIN 
+                (
+                  (
+                  SELECT  1 AS no,
+                          disp_currency_code AS name,
+                          COUNT(order_id) AS count
+                    FROM  w2_OrderOwner
+                  GROUP BY disp_currency_code
+                  )
+                ) datas ON
+                (
+                  temp.disp_currency_code = datas.name
+                )
+        GROUP BY temp.disp_currency_code, temp.no
+      ]]>
+    </Statement>
+  </CurrencyCodeAnalysis>
+
+</OrderKbnAnalysis>

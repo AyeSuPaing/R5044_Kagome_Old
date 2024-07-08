@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 会員ランク系SQLステートメントXML(MemberRank.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<MemberRank>
+  
+  <!-- 会員ランクリスト取得 -->
+  <GetMemberRankList>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MemberRank.*
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.valid_flg = 'ON'  -- 有効
+        ORDER BY w2_MemberRank.member_rank_order
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetMemberRankList>
+
+  <!-- 会員ランク詳細情報取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MemberRank.*
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.member_rank_id = @member_rank_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- デフォルト会員ランク情報取得 -->
+  <GetDefaultMemberRank>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_MemberRank.*
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.default_member_rank_setting_flg = 'ON' -- デフォルトランク
+           AND  w2_MemberRank.valid_flg = 'ON'  -- 有効
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetDefaultMemberRank>
+
+  <!-- 会員ランクのユーザー・商品への割当てチェック -->
+  <CheckMemberRankUse>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*) AS check_count
+          FROM  w2_MemberRank
+         WHERE  w2_MemberRank.member_rank_id = @member_rank_id
+           AND  NOT EXISTS
+                (
+                  SELECT  member_rank_id
+                    FROM  w2_User
+                   WHERE  w2_User.member_rank_id = @member_rank_id
+                )
+           AND  NOT EXISTS
+                (
+                  SELECT  member_rank_id
+                    FROM  w2_Product
+                   WHERE  w2_Product.display_member_rank = @member_rank_id
+                      OR  w2_Product.buyable_member_rank = @member_rank_id
+                )
+           AND  NOT EXISTS
+                (
+                  SELECT  member_rank_id
+                    FROM  w2_ProductCategory
+                   WHERE  w2_ProductCategory.member_rank_id = @member_rank_id
+                )
+           AND  NOT EXISTS
+                (
+                  SELECT  member_rank_id
+                    FROM  w2_ProductPrice
+                   WHERE  w2_ProductPrice.member_rank_id = @member_rank_id
+                )
+           AND  NOT EXISTS
+                (
+                  SELECT  member_rank_id
+                    FROM  w2_SetPromotion
+                   WHERE  w2_SetPromotion.target_member_rank = @member_rank_id
+                )
+           AND  NOT EXISTS
+                (
+                  SELECT  member_rank_id
+                    FROM  w2_FeatureAreaBanner
+                   WHERE  w2_FeatureAreaBanner.condition_member_rank_id = @member_rank_id
+                )
+           AND  NOT EXISTS
+                (
+                  SELECT  member_rank_id
+                    FROM  w2_PageDesign
+                   WHERE  w2_PageDesign.condition_member_rank_id = @member_rank_id
+                )
+           AND  NOT EXISTS
+                (
+                  SELECT  member_rank_id
+                    FROM  w2_PartsDesign
+                   WHERE  w2_PartsDesign.condition_member_rank_id = @member_rank_id
+                )
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckMemberRankUse>
+
+</MemberRank>

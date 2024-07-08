@@ -1,0 +1,565 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_Order' AND column_name = 'combined_org_order_ids')
+          ALTER TABLE dbo.w2_Order ADD combined_org_order_ids [nvarchar] (MAX) NOT NULL DEFAULT (N'')
+        GO
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchase' AND column_name = 'combined_org_fixedpurchase_ids')
+          ALTER TABLE dbo.w2_FixedPurchase ADD combined_org_fixedpurchase_ids [nvarchar] (MAX) NOT NULL DEFAULT (N'')
+        GO
+        IF NOT EXISTS (SELECT * FROM w2_MailTemplate WHERE mail_id = '00000401')
+          INSERT INTO w2_MailTemplate
+          (
+            shop_id,
+            mail_id,
+            mail_name,
+            mail_from,
+            mail_to,
+            mail_cc,
+            mail_bcc,
+            mail_subject,
+            mail_body,
+            mail_subject_mobile,
+            mail_body_mobile,
+            mail_attachmentfile_path,
+            del_flg,
+            date_created,
+            date_changed,
+            last_changed,
+            mail_from_name,
+            mail_category,
+            auto_send_flg
+          )
+          VALUES
+          (
+           '0',
+           '00000401',
+           '注文同梱完了メールテンプレート（通常注文・定期注文）',
+           'bh@w2s.xyz',
+           '',
+           '',
+           '',
+           '同梱完了メール（通常注文・定期注文）',
+           '@@ owner_name1 @@@@ owner_name2 @@様
+
+いつもありがとうございます。
+
+お品物を追加いただき、ありがとうございました。
+下記内容にて承りましたので、ご確認をお願いいたします。
+
+===================================
+●ご注文内容
+---------------------------------------------------------------------
+【注文番号】　 : @@ order_id @@
+【注文日時】　 : @@ order_date @@
+【お届け予定日】 : @@ shipping_date @@
+【お届け予定時間帯】 : @@ shipping_time @@
+【お客様情報】 : @@ owner_name @@ 様
+〒@@ owner_zip @@ 
+@@ owner_addr1 @@@@ owner_addr2 @@@@ owner_addr3 @@@@ owner_addr4 @@
+TEL: @@ owner_tel1 @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【お客様からの通信欄】
+@@ memo @@
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseFixedPurchase@@>
+【定期購入情報】
+定期購入ID ：@@ fixed_purchase_id @@
+配送パターン ：@@ fixed_purchase_pattern @@
+次回配送日　 ：@@ next_shipping_date_yyyymd(d) @@
+次々回配送日 ：@@ next_next_shipping_date_yyyymd(d) @@
+</@@UseFixedPurchase@@>
+
+
+【商品】
+---------------------------------------------------------------------
+@@ order_items @@
+=====================================================================
+商品代金（税込み） ：@@ order_price_subtotal @@円
+送料　　　　　　　 ：@@ order_price_shipping @@円
+手数料　　　　　　 ：@@ order_price_exchange @@円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@>
+</@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@>
+</@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@>
+</@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+=====================================================================
+お支払合計金額　　 ：@@ order_price_total @@円
+
+<@@UsePoint@@>
+■利用ポイント情報
+利用ポイント：@@ order_point_use @@
+ポイント利用額：@@ order_point_use_yen @@円
+</@@UsePoint@@>
+<@@UseCoupon@@>
+■利用クーポン情報
+利用クーポンID：@@ coupon_code @@
+利用クーポン名：@@ coupon_disp_name @@
+クーポン利用額：@@ order_coupon_use @@円
+</@@UseCoupon@@>
+---------------------------------------------------------------------
+===================================
+・こちらの注文に覚えがない場合は、たいへんお手数ですが、
+　至急ご連絡を頂けますようお願いいたします。
+
+そのほかご相談や、何かご不明の点等ございましたら、
+カスタマーサービスセンターまでお問い合わせくださいませ。
+今後とも末長いご利用をよろしくお願いいたします。',
+           '',
+           '',
+           '',
+           '0',
+           GETDATE(),
+           GETDATE(),
+           'ｗ２ユーザー',
+           '',
+           'Order',
+           '1'
+          )
+        GO
+        IF NOT EXISTS (SELECT * FROM w2_MailTemplate WHERE mail_id = '00000402')
+          INSERT INTO w2_MailTemplate
+          (
+            shop_id,
+            mail_id,
+            mail_name,
+            mail_from,
+            mail_to,
+            mail_cc,
+            mail_bcc,
+            mail_subject,
+            mail_body,
+            mail_subject_mobile,
+            mail_body_mobile,
+            mail_attachmentfile_path,
+            del_flg,
+            date_created,
+            date_changed,
+            last_changed,
+            mail_from_name,
+            mail_category,
+            auto_send_flg
+          )
+          VALUES
+          (
+           '0',
+           '00000402',
+           '注文同梱完了メール(定期台帳)',
+           'bh@w2s.xyz',
+           '',
+           '',
+           '',
+           '同梱完了メール（定期台帳）',
+           '@@ owner_name1 @@@@ owner_name2 @@様
+
+いつもありがとうございます。
+
+お品物を追加いただき、ありがとうございました。
+下記内容にて承りましたので、ご確認をお願いいたします。
+
+●定期購入情報
+--------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【配送方法】　 : @@ shipping_method @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【次回配送日】 ：@@ next_shipping_date_yyyymd(d) @@
+【次々回配送日】：@@ next_next_shipping_date_yyyymd(d) @@
+【配送希望時間帯】 :@@ shipping_time @@
+
+--------------------------------------------------
+・こちらの注文に覚えがない場合は、たいへんお手数ですが、
+　至急ご連絡を頂けますようお願いいたします。
+
+そのほかご相談や、何かご不明の点等ございましたら、
+カスタマーサービスセンターまでお問い合わせくださいませ。
+今後とも末長いご利用をよろしくお願いいたします。',
+           '',
+           '',
+           '',
+           '0',
+           GETDATE(),
+           GETDATE(),
+           'ｗ２ユーザー',
+           '',
+           'FixedPurchase',
+           '0'
+          )
+        GO
+        IF NOT EXISTS (SELECT * FROM w2_MailTemplate WHERE mail_id = '00000403')
+          INSERT INTO w2_MailTemplate
+          (
+            shop_id,
+            mail_id,
+            mail_name,
+            mail_from,
+            mail_to,
+            mail_cc,
+            mail_bcc,
+            mail_subject,
+            mail_body,
+            mail_subject_mobile,
+            mail_body_mobile,
+            mail_attachmentfile_path,
+            del_flg,
+            date_created,
+            date_changed,
+            last_changed,
+            mail_from_name,
+            mail_category,
+            auto_send_flg
+          )
+          VALUES
+          (
+           '0',
+           '00000403',
+           '注文同梱配送メール(今回のみ)',
+           'bh@w2s.xyz',
+           '',
+           '',
+           '',
+           '同梱配送 今回のみ',
+           '@@ owner_name1 @@@@ owner_name2 @@様
+
+いつもありがとうございます。 
+
+ご注文状況につきましてお調べいたしましたところ、
+近日発送予定の商品が複数控えておりましたため、
+お受け取りの手間をお掛けしないよう、
+ご注文を１つにまとめさせていただきました。
+
+次回分より、各商品の定期周期に従い、
+配送を行ってまいりますが、今回のように発送間隔が近いものにつきましては、
+今後も同梱発送を行ってまいりますため、
+別発送をご希望の際には、お気軽にお申し付けくださいませ。
+
+今回分につきましては、下記内容にて承りました。
+ご確認の程、よろしくお願いいたします。
+
+●ご注文内容
+===================================
+---------------------------------------------------------------------
+【注文番号】　 : @@ order_id @@
+【注文日時】　 : @@ order_date @@
+【お届け予定日】 : @@ shipping_date @@
+【お届け予定時間帯】 : @@ shipping_time @@
+【お客様情報】 : @@ owner_name @@ 様
+〒@@ owner_zip @@ 
+@@ owner_addr1 @@@@ owner_addr2 @@@@ owner_addr3 @@@@ owner_addr4 @@
+TEL: @@ owner_tel1 @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【お客様からの通信欄】
+@@ memo @@
+<@@PublishCoupon@@>
+■クーポン発行
+今回以下のクーポンを発行致しました。
+次回ご注文の際にご利用下さい。
+@@ publish_coupons @@
+</@@PublishCoupon@@>
+<@@UseFixedPurchase@@>
+【定期購入情報】
+定期購入ID ：@@ fixed_purchase_id @@
+配送パターン ：@@ fixed_purchase_pattern @@
+次回配送日　 ：@@ next_shipping_date_yyyymd(d) @@
+次々回配送日 ：@@ next_next_shipping_date_yyyymd(d) @@
+</@@UseFixedPurchase@@>
+
+【商品】
+---------------------------------------------------------------------
+@@ order_items @@
+=====================================================================
+商品代金（税込み） ：@@ order_price_subtotal @@円
+送料　　　　　　　 ：@@ order_price_shipping @@円
+手数料　　　　　　 ：@@ order_price_exchange @@円
+<@@SetPromotionProductDiscount@@>
+<@@SetPromotionProductDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額 : ¥@@ product_discount_amount @@
+</@@SetPromotionProductDiscountLoop@@>
+</@@SetPromotionProductDiscount@@>
+<@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionShippingChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(送料割引) : ¥@@ shipping_charge_discount_amount @@
+</@@SetPromotionShippingChargeDiscountLoop@@>
+</@@SetPromotionShippingChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscount@@>
+<@@SetPromotionPaymentChargeDiscountLoop@@>
+「@@ setpromotion_disp_name @@」割引額(決済手数料割引) : ¥@@ payment_charge_discount_amount @@
+</@@SetPromotionPaymentChargeDiscountLoop@@>
+</@@SetPromotionPaymentChargeDiscount@@>
+<@@HasAnySetPromotionDiscount@@>
+セットプロモーション割引額合計：\@@ setpromotion_total_discount_amount @@
+</@@HasAnySetPromotionDiscount@@>
+=====================================================================
+お支払合計金額　　 ：@@ order_price_total @@円
+
+<@@UsePoint@@>
+■利用ポイント情報
+利用ポイント：@@ order_point_use @@
+ポイント利用額：@@ order_point_use_yen @@円
+</@@UsePoint@@>
+<@@UseCoupon@@>
+■利用クーポン情報
+利用クーポンID：@@ coupon_code @@
+利用クーポン名：@@ coupon_disp_name @@
+クーポン利用額：@@ order_coupon_use @@円
+</@@UseCoupon@@>
+---------------------------------------------------------------------
+===================================
+ご不明点がございましたら、
+カスタマーセンターまでご連絡くださいませ。
+今後とも末永いご愛用をよろしくお願いいたします。',
+           '',
+           '',
+           '',
+           '0',
+           GETDATE(),
+           GETDATE(),
+           'ｗ２ユーザー',
+           '',
+           'Order',
+           '0'
+          )
+        GO
+        IF NOT EXISTS (SELECT * FROM w2_MailTemplate WHERE mail_id = '00000404')
+          INSERT INTO w2_MailTemplate
+          (
+            shop_id,
+            mail_id,
+            mail_name,
+            mail_from,
+            mail_to,
+            mail_cc,
+            mail_bcc,
+            mail_subject,
+            mail_body,
+            mail_subject_mobile,
+            mail_body_mobile,
+            mail_attachmentfile_path,
+            del_flg,
+            date_created,
+            date_changed,
+            last_changed,
+            mail_from_name,
+            mail_category,
+            auto_send_flg
+          )
+          VALUES
+          (
+          '0',
+          '00000404',
+          '注文同梱配送メール(定期台帳)',
+          'bh@w2s.xyz',
+          '',
+          '',
+          '',
+          '同梱配送（定期台帳）',
+          '@@ owner_name1 @@@@ owner_name2 @@様
+いつもありがとうございます。 
+
+定期でのご注文につきましてお調べいたしましたところ、
+定期周期が同じご注文がございましたので、
+お受け取りの手間をお掛けしないよう、
+ご注文を１つにまとめさせていただきました。
+次回分より、下記内容で配送をさせて頂きます。
+
+下記内容にて承りましたため、ご確認をお願いいたします。
+●定期ご注文内容
+---------------------------------------------------------
+【定期購入番号】　 : @@ fixed_purchase_id @@
+【定期購入設定】　 : @@ fixed_purchase_pattern @@
+【最終購入日】 : @@ last_order_date @@
+【購入回数】 : @@ order_count @@
+【配送方法】　 : @@ shipping_method @@
+【支払方法】　 : @@ payment_name @@
+【配送先】　　 : @@ shipping_name @@ 様
+〒@@ shipping_zip @@ 
+@@ shipping_addr1 @@@@ shipping_addr2 @@@@ shipping_addr3 @@@@ shipping_addr4 @@
+TEL: @@ shipping_tel1 @@
+【配送希望時間帯】 :@@ shipping_time @@
+
+次回は「@@ next_shipping_estimated_date @@」にお届け予定でございます。
+※「ご指定なし」の場合は、最短でお届けいたします
+---------------------------------------------------------
+ご不明点がございましたら、
+カスタマーセンターまでご連絡くださいませ。
+今後とも末永いご愛用をよろしくお願いいたします。',
+          '',
+          '',
+          '',
+          '0',
+          GETDATE(),
+          GETDATE(),
+          'ｗ２ユーザー',
+          '',
+          'FixedPurchase',
+          '0'
+          )
+
+        GO
+        IF NOT EXISTS (SELECT * FROM w2_MailTemplate WHERE mail_id = '00000405')
+          INSERT INTO w2_MailTemplate
+          (
+            shop_id,
+            mail_id,
+            mail_name,
+            mail_from,
+            mail_to,
+            mail_cc,
+            mail_bcc,
+            mail_subject,
+            mail_body,
+            mail_subject_mobile,
+            mail_body_mobile,
+            mail_attachmentfile_path,
+            del_flg,
+            date_created,
+            date_changed,
+            last_changed,
+            mail_from_name,
+            mail_category,
+            auto_send_flg
+          )
+          VALUES
+          (
+           '0',
+           '00000405',
+           '注文同梱エラー通知メール【管理者向け】',
+           'bh@w2s.xyz',
+           'bh@w2s.xyz',
+           '',
+           '',
+           '【管理者向け】注文同梱エラー通知メール(注文ID:@@ order_id @@))',
+           '@@ message @@',
+           '',
+           '',
+           '',
+           '0',
+           GETDATE(),
+           GETDATE(),
+           'ｗ２ユーザー',
+           '',
+           '',
+           '1'
+          )
+        GO
+        IF NOT EXISTS (SELECT extend_status_no FROM [w2_OrderExtendStatusSetting] WHERE shop_id = '0' AND extend_status_no = 33)
+          INSERT INTO [w2_OrderExtendStatusSetting] (
+            [shop_id]
+            ,[extend_status_no]
+            ,[extend_status_name]
+            ,[extend_status_discription]
+            ,[date_created]
+            ,[date_changed]
+            ,[last_changed]
+          )
+          VALUES
+          (
+            '0'
+            ,33
+            ,'【システム使用】注文時同梱フラグ'
+            ,''
+            ,GETDATE()
+            ,GETDATE()
+            ,'ｗ２ユーザー'
+          )
+        GO
+        IF NOT EXISTS (SELECT extend_status_no FROM [w2_OrderExtendStatusSetting] WHERE shop_id = '0' AND extend_status_no = 34)
+          INSERT INTO [w2_OrderExtendStatusSetting] (
+            [shop_id]
+            ,[extend_status_no]
+            ,[extend_status_name]
+            ,[extend_status_discription]
+            ,[date_created]
+            ,[date_changed]
+            ,[last_changed]
+          )
+          VALUES
+          (
+            '0'
+            ,34
+            ,'【システム使用】注文時同梱キャンセルフラグ'
+            ,''
+            ,GETDATE()
+            ,GETDATE()
+            ,'ｗ２ユーザー'
+          )
+        GO
+        IF NOT EXISTS (SELECT extend_status_no FROM [w2_OrderExtendStatusSetting] WHERE shop_id = '0' AND extend_status_no = 35)
+          INSERT INTO [w2_OrderExtendStatusSetting] (
+            [shop_id]
+            ,[extend_status_no]
+            ,[extend_status_name]
+            ,[extend_status_discription]
+            ,[date_created]
+            ,[date_changed]
+            ,[last_changed]
+          )
+          VALUES
+          (
+            '0'
+            ,35
+            ,'【システム使用】管理同梱フラグ'
+            ,''
+            ,GETDATE()
+            ,GETDATE()
+            ,'ｗ２ユーザー'
+          )
+        GO
+        IF NOT EXISTS (SELECT extend_status_no FROM [w2_OrderExtendStatusSetting] WHERE shop_id = '0' AND extend_status_no = 36)
+          INSERT INTO [w2_OrderExtendStatusSetting] (
+            [shop_id]
+            ,[extend_status_no]
+            ,[extend_status_name]
+            ,[extend_status_discription]
+            ,[date_created]
+            ,[date_changed]
+            ,[last_changed]
+          )
+          VALUES
+          (
+            '0'
+            ,36
+            ,'【システム使用】管理同梱キャンセルフラグ'
+            ,''
+            ,GETDATE()
+            ,GETDATE()
+            ,'ｗ２ユーザー'
+          )
+        GO
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

@@ -1,0 +1,232 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ブランド情報SQLステートメントXML(ProductBrand.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2010 All Rights Reserved.
+=========================================================================================================
+-->
+<ProductBrand>
+  
+  <!-- ブランド情報一覧の該当件数取得 -->
+  <GetProductBrandCount>
+    <Statement>
+      <![CDATA[
+      -- 全件数取得
+      SELECT  ISNULL(COUNT(w2_ProductBrand.brand_id), 0) AS row_count
+        FROM  w2_ProductBrand
+              [[ PRODUCTBRAND_SEARCH_WHERE ]]
+    ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetProductBrandCount>
+
+  <!-- ブランド情報一覧情報取得（ページャー） -->
+  <GetProductBrandListPager>
+    <Statement>
+      <![CDATA[
+      -- 該当情報取得
+      SELECT  w2_ProductBrand.*
+        FROM  (
+                SELECT  w2_ProductBrand.brand_id,
+                        ROW_NUMBER()
+                        OVER
+                        (
+                          [[ PRODUCTBRAND_SEARCH_ORDER_BY ]]
+                        ) AS row_num
+                  FROM  w2_ProductBrand
+                        [[ PRODUCTBRAND_SEARCH_WHERE ]]
+              ) AS RowIndex
+              INNER JOIN w2_ProductBrand ON
+              (
+                RowIndex.brand_id = w2_ProductBrand.brand_id
+              )
+        WHERE  @bgn_row_num <= RowIndex.row_num
+          AND  RowIndex.row_num <= @end_row_num
+    ORDER BY  RowIndex.row_num ASC
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetProductBrandListPager>
+
+  <!-- ブランド情報リスト取得-->
+  <GetProductBrandList>
+    <Statement>
+      <![CDATA[      
+       SELECT  w2_ProductBrand.*
+         FROM  w2_ProductBrand
+    ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetProductBrandList>
+
+  <!-- ブランド情報取得-->
+  <GetProductBrand>
+    <Statement>
+      <![CDATA[      
+       SELECT  w2_ProductBrand.*
+         FROM  w2_ProductBrand
+        WHERE  w2_ProductBrand.brand_id = @brand_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetProductBrand>
+
+  <!-- デフォルトブランド取得-->
+  <GetProductDefaultBrand>
+    <Statement>
+      <![CDATA[      
+       SELECT  w2_ProductBrand.*
+         FROM  w2_ProductBrand
+        WHERE  w2_ProductBrand.default_flg = 'ON'
+    ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetProductDefaultBrand>
+
+  <!-- デフォルトブランドリセット -->
+  <ResetProductDefaultBrand>
+    <Statement>
+      <![CDATA[
+      UPDATE  w2_ProductBrand
+         SET  w2_ProductBrand.default_flg = 'OFF',
+              w2_ProductBrand.date_changed = GETDATE(),
+              w2_ProductBrand.last_changed = @last_changed
+       WHERE  w2_ProductBrand.default_flg = 'ON'
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </ResetProductDefaultBrand>
+
+  <!-- デフォルトブランド設定 -->
+  <SetProductDefaultBrand>
+    <Statement>
+      <![CDATA[
+      UPDATE  w2_ProductBrand
+         SET  w2_ProductBrand.default_flg = 'OFF',
+              w2_ProductBrand.date_changed = GETDATE(),
+              w2_ProductBrand.last_changed = @last_changed
+       WHERE  w2_ProductBrand.default_flg = 'ON'
+         
+      UPDATE  w2_ProductBrand
+         SET  w2_ProductBrand.default_flg = 'ON',
+              w2_ProductBrand.date_changed = GETDATE(),
+              w2_ProductBrand.last_changed = @last_changed
+       WHERE  w2_ProductBrand.brand_id = @brand_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </SetProductDefaultBrand>
+
+  <!-- ブランド情報登録 -->
+  <InsertProductBrand>
+    <Statement>
+      <![CDATA[
+      INSERT  w2_ProductBrand
+              (
+                w2_ProductBrand.brand_id,
+                w2_ProductBrand.brand_name,
+                w2_ProductBrand.brand_title,
+                w2_ProductBrand.seo_keyword,
+                w2_ProductBrand.additional_design_tag,
+                w2_ProductBrand.valid_flg,
+                w2_ProductBrand.date_created,
+                w2_ProductBrand.date_changed,
+                w2_ProductBrand.last_changed
+              ) 
+      VALUES  (
+                @brand_id,
+                @brand_name,
+                @brand_title,
+                @seo_keyword,
+                @additional_design_tag,
+                @valid_flg,
+                getdate(),
+                getdate(),
+                @last_changed
+              )
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_name" Type="nvarchar" Size="100" />
+      <Input Name="brand_title" Type="nvarchar" Size="100" />
+      <Input Name="seo_keyword" Type="nvarchar" Size="200" />
+      <Input Name="additional_design_tag" Type="nvarchar" Size="max" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertProductBrand>
+
+  <!-- ブランド情報更新 -->
+  <UpdateProductBrand>
+    <Statement>
+      <![CDATA[
+      UPDATE  w2_ProductBrand 
+         SET  w2_ProductBrand.brand_id = @brand_id,
+              w2_ProductBrand.brand_name = @brand_name,
+              w2_ProductBrand.brand_title = @brand_title,
+              w2_ProductBrand.seo_keyword = @seo_keyword,
+              w2_ProductBrand.additional_design_tag = @additional_design_tag,
+              w2_ProductBrand.valid_flg = @valid_flg,
+              w2_ProductBrand.date_changed = getdate(),
+              w2_ProductBrand.last_changed = @last_changed
+       WHERE  w2_ProductBrand.brand_id = @brand_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+      <Input Name="brand_name" Type="nvarchar" Size="100" />
+      <Input Name="brand_title" Type="nvarchar" Size="100" />
+      <Input Name="seo_keyword" Type="nvarchar" Size="200" />
+      <Input Name="additional_design_tag" Type="nvarchar" Size="max" />
+      <Input Name="valid_flg" Type="nvarchar" Size="10" />
+      <Input Name="date_created" Type="datetime" />
+      <Input Name="date_changed" Type="datetime" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateProductBrand>
+
+  <!-- ブランド情報削除 -->
+  <DeleteProductBrand>
+    <Statement>
+      <![CDATA[
+      DELETE  w2_ProductBrand
+        WHERE  w2_ProductBrand.brand_id = @brand_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteProductBrand>
+
+  <!-- 重複チェック（ブランド情報登録時） -->
+  <CheckDuplicationInsertBrandId>
+    <Statement>
+      <![CDATA[
+      SELECT  COUNT(brand_id) AS brand_count 
+        FROM  w2_ProductBrand 
+       WHERE  w2_ProductBrand.brand_id = @brand_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="brand_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationInsertBrandId>
+
+</ProductBrand>

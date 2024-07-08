@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ポイントキャンペーンルール系SQLステートメントXML(PointRuleCampaign.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<PointRuleCampaign>
+
+  <!-- 
+    ポイントキャンペーンルール重複チェック
+    ポイント加算区分、優先順位が重複しているかチェックを行う｡(登録時)
+   -->
+  <CheckDuplicationInsertPointIncKbn>
+    <Statement>
+      <![CDATA[
+      SELECT 
+          COUNT(point_rule_id) AS point_rule_count 
+      FROM 
+          w2_PointRule 
+      WHERE 
+          w2_PointRule.dept_id = @dept_id 
+      AND           
+          w2_PointRule.point_inc_kbn = @point_inc_kbn  -- ポイント加算区分
+
+      AND 
+          w2_PointRule.priority = @priority_chk      -- 優先度
+      AND  
+          w2_PointRule.point_rule_kbn = '02'  -- キャンペーン
+      AND 
+          w2_PointRule.point_kbn = '01'    -- 通常ポイント 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_inc_kbn" Type="nvarchar" Size="10" />
+      <Input Name="priority_chk" Type="int" />
+    </Parameter>
+  </CheckDuplicationInsertPointIncKbn>
+
+  <!-- 
+    ポイントキャンペーンルール重複チェック
+    ポイント加算区分、優先順位が重複しているかチェックを行う｡(更新時)
+   -->
+  <CheckDuplicationModifyPointIncKbn>
+    <Statement>
+      <![CDATA[
+      SELECT 
+          COUNT(point_rule_id) AS point_rule_count 
+      FROM 
+          w2_PointRule 
+      WHERE 
+          w2_PointRule.dept_id = @dept_id 
+      AND           
+          w2_PointRule.point_rule_id != @point_rule_id 
+      AND           
+          w2_PointRule.point_inc_kbn = @point_inc_kbn  -- ポイント加算区分
+
+      AND 
+          w2_PointRule.priority = @priority_chk     -- 優先度
+      AND  
+          w2_PointRule.point_rule_kbn = '02'  -- キャンペーン
+      AND 
+          w2_PointRule.point_kbn = '01'    -- 通常ポイント       
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="point_rule_id" Type="nvarchar" Size="10" />
+      <Input Name="point_inc_kbn" Type="nvarchar" Size="10" />
+      <Input Name="priority_chk" Type="int" />
+    </Parameter>
+  </CheckDuplicationModifyPointIncKbn>
+</PointRuleCampaign>

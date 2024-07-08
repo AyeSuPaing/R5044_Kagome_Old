@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+
+        /* w2_MailSendLog */
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_MailSendLog' AND column_name = 'text_history_no')
+        ALTER TABLE dbo.w2_MailSendLog ADD [text_history_no] [bigint] NOT NULL DEFAULT (0)
+        GO
+        
+        IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_MailSendLog' AND column_name = 'mail_addr_kbn')
+        ALTER TABLE dbo.w2_MailSendLog ADD [mail_addr_kbn] [nvarchar] (10) NOT NULL DEFAULT (N'')
+        GO
+
+
+
+if exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[w2_MailSendTextHistory]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)
+drop table [dbo].[w2_MailSendTextHistory]
+GO
+/*
+=========================================================================================================
+  Module      : メール配信時文章履歴 (w2_MailSendTextHistory.sql)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2018 All Rights Reserved.
+=========================================================================================================
+*/
+CREATE TABLE [dbo].[w2_MailSendTextHistory] (
+	[text_history_no] [bigint] IDENTITY (1, 1),
+	[dept_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mailtext_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[maildist_id] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[maildist_name] [nvarchar] (30) NOT NULL DEFAULT (N''),
+	[mail_body] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[mail_body_html] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[mailtext_body_mobile] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[mailtext_decome] [nvarchar] (MAX) NOT NULL DEFAULT (N''),
+	[date_created] [datetime] NOT NULL DEFAULT (getdate())
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[w2_MailSendTextHistory] WITH NOCHECK ADD
+	CONSTRAINT [PK_w2_MailSendTextHistory] PRIMARY KEY  CLUSTERED
+	(
+		[text_history_no]
+	) ON [PRIMARY]
+GO
+
+
+
+        ]]>
+    </Statement>
+  </Up>
+</Migration>

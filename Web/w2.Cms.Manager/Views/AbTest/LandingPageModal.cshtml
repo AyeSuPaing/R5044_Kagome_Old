@@ -1,0 +1,205 @@
+﻿@*
+=========================================================================================================
+  Module      : LPページ入力モーダル(LandingPageModal.cshtml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2021 All Rights Reserved.
+=========================================================================================================
+*@
+@using w2.Cms.Manager.Codes
+@model w2.Cms.Manager.ViewModels.AbTest.LandingPageSettingModalModel
+<div id="@Model.DivId">
+<input type="hidden" id="modal-no"/>
+<input type="hidden" id="base-name"/>
+<input type="hidden" id="productIdsHidden"/>
+<input type="hidden" id="productVariationHidden"/>
+<p class="modal-inner-ttl under-text">対象LPページを設定する</p>
+<p class="modal-inner-ttl-under-text">対象LPページを設定してください。</p>
+<div class="tab-contents">
+<div class="tab-content" id="tab-content-item">
+<div class="item-search">
+@using (Html.BeginForm("", "", new { }, FormMethod.Post, new { Id = "product_search_form" + Model.ExtraId, Onsubmit = "return false;" }))
+{
+	<table class="search_table cmn-form" cellspacing="1" cellpadding="2" width="100%" border="0">
+		<tr>
+			<td class="search_title_bg" width="95">
+				<img alt="" class="search_title_arrow" src="~/Images/Common/arrow_01.gif"/>
+				ページID
+			</td>
+			<td class="search_item_bg" width="130">
+				@Html.TextBoxFor(m => Model.ParamModel.PageId, new { @class = "product-search-textbox" })
+			</td>
+			<td class="search_title_bg" width="95">
+				<img alt="" class="search_title_arrow" src="~/Images/Common/arrow_01.gif"/>
+				ページ名/ファイル名
+			</td>
+			<td class="search_item_bg" width="130">
+				@Html.TextBoxFor(m => Model.ParamModel.Name, new { @class = "product-search-textbox" })
+			</td>
+			<td class="search_btn_bg" width="83">
+				<div class="search_btn_main">
+					<input type="button" class="btn btn-main btn-size-m" value="検索" onclick="ini_search_click();">
+				</div>
+			</td>
+		</tr>
+	</table>
+	<div class="item-search-result" style="height: 400px;">
+	</div>
+	<div class="modal-footer-action">
+		<input type="button" class="btn btn-main btn-size-m" value="追加する" onclick="add_product_click()">
+	</div>
+}
+	<input type="button" style="float: right;" class="btn btn-main btn-size-m" value="閉じる" onclick="modal.close();">
+</div>
+</div>
+</div>
+</div>
+<script type="text/javascript">
+	$(function () {
+		toggle.ini();
+		input_datepicker.ini();
+	});
+
+	// 追加するボタンをクリック
+	function add_product_click() {
+		var productIdsHidden = $('#productIdsHidden').val();
+		if (productIdsHidden.length === 0) {
+			notification.show('最低一つはLPにチェックを入れてください', 'warning', 'fadeout');
+			return;
+		}
+
+		var productIds = get_selected_productIds(productIdsHidden);
+
+		$('#productIdsHidden').val("");
+
+		var products = new Array();
+		productIds.forEach(function (val) {
+			var productAndVariation = val.split("|");
+			var obj = { PageId: productAndVariation[0]};
+			products.push(obj);
+		});
+		
+		var url = "@Url.Action("GenerateAbTestItemViewModel", Model.Controller)";
+		$.ajax({
+			url: url,
+			type: "POST",
+			data: JSON.stringify(products),
+			dataType: 'json',
+			contentType: 'application/json',
+			traditional: true
+		}).done(function (viewHtml) {
+			set_product_view_html(viewHtml);
+		});
+	}
+
+	// テキストボックスエンター
+	$('.product-search-textbox').on('keydown',
+		function (e) {
+			if (e.keyCode === 13) ini_search_click();
+		});
+
+	var product_pager_no = 1;
+
+	//検索ボタンクリック
+	function ini_search_click() {
+		product_pager_no = 1;
+		search_click('ini_search_click');
+	};
+	
+	// 任意の商品を選択するの絞り込み検索をクリック
+	function search_click(mode) {
+		if (mode === "ini_search_click") {
+			$('#productIdsHidden').val("");
+		}
+
+		loading_animation.start();
+		var extraId = "@Model.ExtraId";
+		var formData = $('#product_search_form' + extraId).serializeArray();
+		formData.push({ name: 'ParamModel.PagerNo', value: product_pager_no });
+
+		$.ajax({
+			type: "POST",
+			url: "LandingPageSearch",
+			data: formData
+		}).done(function (viewHTML) {
+			setTimeout(function () {
+				$(".item-search-result").html(viewHTML);
+				select_all_checkbox($('#productIdsHidden').val());
+				loading_animation.end();
+
+			}, 500);
+		}).fail(function () {
+		});
+	}
+
+	//指定されたチェックボックスをチェック状態になる
+	function select_all_checkbox(hiddenIds) {
+		if (hiddenIds.length !== 0) {
+			var productIds = get_selected_productIds(hiddenIds);
+			productIds.forEach(function (val) {
+				if ($(document.getElementById(val)).length > 0) {
+					$(document.getElementById(val)).prop("checked", true);
+				}
+			});
+		}
+	}
+
+	// LP選択一覧チェックボックスのonclickイベント
+	function productClick(object) {
+		if (object.checked) {
+			var addedDelimiter = ($('#productIdsHidden').val().length === 0) ? "\"" : ",\"";
+			$('#productIdsHidden').val($('#productIdsHidden').val() + addedDelimiter + object.id + "\"");
+		} else {
+			var products = $('#productIdsHidden').val().split(',');
+			var targetIndex = products.indexOf("\"" + object.id + "\"");
+			if (targetIndex !== -1) products.splice(targetIndex, 1);
+			$('#productIdsHidden').val(products.join(','));
+		}
+	}
+
+	// 次のページ
+	function next_page() {
+		var extraId = "@Model.ExtraId";
+		var array = $('#product_search_form' + extraId).serializeArray();
+		array.push({ name: 'ParamModel.PagerNo', value: product_pager_no });
+		var url = "@Url.Action("GetCountOfSearchByIdAndName", Model.Controller)";
+
+		$.ajax({
+			type: "POST",
+			url: url,
+			data: array
+		}).done(function (count) {
+			if (count > product_pager_no * '@Constants.CONST_DISP_CONTENTS_DEFAULT_LIST') {
+				product_pager_no++;
+				search_click();
+			}
+		}).fail(function () {
+		});
+	}
+
+	// 前のページ
+	function before_page() {
+		if (product_pager_no > 1) {
+			product_pager_no--;
+			search_click();
+		}
+	}
+
+	// 商品検索エラー
+	function product_search_error(productId) {
+		notification.show('商品ID:' + productId + 'は存在しません', 'warning', 'fadeout');
+	}
+
+	// 日付検索フォームクリア
+	function period_input_clear(obj) {
+		var prev = $(obj).prev();
+		prev.find('input').val('');
+		$(prev).prev().find('input').val('');
+	}
+
+	// 選択された商品リスト取得
+	function get_selected_productIds(hiddenStr) {
+		var productIds = hiddenStr.replace(new RegExp("\"", "g"), "")
+			.split(",");
+		return productIds;
+	}
+</script>

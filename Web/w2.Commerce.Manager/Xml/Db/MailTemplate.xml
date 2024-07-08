@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メールテンプレート系SQLステートメントXML(MailTemplate.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MailTemplate>
+  <!-- メールテンプレート情報一覧取得-->
+  <GetMailTemplateList>
+    <Statement>
+      <![CDATA[
+        -- 全件数取得
+        DECLARE @row_count int
+        SELECT  @row_count = ISNULL(COUNT(w2_MailTemplate.mail_id), 0)
+          FROM  w2_MailTemplate
+                [[ MAILTEMPLATE_SEARCH_WHERE ]]
+
+        -- 該当情報取得
+        SELECT  w2_MailTemplate.*,
+                @row_count AS row_count
+          FROM  (
+                  SELECT  w2_MailTemplate.shop_id,
+                          w2_MailTemplate.mail_id,
+                          ROW_NUMBER()
+                          OVER
+                          (
+                            [[ MAILTEMPLATE_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_MailTemplate
+                          [[ MAILTEMPLATE_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_MailTemplate ON
+                (
+                  RowIndex.shop_id = w2_MailTemplate.shop_id
+                  AND
+                  RowIndex.mail_id = w2_MailTemplate.mail_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="srch_key" Type="int" />
+      <Input Name="srch_word" Type="nvarchar" Size="4000" />
+      <Input Name="srch_word_like_escaped" Type="nvarchar" Size="8000" />
+      <Input Name="sort_kbn" Type="int" />
+      <Input Name="bgn_row_num" Type="int" />
+      <Input Name="end_row_num" Type="int" />
+    </Parameter>
+  </GetMailTemplateList>
+  
+  <!-- メールテンプレート情報取得(ドロップダウン用)-->
+  <GetMailTemplateAllList>
+    <Statement>
+      <![CDATA[
+        SELECT 
+            * 
+        FROM 
+            w2_MailTemplate
+        WHERE 
+            w2_MailTemplate.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMailTemplateAllList>
+  
+  <!-- メールテンプレート情報取得 -->
+  <GetMailTemplate>
+    <Statement>
+      <![CDATA[      
+        SELECT
+        TOP 1 
+            * 
+        FROM 
+            w2_MailTemplate
+        WHERE 
+            w2_MailTemplate.shop_id = @shop_id
+        AND
+            w2_MailTemplate.mail_id = @mail_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMailTemplate>
+  
+  <!-- メールテンプレート名重複チェック(登録時) -->
+  <CheckDuplicationMailNameRegist>
+    <Statement>
+      <![CDATA[
+      SELECT 
+          COUNT(mail_id) AS mail_count 
+      FROM 
+          w2_MailTemplate 
+      WHERE 
+          w2_MailTemplate.mail_name = @mail_name 
+      AND 
+          w2_MailTemplate.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_name" Type="nvarchar" Size="50" />
+    </Parameter>
+  </CheckDuplicationMailNameRegist>
+  
+  <!-- メールテンプレート名重複チェック(更新時) -->
+  <CheckDuplicationMailNameModify>
+    <Statement>
+      <![CDATA[
+      SELECT 
+          COUNT(mail_id) AS mail_count 
+      FROM 
+          w2_MailTemplate 
+      WHERE 
+          w2_MailTemplate.mail_id <> @mail_id 
+      AND 
+          w2_MailTemplate.mail_name = @mail_name 
+      AND 
+          w2_MailTemplate.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_name" Type="nvarchar" Size="50" />
+    </Parameter>
+  </CheckDuplicationMailNameModify>
+  
+  <!-- メールテンプレート情報追加 -->
+  <InsertMailTemplate>
+    <Statement>
+      <![CDATA[
+        -- 変数宣言
+        INSERT  w2_MailTemplate
+            (            
+            shop_id,
+            mail_id,
+            mail_name,
+            mail_from,
+            mail_from_name,
+            mail_to,
+            mail_cc,
+            mail_bcc,
+            mail_subject,
+            mail_body,
+            mail_subject_mobile,
+            mail_body_mobile,
+            date_created,
+            date_changed,
+            last_changed,
+            auto_send_flg
+            )
+         VALUES  (
+            @shop_id,
+            @mail_id,
+            @mail_name,
+            @mail_from,
+            @mail_from_name,
+            @mail_to,
+            @mail_cc,
+            @mail_bcc,
+            @mail_subject,
+            @mail_body,
+            @mail_subject_mobile,
+            @mail_body_mobile,
+            getdate(),
+            getdate(),
+            @last_changed,
+            @auto_send_flg
+            )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_from" Type="nvarchar" Size="256" />
+      <Input Name="mail_from_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_to" Type="nvarchar" Size="1000" />
+      <Input Name="mail_cc" Type="nvarchar" Size="1000" />
+      <Input Name="mail_bcc" Type="nvarchar" Size="1000" />
+      <Input Name="mail_subject" Type="nvarchar" Size="500" />
+      <Input Name="mail_body" Type="ntext" />
+      <Input Name="mail_subject_mobile" Type="nvarchar" Size="500" />
+      <Input Name="mail_body_mobile" Type="ntext" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="auto_send_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </InsertMailTemplate>
+  
+  <!-- メールテンプレート情報更新 -->
+  <UpdateMailTemplate>
+    <Statement>
+      <![CDATA[
+      UPDATE 
+          w2_MailTemplate 
+      SET  
+          w2_MailTemplate.mail_name = @mail_name, 
+          w2_MailTemplate.mail_from = @mail_from, 
+          w2_MailTemplate.mail_from_name = @mail_from_name,
+          w2_MailTemplate.mail_to = @mail_to, 
+          w2_MailTemplate.mail_cc = @mail_cc,  
+          w2_MailTemplate.mail_bcc = @mail_bcc, 
+          w2_MailTemplate.mail_subject = @mail_subject, 
+          w2_MailTemplate.mail_body = @mail_body, 
+          w2_MailTemplate.mail_subject_mobile = @mail_subject_mobile, 
+          w2_MailTemplate.mail_body_mobile = @mail_body_mobile, 
+          w2_MailTemplate.date_changed = getdate(), 
+          w2_MailTemplate.last_changed = @last_changed,
+          w2_MailTemplate.auto_send_flg = @auto_send_flg
+      WHERE 
+          w2_MailTemplate.mail_id = @mail_id 
+      AND 
+          w2_MailTemplate.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_from" Type="nvarchar" Size="256" />
+      <Input Name="mail_from_name" Type="nvarchar" Size="50" />
+      <Input Name="mail_to" Type="nvarchar" Size="1000" />
+      <Input Name="mail_cc" Type="nvarchar" Size="1000" />
+      <Input Name="mail_bcc" Type="nvarchar" Size="1000" />
+      <Input Name="mail_subject" Type="nvarchar" Size="500" />
+      <Input Name="mail_body" Type="ntext" />
+      <Input Name="mail_subject_mobile" Type="nvarchar" Size="500" />
+      <Input Name="mail_body_mobile" Type="ntext" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="auto_send_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </UpdateMailTemplate>
+
+  <!-- メールテンプレート情報削除 -->
+  <DeleteMailTemplate>
+    <Statement>
+      <![CDATA[
+      DELETE
+      FROM 
+          w2_MailTemplate 
+      WHERE 
+          w2_MailTemplate.mail_id = @mail_id 
+      AND 
+          w2_MailTemplate.shop_id = @shop_id 
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="mail_id" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </DeleteMailTemplate>
+  
+</MailTemplate>

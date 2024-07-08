@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : OGPタグ全体設定系SQLステートメントXML (OgpTagSetting.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<OgpTagSetting>
+
+  <!-- 全件取得 -->
+  <GetAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_OgpTagSetting
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetAll>
+
+  <!-- １件取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_OgpTagSetting
+         WHERE  data_kbn = @data_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="25" />
+    </Parameter>
+  </Get>
+
+  <!-- アップサート -->
+  <Upsert>
+    <Statement>
+      <![CDATA[
+        MERGE  w2_OgpTagSetting
+        USING
+        (
+          SELECT  @data_kbn AS data_kbn
+                  ,@site_title AS site_title
+                  ,@page_title AS page_title
+                  ,@description AS description
+                  ,@image_url AS image_url
+                  ,getdate() AS date_created
+                  ,getdate() AS date_changed
+                  ,@last_changed AS last_changed
+        ) AS tmp
+        ON
+        (
+          w2_OgpTagSetting.data_kbn = tmp.data_kbn
+        )
+        WHEN MATCHED THEN
+          UPDATE 
+             SET  site_title = tmp.site_title
+                  ,page_title = tmp.page_title
+                  ,description = tmp.description
+                  ,image_url = tmp.image_url
+                  ,date_changed = tmp.date_changed
+                  ,last_changed = tmp.last_changed
+        WHEN NOT MATCHED THEN
+          INSERT
+          (
+            data_kbn
+            ,site_title
+            ,page_title
+            ,description
+            ,image_url
+            ,date_created
+            ,date_changed
+            ,last_changed
+          )
+          VALUES
+          (
+            tmp.data_kbn
+            ,tmp.site_title
+            ,tmp.page_title
+            ,tmp.description
+            ,tmp.image_url
+            ,tmp.date_created
+            ,tmp.date_changed
+            ,tmp.last_changed
+          );
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="data_kbn" Type="nvarchar" Size="25" />
+      <Input Name="site_title" Type="nvarchar" Size="50" />
+      <Input Name="page_title" Type="nvarchar" Size="30" />
+      <Input Name="description" Type="nvarchar" Size="120" />
+      <Input Name="image_url" Type="nvarchar" Size="250" />
+      <Input Name="last_changed" Type="nvarchar" Size="25" />
+    </Parameter>
+  </Upsert>
+
+</OgpTagSetting>

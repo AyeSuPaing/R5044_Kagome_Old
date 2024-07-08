@@ -1,0 +1,2531 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : ユーザマスタ系SQLステートメントXML (User.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2015 All Rights Reserved.
+=========================================================================================================
+-->
+<User>
+
+  <!-- 検索 -->
+  <Search>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+         -- 該当情報取得
+        SELECT  w2_User.*
+                ,w2_MallCooperationSetting.mall_name
+          FROM  (
+                  SELECT  w2_User.user_id
+                          ,ROW_NUMBER()
+                          OVER
+                          (
+                            [[ USER_SEARCH_ORDER_BY ]]
+                          ) AS row_num
+                    FROM  w2_User
+                          LEFT JOIN w2_UserExtend ON
+                          (
+                            w2_User.user_id = w2_UserExtend.user_id
+                          )
+                          [[ USER_SEARCH_WHERE ]]
+                ) AS RowIndex
+                INNER JOIN w2_User ON
+                (
+                  RowIndex.user_id = w2_User.user_id
+                )
+                LEFT JOIN w2_MallCooperationSetting ON
+                (
+                  w2_User.mall_id = w2_MallCooperationSetting.mall_id
+                )
+         WHERE  @bgn_row_num <= RowIndex.row_num
+           AND  RowIndex.row_num <= @end_row_num
+      ORDER BY  RowIndex.row_num ASC
+      ]]>
+    </Statement>
+  </Search>
+  
+  <!-- 検索ヒット件数取得 -->
+  <GetSearchHitCount>
+    <Statement>
+      <![CDATA[
+       /* ダーティリードを許可して共有ロックを掛けなくする */
+       SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+       -- 全件数取得
+        SELECT  ISNULL(COUNT(w2_User.user_id), 0) AS row_count
+          FROM  w2_User
+                LEFT JOIN w2_UserExtend ON
+                (
+                  w2_User.user_id = w2_UserExtend.user_id
+                )
+                [[ USER_SEARCH_WHERE ]]
+      ]]>
+    </Statement>
+  </GetSearchHitCount>
+
+  <!-- マスタ取得(CSV・Excel出力用) -->
+  <GetMaster>
+    <Statement>
+      <![CDATA[
+        -- ダーティリードを許可して共有ロックを掛けなくする
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  @@ fields @@
+          FROM  w2_User
+                LEFT JOIN w2_UserExtend ON
+                (
+                    w2_User.user_id = w2_UserExtend.user_id
+                )
+                  LEFT JOIN w2_UserAttribute ON
+                (
+                    w2_User.user_id = w2_UserAttribute.user_id
+                )
+                LEFT JOIN w2_UserBusinessOwnerGMO ON
+                (
+                  w2_User.user_id = w2_UserBusinessOwnerGMO.user_id
+                )
+                [[ USER_SEARCH_WHERE ]]
+                [[ USER_SEARCH_ORDER_BY ]]
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetMaster>
+
+  <!-- 
+     配送先情報マスタ情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetUserShippingMaster>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  @@ fields @@
+          FROM  w2_User
+                LEFT JOIN w2_UserShipping ON
+              (
+                  w2_User.user_id = w2_UserShipping.user_id
+              )
+                [[ USER_SEARCH_WHERE ]]
+                AND w2_UserShipping.shipping_no IS NOT NULL
+                [[ USER_SEARCH_ORDER_BY ]]
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetUserShippingMaster>
+
+  <!-- 
+    ユーザー電子発票管理マスタ情報取得(CSV出力用)
+    「@@ fields @@」を指定フィールド列で置換してからステートメントを実行する
+   -->
+  <GetUserTaiwanInvoice>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+        
+        SELECT  @@ fields @@
+          FROM  w2_TwUserInvoice
+                INNER JOIN w2_User ON
+              (
+                  w2_User.user_id = w2_TwUserInvoice.user_id
+              )
+                [[ USER_SEARCH_WHERE ]]
+                [[ USER_SEARCH_ORDER_BY ]]
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetUserTaiwanInvoice>
+
+  <!-- マスタ取得向けフィールドチェック -->
+  <CheckFieldsForGetMaster>
+    <Statement>
+      <![CDATA[
+          SELECT  TOP 1
+                  @@ fields @@
+            FROM  w2_User
+                  LEFT JOIN  w2_UserExtend ON
+                  (
+                    w2_User.user_id = w2_UserExtend.user_id
+                  )
+                  LEFT JOIN  w2_UserAttribute ON
+                  (
+                    w2_User.user_id = w2_UserAttribute.user_id
+                  )
+                  LEFT JOIN w2_UserBusinessOwnerGMO ON
+                  (
+                    w2_User.user_id = w2_UserBusinessOwnerGMO.user_id
+                  )
+      ]]>
+    </Statement>
+  </CheckFieldsForGetMaster>
+
+  <!-- ユーザ配送先マスタフィールドチェック -->
+  <CheckUserShippingFields>
+    <Statement>
+      <![CDATA[
+         SELECT  TOP 1
+                 @@ fields @@
+           FROM  w2_UserShipping
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </CheckUserShippingFields>
+
+  <!-- ユーザー電子発票管理マスタフィールドチェック -->
+  <CheckUserInvoiceFields>
+    <Statement>
+      <![CDATA[
+         SELECT  TOP 1
+                 @@ fields @@
+           FROM  w2_TwUserInvoice
+        ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </CheckUserInvoiceFields>
+
+  <!-- ユーザ情報取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.*
+          FROM  w2_User
+         WHERE  w2_User.user_id = @user_id 
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- ユーザー情報の件数取得 -->
+  <Count>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_User
+         WHERE  user_id = @user_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Count>
+
+  <!-- ユーザー情報複数取得 -->
+  <GetUsers>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.*
+          FROM  w2_User
+         WHERE  w2_User.user_id IN (@@ user_ids @@)
+      ]]>
+    </Statement>
+  </GetUsers>
+
+  <!-- ユーザー情報を拡張項目の値から取得 -->
+  <GetByExtendColumn>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.*
+          FROM  w2_User
+                INNER JOIN w2_UserExtend ON
+                (
+                  w2_User.user_id = w2_UserExtend.user_id
+                )
+         WHERE  w2_UserExtend.@@ column_name @@ = '@@ value @@'
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetByExtendColumn>
+
+  <!-- 退会していないユーザー情報を拡張項目の値から取得 -->
+  <GetRegisteredUserByExtendColumn>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.*
+          FROM  w2_User
+                INNER JOIN w2_UserExtend ON
+                (
+                  w2_User.user_id = w2_UserExtend.user_id
+                )
+         WHERE  w2_UserExtend.@@ column_name @@ = '@@ value @@'
+           AND  w2_User.del_flg = '0'
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetRegisteredUserByExtendColumn>
+
+  <!-- 会員ランクID取得 -->
+  <GetMemberRankId>
+    <Statement>
+      <![CDATA[
+        SELECT  member_rank_id
+          FROM  w2_User
+         WHERE  user_id = @user_id 
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMemberRankId>
+
+  <!-- ログインID重複ユーザ情報取得 -->
+  <GetDuplicationLoginIdList>
+    <Statement>
+      <![CDATA[
+      SELECT  w2_WorkUser.login_id
+              ,COUNT(user_id) AS count
+        FROM  w2_WorkUser
+       WHERE  w2_WorkUser.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+         -- ログインID・パスワードが存在しない場合、ログインが行えないので対象としない
+         AND  w2_WorkUser.login_id <> ''
+         AND  w2_WorkUser.password <> ''
+         AND  w2_WorkUser.del_flg = '0'
+        GROUP BY w2_WorkUser.login_id HAVING COUNT(user_id) > 1
+      ]]>
+    </Statement>
+    <Parameter>
+    </Parameter>
+  </GetDuplicationLoginIdList>
+  
+  <!-- メールアドレスを指定してユーザ情報取得 -->
+  <GetUserByMailAddr>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.*
+          FROM  w2_User
+         WHERE  (
+                  w2_User.mail_addr = @mail_addr
+                  OR
+                  w2_User.mail_addr2 = @mail_addr
+                )
+           AND  @mail_addr <> ''
+           AND  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+      ORDER BY  case user_kbn 
+                  when 'PC_USER' then 0 
+                  when 'SP_USER' then 1 
+                  when 'MB_USER' then 2
+                  when 'PC_GEST' then 3 
+                  when 'SP_GEST' then 4 
+                  when 'MB_GEST' then 5
+                  when 'CS'      then 6
+                  when 'MAIL'    then 8
+                                 else 9 end,
+                date_created desc
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetUserByMailAddr>
+
+  <!-- ログインIDを指定してユーザ情報取得 -->
+  <GetUserByLoginId>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.*
+          FROM  w2_User
+         WHERE  w2_User.login_id = @login_id
+           AND  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="login_id" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetUserByLoginId>
+
+  <!-- メールアドレスを指定してユーザ情報取得（メールマガジン解除用） -->
+  <GetUserByMailAddrForMailMagazineCancel>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.*
+          FROM  w2_User
+         WHERE  (
+                  w2_User.mail_addr = @mail_addr
+                  OR
+                  w2_User.mail_addr2 = @mail_addr
+                )
+           AND  @mail_addr <> ''
+           AND  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+           AND  w2_user.mall_id IN ('@@ mall_ids @@')
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetUserByMailAddrForMailMagazineCancel>
+
+  <!-- メールアドレスを指定してユーザ情報取得（メールマガジン登録用） -->
+  <GetUserByMailAddrForMailMagazineRegister>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.*
+          FROM  w2_User
+         WHERE  (
+                  w2_User.mail_addr = @mail_addr
+                  OR
+                  w2_User.mail_addr2 = @mail_addr
+                )
+           AND  @mail_addr <> ''
+           AND  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+           AND  w2_user.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER','MAIL') --ゲストは含めない（MAIL会員で新規登録するため）
+           AND  w2_user.mall_id = @mall_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserByMailAddrForMailMagazineRegister>
+
+  <!-- ユーザID取得（モールID、メールアドレスから）  -->
+  <GetUserId>
+    <Statement>
+      <![CDATA[
+        SELECT  user_id
+          FROM  w2_User
+         WHERE  mall_id = @mall_id
+           AND  (del_flg = '0' AND integrated_flg = '0')
+           AND  (
+                  mail_addr = @mail_addr
+                  OR
+                  mail_addr2 = @mail_addr
+                )
+		  ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetUserId>
+
+  <!-- エラーポイント取得 -->
+  <GetErrorPoint>
+    <Statement>
+      <![CDATA[
+      SELECT  ISNULL(w2_MailErrorAddr.error_point, 0) AS error_point
+              ,ISNULL(w2_MailErrorAddr2.error_point, 0) AS error_point2
+        FROM  w2_User
+              LEFT JOIN w2_MailErrorAddr ON
+              (
+                w2_User.mail_addr =  w2_MailErrorAddr.mail_addr
+              )
+              LEFT JOIN w2_MailErrorAddr w2_MailErrorAddr2 ON
+              (
+                w2_User.mail_addr2 =  w2_MailErrorAddr2.mail_addr
+              )
+       WHERE  w2_User.user_id = @user_id 
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetErrorPoint>
+
+  <!-- メール配信のためユーザ情報取得 -->
+  <GetUserForMailSend>
+    <Statement>
+      <![CDATA[
+        DECLARE @now DATETIME
+        SET @now = getdate()
+
+        -- ポイントを集計して一時テーブルに格納しておく
+        CREATE TABLE #AggregatedUserPoint
+        (
+          point decimal,
+          data_name NVARCHAR(50)
+        )
+
+         INSERT  #AggregatedUserPoint
+                 (
+                   point,
+                   data_name
+                 )
+                 (
+                   -- 通常本ポイント取得
+                   SELECT  ISNULL(point, 0) as point,
+                           'point' AS data_name
+                     FROM  w2_UserPoint
+                           RIGHT JOIN w2_User ON
+                           (
+                             w2_UserPoint.user_id = w2_User.user_id
+                             AND  point_kbn = '01'
+                             AND  point_type = '01'
+                             AND  
+                             (
+                               point_exp IS NULL
+                               OR  @now <= point_exp
+                             )
+                           )
+                    WHERE  w2_User.user_id = @user_id
+                 )
+                 UNION ALL
+                 (
+                   -- 利用可能 期間限定ポイント合計
+                   SELECT  ISNULL(SUM(point), 0) as point,
+                           'limited_term_point' AS data_name
+                     FROM  w2_UserPoint
+                           RIGHT JOIN w2_User ON
+                           (
+                             w2_UserPoint.user_id = w2_User.user_id
+                             AND  point_kbn = '02'
+                             AND  point_type = '01'
+                             AND  effective_date <= @now
+                             AND  @now <= point_exp
+                           )
+                    WHERE  w2_User.user_id = @user_id
+                  GROUP BY w2_User.user_id
+                 )
+        SELECT  w2_User.*,
+                w2_UserExtend.*,
+                ISNULL(w2_MemberRank.member_rank_name, '') AS member_rank_name,
+                (
+                  SELECT  point
+                    FROM  #AggregatedUserPoint
+                   WHERE  data_name = 'point'
+                ) AS point,
+                (
+                  SELECT  point
+                    FROM  #AggregatedUserPoint
+                   WHERE  data_name = 'limited_term_point'
+                ) AS limited_term_point,
+                (
+                  SELECT  SUM(point)
+                    FROM  #AggregatedUserPoint
+                   WHERE  data_name IN ('point', 'limited_term_point')
+                ) AS point_usable,
+                (
+                  SELECT  point_exp
+                    FROM  w2_UserPoint
+                          RIGHT JOIN w2_User ON
+                          (
+                            w2_UserPoint.user_id = w2_User.user_id
+                          )
+                   WHERE  w2_User.user_id = @user_id
+                     AND  point_kbn = '01'
+                     AND  point_type = '01'
+                ) AS point_exp
+          FROM	w2_User
+                LEFT JOIN w2_MemberRank ON
+                (
+                  w2_User.member_rank_id = w2_MemberRank.member_rank_id
+                )
+                LEFT JOIN w2_UserExtend ON
+                (
+                  w2_User.user_id = w2_UserExtend.user_id
+                )
+         WHERE	w2_User.user_id = @user_id
+         
+        -- 後始末
+        DROP TABLE #AggregatedUserPoint
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserForMailSend>
+
+  <!-- ユーザー情報取得（シンボル判定のため） -->
+  <GetUserSymbols>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.user_id
+                ,w2_User.user_memo
+              	,ISNULL(order_count.order_count, 0) order_count
+          FROM  w2_User LEFT JOIN
+             (
+               SELECT  w2_Order.user_id
+	                     ,COUNT(w2_Order.order_id) AS order_count
+                 FROM  w2_Order
+                WHERE  w2_Order.user_id IN (@@ params @@)
+                  AND  w2_Order.order_status NOT IN ('TMP','TMP_CNSL','')
+	              GROUP BY w2_Order.user_id
+             ) order_count
+            ON w2_User.user_id = order_count.user_id
+         WHERE w2_User.user_id IN (@@ params @@)
+      ]]>
+    </Statement>
+  </GetUserSymbols>
+
+  <!-- 注文更新日から対象ユーザーID取得 -->
+  <GetUserIdsByOrderChanged>
+    <Statement>
+      <![CDATA[
+        SELECT  DISTINCT user_id
+          FROM  w2_Order WITH (NOLOCK)
+         WHERE  date_changed >= @begin
+           AND  date_changed < @end
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="begin" Type="datetime" />
+      <Input Name="end" Type="datetime" />
+    </Parameter>
+  </GetUserIdsByOrderChanged>
+
+  <!-- メールアドレスからユーザ取得（AmazonPay用） -->
+  <GetRegisteredUserByMailAddress>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.*
+          FROM  w2_User
+         WHERE  (
+                  w2_User.mail_addr = @mail_addr
+                  OR
+                  w2_User.mail_addr2 = @mail_addr
+                )
+           AND  @mail_addr <> ''
+           AND  (w2_User.del_flg = '0' AND w2_User.integrated_flg = '0')
+           AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER') --ゲスト、メルマガユーザは含めない
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetRegisteredUserByMailAddress>
+  
+  <!-- Get Modify Users -->
+  <GetModifyUsers>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  TOP(@limit) *
+          FROM  (
+                  SELECT  w2_User.user_id
+                    FROM  w2_User
+                          LEFT JOIN w2_Order ON
+                          (
+                            w2_Order.user_id = w2_User.user_id
+                          )
+                          LEFT JOIN w2_FixedPurchase ON
+                          (
+                            w2_FixedPurchase.user_id = w2_User.user_id
+                          )
+                   WHERE  w2_User.del_flg = '0'
+                          AND
+                          (
+                            (
+                              CONVERT(VARCHAR(19), w2_User.date_changed, 120) <> CONVERT(VARCHAR(19), w2_User.date_created, 120)
+                              AND
+                              CONVERT(VARCHAR(19), w2_User.date_changed, 120) >= CONVERT(VARCHAR(19), @date_changed, 120)
+                            )
+                            OR
+                            (
+                              CONVERT(VARCHAR(19), w2_Order.date_changed, 120) <> CONVERT(VARCHAR(19), w2_Order.date_created, 120)
+                              AND
+                              CONVERT(VARCHAR(19), w2_Order.date_changed, 120) >= CONVERT(VARCHAR(19), @date_changed, 120)
+                            )
+                            OR
+                            (
+                              CONVERT(VARCHAR(19), w2_FixedPurchase.date_changed, 120) <> CONVERT(VARCHAR(19), w2_FixedPurchase.date_created, 120)
+                              AND
+                              CONVERT(VARCHAR(19), w2_FixedPurchase.date_changed, 120) >= CONVERT(VARCHAR(19), @date_changed, 120)
+                            )
+                          )
+                  GROUP BY w2_User.user_id
+                  ORDER BY CASE @sort_type
+                             WHEN 'desc' THEN w2_User.user_id
+                           END DESC,
+                           w2_User.user_id ASC
+                           OFFSET @offset ROWS
+                ) AS TEMP
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sort_type" Type="nvarchar" Size="4" />
+      <Input Name="limit" Type="int" />
+      <Input Name="offset" Type="int" />
+      <Input Name="date_changed" Type="DateTime" />
+    </Parameter>
+  </GetModifyUsers>
+
+  <!-- ユーザログイン -->
+  <UserLogin>
+    <Statement>
+      <![CDATA[
+      SELECT  w2_user.*
+        FROM  w2_user
+       WHERE  w2_user.login_id = @login_id
+         AND  w2_user.password = @password
+         AND  @login_id <> ''
+         AND  @password <> ''
+         AND  w2_user.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+         AND  (w2_user.del_flg = '0' AND w2_user.integrated_flg = '0')
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="login_id" Type="nvarchar" Size="256" />
+      <Input Name="password" Type="nvarchar" Size="100" />
+    </Parameter>
+  </UserLogin>
+  
+  <!-- ユーザログイン（ログインIDにメルアドを利用する場合） -->
+  <UserLoginUsedMailAddress>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_user.*
+          FROM  w2_user
+         WHERE  w2_user.login_id collate Japanese_CI_AS = @login_id
+           AND  w2_user.password = @password
+           AND  @login_id <> ''
+           AND  @password <> ''
+           AND  w2_user.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+           AND  (w2_user.del_flg = '0' AND w2_user.integrated_flg = '0')
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="login_id" Type="nvarchar" Size="256" />
+      <Input Name="password" Type="nvarchar" Size="100" />
+    </Parameter>
+  </UserLoginUsedMailAddress>
+ 
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_User
+                (
+                  user_id
+                  ,user_kbn
+                  ,mall_id
+                  ,name
+                  ,name1
+                  ,name2
+                  ,name_kana
+                  ,name_kana1
+                  ,name_kana2
+                  ,nick_name
+                  ,mail_addr
+                  ,mail_addr2
+                  ,zip
+                  ,zip1
+                  ,zip2
+                  ,addr
+                  ,addr1
+                  ,addr2
+                  ,addr3
+                  ,addr4
+                  ,tel1
+                  ,tel1_1
+                  ,tel1_2
+                  ,tel1_3
+                  ,tel2
+                  ,tel2_1
+                  ,tel2_2
+                  ,tel2_3
+                  ,tel3
+                  ,tel3_1
+                  ,tel3_2
+                  ,tel3_3
+                  ,fax
+                  ,fax_1
+                  ,fax_2
+                  ,fax_3
+                  ,sex
+                  ,birth
+                  ,birth_year
+                  ,birth_month
+                  ,birth_day
+                  ,company_name
+                  ,company_post_name
+                  ,company_exective_name
+                  ,advcode_first
+                  ,attribute1
+                  ,attribute2
+                  ,attribute3
+                  ,attribute4
+                  ,attribute5
+                  ,attribute6
+                  ,attribute7
+                  ,attribute8
+                  ,attribute9
+                  ,attribute10
+                  ,login_id
+                  ,password
+                  ,question
+                  ,answer
+                  ,career_id
+                  ,mobile_uid
+                  ,remote_addr
+                  ,mail_flg
+                  ,user_memo
+                  ,del_flg
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                  ,member_rank_id
+                  ,recommend_uid
+                  ,date_last_loggedin
+                  ,user_management_level_id
+                  ,integrated_flg
+                  ,easy_register_flg
+                  ,fixed_purchase_member_flg
+                  ,access_country_iso_code
+                  ,disp_language_code
+                  ,disp_language_locale_id
+                  ,disp_currency_code
+                  ,disp_currency_locale_id
+                  ,last_birthday_point_add_year
+                  ,addr_country_iso_code
+                  ,addr_country_name
+                  ,addr5
+                  ,last_birthday_coupon_publish_year
+                )
+        VALUES  (
+                  @user_id
+                  ,@user_kbn
+                  ,@mall_id
+                  ,@name
+                  ,@name1
+                  ,@name2
+                  ,@name_kana
+                  ,@name_kana1
+                  ,@name_kana2
+                  ,@nick_name
+                  ,@mail_addr
+                  ,@mail_addr2
+                  ,@zip
+                  ,@zip1
+                  ,@zip2
+                  ,@addr
+                  ,@addr1
+                  ,@addr2
+                  ,@addr3
+                  ,@addr4
+                  ,@tel1
+                  ,@tel1_1
+                  ,@tel1_2
+                  ,@tel1_3
+                  ,@tel2
+                  ,@tel2_1
+                  ,@tel2_2
+                  ,@tel2_3
+                  ,@tel3
+                  ,@tel3_1
+                  ,@tel3_2
+                  ,@tel3_3
+                  ,@fax
+                  ,@fax_1
+                  ,@fax_2
+                  ,@fax_3
+                  ,@sex
+                  ,@birth
+                  ,@birth_year
+                  ,@birth_month
+                  ,@birth_day
+                  ,@company_name
+                  ,@company_post_name
+                  ,@company_exective_name
+                  ,@advcode_first
+                  ,@attribute1
+                  ,@attribute2
+                  ,@attribute3
+                  ,@attribute4
+                  ,@attribute5
+                  ,@attribute6
+                  ,@attribute7
+                  ,@attribute8
+                  ,@attribute9
+                  ,@attribute10
+                  ,@login_id
+                  ,@password
+                  ,@question
+                  ,@answer
+                  ,@career_id
+                  ,@mobile_uid
+                  ,@remote_addr
+                  ,@mail_flg
+                  ,@user_memo
+                  ,@del_flg
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                  ,@member_rank_id
+                  ,@recommend_uid
+                  ,@date_last_loggedin
+                  ,@user_management_level_id
+                  ,@integrated_flg
+                  ,@easy_register_flg
+                  ,@fixed_purchase_member_flg
+                  ,@access_country_iso_code
+                  ,@disp_language_code
+                  ,@disp_language_locale_id
+                  ,@disp_currency_code
+                  ,@disp_currency_locale_id
+                  ,@last_birthday_point_add_year
+                  ,@addr_country_iso_code
+                  ,@addr_country_name
+                  ,@addr5
+                  ,@last_birthday_coupon_publish_year
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="name" Type="nvarchar" Size="40" />
+      <Input Name="name1" Type="nvarchar" Size="20" />
+      <Input Name="name2" Type="nvarchar" Size="20" />
+      <Input Name="name_kana" Type="nvarchar" Size="60" />
+      <Input Name="name_kana1" Type="nvarchar" Size="30" />
+      <Input Name="name_kana2" Type="nvarchar" Size="30" />
+      <Input Name="nick_name" Type="nvarchar" Size="20" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="mail_addr2" Type="nvarchar" Size="256" />
+      <Input Name="zip" Type="nvarchar" Size="30" />
+      <Input Name="zip1" Type="nvarchar" Size="3" />
+      <Input Name="zip2" Type="nvarchar" Size="4" />
+      <Input Name="addr" Type="nvarchar" Size="300" />
+      <Input Name="addr1" Type="nvarchar" Size="50" />
+      <Input Name="addr2" Type="nvarchar" Size="50" />
+      <Input Name="addr3" Type="nvarchar" Size="50" />
+      <Input Name="addr4" Type="nvarchar" Size="50" />
+      <Input Name="tel1" Type="nvarchar" Size="16" />
+      <Input Name="tel1_1" Type="nvarchar" Size="6" />
+      <Input Name="tel1_2" Type="nvarchar" Size="4" />
+      <Input Name="tel1_3" Type="nvarchar" Size="4" />
+      <Input Name="tel2" Type="nvarchar" Size="16" />
+      <Input Name="tel2_1" Type="nvarchar" Size="6" />
+      <Input Name="tel2_2" Type="nvarchar" Size="4" />
+      <Input Name="tel2_3" Type="nvarchar" Size="4" />
+      <Input Name="tel3" Type="nvarchar" Size="16" />
+      <Input Name="tel3_1" Type="nvarchar" Size="6" />
+      <Input Name="tel3_2" Type="nvarchar" Size="4" />
+      <Input Name="tel3_3" Type="nvarchar" Size="4" />
+      <Input Name="fax" Type="nvarchar" Size="16" />
+      <Input Name="fax_1" Type="nvarchar" Size="6" />
+      <Input Name="fax_2" Type="nvarchar" Size="4" />
+      <Input Name="fax_3" Type="nvarchar" Size="4" />
+      <Input Name="sex" Type="nvarchar" Size="10" />
+      <Input Name="birth" Type="datetime" />
+      <Input Name="birth_year" Type="nvarchar" Size="4" />
+      <Input Name="birth_month" Type="nvarchar" Size="2" />
+      <Input Name="birth_day" Type="nvarchar" Size="2" />
+      <Input Name="company_name" Type="nvarchar" Size="50" />
+      <Input Name="company_post_name" Type="nvarchar" Size="50" />
+      <Input Name="company_exective_name" Type="nvarchar" Size="50" />
+      <Input Name="advcode_first" Type="nvarchar" Size="30" />
+      <Input Name="attribute1" Type="nvarchar" Size="100" />
+      <Input Name="attribute2" Type="nvarchar" Size="100" />
+      <Input Name="attribute3" Type="nvarchar" Size="100" />
+      <Input Name="attribute4" Type="nvarchar" Size="100" />
+      <Input Name="attribute5" Type="nvarchar" Size="100" />
+      <Input Name="attribute6" Type="nvarchar" Size="100" />
+      <Input Name="attribute7" Type="nvarchar" Size="100" />
+      <Input Name="attribute8" Type="nvarchar" Size="100" />
+      <Input Name="attribute9" Type="nvarchar" Size="100" />
+      <Input Name="attribute10" Type="nvarchar" Size="100" />
+      <Input Name="login_id" Type="nvarchar" Size="256" />
+      <Input Name="password" Type="nvarchar" Size="100" />
+      <Input Name="question" Type="nvarchar" Size="50" />
+      <Input Name="answer" Type="nvarchar" Size="50" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_uid" Type="nvarchar" Size="50" />
+      <Input Name="remote_addr" Type="nvarchar" Size="30" />
+      <Input Name="mail_flg" Type="nvarchar" Size="10" />
+      <Input Name="user_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_uid" Type="nvarchar" Size="100" />
+      <Input Name="date_last_loggedin" Type="datetime" />
+      <Input Name="user_management_level_id" Type="nvarchar" Size="30" />
+      <Input Name="integrated_flg" Type="nvarchar" Size="1" />
+      <Input Name="easy_register_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+      <Input Name="access_country_iso_code" Type="nvarchar" Size="3" />
+      <Input Name="disp_language_code" Type="nvarchar" Size="4" />
+      <Input Name="disp_language_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="disp_currency_code" Type="nvarchar" Size="4" />
+      <Input Name="disp_currency_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="last_birthday_point_add_year" Type="nvarchar" Size="4" />
+      <Input Name="addr_country_iso_code" Type="nvarchar" Size="3" />
+      <Input Name="addr_country_name" Type="nvarchar" Size="100" />
+      <Input Name="addr5" Type="nvarchar" Size="50" />
+      <Input Name="last_birthday_coupon_publish_year" Type="nvarchar" Size="4" />
+    </Parameter>
+  </Insert>
+  
+  <!-- 更新 -->
+  <Update>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_User
+           SET  user_kbn = @user_kbn
+                ,mall_id = @mall_id
+                ,name = @name
+                ,name1 = @name1
+                ,name2 = @name2
+                ,name_kana = @name_kana
+                ,name_kana1 = @name_kana1
+                ,name_kana2 = @name_kana2
+                ,nick_name = @nick_name
+                ,mail_addr = @mail_addr
+                ,mail_addr2 = @mail_addr2
+                ,zip = @zip
+                ,zip1 = @zip1
+                ,zip2 = @zip2
+                ,addr = @addr
+                ,addr1 = @addr1
+                ,addr2 = @addr2
+                ,addr3 = @addr3
+                ,addr4 = @addr4
+                ,tel1 = @tel1
+                ,tel1_1 = @tel1_1
+                ,tel1_2 = @tel1_2
+                ,tel1_3 = @tel1_3
+                ,tel2 = @tel2
+                ,tel2_1 = @tel2_1
+                ,tel2_2 = @tel2_2
+                ,tel2_3 = @tel2_3
+                ,tel3 = @tel3
+                ,tel3_1 = @tel3_1
+                ,tel3_2 = @tel3_2
+                ,tel3_3 = @tel3_3
+                ,fax = @fax
+                ,fax_1 = @fax_1
+                ,fax_2 = @fax_2
+                ,fax_3 = @fax_3
+                ,sex = @sex
+                ,birth = @birth
+                ,birth_year = @birth_year
+                ,birth_month = @birth_month
+                ,birth_day = @birth_day
+                ,company_name = @company_name
+                ,company_post_name = @company_post_name
+                ,company_exective_name = @company_exective_name
+                ,advcode_first = @advcode_first
+                ,attribute1 = @attribute1
+                ,attribute2 = @attribute2
+                ,attribute3 = @attribute3
+                ,attribute4 = @attribute4
+                ,attribute5 = @attribute5
+                ,attribute6 = @attribute6
+                ,attribute7 = @attribute7
+                ,attribute8 = @attribute8
+                ,attribute9 = @attribute9
+                ,attribute10 = @attribute10
+                ,login_id = @login_id
+                ,password = @password
+                ,question = @question
+                ,answer = @answer
+                ,career_id = @career_id
+                ,mobile_uid = @mobile_uid
+                ,remote_addr = @remote_addr
+                ,mail_flg = @mail_flg
+                ,user_memo = @user_memo
+                ,del_flg = @del_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+                ,member_rank_id = @member_rank_id
+                ,recommend_uid = @recommend_uid
+                ,date_last_loggedin = @date_last_loggedin
+                ,user_management_level_id = @user_management_level_id
+                ,integrated_flg = @integrated_flg
+                ,easy_register_flg = @easy_register_flg
+                ,fixed_purchase_member_flg = @fixed_purchase_member_flg
+                ,access_country_iso_code = @access_country_iso_code
+                ,disp_language_code = @disp_language_code
+                ,disp_language_locale_id = @disp_language_locale_id
+                ,disp_currency_code = @disp_currency_code
+                ,disp_currency_locale_id = @disp_currency_locale_id
+                ,last_birthday_point_add_year = @last_birthday_point_add_year
+                ,addr_country_iso_code = @addr_country_iso_code
+                ,addr_country_name = @addr_country_name
+                ,addr5 = @addr5
+                ,last_birthday_coupon_publish_year = @last_birthday_coupon_publish_year
+                ,order_count_order_realtime = @order_count_order_realtime
+                ,referral_code = @referral_code
+                ,referred_user_id = @referred_user_id
+         WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="user_kbn" Type="nvarchar" Size="10" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+      <Input Name="name" Type="nvarchar" Size="40" />
+      <Input Name="name1" Type="nvarchar" Size="20" />
+      <Input Name="name2" Type="nvarchar" Size="20" />
+      <Input Name="name_kana" Type="nvarchar" Size="60" />
+      <Input Name="name_kana1" Type="nvarchar" Size="30" />
+      <Input Name="name_kana2" Type="nvarchar" Size="30" />
+      <Input Name="nick_name" Type="nvarchar" Size="20" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="mail_addr2" Type="nvarchar" Size="256" />
+      <Input Name="zip" Type="nvarchar" Size="30" />
+      <Input Name="zip1" Type="nvarchar" Size="3" />
+      <Input Name="zip2" Type="nvarchar" Size="4" />
+      <Input Name="addr" Type="nvarchar" Size="300" />
+      <Input Name="addr1" Type="nvarchar" Size="50" />
+      <Input Name="addr2" Type="nvarchar" Size="50" />
+      <Input Name="addr3" Type="nvarchar" Size="50" />
+      <Input Name="addr4" Type="nvarchar" Size="50" />
+      <Input Name="tel1" Type="nvarchar" Size="16" />
+      <Input Name="tel1_1" Type="nvarchar" Size="6" />
+      <Input Name="tel1_2" Type="nvarchar" Size="4" />
+      <Input Name="tel1_3" Type="nvarchar" Size="4" />
+      <Input Name="tel2" Type="nvarchar" Size="16" />
+      <Input Name="tel2_1" Type="nvarchar" Size="6" />
+      <Input Name="tel2_2" Type="nvarchar" Size="4" />
+      <Input Name="tel2_3" Type="nvarchar" Size="4" />
+      <Input Name="tel3" Type="nvarchar" Size="16" />
+      <Input Name="tel3_1" Type="nvarchar" Size="6" />
+      <Input Name="tel3_2" Type="nvarchar" Size="4" />
+      <Input Name="tel3_3" Type="nvarchar" Size="4" />
+      <Input Name="fax" Type="nvarchar" Size="16" />
+      <Input Name="fax_1" Type="nvarchar" Size="6" />
+      <Input Name="fax_2" Type="nvarchar" Size="4" />
+      <Input Name="fax_3" Type="nvarchar" Size="4" />
+      <Input Name="sex" Type="nvarchar" Size="10" />
+      <Input Name="birth" Type="datetime" />
+      <Input Name="birth_year" Type="nvarchar" Size="4" />
+      <Input Name="birth_month" Type="nvarchar" Size="2" />
+      <Input Name="birth_day" Type="nvarchar" Size="2" />
+      <Input Name="company_name" Type="nvarchar" Size="50" />
+      <Input Name="company_post_name" Type="nvarchar" Size="50" />
+      <Input Name="company_exective_name" Type="nvarchar" Size="50" />
+      <Input Name="advcode_first" Type="nvarchar" Size="30" />
+      <Input Name="attribute1" Type="nvarchar" Size="100" />
+      <Input Name="attribute2" Type="nvarchar" Size="100" />
+      <Input Name="attribute3" Type="nvarchar" Size="100" />
+      <Input Name="attribute4" Type="nvarchar" Size="100" />
+      <Input Name="attribute5" Type="nvarchar" Size="100" />
+      <Input Name="attribute6" Type="nvarchar" Size="100" />
+      <Input Name="attribute7" Type="nvarchar" Size="100" />
+      <Input Name="attribute8" Type="nvarchar" Size="100" />
+      <Input Name="attribute9" Type="nvarchar" Size="100" />
+      <Input Name="attribute10" Type="nvarchar" Size="100" />
+      <Input Name="login_id" Type="nvarchar" Size="256" />
+      <Input Name="password" Type="nvarchar" Size="100" />
+      <Input Name="question" Type="nvarchar" Size="50" />
+      <Input Name="answer" Type="nvarchar" Size="50" />
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="mobile_uid" Type="nvarchar" Size="50" />
+      <Input Name="remote_addr" Type="nvarchar" Size="30" />
+      <Input Name="mail_flg" Type="nvarchar" Size="10" />
+      <Input Name="user_memo" Type="nvarchar" Size="MAX" />
+      <Input Name="del_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="member_rank_id" Type="nvarchar" Size="30" />
+      <Input Name="recommend_uid" Type="nvarchar" Size="100" />
+      <Input Name="date_last_loggedin" Type="datetime" />
+      <Input Name="user_management_level_id" Type="nvarchar" Size="30" />
+      <Input Name="integrated_flg" Type="nvarchar" Size="1" />
+      <Input Name="easy_register_flg" Type="nvarchar" Size="1" />
+      <Input Name="fixed_purchase_member_flg" Type="nvarchar" Size="1" />
+      <Input Name="access_country_iso_code" Type="nvarchar" Size="3" />
+      <Input Name="disp_language_code" Type="nvarchar" Size="4" />
+      <Input Name="disp_language_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="disp_currency_code" Type="nvarchar" Size="4" />
+      <Input Name="disp_currency_locale_id" Type="nvarchar" Size="7" />
+      <Input Name="last_birthday_point_add_year" Type="nvarchar" Size="4" />
+      <Input Name="addr_country_iso_code" Type="nvarchar" Size="3" />
+      <Input Name="addr_country_name" Type="nvarchar" Size="100" />
+      <Input Name="addr5" Type="nvarchar" Size="50" />
+      <Input Name="last_birthday_coupon_publish_year" Type="nvarchar" Size="4" />
+      <Input Name="order_count_order_realtime" Type="int" />
+      <Input Name="referral_code" Type="nvarchar" Size="20" />
+      <Input Name="referred_user_id" Type="nvarchar" Size="30" />
+
+      
+    </Parameter>
+  </Update>
+  
+  <!-- モバイルユーザID更新 -->
+  <UpdateMobileUID>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_User
+           SET  career_id = @career_id
+                ,mobile_uid = @mobile_uid
+                ,date_changed = getdate()
+                ,last_changed = 'user'
+         WHERE  user_id = @user_id
+           AND  (
+                career_id <> @career_id
+                OR
+                mobile_uid <> @mobile_uid
+                )
+           AND  @career_id <> ''
+           AND  @mobile_uid <> ''
+           AND  user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+           AND  del_flg = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="career_id" Type="nvarchar" Size="10" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="mobile_uid" Type="nvarchar" Size="50" />
+    </Parameter>
+  </UpdateMobileUID>
+
+  <!-- メール配信フラグ更新 -->
+  <UpdateMailFlg>
+    <Statement>
+      <![CDATA[
+          UPDATE  w2_User
+             SET  w2_User.mail_flg = @mail_flg,
+                  w2_User.remote_addr = @remote_addr,
+                  w2_User.last_changed = 'user',
+                  w2_User.date_changed = GETDATE()
+           WHERE  (
+                    (w2_User.mail_addr <> '' AND w2_User.mail_addr = @mail_addr)
+                    OR
+                    (w2_User.mail_addr2 <> '' AND w2_User.mail_addr2 = @mail_addr)
+                  )
+             AND  w2_user.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER','MAIL')  -- 会員、メルマガ会員も
+             AND  w2_user.del_flg = '0'
+             AND  w2_user.mall_id = @mall_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="remote_addr" Type="nvarchar" Size="30"/>
+      <Input Name="mail_flg" Type="nvarchar" Size="10"/>
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="mall_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UpdateMailFlg>
+
+  <!-- メールマガジン解除 -->
+  <MailMagazineCancel>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_User
+           SET  w2_User.mail_flg = 'OFF', -- 配信しない
+                w2_User.date_changed = getdate(),
+                w2_User.last_changed = 'user'
+         WHERE  (
+                  (w2_User.mail_addr <> '' AND w2_User.mail_addr = @mail_addr)
+                  OR
+                  (w2_User.mail_addr2 <> '' AND w2_User.mail_addr2 = @mail_addr)
+                )
+            AND  (
+                    w2_User.mail_flg = 'ON'  -- 配信する
+                    OR
+                    w2_User.mail_flg = 'UNKNOWN'
+                    )
+           AND  w2_user.del_flg = '0'
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+    </Parameter>
+  </MailMagazineCancel>
+  
+  <!-- ユーザ退会-->
+  <UserWithdrawal>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_user
+           SET  name = '********'
+                ,name1 = '****'
+                ,name2 = '****'
+                ,name_kana = '********'
+                ,name_kana1 = '****'
+                ,name_kana2 = '****'
+                --,nick_name = @nick_name   -- ニックネームはのこす
+                ,mail_addr = '********'
+                ,mail_addr2 = '********'
+                ,addr = addr1 + '********' + addr_country_name
+                --,addr1 = @addr1   -- 都道府県はのこす
+                ,addr2 = '****'
+                ,addr3 = '****'
+                ,addr4 = '****'
+                ,addr5 = '****'
+                ,company_name = '****'
+                ,company_post_name = '****'
+                ,tel1 = '********'
+                ,tel1_1 = '****'
+                ,tel1_2 = '****'
+                ,tel1_3 = '****'
+                ,tel2 = '********'
+                ,tel2_1 = '****'
+                ,tel2_2 = '****'
+                ,tel2_3 = '****'
+                ,login_id = '****'
+                ,password = @password
+                ,mobile_uid = '****'
+                ,date_changed = getdate()
+                ,del_flg = '1'
+                ,last_changed =  @last_changed
+         WHERE  user_id = @user_id
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="password" Type="nvarchar" Size="100" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UserWithdrawal>
+
+  <!-- ユーザ拡張項目(すべて)の取得 -->
+  <GetUserExtend>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserExtend.*
+          FROM  w2_UserExtend
+         WHERE  w2_UserExtend.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserExtend>
+
+  <!-- カラムの存在チェック -->
+  <UserExtendColumnExists>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(COLUMNPROPERTY(object_id('w2_UserExtend'), '@@ field @@', 'AllowsNull'),1)
+      ]]>
+    </Statement>
+  </UserExtendColumnExists>
+
+  <!-- 会員新規登録 -->
+  <InsertUserExtend>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_UserExtend
+                (
+                  user_id,
+                  @@ fields @@
+                  date_created,
+                  date_changed,
+                  last_changed
+                )
+        VALUES  (
+                  @user_id,
+                  @@ values @@
+                  getdate(),
+                  getdate(),
+                  @last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <!-- 動的Columnについてはプログラム側で制御 -->
+    </Parameter>
+  </InsertUserExtend>
+
+  <!-- 会員登録変更 -->
+  <UpdateUserExtend>
+    <Statement>
+      <![CDATA[
+        DECLARE @count int
+        SELECT  @count = COUNT(user_id)
+          FROM  w2_UserExtend
+         WHERE  user_id = @user_id
+      
+        IF @count = 0  
+          BEGIN
+            INSERT  w2_UserExtend
+                    (
+                      user_id,
+                      @@ fields @@
+                      date_created,
+                      date_changed,
+                      last_changed
+                    )
+            VALUES  (
+                      @user_id,
+                      @@ values @@
+                      getdate(),
+                      getdate(),
+                      @last_changed
+                    )
+          END
+        ELSE
+          BEGIN
+            UPDATE  w2_UserExtend
+               SET  user_id = @user_id,
+                    @@ updatefields @@
+                    date_changed = getdate(),
+                    last_changed = @last_changed
+             WHERE  user_id = @user_id
+          END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <!-- 動的Columnについてはプログラム側で制御 -->
+    </Parameter>
+  </UpdateUserExtend>
+
+  <!-- 1.一時テーブル（w2_UserExtend_tmp）を作成 -->
+  <CreateUserExtendTempTable>
+    <Statement>
+      <![CDATA[
+        -- 一時テーブル生成
+        SELECT * INTO [w2_UserExtend_tmp] FROM [w2_UserExtend]
+        
+        DELETE [w2_WorkUserExtend]
+        SELECT * INTO [w2_WorkUserExtend_tmp] FROM [w2_WorkUserExtend]
+      ]]>
+    </Statement>
+  </CreateUserExtendTempTable>
+
+  <!-- 2-1.一時テーブルから項目削除 -->
+  <RemoveUserExtendColumn>
+    <Statement>
+      <![CDATA[
+        DECLARE  @CONSTRAINT_NAME nvarchar (50)
+        DECLARE  @SCRIPT VARCHAR(500)
+
+        -- 制約名称を取得
+        SET  @CONSTRAINT_NAME = 
+              (
+               SELECT  sys.objects.name
+                 FROM  sys.objects, sys.columns
+                WHERE  sys.columns.name = '@@ field @@'
+                  AND  sys.columns.column_id = object_id(N'[dbo].[w2_UserExtend_tmp]')
+                  AND  sys.objects.object_id = sys.columns.object_id
+              )
+        IF @CONSTRAINT_NAME IS NOT NULL
+          BEGIN
+            -- 制約名・列の削除スクリプト作成
+            SET  @SCRIPT = 'ALTER TABLE [w2_UserExtend_tmp] DROP CONSTRAINT ' + @CONSTRAINT_NAME + ';'
+            SET  @SCRIPT = @SCRIPT + 'ALTER TABLE [w2_UserExtend_tmp] DROP COLUMN [@@ field @@];'
+            -- 制約名削除後、列を削除
+            EXEC(@SCRIPT)
+          END
+        ELSE
+          BEGIN
+            ALTER TABLE [w2_UserExtend_tmp] DROP COLUMN [@@ field @@]
+          END
+
+
+        -- (ワークテーブルで同様の処理)
+        SET  @CONSTRAINT_NAME = 
+              (
+               SELECT  sys.objects.name
+                 FROM  sys.objects, sys.columns
+                WHERE  sys.columns.name = '@@ field @@'
+                  AND  sys.columns.column_id = object_id(N'[dbo].[w2_WorkUserExtend_tmp]')
+                  AND  sys.objects.object_id = sys.columns.object_id
+              )
+        IF @CONSTRAINT_NAME IS NOT NULL
+          BEGIN
+            SET  @SCRIPT = 'ALTER TABLE [w2_WorkUserExtend_tmp] DROP CONSTRAINT ' + @CONSTRAINT_NAME + ';'
+            SET  @SCRIPT = @SCRIPT + 'ALTER TABLE [w2_WorkUserExtend_tmp] DROP COLUMN [@@ field @@];'
+            EXEC(@SCRIPT)
+          END
+        ELSE
+          BEGIN
+            ALTER TABLE [w2_WorkUserExtend_tmp] DROP COLUMN [@@ field @@]
+          END
+      ]]>
+    </Statement>
+  </RemoveUserExtendColumn>
+
+  <!-- 2-2.一時テーブルに項目追加 -->
+  <AddUserExtendColumn>
+    <Statement>
+      <![CDATA[
+        ALTER TABLE [w2_UserExtend_tmp] ADD [@@ field @@] [nvarchar] (MAX) NOT NULL DEFAULT (N'');
+        ALTER TABLE [w2_WorkUserExtend_tmp] ADD [@@ field @@] [nvarchar] (MAX) NOT NULL DEFAULT (N'');
+      ]]>
+    </Statement>
+  </AddUserExtendColumn>
+
+  <!-- 3.一時テーブルの追加・削除対象ではない項目に対してデフォルト制約追加 -->
+  <ReDefinitionUserExtendColumn>
+    <Statement>
+      <![CDATA[
+        -- SELECT INTOは制約条件が引き継がれない為、(可変の)既存カラムの制約を追加
+        ALTER TABLE [w2_UserExtend_tmp] ADD DEFAULT (N'') FOR [@@ field @@];
+        ALTER TABLE [w2_WorkUserExtend_tmp] ADD DEFAULT (N'') FOR [@@ field @@];
+      ]]>
+    </Statement>
+  </ReDefinitionUserExtendColumn>
+
+  <!-- 4.元テーブル（w2_UserExtend）をDROPし、一時テーブルをリネーム（w2_UserExtend_tmp -> w2_UserExtend） -->
+  <ReDefinitionUserExtend>
+    <Statement>
+      <![CDATA[
+        -- 元テーブルをDROP
+        DROP TABLE [w2_UserExtend]
+          
+        -- SELECT INTOは制約条件が引き継がれない為、固定カラムの制約を追加
+        ALTER TABLE [w2_UserExtend_tmp] ADD DEFAULT (N'') FOR user_id;
+        ALTER TABLE [w2_UserExtend_tmp] ADD DEFAULT (getdate()) FOR date_created;
+        ALTER TABLE [w2_UserExtend_tmp] ADD DEFAULT (getdate()) FOR date_changed;
+        ALTER TABLE [w2_UserExtend_tmp] ADD DEFAULT (N'') FOR last_changed;
+        ALTER TABLE [w2_UserExtend_tmp] WITH NOCHECK ADD
+	        CONSTRAINT [PK_w2_UserExtend] PRIMARY KEY  CLUSTERED ([user_id]) ON [PRIMARY]
+        -- コピーテーブルを元テーブルにリネーム
+        DECLARE  @SCRIPT VARCHAR(1000)
+            SET  @SCRIPT = 'sp_rename [w2_UserExtend_tmp],[w2_UserExtend];'
+           EXEC(@SCRIPT)
+                
+                
+        -- 元テーブルをDROP(ワーク)
+        DROP TABLE [w2_WorkUserExtend]
+        
+        ALTER TABLE [w2_WorkUserExtend_tmp] ADD DEFAULT (N'') FOR user_id;
+        ALTER TABLE [w2_WorkUserExtend_tmp] ADD DEFAULT (getdate()) FOR date_created;
+        ALTER TABLE [w2_WorkUserExtend_tmp] ADD DEFAULT (getdate()) FOR date_changed;
+        ALTER TABLE [w2_WorkUserExtend_tmp] ADD DEFAULT (N'') FOR last_changed;
+        
+        ALTER TABLE [w2_WorkUserExtend_tmp] WITH NOCHECK ADD
+	        CONSTRAINT [PK_w2_WorkUserExtend] PRIMARY KEY  CLUSTERED ([user_id]) ON [PRIMARY]
+        
+        SET  @SCRIPT = 'sp_rename [w2_WorkUserExtend_tmp],[w2_WorkUserExtend];'
+        EXEC(@SCRIPT)
+      ]]>
+    </Statement>
+  </ReDefinitionUserExtend>
+
+  <!-- カラムのリネーム -->
+  <RenameUserExtendColumn>
+    <Statement>
+      <![CDATA[
+        -- カラムのリネーム処理
+        DECLARE  @SCRIPT VARCHAR(500)
+            SET  @SCRIPT = 'sp_rename ''[w2_UserExtend_tmp].@@ old_field @@'', ''@@ new_field @@'', ''Column'';'
+           EXEC  (@SCRIPT)
+      ]]>
+    </Statement>
+  </RenameUserExtendColumn>
+
+  <!-- パスワードリマインダ -->
+  <PasswordReminder>
+    <Statement>
+      <![CDATA[
+      SELECT  w2_user.user_id
+        FROM  w2_user
+       WHERE  w2_user.login_id = @login_id
+         AND  (
+                w2_user.mail_addr = @mail_addr
+                OR
+                w2_user.mail_addr2 = @mail_addr
+              )
+         AND  @login_id <> ''
+         AND  @mail_addr <> ''
+         AND  w2_user.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+         AND  w2_user.del_flg = '0'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="login_id" Type="nvarchar" Size="256" />
+    </Parameter>
+  </PasswordReminder>
+
+  <!-- パスワードリマインダ（ログインIDにメルアドを利用する場合） -->
+  <PasswordReminderUsedMailAddress>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.*
+          FROM  w2_User
+         WHERE  w2_User.login_id collate Japanese_CI_AS = @login_id
+           AND  (
+                  w2_User.mail_addr = @mail_addr
+                  OR
+                  w2_User.mail_addr2 = @mail_addr
+                )
+           AND  @login_id <> ''
+           AND  @mail_addr <> ''
+           AND  w2_User.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+           AND  (w2_user.del_flg = '0' AND w2_user.integrated_flg = '0')
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+      <Input Name="login_id" Type="nvarchar" Size="256" />
+    </Parameter>
+  </PasswordReminderUsedMailAddress>
+  
+  <!-- パスワードリマインダー情報取得 -->
+  <GetPasswordReminder>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_PasswordReminder.*
+          FROM  w2_PasswordReminder
+         WHERE  w2_PasswordReminder.authentication_key = @authentication_key
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="authentication_key" Type="nvarchar" Size="50" />
+    </Parameter>
+  </GetPasswordReminder>
+
+  <!-- パスワードリマインダー情報削除及び挿入 -->
+  <DeleteInsertPasswordReminder>
+    <Statement>
+      <![CDATA[
+        -- パスワードリマインダー情報削除
+        DELETE  w2_PasswordReminder
+         WHERE  w2_PasswordReminder.user_id = @user_id
+        
+        -- パスワードリマインダー情報挿入
+        INSERT  w2_PasswordReminder
+                (
+                  authentication_key
+                  ,user_id
+                  ,change_trial_limit_count
+                  ,date_created
+                )
+        VALUES  (
+                  @authentication_key
+                  ,@user_id
+                  ,@change_trial_limit_count
+                  ,@date_created
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="authentication_key" Type="nvarchar" Size="50" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="change_trial_limit_count" Type="int" />
+      <Input Name="date_created" Type="datetime" />
+    </Parameter>
+  </DeleteInsertPasswordReminder>
+
+  <!-- 試行可能回数更新 -->
+  <UpdateChangeUserPasswordTrialLimitCount>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_PasswordReminder
+           SET  w2_PasswordReminder.change_trial_limit_count = @change_trial_limit_count
+         WHERE  w2_PasswordReminder.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="change_trial_limit_count" Type="int" />
+    </Parameter>
+  </UpdateChangeUserPasswordTrialLimitCount>
+
+  <!-- パスワードリマインダー情報削除 -->
+  <DeletePasswordReminder>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_PasswordReminder
+         WHERE  w2_PasswordReminder.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeletePasswordReminder>
+
+  <!-- Delete user by id -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_User
+         WHERE  w2_User.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- ログインＩＤ重複チェック -->
+  <CheckDuplicationLoginIdRegist>
+    <Statement>
+      <![CDATA[
+      IF (@login_id_use_mailaddress_flg = '0') -- ログインIDにメルアドを利用しない場合
+      BEGIN
+        SELECT  count(user_id) AS count
+          FROM  w2_user
+         WHERE  w2_user.login_id = @login_id
+           AND  w2_user.login_id <> ''
+           AND  w2_user.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+           AND  w2_user.del_flg = '0'
+           AND  w2_user.integrated_flg = '0'
+      END
+      ELSE
+      BEGIN
+        SELECT  count(user_id) AS count
+          FROM  w2_user
+         WHERE  w2_user.login_id collate Japanese_CI_AS = @login_id
+           AND  @login_id <> ''
+           AND  w2_user.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+           AND  w2_user.del_flg = '0'
+           AND  w2_user.integrated_flg = '0'
+      END
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="login_id" Type="nvarchar" Size="256" />
+      <Input Name="login_id_use_mailaddress_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </CheckDuplicationLoginIdRegist>
+
+  <!-- ログインID重複チェック -->
+  <CheckDuplicationLoginIdModify>
+    <Statement>
+      <![CDATA[
+      IF (@login_id_use_mailaddress_flg = '0') -- ログインIDにメルアドを利用しない場合
+      BEGIN
+        SELECT  count(user_id) AS count
+          FROM  w2_user
+         WHERE  w2_user.user_id <> @user_id
+           AND  w2_user.login_id = @login_id
+           AND  w2_user.login_id <> ''
+           AND  w2_user.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+           AND  w2_user.del_flg = '0'
+           AND  w2_user.integrated_flg = '0'
+      END
+      ELSE
+      BEGIN
+        SELECT  count(user_id) AS count
+          FROM  w2_user
+         WHERE  w2_user.user_id <> @user_id
+           AND  w2_user.login_id collate Japanese_CI_AS =  @login_id
+           AND  w2_user.login_id <> ''
+           AND  w2_user.user_kbn IN ('PC_USER','MB_USER','SP_USER','OFF_USER')
+           AND  w2_user.del_flg = '0'
+           AND  w2_user.integrated_flg = '0'
+      END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="login_id" Type="nvarchar" Size="256" />
+      <Input Name="login_id_use_mailaddress_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </CheckDuplicationLoginIdModify>
+
+  <!-- ユーザー属性取得 -->
+  <GetUserAttribute>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserAttribute
+         WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserAttribute>
+
+  <!-- ユーザー属性受注情報マージ -->
+  <MergeUserAttributeOrderInfo>
+    <Statement>
+      <![CDATA[
+        MERGE w2_UserAttribute
+        USING
+                (
+          SELECT  @user_id AS user_id
+                  ,@first_order_date AS first_order_date
+                  ,@second_order_date AS second_order_date
+                  ,@last_order_date AS last_order_date
+                  ,@order_amount_order_all AS order_amount_order_all
+                  ,@order_amount_order_fp AS order_amount_order_fp
+                  ,@order_count_order_all AS order_count_order_all
+                  ,@order_count_order_fp AS order_count_order_fp
+                  ,@order_amount_ship_all AS order_amount_ship_all
+                  ,@order_amount_ship_fp AS order_amount_ship_fp
+                  ,@order_count_ship_all AS order_count_ship_all
+                  ,@order_count_ship_fp AS order_count_ship_fp
+                  ,@last_changed AS last_changed
+        ) AS tmp
+        ON (w2_UserAttribute.user_id = tmp.user_id)
+        WHEN MATCHED THEN
+          UPDATE
+             SET  first_order_date = tmp.first_order_date
+                  ,second_order_date = tmp.second_order_date
+                  ,last_order_date = tmp.last_order_date
+                  ,order_amount_order_all = tmp.order_amount_order_all
+                  ,order_amount_order_fp = tmp.order_amount_order_fp
+                  ,order_count_order_all = tmp.order_count_order_all
+                  ,order_count_order_fp = tmp.order_count_order_fp
+                  ,order_amount_ship_all = tmp.order_amount_ship_all
+                  ,order_amount_ship_fp = tmp.order_amount_ship_fp
+                  ,order_count_ship_all = tmp.order_count_ship_all
+                  ,order_count_ship_fp = tmp.order_count_ship_fp
+                  ,date_changed = GETDATE()
+                  ,last_changed = tmp.last_changed
+
+        WHEN NOT MATCHED THEN
+          INSERT
+                  (
+                  user_id
+                  ,first_order_date
+                  ,second_order_date
+                  ,last_order_date
+                  ,order_amount_order_all
+                  ,order_amount_order_fp
+                  ,order_count_order_all
+                  ,order_count_order_fp
+                  ,order_amount_ship_all
+                  ,order_amount_ship_fp
+                  ,order_count_ship_all
+                  ,order_count_ship_fp
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                   tmp.user_id
+                   ,tmp.first_order_date
+                   ,tmp.second_order_date
+                   ,tmp.last_order_date
+                   ,tmp.order_amount_order_all
+                   ,tmp.order_amount_order_fp
+                   ,tmp.order_count_order_all
+                   ,tmp.order_count_order_fp
+                   ,tmp.order_amount_ship_all
+                   ,tmp.order_amount_ship_fp
+                   ,tmp.order_count_ship_all
+                   ,tmp.order_count_ship_fp
+                  ,GETDATE()
+                  ,GETDATE()
+                   ,tmp.last_changed
+                  );
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="first_order_date" Type="datetime" />
+      <Input Name="second_order_date" Type="datetime" />
+      <Input Name="last_order_date" Type="datetime" />
+      <Input Name="order_amount_order_all" Type="decimal" Size="18,3" />
+      <Input Name="order_amount_order_fp" Type="decimal" Size="18,3" />
+      <Input Name="order_count_order_all" Type="int" />
+      <Input Name="order_count_order_fp" Type="int" />
+      <Input Name="order_amount_ship_all" Type="decimal" Size="18,3" />
+      <Input Name="order_amount_ship_fp" Type="decimal" Size="18,3" />
+      <Input Name="order_count_ship_all" Type="int" />
+      <Input Name="order_count_ship_fp" Type="int" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </MergeUserAttributeOrderInfo>
+
+  <!-- 空のユーザー属性作成 -->
+  <CreateEmptyUserAttribute>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_UserAttribute
+                (
+                  user_id
+                  ,last_changed
+                )
+        SELECT  w2_User.user_id
+                ,@last_changed
+          FROM  w2_User
+                LEFT JOIN w2_UserAttribute ON
+                (
+                  w2_User.user_id = w2_UserAttribute.user_id
+                )
+         WHERE  w2_UserAttribute.user_id IS NULL
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </CreateEmptyUserAttribute>
+
+  <!-- 外部ユーザーIDでユーザー情報取得 -->
+  <GetUserByExternalUserId>
+    <Statement>
+      <![CDATA[
+          SELECT  w2_User.*
+            FROM  w2_User
+                  LEFT JOIN w2_UserExtend ON
+                  (
+                    w2_User.user_id = w2_UserExtend.user_id
+                  )
+           WHERE  @@ ExtendColumn @@ = @external_user_id
+        
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="external_user_id" Type="nvarchar" Size="max" />
+    </Parameter>
+  </GetUserByExternalUserId>
+
+  <!-- 外部ユーザーIDを削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_User
+         WHERE  w2_User.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- ユーザ拡張項目設定一覧取得 -->
+  <GetUserExtendSettingList>
+    <Statement>
+      <![CDATA[
+          SELECT  w2_UserExtendSetting.*
+            FROM  w2_UserExtendSetting
+        ORDER BY  w2_UserExtendSetting.sort_order ASC
+      ]]>
+    </Statement>
+  </GetUserExtendSettingList>
+
+  <!-- ユーザ拡張項目設定取得 -->
+  <GetUserExtendSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_UserExtendSetting.*
+          FROM  w2_UserExtendSetting
+         WHERE  w2_UserExtendSetting.setting_id = @setting_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="setting_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </GetUserExtendSetting>
+
+  <!-- ユーザ拡張項目設定登録 -->
+  <InsertUserExtendSetting>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_UserExtendSetting
+                (
+                  w2_UserExtendSetting.setting_id
+                  ,w2_UserExtendSetting.setting_name
+                  ,w2_UserExtendSetting.outline_kbn
+                  ,w2_UserExtendSetting.outline
+                  ,w2_UserExtendSetting.sort_order
+                  ,w2_UserExtendSetting.input_type
+                  ,w2_UserExtendSetting.input_default
+                  ,w2_UserExtendSetting.init_only_flg
+                  ,w2_UserExtendSetting.display_kbn
+                  ,w2_UserExtendSetting.date_created
+                  ,w2_UserExtendSetting.date_changed
+                  ,w2_UserExtendSetting.last_changed
+                )
+        VALUES  (
+                  @setting_id
+                  ,@setting_name
+                  ,@outline_kbn
+                  ,@outline
+                  ,@sort_order
+                  ,@input_type
+                  ,@input_default
+                  ,@init_only_flg
+                  ,@display_kbn
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="setting_id" Type="nvarchar" Size="50" />
+      <Input Name="setting_name" Type="nvarchar" Size="100" />
+      <Input Name="outline_kbn" Type="nvarchar" Size="10" />
+      <Input Name="outline" Type="nvarchar" Size="MAX" />
+      <Input Name="sort_order" Type="int" />
+      <Input Name="input_type" Type="nvarchar" Size="10" />
+      <Input Name="input_default" Type="nvarchar" Size="MAX" />
+      <Input Name="init_only_flg" Type="nvarchar" Size="30" />
+      <Input Name="display_kbn" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertUserExtendSetting>
+
+  <!-- ユーザ拡張項目設定更新 -->
+  <UpdateUserExtendSetting>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserExtendSetting
+           SET  w2_UserExtendSetting.setting_name = @setting_name
+                ,w2_UserExtendSetting.outline_kbn = @outline_kbn
+                ,w2_UserExtendSetting.outline = @outline
+                ,w2_UserExtendSetting.sort_order = @sort_order
+                ,w2_UserExtendSetting.input_type = @input_type
+                ,w2_UserExtendSetting.input_default = @input_default
+                ,w2_UserExtendSetting.init_only_flg = @init_only_flg
+                ,w2_UserExtendSetting.display_kbn = @display_kbn
+                ,w2_UserExtendSetting.date_changed = GETDATE()
+                ,w2_UserExtendSetting.last_changed = @last_changed
+         WHERE  w2_UserExtendSetting.setting_id = @setting_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="setting_id" Type="nvarchar" Size="50" />
+      <Input Name="setting_name" Type="nvarchar" Size="100" />
+      <Input Name="outline_kbn" Type="nvarchar" Size="10" />
+      <Input Name="outline" Type="nvarchar" Size="MAX" />
+      <Input Name="sort_order" Type="int" />
+      <Input Name="input_type" Type="nvarchar" Size="10" />
+      <Input Name="input_default" Type="nvarchar" Size="MAX" />
+      <Input Name="init_only_flg" Type="nvarchar" Size="30" />
+      <Input Name="display_kbn" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateUserExtendSetting>
+
+  <!-- ユーザ拡張項目設定削除 -->
+  <DeleteUserExtendSetting>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserExtendSetting
+         WHERE  w2_UserExtendSetting.setting_id = @setting_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="setting_id" Type="nvarchar" Size="50" />
+    </Parameter>
+  </DeleteUserExtendSetting>
+
+  <!-- かんたん会員登録設定取得 -->
+  <GetUserEasyRegisterSetting>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserEasyRegisterSetting
+         WHERE  item_id = @item_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="item_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserEasyRegisterSetting>
+
+  <!-- かんたん会員登録設定全件取得 -->
+  <GetUserEasyRegisterSettingList>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserEasyRegisterSetting
+      ]]>
+    </Statement>
+  </GetUserEasyRegisterSettingList>
+
+  <!-- かんたん会員登録設定更新 -->
+  <UpdateUserEasyRegisterSetting>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_UserEasyRegisterSetting
+           SET  display_flg = @display_flg
+                ,date_changed = GETDATE()
+                ,last_changed = @last_changed
+         WHERE  item_id = @item_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="item_id" Type="nvarchar" Size="30" />
+      <Input Name="display_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateUserEasyRegisterSetting>
+
+  <!-- ユーザー統合対象ユーザーリスト取得 -->
+  <GetIntegrationTargetUserList>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        SELECT  *
+          FROM  w2_User
+         WHERE  del_flg = '0'
+           AND  integrated_flg = '0'
+      ORDER BY  user_id ASC
+      ]]>
+    </Statement>
+  </GetIntegrationTargetUserList>
+  
+  <!-- CPMクラスタ付与向けユーザーID取得 -->
+  <GetUserIdsForSetCpmCluster>
+    <Statement>
+      <![CDATA[
+        -- ※バッチが日時で回っていることを前提に取得※
+        -- ・売上累計や在籍期間は注文が確定したときに変化するので、注文変更日を見てで集計対象とする
+        -- ・離脱期間は日々変わっていくものなので、リセットor閾値に達したら集計対象とする
+      
+        SELECT  DISTINCT w2_Order.user_id
+          FROM  w2_Order WITH (NOLOCK)
+                INNER JOIN w2_UserAttribute WITH (NOLOCK) ON
+                (
+                  w2_Order.user_id = w2_UserAttribute.user_Id
+                )
+         WHERE  (
+                  w2_Order.date_changed >= @begin
+                  AND
+                  w2_Order.date_changed < @end
+                )
+            OR  w2_UserAttribute.away_days IN (0, @@ away_days @@)
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="begin" Type="datetime" />
+      <Input Name="end" Type="datetime" />
+    </Parameter>
+  </GetUserIdsForSetCpmCluster>
+
+  <!-- ユーザー属性CPMクラスタ更新 -->
+  <UpdateUserAttributeCpmCluster>
+    <Statement>
+      <![CDATA[
+          UPDATE  w2_UserAttribute
+             SET  cpm_cluster_attribute1 = @cpm_cluster_attribute1
+                  ,cpm_cluster_attribute2 = @cpm_cluster_attribute2
+                  ,cpm_cluster_attribute1_before = @cpm_cluster_attribute1_before
+                  ,cpm_cluster_attribute2_before = @cpm_cluster_attribute2_before
+                  ,cpm_cluster_changed_date = @cpm_cluster_changed_date
+                  ,date_changed = GETDATE()
+                  ,last_changed = @last_changed
+           WHERE  w2_UserAttribute.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="cpm_cluster_attribute1" Type="nvarchar" Size="15" />
+      <Input Name="cpm_cluster_attribute2" Type="nvarchar" Size="15" />
+      <Input Name="cpm_cluster_attribute1_before" Type="nvarchar" Size="15" />
+      <Input Name="cpm_cluster_attribute2_before" Type="nvarchar" Size="15" />
+      <Input Name="cpm_cluster_changed_date" Type="datetime" />
+    </Parameter>
+  </UpdateUserAttributeCpmCluster>
+
+  <!-- CPMクラスタレポートデータ取得 -->
+  <GetUserCpmClusterReportData>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+        
+        SELECT  cpm_cluster_id
+                ,cpm_cluster_attribute1
+                ,cpm_cluster_attribute2
+                ,COUNT_BIG(*) AS count
+          FROM  w2_UserAttribute
+        GROUP BY cpm_cluster_id, cpm_cluster_attribute1, cpm_cluster_attribute2
+      ]]>
+    </Statement>
+  </GetUserCpmClusterReportData>
+
+  <!-- ユーザ属性情報削除 -->
+  <DeleteUserAttributeCpmCluster>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserAttribute
+         WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteUserAttributeCpmCluster>
+
+  <!-- 最終誕生日ポイント付与年更新 -->
+  <UpdateUserBirthdayPointAddYear>
+    <Statement>
+      <![CDATA[
+          UPDATE  w2_User
+             SET  last_birthday_point_add_year = @last_birthday_point_add_year
+                  ,date_changed = GETDATE()
+                  ,last_changed = @last_changed
+           WHERE  w2_User.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="last_birthday_point_add_year" Type="nvarchar" Size="4" />
+    </Parameter>
+  </UpdateUserBirthdayPointAddYear>
+
+  <!-- 最終誕生日クーポン発行年更新 -->
+  <UpdateUserBirthdayCouponPublishYear>
+    <Statement>
+      <![CDATA[
+          UPDATE  w2_User
+             SET  last_birthday_coupon_publish_year = @last_birthday_coupon_publish_year
+                  ,date_changed = GETDATE()
+                  ,last_changed = @last_changed
+           WHERE  w2_User.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="last_birthday_coupon_publish_year" Type="nvarchar" Size="4" />
+    </Parameter>
+  </UpdateUserBirthdayCouponPublishYear>
+
+  <!-- 最終誕生日クーポン発行年更新(ユーザークーポン情報から) -->
+  <UpdateUserBirthdayCouponPublishYearByCouponInfo>
+    <Statement>
+      <![CDATA[
+          DECLARE @last_birthday_coupon_publish_date DATETIME
+
+          SELECT  @last_birthday_coupon_publish_date = MAX(w2_UserCoupon.date_created)
+            FROM  w2_User
+                  INNER JOIN w2_UserCoupon ON
+                  (
+                    w2_User.user_id = w2_UserCoupon.user_id
+                  )
+                  INNER JOIN w2_Coupon ON
+                  (
+                    w2_Coupon.coupon_id = w2_UserCoupon.coupon_id
+                  )
+           WHERE  w2_User.user_id = @user_id
+             AND  w2_Coupon.coupon_type IN ('07', '08')
+
+          UPDATE  w2_User SET last_birthday_coupon_publish_year = ISNULL(CAST(YEAR(@last_birthday_coupon_publish_date) AS VARCHAR(10)), '')
+                  ,date_changed = GETDATE()
+                  ,last_changed = @last_changed
+           WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateUserBirthdayCouponPublishYearByCouponInfo>
+
+  <!-- アクティビティを取得 -->
+  <GetUserActivity>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserActivity
+         WHERE  user_id = @user_id
+           AND  master_kbn = @master_kbn
+           AND  master_id = @master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserActivity>
+
+  <!-- アクティビティをユーザーIDで取得 -->
+  <GetUserActivityByUserId>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_UserActivity
+         WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserActivityByUserId>
+
+  <!-- 管理画面用ユーザーアクティビティ集計 -->
+  <GetUserActivityCountForManager>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL(COUNT(w2_UserActivity.user_id), 0)
+          FROM  w2_UserActivity
+         WHERE  master_kbn = @master_kbn
+           AND  master_id = @master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserActivityCountForManager>
+
+  <!-- アクティビティを登録 -->
+  <InsertUserActivity>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_UserActivity
+                (
+                  user_id
+                  ,master_kbn
+                  ,master_id
+                  ,date
+                )
+        VALUES  (
+                  @user_id
+                  ,@master_kbn
+                  ,@master_id
+                  ,GETDATE()
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </InsertUserActivity>
+
+  <!-- アクティビティを削除 -->
+  <DeleteUserActivity>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserActivity
+         WHERE  user_id = @user_id
+           AND  master_kbn = @master_kbn
+           AND  master_id = @master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteUserActivity>
+
+  <!-- アクティビティを削除 -->
+  <DeleteUserActivityByUserId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserActivity
+         WHERE  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteUserActivityByUserId>
+
+  <!-- 管理画面用アクティビティを削除 -->
+  <DeleteUserActivityForManager>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_UserActivity
+         WHERE  master_kbn = @master_kbn
+           AND  master_id = @master_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="master_kbn" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteUserActivityForManager>
+
+  <!-- リアルタイム累計購入回数更新 -->
+  <UpdateRealTimeOrderCount>
+    <Statement>
+      <![CDATA[
+          UPDATE  w2_User
+             SET  order_count_order_realtime = @order_count_order_realtime
+           WHERE  w2_User.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="order_count_order_realtime" Type="int" />
+    </Parameter>
+  </UpdateRealTimeOrderCount>
+
+  <!-- ユーザー管理レベルのユーザーへの割当てられている件数 -->
+  <UserManagementLevelUserCount>
+    <Statement>
+      <![CDATA[
+        SELECT  COUNT(*)
+          FROM  w2_User
+         WHERE  w2_User.user_management_level_id = @user_management_level_id
+    ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_management_level_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UserManagementLevelUserCount>
+
+  <!-- Get Users For Line -->
+  <GetUsersForLine>
+    <Statement>
+      <![CDATA[
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+
+        SELECT  *
+          FROM  w2_User
+                LEFT JOIN w2_UserExtend ON
+                (
+                  w2_User.user_id = w2_UserExtend.user_id
+                )
+          WHERE  1 = 1
+                 @@ user_search_condition @@
+            AND  w2_User.del_flg = '0'
+                 <@@hasval:name@@>
+                   AND  w2_User.name = @name
+                 </@@hasval:name@@>
+                 <@@hasval:name_kana@@>
+                   AND  w2_User.name_kana = @name_kana
+                 </@@hasval:name_kana@@>
+                 <@@hasval:mail_addr@@>
+                   AND  w2_User.mail_addr = @mail_addr
+                 </@@hasval:mail_addr@@>
+                 <@@hasval:tel1@@>
+                   AND  (tel1_1 + tel1_2 + tel1_3) = @tel1
+                 </@@hasval:tel1@@>
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="name" Type="nvarchar" Size="40" />
+      <Input Name="name_kana" Type="nvarchar" Size="60" />
+      <Input Name="tel1" Type="nvarchar" Size="16" />
+      <Input Name="mail_addr" Type="nvarchar" Size="256" />
+    </Parameter>
+  </GetUsersForLine>
+
+  <!-- サジェスト用ユーザー検索 -->
+  <SearchUsersForAutoSuggest>
+    <Statement>
+      <![CDATA[
+        SELECT  TOP (@max_count_for_display)
+                w2_User.*
+          FROM  w2_User
+         WHERE  w2_User.del_flg = '0'
+           AND  w2_User.integrated_flg = '0'
+           AND  (
+                  w2_User.user_id LIKE @search_word_like_escaped + '%'  ESCAPE '#' -- ユーザーID
+                  OR
+                  w2_User.name LIKE '%' + @search_word_like_escaped + '%' ESCAPE '#' -- 氏名
+                  OR
+                  w2_User.name_kana LIKE @search_word_like_escaped + '%' ESCAPE '#' -- 氏名かな
+                  OR
+                  w2_User.tel1 LIKE @search_word_like_escaped + '%' ESCAPE '#'
+                  OR
+                  w2_User.tel1_1 + w2_User.tel1_2 + w2_User.tel1_3 LIKE '%' + @search_word_like_escaped + '%' ESCAPE '#' -- 電話番号1
+                  OR
+                  w2_User.tel2 LIKE @search_word_like_escaped + '%' ESCAPE '#'
+                  OR
+                  w2_User.tel2_1 + w2_User.tel2_2 + w2_User.tel2_3 LIKE '%' + @search_word_like_escaped + '%' ESCAPE '#' -- 電話番号2
+                )
+        ORDER BY w2_User.user_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="search_word_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="max_count_for_display" Type="int" />
+    </Parameter>
+  </SearchUsersForAutoSuggest>
+
+  <!-- Get user by referral code -->
+  <GetUserByReferralCode>
+    <Statement>
+      <![CDATA[
+          SELECT  w2_User.*
+            FROM  w2_User
+           WHERE  w2_User.referral_code = @referral_code
+             <@@hasval:user_id@@>
+             AND  w2_User.user_id = @user_id
+             </@@hasval:user_id@@>
+             AND  w2_User.del_flg = '0'
+             AND  w2_User.integrated_flg = '0'
+             AND  w2_User.referral_code <> ''
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="referral_code" Type="nvarchar" Size="20" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetUserByReferralCode>
+
+  <!-- Get referred user id -->
+  <GetReferredUserId>
+    <Statement>
+      <![CDATA[
+        SELECT  ISNULL
+                (
+                  (
+                    SELECT  w2_User.referred_user_id
+                      FROM  w2_User
+                     WHERE  w2_User.user_id = @user_id
+                       AND  w2_User.referred_user_id <> w2_User.user_id
+                  ),
+                  ''
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetReferredUserId>
+
+  <!-- Update user referral code -->
+  <UpdateUserReferralCode>
+    <Statement>
+      <![CDATA[
+          UPDATE  w2_User
+             SET  w2_User.referral_code = @referral_code,
+                  w2_User.date_changed = GETDATE(),
+                  w2_User.last_changed = @last_changed
+           WHERE  w2_User.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="referral_code" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateUserReferralCode>
+
+  <!-- Update referred user id -->
+  <UpdateReferredUserId>
+    <Statement>
+      <![CDATA[
+          UPDATE  w2_User
+             SET  w2_User.referred_user_id = @referred_user_id,
+                  w2_User.date_changed = GETDATE(),
+                  w2_User.last_changed = @last_changed
+           WHERE  w2_User.user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+      <Input Name="referred_user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </UpdateReferredUserId>
+
+  <!-- 一時テーブルからユーザー情報を取得 -->
+  <GetWorkUser>
+    <Statement>
+      <![CDATA[
+        SELECT *
+          FROM w2_WorkUser
+         WHERE user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetWorkUser>
+
+  <!-- Get users for Letro -->
+  <GetUsersForLetro>
+    <Statement>
+      <![CDATA[
+        SELECT  w2_User.user_id,
+                w2_User.name1,
+                w2_User.name2,
+                w2_User.mail_addr,
+                w2_User.mail_flg,
+                w2_User.date_created
+          FROM  w2_User
+         WHERE  w2_User.user_id IN (@@ user_ids @@)
+           AND  w2_User.user_kbn IN ('PC_USER', 'MB_USER', 'SP_USER', 'OFF_USER')
+           AND  w2_User.del_flg = '0'
+           AND  w2_User.integrated_flg = '0'
+      ]]>
+    </Statement>
+  </GetUsersForLetro>
+
+</User>

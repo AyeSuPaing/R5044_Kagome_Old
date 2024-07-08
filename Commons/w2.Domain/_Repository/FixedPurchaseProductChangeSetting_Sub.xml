@@ -1,0 +1,99 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 定期商品変更設定系SQLサブステートメントXML(FixedPurchaseProductChangeSetting_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2023 All Rights Reserved.
+=========================================================================================================
+-->
+<FixedPurchaseProductChangeSetting_Sub>
+
+  <!-- 定期商品変更設定一覧取得用WHERE文 -->
+  <FIXEDPURCHASEPRODUCTCHANGESETTING_SEARCH_WHERE>
+    <Statement>
+      <![CDATA[
+        -- 定期商品変更ID
+        WHERE w2_FixedPurchaseProductChangeSetting.fixed_purchase_product_change_id LIKE '%' + @fixed_purchase_product_change_id_like_escaped + '%' ESCAPE '#'
+              AND
+              -- 定期商品変更名
+              w2_FixedPurchaseProductChangeSetting.fixed_purchase_product_change_name LIKE '%' + @fixed_purchase_product_change_name_like_escaped + '%' ESCAPE '#'
+              AND
+              -- 定期変更元商品ID
+              (
+                @before_change_product_id_like_escaped = ''
+                OR
+                (
+                  w2_FixedPurchaseProductChangeSetting.fixed_purchase_product_change_id IN
+                  (
+                    SELECT  w2_FixedPurchaseBeforeChangeItem.fixed_purchase_product_change_id
+                      FROM  w2_FixedPurchaseBeforeChangeItem
+                     WHERE  w2_FixedPurchaseBeforeChangeItem.product_id LIKE '%' + @before_change_product_id_like_escaped + '%' ESCAPE '#'
+                    GROUP BY w2_FixedPurchaseBeforeChangeItem.fixed_purchase_product_change_id
+                  )
+                )
+              )
+              AND
+              -- 定期変更後商品ID
+              (
+                @after_change_product_id_like_escaped = ''
+                OR
+                (
+                  w2_FixedPurchaseProductChangeSetting.fixed_purchase_product_change_id IN
+                  (
+                    SELECT  w2_FixedPurchaseAfterChangeItem.fixed_purchase_product_change_id
+                      FROM  w2_FixedPurchaseAfterChangeItem
+                     WHERE  w2_FixedPurchaseAfterChangeItem.product_id LIKE '%' + @after_change_product_id_like_escaped + '%' ESCAPE '#'
+                    GROUP BY w2_FixedPurchaseAfterChangeItem.fixed_purchase_product_change_id
+                  )
+                )
+              )
+              AND
+              -- 有効フラグ
+              w2_FixedPurchaseProductChangeSetting.valid_flg = @valid_flg
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="fixed_purchase_product_change_id_like_escaped" Type="nvarchar" Size="50" />
+      <Input Name="fixed_purchase_product_change_name_like_escaped" Type="nvarchar" Size="100" />
+      <Input Name="before_change_product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="after_change_product_id_like_escaped" Type="nvarchar" Size="60" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+    </Parameter>
+  </FIXEDPURCHASEPRODUCTCHANGESETTING_SEARCH_WHERE>
+
+  <!-- 定期商品変更設定一覧取得用ORDER BY -->
+  <FIXEDPURCHASEPRODUCTCHANGESETTING_SEARCH_ORDER_BY>
+    <Statement>
+      <![CDATA[
+        ORDER BY
+          CASE @sort_kbn
+            WHEN '0' THEN w2_FixedPurchaseProductChangeSetting.fixed_purchase_product_change_id
+            ELSE '1'
+             END ASC,
+          CASE @sort_kbn
+            WHEN '1' THEN w2_FixedPurchaseProductChangeSetting.fixed_purchase_product_change_id
+            ELSE '1'
+             END DESC,
+          CASE @sort_kbn
+            WHEN '2' THEN w2_FixedPurchaseProductChangeSetting.priority
+            ELSE '1'
+             END ASC,
+          CASE @sort_kbn
+            WHEN '3' THEN w2_FixedPurchaseProductChangeSetting.date_created
+            WHEN '5' THEN w2_FixedPurchaseProductChangeSetting.date_changed
+            ELSE NULL
+             END ASC,
+          CASE @sort_kbn
+            WHEN '4' THEN w2_FixedPurchaseProductChangeSetting.date_created
+            WHEN '6' THEN w2_FixedPurchaseProductChangeSetting.date_changed
+            ELSE NULL
+             END DESC,
+          w2_FixedPurchaseProductChangeSetting.fixed_purchase_product_change_id ASC
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="sort_kbn" Type="nvarchar" Size="1" />
+    </Parameter>
+  </FIXEDPURCHASEPRODUCTCHANGESETTING_SEARCH_ORDER_BY>
+
+</FixedPurchaseProductChangeSetting_Sub>

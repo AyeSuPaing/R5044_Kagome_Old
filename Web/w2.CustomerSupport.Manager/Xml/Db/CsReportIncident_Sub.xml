@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : インシデント集計SQLサブステートメントXML(CsReportIncident_Sub.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2013 All Rights Reserved.
+=========================================================================================================
+-->
+<CsReportIncident_Sub>
+  
+  <!-- インシデントレポートWHERE文 -->
+  <IncidentReport_Wehre>
+    <Statement>
+      <![CDATA[
+                w2_CsIncident.dept_id = @dept_id
+           AND  (
+                  @create_date_bgn IS NULL
+                  OR
+                  @create_date_bgn <= w2_CsIncident.date_created
+                )
+           AND  (
+                  @create_date_end IS NULL
+                  OR
+                  @create_date_end >= w2_CsIncident.date_created
+                )
+           AND  (
+                  @comeplete_date_bgn IS NULL
+                  OR
+                  @comeplete_date_bgn <= w2_CsIncident.date_completed
+                )
+           AND  (
+                  @comeplete_date_end IS NULL
+                  OR
+                  @comeplete_date_end >= w2_CsIncident.date_completed
+                )
+           AND  w2_CsIncident.valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="create_date_bgn" Type="datetime" />
+      <Input Name="create_date_end" Type="datetime" />
+      <Input Name="comeplete_date_bgn" Type="datetime" />
+      <Input Name="comeplete_date_end" Type="datetime" />
+    </Parameter>
+  </IncidentReport_Wehre>
+
+  <!-- インシデントレポート対象日決定用 -->
+  <IncidentReport_TargetDate>
+    <Statement>
+      <![CDATA[
+        CASE WHEN @create_date_bgn IS NOT NULL THEN w2_CsIncident.date_created ELSE w2_CsIncident.date_completed END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="create_date_bgn" Type="datetime" />
+    </Parameter>
+  </IncidentReport_TargetDate>
+  
+</CsReportIncident_Sub>

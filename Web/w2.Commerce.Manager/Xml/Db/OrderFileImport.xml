@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : 注文関連ファイル取込系SQLステートメントXML(OrderFileImport.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<OrderFileImport>
+  <!-- 配送伝票番号更新 -->
+  <UpdateOrderShippingCheckNo>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_OrderShipping
+           SET  shipping_check_no = @shipping_check_no,
+                date_changed = getdate()
+         WHERE  order_id = @order_id
+           AND  order_shipping_no = @order_shipping_no -- ギフト未対応のため条件に含めない
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_shipping_no" Type="int" />
+      <Input Name="shipping_check_no" Type="nvarchar" Size="50" />
+    </Parameter>
+  </UpdateOrderShippingCheckNo>
+
+  <!-- 最終更新者更新 -->
+  <UpdateOrderLastChanged>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_Order
+           SET  last_changed = @last_changed,
+                date_changed = getdate()
+         WHERE  order_id = @order_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateOrderLastChanged>
+
+  <!-- 配送伝票番号更新(B2送り状かつ楽天注文含む) -->
+  <UpdateOrderShippingCheckNoB2RakutenIncl>
+    <Statement>
+      <![CDATA[
+        -- 自社
+        UPDATE  w2_OrderShipping
+           SET  w2_OrderShipping.shipping_check_no = @shipping_check_no,
+                w2_OrderShipping.date_changed = getdate()
+         WHERE  w2_OrderShipping.order_id IN
+                (
+                    SELECT  w2_Order.order_id
+                      FROM  w2_Order
+                     WHERE  w2_Order.order_id = @order_id
+                       AND  w2_Order.mall_id = 'OWN_SITE'
+                )
+           AND  w2_OrderShipping.order_shipping_no = @order_shipping_no
+
+        -- 更新件数が0件の場合
+        DECLARE @update_count int
+        SET @update_count = @@ROWCOUNT
+        IF @update_count = 0
+          BEGIN
+            -- 注文IDの文字数取得
+            DECLARE @order_id_length int
+            SET @order_id_length = LEN('-' + @order_id);
+            
+            -- モール
+            UPDATE  w2_OrderShipping
+               SET  w2_OrderShipping.shipping_check_no = @shipping_check_no,
+                    w2_OrderShipping.date_changed = getdate()
+             WHERE  w2_OrderShipping.order_id IN
+                    (
+                        SELECT  w2_Order.order_id
+                          FROM  w2_Order
+                    INNER JOIN  w2_MallCooperationSetting ON
+                                (
+                                  w2_MallCooperationSetting.mall_id = w2_Order.mall_id
+                                )
+                         WHERE  (
+                                    -- 楽天注文の場合、後方一致で対象を抽出
+                                    -- ※楽天注文IDが長くB2送り状に対応できないため、
+                                    --   ユニークである「-」区切りした最後尾の楽天注文IDをB2送り状のIDとしている。
+                                    RIGHT(w2_Order.order_id, @order_id_length) = '-' + @order_id
+                                    AND
+                                    w2_OrderShipping.order_shipping_no = @order_shipping_no
+                                    AND
+                                    w2_MallCooperationSetting.mall_kbn = 'R'
+                                )
+                                OR
+                                (
+                                    -- 楽天以外
+                                    w2_Order.order_id = @order_id
+                                    AND
+                                    w2_OrderShipping.order_shipping_no = @order_shipping_no
+                                    AND
+                                    w2_MallCooperationSetting.mall_kbn <> 'R'
+                                )
+                    )
+               AND  w2_OrderShipping.order_shipping_no = @order_shipping_no
+          END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="order_shipping_no" Type="int" />
+      <Input Name="shipping_check_no" Type="nvarchar" Size="50" />
+    </Parameter>
+  </UpdateOrderShippingCheckNoB2RakutenIncl>
+
+  <!-- 最終更新者更新(B2送り状かつ楽天注文含む) -->
+  <UpdateOrderLastChangedB2RakutenIncl>
+    <Statement>
+      <![CDATA[
+        -- 自社
+        UPDATE  w2_Order
+           SET  w2_Order.last_changed = @last_changed,
+                w2_Order.date_changed = getdate()
+         WHERE  w2_Order.order_id = @order_id
+           AND  w2_Order.mall_id = 'OWN_SITE'
+
+        -- 更新件数が0件の場合
+        DECLARE @update_count int
+        SET @update_count = @@ROWCOUNT
+        IF @update_count = 0
+          BEGIN
+            -- 注文IDの文字数取得
+            DECLARE @order_id_length int
+            SET @order_id_length = LEN('-' + @order_id);
+
+            -- モール
+            UPDATE  w2_Order
+               SET  w2_Order.last_changed = @last_changed,
+                    w2_Order.date_changed = getdate()
+              FROM  w2_Order
+        INNER JOIN  w2_MallCooperationSetting ON
+                    (
+                      w2_MallCooperationSetting.mall_id = w2_Order.mall_id
+                    )
+             WHERE  (
+                        -- 楽天注文の場合、後方一致で対象を抽出
+                        -- ※楽天注文IDが長くB2送り状に対応できないため、
+                        --   ユニークである「-」区切りした最後尾の楽天注文IDをB2送り状のIDとしている。
+                        RIGHT(w2_Order.order_id, @order_id_length) = '-' + @order_id
+                        AND
+                        w2_MallCooperationSetting.mall_kbn = 'R'
+                    )
+                    OR
+                    (
+                        -- 楽天以外
+                        w2_Order.order_id = @order_id
+                        AND
+                        w2_MallCooperationSetting.mall_kbn <> 'R'
+                    )
+          END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="order_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateOrderLastChangedB2RakutenIncl>
+</OrderFileImport>

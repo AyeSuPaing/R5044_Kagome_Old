@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メール配信送信済ユーザ系SQLステートメントXML (MailDistSentUser.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2019 All Rights Reserved.
+=========================================================================================================
+-->
+<MailDistSentUser>
+
+  <!-- 取得 -->
+  <Get>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailDistSentUser
+         WHERE  maildist_id = @maildist_id
+           AND  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Get>
+
+  <!-- 送信済除外件数取得 -->
+  <GetDuplicateExceptCount>
+    <Statement>
+      <![CDATA[
+        -- 配信除外メールエラーポイント取得
+        DECLARE @except_error_point int
+        SELECT  @except_error_point = except_error_point
+          FROM  w2_MailDistSetting
+          WHERE  dept_id = @dept_id
+            AND  maildist_id = @maildist_id
+            AND  del_flg = '0'
+
+        -- ターゲットリストデータ取得（重複排除）
+        SELECT  COUNT(*)
+          FROM  w2_MailSendTemp
+                LEFT JOIN w2_MailErrorAddr ON (
+                  w2_MailSendTemp.mail_addr = w2_MailErrorAddr.mail_addr
+                )
+          WHERE  dept_id = @dept_id
+            AND  master_id = @master_id
+            AND  (
+                    (
+                        SELECT  COUNT(*)
+                          FROM  w2_MailDistExceptList
+                        WHERE  w2_MailDistExceptList.maildist_id = @maildist_id
+                    ) = 0
+                    OR
+                    NOT EXISTS (
+                      SELECT  '-'
+                        FROM  w2_MailDistExceptList
+                        WHERE  maildist_id = @maildist_id
+                          AND  w2_MailDistExceptList.mail_addr = w2_MailSendTemp.mail_addr)
+                 )
+            AND  ISNULL(w2_MailErrorAddr.error_point, 0) < @except_error_point
+            AND  (@@ where_except_mobile @@)
+            AND  EXISTS
+                (
+                   SELECT  '-'
+                     FROM  w2_MailDistSentUser
+                    WHERE  w2_MailSendTemp.user_id = w2_MailDistSentUser.user_id
+                      AND  maildist_id = @maildist_id
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="master_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetDuplicateExceptCount>
+
+  <!-- 登録 -->
+  <Insert>
+    <Statement>
+      <![CDATA[
+        INSERT  w2_MailDistSentUser
+                (
+                  maildist_id
+                  ,user_id
+                  ,date_created
+                  ,date_changed
+                  ,last_changed
+                )
+        VALUES  (
+                  @maildist_id
+                  ,@user_id
+                  ,GETDATE()
+                  ,GETDATE()
+                  ,@last_changed
+                )
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </Insert>
+  
+  <!-- 削除 -->
+  <Delete>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MailDistSentUser
+         WHERE  maildist_id = @maildist_id
+           AND  user_id = @user_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="user_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </Delete>
+
+  <!-- メール配信設定IDで一括削除 -->
+  <DeleteByMaildistId>
+    <Statement>
+      <![CDATA[
+        DELETE  w2_MailDistSentUser
+         WHERE  maildist_id = @maildist_id
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </DeleteByMaildistId>
+
+</MailDistSentUser>

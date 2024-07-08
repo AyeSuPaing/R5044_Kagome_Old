@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : メールクリック系SQLステートメントXML(MailClick.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright W2 Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<MailClick>
+
+  <!-- メールクリック情報取得(PCモバイル) -->
+  <GetMailClickAll>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailClick
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+    </Parameter>
+  </GetMailClickAll>
+
+
+  <!-- メールクリック情報取得 -->
+  <GetMailClick>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailClick
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  maildist_id = ''
+           AND  pcmobile_kbn = @pcmobile_kbn
+           AND  valid_flg = '1'
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="pcmobile_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMailClick>
+
+  <!-- メールクリック情報取得(有効無効関係なし) -->
+  <GetMailClickUrl>
+    <Statement>
+      <![CDATA[
+        SELECT  *
+          FROM  w2_MailClick
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  maildist_id = ''
+           AND  action_no = 0
+           AND  mailclick_url = @mailclick_url
+           AND  pcmobile_kbn = @pcmobile_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="mailclick_url" Type="nvarchar" Size="MAX" />
+      <Input Name="pcmobile_kbn" Type="nvarchar" Size="10" />
+    </Parameter>
+  </GetMailClickUrl>
+
+  <!-- メールクリック情報一括無効設定（いったんすべて無効にしてから有効設定） -->
+  <UpdateMailClickUnvalidAll>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MailClick
+           SET  valid_flg = 0,
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  action_no = 0  -- メールクリック設定
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateMailClickUnvalidAll>
+
+  <!-- メールクリック情報有効設定 -->
+  <UpdateMailClickValid>
+    <Statement>
+      <![CDATA[
+        UPDATE  w2_MailClick
+           SET  valid_flg = @valid_flg,
+                last_changed = @last_changed
+         WHERE  dept_id = @dept_id
+           AND  mailtext_id = @mailtext_id
+           AND  mailclick_url = @mailclick_url
+           AND  action_no = 0  -- メールクリック設定
+           AND  pcmobile_kbn = @pcmobile_kbn
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="mailclick_url" Type="nvarchar" Size="MAX" />
+      <Input Name="pcmobile_kbn" Type="nvarchar" Size="10" />
+      <Input Name="valid_flg" Type="nvarchar" Size="1" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </UpdateMailClickValid>
+
+  <!-- メールクリック情報インサート -->
+  <InsertMailClick>
+    <Statement>
+      <![CDATA[
+        -- キー存在チェック
+        DECLARE @ExistsKey int
+        SELECT  @ExistsKey = COUNT(mailtext_id)
+          FROM  w2_MailClick
+         WHERE  mailclick_key = @mailclick_key
+        
+        IF  @ExistsKey = 0
+        BEGIN
+          -- ID作成
+          DECLARE @mailclick_id nvarchar(30)
+          SELECT  @mailclick_id = RIGHT('0000000000' + CONVERT(nvarchar, CONVERT(int, ISNULL(MAX(mailclick_id), '0')) + 1), 10)
+            FROM  w2_MailClick 
+           WHERE  dept_id = @dept_id
+             AND  mailtext_id = @mailtext_id
+             AND  maildist_id = @maildist_id
+             AND  action_no = @action_no
+
+          -- インサート
+          INSERT  w2_MailClick
+                  (
+                  dept_id,
+                  mailtext_id,
+                  maildist_id,
+                  action_no,
+                  mailclick_id,
+                  mailclick_url,
+                  mailclick_key,
+                  pcmobile_kbn,
+                  last_changed
+                  )
+          VALUES  (
+                  @dept_id,
+                  @mailtext_id,
+                  @maildist_id,
+                  @action_no,
+                  @mailclick_id,
+                  @mailclick_url,
+                  @mailclick_key,
+                  @pcmobile_kbn,
+                  @last_changed
+                  )
+        END
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailtext_id" Type="nvarchar" Size="30" />
+      <Input Name="maildist_id" Type="nvarchar" Size="30" />
+      <Input Name="action_no" Type="int" />
+      <!--Input Name="mailclick_id" Type="nvarchar" Size="30" /-->
+      <Input Name="mailclick_url" Type="nvarchar" Size="MAX" />
+      <Input Name="mailclick_key" Type="nvarchar" Size="20" />
+      <Input Name="pcmobile_kbn" Type="nvarchar" Size="10" />
+      <Input Name="last_changed" Type="nvarchar" Size="20" />
+    </Parameter>
+  </InsertMailClick>
+
+  <!-- メールクリック識別キー重複チェック(登録用) -->
+  <CheckDuplicationRegistMailClickKey>
+    <Statement>
+      <![CDATA[
+        SELECT  count(mailtext_id) AS count
+          FROM  w2_MailClick
+         WHERE  w2_MailClick.dept_id = @dept_id
+           AND  w2_MailClick.mailclick_key = @mailclick_key
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailclick_key" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationRegistMailClickKey>
+
+  <!-- メールクリック識別キー重複チェック（更新用） -->
+  <CheckDuplicationModifyMailClickKey>
+    <Statement>
+      <![CDATA[
+        SELECT  count(mailtext_id) AS count
+          FROM  w2_MailClick
+         WHERE  w2_MailClick.dept_id = @dept_id
+           AND  w2_MailClick.mailclick_id <> @mailclick_id
+           AND  w2_MailClick.mailclick_key = @mailclick_key
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="dept_id" Type="nvarchar" Size="30" />
+      <Input Name="mailclick_id" Type="nvarchar" Size="10" />
+      <Input Name="mailclick_key" Type="nvarchar" Size="30" />
+    </Parameter>
+  </CheckDuplicationModifyMailClickKey>
+
+</MailClick>

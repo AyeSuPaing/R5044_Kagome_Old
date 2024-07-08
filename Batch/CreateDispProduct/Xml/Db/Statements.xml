@@ -1,0 +1,757 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+=========================================================================================================
+  Module      : マスタ取込バッチ用ステートメントXML(Statements.xml)
+ ･･･････････････････････････････････････････････････････････････････････････････････････････････････････
+  Copyright   : Copyright w2solution Co.,Ltd. 2009 All Rights Reserved.
+=========================================================================================================
+-->
+<Statements>
+  <!-- 売れ筋ランキング -->
+  <CreateProductSalesRanking>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        -- 「売れ筋ランキング」
+        DECLARE @data_kbn nvarchar(10)
+        SET @data_kbn = 'SRK'
+
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+          [display_order] [int] IDENTITY(1, 1),
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [product_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                shop_id,
+                product_id
+                )
+        SELECT  TOP 100
+                w2_OrderItem.shop_id,
+                w2_OrderItem.product_id
+          FROM  w2_OrderItem
+    INNER JOIN  w2_Order WITH(INDEX(IX_w2_Order_1)) ON
+                (
+                  w2_OrderItem.order_id = w2_Order.order_id
+                )
+    INNER JOIN  w2_Product ON
+                (
+                  w2_OrderItem.shop_id = w2_Product.shop_id
+                  AND
+                  w2_OrderItem.product_id = w2_Product.product_id
+                )
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.display_kbn = '0'          -- 商品一覧○、商品詳細○
+           AND  w2_Product.valid_flg = '1'            -- 有効
+           AND  w2_Product.display_from <= @current_date  -- 表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+           AND  w2_Order.order_date >= @collect_date -- N日以内
+        GROUP BY w2_OrderItem.shop_id, w2_OrderItem.product_id
+        ORDER BY COUNT(w2_OrderItem.product_id) DESC, w2_OrderItem.product_id ASC
+        
+        -- 既存データ削除
+        DELETE
+          FROM  w2_DispProductInfo
+         WHERE  shop_id = @shop_id
+           AND  data_kbn = @data_kbn
+
+        -- 新データインサート
+        INSERT  w2_DispProductInfo
+                (
+                shop_id,
+                data_kbn,
+                display_order,
+                product_id,
+                last_changed
+                )
+        SELECT  shop_id,
+                @data_kbn,
+                display_order,
+                product_id,
+                'batch'
+          FROM  @temp_table
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+      <Input Name="current_date" Type="datetime" />
+      <Input Name="collect_date" Type="datetime" />
+    </Parameter>
+  </CreateProductSalesRanking>
+
+  <!-- アイコン１商品 -->
+  <CreateIcon1Valid>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 「アイコン１商品」
+        DECLARE @data_kbn nvarchar(10)
+        SET @data_kbn = 'IC1'
+
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+          [display_order] [int] IDENTITY(1, 1),
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [product_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                shop_id,
+                product_id
+                )
+        SELECT  DISTINCT
+                w2_Product.shop_id,
+                w2_Product.product_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.display_from <= @current_date  -- 表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.valid_flg = '1'                -- 有効
+           AND  w2_Product.icon_flg1 = '1'                    -- アイコン１有効
+           AND  w2_Product.icon_term_end1 >= @current_date  -- アイコン１有効期間内
+        
+       -- 既存データ削除
+        DELETE
+          FROM  w2_DispProductInfo
+         WHERE  shop_id = @shop_id
+           AND  data_kbn = @data_kbn
+
+        -- 新データインサート
+        INSERT  w2_DispProductInfo
+                (
+                shop_id,
+                data_kbn,
+                display_order,
+                product_id,
+                last_changed
+                )
+        SELECT  shop_id,
+                @data_kbn,
+                display_order,
+                product_id,
+                'batch'
+          FROM  @temp_table
+       ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CreateIcon1Valid>
+
+  <!-- アイコン２商品 -->
+  <CreateIcon2Valid>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 「アイコン２商品」
+        DECLARE @data_kbn nvarchar(10)
+        SET @data_kbn = 'IC2'
+
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+          [display_order] [int] IDENTITY(1, 1),
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [product_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                shop_id,
+                product_id
+                )
+        SELECT  DISTINCT
+                w2_Product.shop_id,
+                w2_Product.product_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.display_from <= @current_date  -- 表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.valid_flg = '1'                -- 有効
+           AND  w2_Product.icon_flg2 = '1'                    -- アイコン２有効
+           AND  w2_Product.icon_term_end2 >= @current_date  -- アイコン２有効期間内
+        
+       -- 既存データ削除
+        DELETE
+          FROM  w2_DispProductInfo
+         WHERE  shop_id = @shop_id
+           AND  data_kbn = @data_kbn
+        
+        -- 新データインサート
+        INSERT  w2_DispProductInfo
+                (
+                shop_id,
+                data_kbn,
+                display_order,
+                product_id,
+                last_changed
+                )
+        SELECT  shop_id,
+                @data_kbn,
+                display_order,
+                product_id,
+                'batch'
+          FROM  @temp_table
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CreateIcon2Valid>
+
+  <!-- アイコン３商品 -->
+  <CreateIcon3Valid>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 「アイコン３商品」
+        DECLARE @data_kbn nvarchar(10)
+        SET @data_kbn = 'IC3'
+
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+          [display_order] [int] IDENTITY(1, 1),
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [product_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                shop_id,
+                product_id
+                )
+        SELECT  DISTINCT
+                w2_Product.shop_id,
+                w2_Product.product_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.display_from <= @current_date  -- 表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.valid_flg = '1'                -- 有効
+           AND  w2_Product.icon_flg3 = '1'                    -- アイコン３有効
+           AND  w2_Product.icon_term_end3 >= @current_date  -- アイコン３有効期間内
+          
+        -- 既存データ削除
+        DELETE
+          FROM  w2_DispProductInfo
+         WHERE  shop_id = @shop_id
+           AND  data_kbn = @data_kbn
+          
+        -- 新データインサート
+        INSERT  w2_DispProductInfo
+                (
+                shop_id,
+                data_kbn,
+                display_order,
+                product_id,
+                last_changed
+                )
+        SELECT  shop_id,
+                @data_kbn,
+                display_order,
+                product_id,
+                'batch'
+          FROM  @temp_table
+        ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CreateIcon3Valid>
+
+  <!-- アイコン４商品 -->
+  <CreateIcon4Valid>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 「アイコン４商品」
+        DECLARE @data_kbn nvarchar(10)
+        SET @data_kbn = 'IC4'
+
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+          [display_order] [int] IDENTITY(1, 1),
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [product_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                shop_id,
+                product_id
+                )
+        SELECT  DISTINCT
+                w2_Product.shop_id,
+                w2_Product.product_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.display_from <= @current_date  -- 表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.valid_flg = '1'                -- 有効
+           AND  w2_Product.icon_flg4 = '1'                    -- アイコン４有効
+           AND  w2_Product.icon_term_end4 >= @current_date  -- アイコン４有効期間内
+            
+        -- 既存データ削除
+        DELETE
+          FROM  w2_DispProductInfo
+         WHERE  shop_id = @shop_id
+           AND  data_kbn = @data_kbn
+            
+        -- 新データインサート
+        INSERT  w2_DispProductInfo
+                (
+                shop_id,
+                data_kbn,
+                display_order,
+                product_id,
+                last_changed
+                )
+        SELECT  shop_id,
+                @data_kbn,
+                display_order,
+                product_id,
+                'batch'
+          FROM  @temp_table
+          ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CreateIcon4Valid>
+
+  <!-- アイコン５商品 -->
+  <CreateIcon5Valid>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 「アイコン５商品」
+        DECLARE @data_kbn nvarchar(10)
+        SET @data_kbn = 'IC5'
+
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+          [display_order] [int] IDENTITY(1, 1),
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [product_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                shop_id,
+                product_id
+                )
+        SELECT  DISTINCT
+                w2_Product.shop_id,
+                w2_Product.product_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.display_from <= @current_date  -- 表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.valid_flg = '1'                -- 有効
+           AND  w2_Product.icon_flg5 = '1'                    -- アイコン５有効
+           AND  w2_Product.icon_term_end5 >= @current_date  -- アイコン５有効期間内
+              
+        -- 既存データ削除
+        DELETE
+          FROM  w2_DispProductInfo
+         WHERE  shop_id = @shop_id
+           AND  data_kbn = @data_kbn
+              
+        -- 新データインサート
+        INSERT  w2_DispProductInfo
+                (
+                shop_id,
+                data_kbn,
+                display_order,
+                product_id,
+                last_changed
+                )
+        SELECT  shop_id,
+                @data_kbn,
+                display_order,
+                product_id,
+                'batch'
+          FROM  @temp_table
+      ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CreateIcon5Valid>
+
+  <!-- アイコン６商品 -->
+  <CreateIcon6Valid>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 「アイコン６商品」
+        DECLARE @data_kbn nvarchar(10)
+        SET @data_kbn = 'IC6'
+
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+          [display_order] [int] IDENTITY(1, 1),
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [product_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                shop_id,
+                product_id
+                )
+        SELECT  DISTINCT
+                w2_Product.shop_id,
+                w2_Product.product_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.display_from <= @current_date  -- 表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.valid_flg = '1'                -- 有効
+           AND  w2_Product.icon_flg6 = '1'                -- アイコン６有効
+           AND  w2_Product.icon_term_end6 >= @current_date  -- アイコン６有効期間内
+            
+        -- 既存データ削除
+        DELETE
+          FROM  w2_DispProductInfo
+         WHERE  shop_id = @shop_id
+           AND  data_kbn = @data_kbn
+            
+        -- 新データインサート
+        INSERT  w2_DispProductInfo
+                (
+                shop_id,
+                data_kbn,
+                display_order,
+                product_id,
+                last_changed
+                )
+        SELECT  shop_id,
+                @data_kbn,
+                display_order,
+                product_id,
+                'batch'
+        FROM  @temp_table
+          ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CreateIcon6Valid>
+
+  <!-- アイコン７商品 -->
+  <CreateIcon7Valid>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 「アイコン７商品」
+        DECLARE @data_kbn nvarchar(10)
+        SET @data_kbn = 'IC7'
+
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+          [display_order] [int] IDENTITY(1, 1),
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [product_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                shop_id,
+                product_id
+                )
+        SELECT  DISTINCT
+                w2_Product.shop_id,
+                w2_Product.product_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.display_from <= @current_date  -- 表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.valid_flg = '1'                -- 有効
+           AND  w2_Product.icon_flg7 = '1'                -- アイコン７有効
+           AND  w2_Product.icon_term_end7 >= @current_date  -- アイコン７有効期間内
+            
+        -- 既存データ削除
+        DELETE
+          FROM  w2_DispProductInfo
+         WHERE  shop_id = @shop_id
+           AND  data_kbn = @data_kbn
+            
+        -- 新データインサート
+        INSERT  w2_DispProductInfo
+                (
+                shop_id,
+                data_kbn,
+                display_order,
+                product_id,
+                last_changed
+                )
+        SELECT  shop_id,
+                @data_kbn,
+                display_order,
+                product_id,
+                'batch'
+        FROM  @temp_table
+          ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CreateIcon7Valid>
+
+  <!-- アイコン８商品 -->
+  <CreateIcon8Valid>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 「アイコン８商品」
+        DECLARE @data_kbn nvarchar(10)
+        SET @data_kbn = 'IC8'
+
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+          [display_order] [int] IDENTITY(1, 1),
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [product_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                shop_id,
+                product_id
+                )
+        SELECT  DISTINCT
+                w2_Product.shop_id,
+                w2_Product.product_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.display_from <= @current_date  -- 表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.valid_flg = '1'                -- 有効
+           AND  w2_Product.icon_flg8 = '1'                -- アイコン８有効
+           AND  w2_Product.icon_term_end8 >= @current_date  -- アイコン８有効期間内
+            
+        -- 既存データ削除
+        DELETE
+          FROM  w2_DispProductInfo
+         WHERE  shop_id = @shop_id
+           AND  data_kbn = @data_kbn
+            
+        -- 新データインサート
+        INSERT  w2_DispProductInfo
+                (
+                shop_id,
+                data_kbn,
+                display_order,
+                product_id,
+                last_changed
+                )
+        SELECT  shop_id,
+                @data_kbn,
+                display_order,
+                product_id,
+                'batch'
+        FROM  @temp_table
+          ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CreateIcon8Valid>
+
+  <!-- アイコン９商品 -->
+  <CreateIcon9Valid>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 「アイコン９商品」
+        DECLARE @data_kbn nvarchar(10)
+        SET @data_kbn = 'IC9'
+
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+          [display_order] [int] IDENTITY(1, 1),
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [product_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                shop_id,
+                product_id
+                )
+        SELECT  DISTINCT
+                w2_Product.shop_id,
+                w2_Product.product_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.display_from <= @current_date  -- 表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.valid_flg = '1'                -- 有効
+           AND  w2_Product.icon_flg9 = '1'                -- アイコン９有効
+           AND  w2_Product.icon_term_end9 >= @current_date  -- アイコン９有効期間内
+            
+        -- 既存データ削除
+        DELETE
+          FROM  w2_DispProductInfo
+         WHERE  shop_id = @shop_id
+           AND  data_kbn = @data_kbn
+            
+        -- 新データインサート
+        INSERT  w2_DispProductInfo
+                (
+                shop_id,
+                data_kbn,
+                display_order,
+                product_id,
+                last_changed
+                )
+        SELECT  shop_id,
+                @data_kbn,
+                display_order,
+                product_id,
+                'batch'
+        FROM  @temp_table
+          ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CreateIcon9Valid>
+
+  <!-- アイコン１０商品 -->
+  <CreateIcon10Valid>
+    <Statement>
+      <![CDATA[
+        /* ダーティリードを許可して共有ロックを掛けなくする */
+        SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+        DECLARE @current_date datetime
+        SET @current_date = getdate()
+
+        -- 「アイコン１０商品」
+        DECLARE @data_kbn nvarchar(10)
+        SET @data_kbn = 'IC10'
+
+        -- 変数テーブル作成
+        DECLARE @temp_table TABLE (
+          [display_order] [int] IDENTITY(1, 1),
+          [shop_id] [nvarchar] (10) NOT NULL DEFAULT (N''),
+          [product_id] [nvarchar] (30) NOT NULL DEFAULT (N'')
+        )
+
+        -- 変数テーブルにインサート
+        INSERT  @temp_table
+                (
+                shop_id,
+                product_id
+                )
+        SELECT  DISTINCT
+                w2_Product.shop_id,
+                w2_Product.product_id
+          FROM  w2_Product
+         WHERE  w2_Product.shop_id = @shop_id
+           AND  w2_Product.display_from <= @current_date  -- 表示期間内
+           AND  ((w2_Product.display_to IS NULL) OR (w2_Product.display_to >= @current_date))
+           AND  w2_Product.display_kbn = '0'              -- 商品一覧○、商品詳細○
+           AND  w2_Product.valid_flg = '1'                -- 有効
+           AND  w2_Product.icon_flg10 = '1'               -- アイコン１０有効
+           AND  w2_Product.icon_term_end10 >= @current_date  -- アイコン１０有効期間内
+            
+        -- 既存データ削除
+        DELETE
+          FROM  w2_DispProductInfo
+         WHERE  shop_id = @shop_id
+           AND  data_kbn = @data_kbn
+            
+        -- 新データインサート
+        INSERT  w2_DispProductInfo
+                (
+                shop_id,
+                data_kbn,
+                display_order,
+                product_id,
+                last_changed
+                )
+        SELECT  shop_id,
+                @data_kbn,
+                display_order,
+                product_id,
+                'batch'
+        FROM  @temp_table
+          ]]>
+    </Statement>
+    <Parameter>
+      <Input Name="shop_id" Type="nvarchar" Size="10" />
+    </Parameter>
+  </CreateIcon10Valid>
+
+</Statements>

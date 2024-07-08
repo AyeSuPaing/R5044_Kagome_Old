@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Migration>
+  <Up>
+    <Statement>
+      <![CDATA[
+		-- 定期購入商品情報テーブル 商品購入回数（注文基準）
+		IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseItem' AND column_name = 'item_order_count')
+			ALTER TABLE [w2_FixedPurchaseItem] ADD [item_order_count] [int] NOT NULL DEFAULT (0);
+		GO
+		-- 定期購入商品情報テーブル 商品購入回数（出荷基準）
+		IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_FixedPurchaseItem' AND column_name = 'item_shipped_count')
+			ALTER TABLE [w2_FixedPurchaseItem] ADD [item_shipped_count] [int] NOT NULL DEFAULT (0);
+		GO
+
+		-- 注文商品情報テーブル 定期商品購入回数(注文時点)
+		IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderItem' AND column_name = 'fixed_purchase_item_order_count')
+			ALTER TABLE [w2_OrderItem] ADD [fixed_purchase_item_order_count] [int];
+		GO
+		-- 注文商品情報テーブル 定期商品購入回数(出荷時点)
+		IF NOT EXISTS (SELECT column_name FROM INFORMATION_SCHEMA.columns WHERE table_name = 'w2_OrderItem' AND column_name = 'fixed_purchase_item_shipped_count')
+			ALTER TABLE [w2_OrderItem] ADD [fixed_purchase_item_shipped_count] [int];
+		GO
+
+		SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+		/* 定期の回数補正 */
+		UPDATE w2_FixedPurchaseItem
+		SET
+			item_order_count = w2_FixedPurchase.order_count,
+			item_shipped_count = w2_FixedPurchase.shipped_count
+		FROM w2_FixedPurchaseItem
+		INNER JOIN w2_FixedPurchase ON w2_FixedPurchaseItem.fixed_purchase_id = w2_FixedPurchase.fixed_purchase_id
+      ]]>
+    </Statement>
+  </Up>
+</Migration>
